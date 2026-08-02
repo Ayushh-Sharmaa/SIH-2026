@@ -1,0 +1,12 @@
+# Dependencies
+node_modules/
+
+# Agent Customizations & Logs
+.agents/
+skills-lock.json
+.gemini/
+
+# System / IDE files
+.vscode/
+.idea/
+*.log

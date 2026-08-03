@@ -18,46 +18,25 @@ export default function LoginPage() {
     setError('');
     setGoogleLoading(true);
     try {
-      const pubKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || '';
-      const isRealKey = pubKey.startsWith('pk_test_') && !pubKey.includes('glbgoi') && !pubKey.includes('placeholder');
-
-      if (isRealKey && clerk) {
-        if ((clerk as any).authenticateWithRedirect) {
-          await (clerk as any).authenticateWithRedirect({
-            strategy: 'oauth_google',
-            redirectUrl: '/api/auth/clerk-sync',
-            redirectUrlComplete: '/dashboard',
-          });
-        } else if (clerk?.client?.signIn) {
-          await clerk.client.signIn.authenticateWithRedirect({
-            strategy: 'oauth_google',
-            redirectUrl: '/api/auth/clerk-sync',
-            redirectUrlComplete: '/dashboard',
-          });
-        }
-      } else {
-        if (!email?.trim()) {
-          setError('Please enter your college email address in the field below to continue with Google Sign-In.');
-          setGoogleLoading(false);
-          return;
-        }
-
-        const res = await fetch('/api/auth/clerk-sync', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: email.trim(), role: 'STUDENT' }),
+      if (clerk && (clerk as any).authenticateWithRedirect) {
+        await (clerk as any).authenticateWithRedirect({
+          strategy: 'oauth_google',
+          redirectUrl: '/api/auth/clerk-sync',
+          redirectUrlComplete: '/dashboard',
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Google Sign-In failed');
-
-        const meRes = await fetch('/api/auth/me');
-        const meData = await meRes.json();
-        if (meData.authenticated && meData.user.isOnboarded) {
-          router.push('/dashboard');
-        } else {
-          router.push('/onboarding');
-        }
+        return;
       }
+
+      if (clerk?.client?.signIn) {
+        await clerk.client.signIn.authenticateWithRedirect({
+          strategy: 'oauth_google',
+          redirectUrl: '/api/auth/clerk-sync',
+          redirectUrlComplete: '/dashboard',
+        });
+        return;
+      }
+
+      setError('Real Google Sign-In requires Clerk API Keys. Please add NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY and CLERK_SECRET_KEY in Vercel Project Settings.');
     } catch (err: any) {
       console.error('Google Sign-In error:', err);
       setError(err.message || 'Google Sign-In failed. Please try again.');

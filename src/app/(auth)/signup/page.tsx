@@ -21,39 +21,25 @@ export default function SignupPage() {
     setError('');
     setGoogleLoading(true);
     try {
-      const pubKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || '';
-      const isRealKey = pubKey.startsWith('pk_test_') && !pubKey.includes('glbgoi') && !pubKey.includes('placeholder');
-
-      if (isRealKey && clerk) {
-        if ((clerk as any).authenticateWithRedirect) {
-          await (clerk as any).authenticateWithRedirect({
-            strategy: 'oauth_google',
-            redirectUrl: '/api/auth/clerk-sync',
-            redirectUrlComplete: '/onboarding',
-          });
-        } else if (clerk?.client?.signUp) {
-          await clerk.client.signUp.authenticateWithRedirect({
-            strategy: 'oauth_google',
-            redirectUrl: '/api/auth/clerk-sync',
-            redirectUrlComplete: '/onboarding',
-          });
-        }
-      } else {
-        if (!email?.trim()) {
-          setError('Please enter your college email address in the field below to sign up with Google.');
-          setGoogleLoading(false);
-          return;
-        }
-
-        const res = await fetch('/api/auth/clerk-sync', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: email.trim(), role }),
+      if (clerk && (clerk as any).authenticateWithRedirect) {
+        await (clerk as any).authenticateWithRedirect({
+          strategy: 'oauth_google',
+          redirectUrl: '/api/auth/clerk-sync',
+          redirectUrlComplete: '/onboarding',
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Google Sign-Up failed');
-        router.push('/onboarding');
+        return;
       }
+
+      if (clerk?.client?.signUp) {
+        await clerk.client.signUp.authenticateWithRedirect({
+          strategy: 'oauth_google',
+          redirectUrl: '/api/auth/clerk-sync',
+          redirectUrlComplete: '/onboarding',
+        });
+        return;
+      }
+
+      setError('Real Google Sign-In requires Clerk API Keys. Please add NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY and CLERK_SECRET_KEY in Vercel Project Settings.');
     } catch (err: any) {
       console.error('Google Sign-Up error:', err);
       setError(err.message || 'Google Sign-Up failed. Please try again.');

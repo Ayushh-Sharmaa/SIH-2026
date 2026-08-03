@@ -39,10 +39,16 @@ export default function SignupPage() {
           });
         }
       } else {
+        if (!email?.trim()) {
+          setError('Please enter your college email address in the field below to sign up with Google.');
+          setGoogleLoading(false);
+          return;
+        }
+
         const res = await fetch('/api/auth/clerk-sync', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: email || 'new.student@glbajajgroup.org', role }),
+          body: JSON.stringify({ email: email.trim(), role }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Google Sign-Up failed');
@@ -50,21 +56,6 @@ export default function SignupPage() {
       }
     } catch (err: any) {
       console.error('Google Sign-Up error:', err);
-      // Fallback for seamless local testing
-      try {
-        const res = await fetch('/api/auth/clerk-sync', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: email || 'student.google@glbajajgroup.org', role }),
-        });
-        const data = await res.json();
-        if (res.ok) {
-          router.push('/onboarding');
-          return;
-        }
-      } catch (fallbackErr) {
-        // ignore
-      }
       setError(err.message || 'Google Sign-Up failed. Please try again.');
     } finally {
       setGoogleLoading(false);

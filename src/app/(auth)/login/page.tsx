@@ -36,10 +36,16 @@ export default function LoginPage() {
           });
         }
       } else {
+        if (!email?.trim()) {
+          setError('Please enter your college email address in the field below to continue with Google Sign-In.');
+          setGoogleLoading(false);
+          return;
+        }
+
         const res = await fetch('/api/auth/clerk-sync', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: email || 'tanishk.bansal2025@glbajajgroup.org', role: 'STUDENT' }),
+          body: JSON.stringify({ email: email.trim(), role: 'STUDENT' }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Google Sign-In failed');
@@ -54,27 +60,6 @@ export default function LoginPage() {
       }
     } catch (err: any) {
       console.error('Google Sign-In error:', err);
-      // Fallback for local prototype testing
-      try {
-        const res = await fetch('/api/auth/clerk-sync', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: email || 'tanishk.bansal2025@glbajajgroup.org', role: 'STUDENT' }),
-        });
-        const data = await res.json();
-        if (res.ok) {
-          const meRes = await fetch('/api/auth/me');
-          const meData = await meRes.json();
-          if (meData.authenticated && meData.user.isOnboarded) {
-            router.push('/dashboard');
-          } else {
-            router.push('/onboarding');
-          }
-          return;
-        }
-      } catch (fallbackErr) {
-        // ignore
-      }
       setError(err.message || 'Google Sign-In failed. Please try again.');
     } finally {
       setGoogleLoading(false);

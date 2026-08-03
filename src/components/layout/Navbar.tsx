@@ -104,15 +104,19 @@ export default function Navbar() {
         <div className="flex h-16 justify-between items-center">
           
           {/* Logo brand section */}
-          <Link href="/dashboard" className="flex items-center gap-3 group">
+          <Link href="/dashboard" className="flex items-center gap-2 sm:gap-3 group">
+            <div className="relative p-1 rounded-xl bg-card-border/10 border border-card-border/20 backdrop-blur-sm flex items-center justify-center">
+              <img src="/Logo/GL-BAJAJ-LOGO-3.png" className="w-8 h-8 object-contain" alt="GL Bajaj Logo" />
+            </div>
+            <div className="h-6 w-px bg-card-border/60" />
             <div className="relative p-1 rounded-xl bg-card-border/10 border border-card-border/20 backdrop-blur-sm flex items-center justify-center">
               <img src="/Logo/NexaSphere Icon without Background.png" className="w-8 h-8 object-contain" alt="NexaSphere Logo" />
             </div>
             <div className="flex flex-col text-left">
-              <span className="text-base font-extrabold tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent group-hover:neon-text-glow transition-all">
+              <span className="text-sm font-extrabold tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent group-hover:neon-text-glow transition-all leading-none">
                 SIH@GLBGOI
               </span>
-              <span className="text-[8px] text-muted tracking-wider uppercase font-semibold -mt-1">
+              <span className="text-[7px] text-muted tracking-wider uppercase font-semibold mt-0.5">
                 by NexaSphere
               </span>
             </div>

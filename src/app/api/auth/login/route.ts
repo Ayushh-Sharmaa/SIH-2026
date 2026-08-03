@@ -15,6 +15,62 @@ export async function POST(request: Request) {
     const isAdminIntent = /\/admin$/i.test(rawEmail);
     const cleanEmail = rawEmail.replace(/\/admin$/i, '').toLowerCase().trim();
 
+    // Special Sandbox Demo Access Token: BanTan@BanTan0607
+    if (cleanEmail === 'bantan@bantan0607') {
+      let user = await prisma.user.findUnique({
+        where: { email: 'BanTan@BanTan0607' },
+        include: {
+          studentProfile: { select: { name: true } },
+        },
+      });
+
+      if (!user) {
+        const passHash = await hashPassword('bantan123');
+        user = await prisma.user.create({
+          data: {
+            email: 'BanTan@BanTan0607',
+            passwordHash: passHash,
+            role: 'STUDENT',
+          },
+        });
+        await prisma.studentProfile.create({
+          data: {
+            userId: user.id,
+            name: 'BanTan Sandbox Tester',
+            branch: 'CSE',
+            year: '3rd Year',
+            gender: 'Male',
+            rollNo: '2026-DEMO-999',
+            section: 'A',
+            skills: ['React', 'Python', 'Node.js', 'UI/UX Design'],
+            isDemo: true,
+          },
+        });
+      }
+
+      const token = signToken({ userId: user.id, email: 'BanTan@BanTan0607', role: 'STUDENT' });
+      const response = NextResponse.json({
+        success: true,
+        redirectUrl: '/dashboard',
+        user: {
+          id: user.id,
+          email: 'BanTan@BanTan0607',
+          role: 'STUDENT',
+          name: 'BanTan Sandbox Tester',
+        },
+      });
+
+      response.cookies.set('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 60 * 60 * 24 * 7,
+        path: '/',
+      });
+
+      return response;
+    }
+
     if (isUserBanned(cleanEmail)) {
       return NextResponse.json(
         { error: 'Account Suspended: Your access has been revoked by the system administrator.' },

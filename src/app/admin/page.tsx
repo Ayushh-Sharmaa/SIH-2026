@@ -267,29 +267,52 @@ export default function AdminDashboardPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => router.push('/dashboard?role=STUDENT')}
+            className="px-3.5 py-2 text-xs font-bold rounded-xl bg-primary/20 text-primary border border-primary/30 hover:bg-primary/30 transition-all cursor-pointer flex items-center gap-1.5"
+          >
+            🎓 View Student Dashboard
+          </button>
+          <button
+            type="button"
+            onClick={() => router.push('/dashboard?role=MENTOR')}
+            className="px-3.5 py-2 text-xs font-bold rounded-xl bg-accent/20 text-accent border border-accent/30 hover:bg-accent/30 transition-all cursor-pointer flex items-center gap-1.5"
+          >
+            👨‍🏫 View Mentor Dashboard
+          </button>
           <button
             type="button"
             onClick={fetchAdminData}
-            className="px-4 py-2 text-xs font-bold rounded-xl bg-card border border-card-border hover:bg-card-border text-foreground transition-all cursor-pointer"
+            className="px-3.5 py-2 text-xs font-bold rounded-xl bg-card border border-card-border hover:bg-card-border text-foreground transition-all cursor-pointer"
           >
             🔄 Refresh Data
           </button>
           <button
             type="button"
             onClick={handleSignOut}
-            className="px-4 py-2 text-xs font-bold rounded-xl bg-rose-500/20 text-rose-300 border border-rose-500/40 hover:bg-rose-500/30 transition-all cursor-pointer"
+            className="px-3.5 py-2 text-xs font-bold rounded-xl bg-rose-500/20 text-rose-300 border border-rose-500/40 hover:bg-rose-500/30 transition-all cursor-pointer"
           >
             Sign Out
           </button>
         </div>
       </header>
 
-      {/* Secret /admin Security Shortcut Tip */}
-      <div className="rounded-2xl border border-primary/30 bg-primary/10 p-4 text-xs sm:text-sm text-primary flex items-center gap-3 shadow-lg">
-        <span className="text-xl">💡</span>
-        <div>
-          <strong className="font-bold">Secret Admin Login Shortcut:</strong> You can log in directly to this Admin Command Center by appending <code className="bg-primary/20 px-1.5 py-0.5 rounded font-mono font-bold">/admin</code> to any authorized college email address on the login form (e.g. <code className="bg-primary/20 px-1.5 py-0.5 rounded font-mono font-bold">tanishk.bansal2025@glbajajgroup.org/admin</code>).
+      {/* Secret /admin Security & BanTan Special Demo Token Notice */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="rounded-2xl border border-primary/30 bg-primary/10 p-4 text-xs sm:text-sm text-primary flex items-start gap-3 shadow-lg">
+          <span className="text-xl">💡</span>
+          <div>
+            <strong className="font-bold block text-foreground">Secret Admin Login Shortcut:</strong> You can log in directly to this Admin Command Center by appending <code className="bg-primary/20 px-1.5 py-0.5 rounded font-mono font-bold">/admin</code> to any authorized email (e.g. <code className="bg-primary/20 px-1.5 py-0.5 rounded font-mono font-bold">tanishk.bansal2025@glbajajgroup.org/admin</code>).
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-xs sm:text-sm text-amber-300 flex items-start gap-3 shadow-lg">
+          <span className="text-xl">🧪</span>
+          <div>
+            <strong className="font-bold block text-amber-200">BanTan Special Test Account Token:</strong> Enter <code className="bg-amber-500/20 px-1.5 py-0.5 rounded font-mono font-bold text-amber-200">BanTan@BanTan0607</code> in the login email field to bypass passwords & explore all features in sandbox mode without affecting public search data!
+          </div>
         </div>
       </div>
 

@@ -204,8 +204,19 @@ function loadDb() {
   }
 }
 
+let memoryDbCache: any = null;
+
 function saveDb(data: any) {
-  fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
+  memoryDbCache = data;
+  try {
+    const dir = path.dirname(DB_FILE);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
+  } catch (err) {
+    // Read-only filesystem fallback (e.g. Vercel serverless runtime)
+  }
 }
 
 // Admin Email Access Management

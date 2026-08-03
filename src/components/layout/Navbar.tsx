@@ -72,8 +72,35 @@ export default function Navbar() {
             })}
           </div>
 
-          <div className="flex items-center space-x-4">
-            {user && (
+          <div className="flex items-center space-x-3">
+            {user?.role === 'ADMIN' && (
+              <div className="flex items-center gap-1.5 bg-primary/10 border border-primary/30 p-1 rounded-xl">
+                <Link
+                  href="/admin"
+                  className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${
+                    pathname === '/admin' ? 'bg-primary text-white' : 'text-primary hover:bg-primary/20'
+                  }`}
+                >
+                  🛡️ Admin Console
+                </Link>
+                <Link
+                  href="/dashboard?role=STUDENT"
+                  className="px-2.5 py-1 text-xs font-semibold text-muted hover:text-foreground transition-all"
+                  title="Preview Student View"
+                >
+                  🎓 Student
+                </Link>
+                <Link
+                  href="/dashboard?role=MENTOR"
+                  className="px-2.5 py-1 text-xs font-semibold text-muted hover:text-foreground transition-all"
+                  title="Preview Mentor View"
+                >
+                  👨‍🏫 Mentor
+                </Link>
+              </div>
+            )}
+
+            {user && user.role !== 'ADMIN' && (
               <div className="hidden sm:flex items-center gap-3">
                 <div className="flex flex-col text-right">
                   <span className="text-sm font-bold text-foreground">{user.name}</span>
@@ -88,6 +115,7 @@ export default function Navbar() {
                 </Link>
               </div>
             )}
+
             <button
               onClick={handleLogout}
               className="rounded-lg bg-card-border border border-card-border px-3.5 py-1.5 text-xs font-bold text-foreground hover:bg-background transition-all cursor-pointer"

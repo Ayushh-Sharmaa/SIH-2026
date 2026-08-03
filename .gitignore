@@ -1,5 +1,37 @@
-# Dependencies
-node_modules/
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+
+# next.js build output
+/.next/
+/out/
+/build
+
+# debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# local env files (DO NOT COMMIT SECRETS)
+.env
+.env*.local
+.env.production
+.env.development
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+
+# SQLite / Local DB files
+*.db
+*.db-journal
 
 # Agent Customizations & Logs
 .agents/
@@ -9,4 +41,5 @@ skills-lock.json
 # System / IDE files
 .vscode/
 .idea/
-*.log
+.DS_Store
+Thumbs.db

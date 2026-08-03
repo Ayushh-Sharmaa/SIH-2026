@@ -64,8 +64,13 @@ async function syncClerkUser(email: string, defaultRole: 'STUDENT' | 'MENTOR' = 
 
 export async function GET(request: Request) {
   try {
-    const clerkUser = await currentUser();
-    const email = clerkUser?.emailAddresses?.[0]?.emailAddress;
+    let email: string | undefined;
+    try {
+      const clerkUser = await currentUser();
+      email = clerkUser?.emailAddresses?.[0]?.emailAddress;
+    } catch (e) {
+      console.warn('Clerk currentUser check bypassed (keys missing or environment disabled).');
+    }
 
     if (!email) {
       return NextResponse.redirect(new URL('/login', request.url));
@@ -94,11 +99,24 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
-    const email = body.email || (await currentUser())?.emailAddresses?.[0]?.emailAddress;
+    let email = body.email;
+
+    if (!email) {
+      try {
+        const clerkUser = await currentUser();
+        email = clerkUser?.emailAddresses?.[0]?.emailAddress;
+      } catch (e) {
+        // Ignore Clerk error if Clerk keys are missing
+      }
+    }
+
     const role = body.role || 'STUDENT';
 
     if (!email) {
-      return NextResponse.json({ error: 'Email is required for Google Sync' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Please enter your college email address in the input box below to sign up.' },
+        { status: 400 }
+      );
     }
 
     const { user, token } = await syncClerkUser(email, role);
@@ -126,6 +144,6 @@ export async function POST(request: Request) {
     return response;
   } catch (error: any) {
     console.error('Clerk POST Sync error:', error);
-    return NextResponse.json({ error: 'Failed to synchronize user account' }, { status: 500 });
+    return NextResponse.json({ error: error?.message || 'Failed to synchronize user account' }, { status: 500 });
   }
 }

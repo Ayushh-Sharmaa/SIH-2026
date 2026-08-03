@@ -144,9 +144,20 @@ export default function DashboardPage() {
           {/* LEFT COLUMN: Profile info */}
           <motion.div variants={cardVariants} className="space-y-6">
             <div className="glass-card rounded-2xl p-6 border border-card-border shadow-xl">
-              <h3 className="text-base font-bold text-foreground mb-4 border-b border-card-border pb-2">
-                My Profile
-              </h3>
+              <div className="flex justify-between items-center mb-4 border-b border-card-border pb-2">
+                <h3 className="text-base font-bold text-foreground">
+                  My Profile
+                </h3>
+                <button
+                  onClick={() => router.push('/onboarding?edit=true')}
+                  className="text-xs font-semibold text-primary hover:text-primary-hover bg-primary/10 border border-primary/20 px-2.5 py-1 rounded-md transition-all cursor-pointer flex items-center gap-1"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                  </svg>
+                  Edit Profile
+                </button>
+              </div>
               <div className="space-y-4">
                 <div>
                   <span className="text-[10px] text-muted uppercase tracking-wider block font-bold">Email ID</span>
@@ -186,6 +197,41 @@ export default function DashboardPage() {
                             {s}
                           </span>
                         ))}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-muted uppercase tracking-wider block font-bold mb-1.5">Social Profiles & Links</span>
+                      <div className="flex flex-wrap gap-2">
+                        {profile?.githubUrl && (
+                          <a
+                            href={profile.githubUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs font-bold text-foreground bg-card border border-card-border hover:border-primary/40 px-2.5 py-1 rounded-lg transition-all"
+                          >
+                            🐙 GitHub ↗
+                          </a>
+                        )}
+                        {profile?.linkedinUrl && (
+                          <a
+                            href={profile.linkedinUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs font-bold text-cyan-400 bg-cyan-950/20 border border-cyan-800/30 hover:border-cyan-400/50 px-2.5 py-1 rounded-lg transition-all"
+                          >
+                            💼 LinkedIn ↗
+                          </a>
+                        )}
+                        {profile?.resumeUrl && (
+                          <a
+                            href={profile.resumeUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs font-bold text-pink-400 bg-pink-950/20 border border-pink-800/30 hover:border-pink-400/50 px-2.5 py-1 rounded-lg transition-all"
+                          >
+                            📄 Resume ↗
+                          </a>
+                        )}
                       </div>
                     </div>
                   </>
@@ -249,7 +295,7 @@ export default function DashboardPage() {
                       </span>
                     </div>
 
-                    {/* Team roster: identity remains compact; leader contact is the only public contact detail. */}
+                    {/* Team roster */}
                     <div>
                       <div className="mb-3 flex items-center justify-between gap-4">
                         <h4 className="text-[10px] font-bold text-muted uppercase tracking-wider">Team roster</h4>
@@ -271,15 +317,82 @@ export default function DashboardPage() {
                       </div>
                     </div>
 
+                    {/* Interactive Team Leader Contact Button & Hover Popover */}
                     {data.team.leaderContact && (
-                      <div className="flex flex-col gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-md">
                         <div>
-                          <h4 className="text-sm font-bold text-foreground">Team leader contact</h4>
-                          <p className="mt-0.5 text-xs text-muted">Only the leader’s details are shared with the team.</p>
+                          <h4 className="text-sm font-bold text-foreground flex items-center gap-1.5">
+                            👑 Team Leader Contact
+                          </h4>
+                          <p className="text-xs text-muted mt-0.5">
+                            Leader: <strong className="text-primary font-bold">{data.team.leaderContact.name}</strong>
+                          </p>
                         </div>
-                        <div className="flex flex-col gap-1 text-xs sm:text-right">
-                          <a className="font-semibold text-primary hover:underline" href={`mailto:${data.team.leaderContact.email}`}>{data.team.leaderContact.email || data.team.leaderContact.name}</a>
-                          {data.team.leaderContact.whatsapp && <a className="text-muted hover:text-foreground" href={`https://wa.me/${data.team.leaderContact.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noreferrer">WhatsApp: {data.team.leaderContact.whatsapp}</a>}
+
+                        <div className="relative group">
+                          <button
+                            type="button"
+                            className="rounded-xl bg-primary hover:bg-primary-hover px-4 py-2 text-xs font-bold text-white shadow-lg shadow-primary/20 transition-all flex items-center gap-1.5 cursor-pointer"
+                          >
+                            📞 Contact Team Leader
+                          </button>
+
+                          {/* Hover / Click Contact Details Card */}
+                          <div className="absolute right-0 bottom-full mb-2 w-72 p-4 bg-card border border-primary/40 rounded-2xl shadow-2xl space-y-3 hidden group-hover:block group-focus-within:block z-50 animate-in fade-in zoom-in-95 duration-150">
+                            <div className="flex justify-between items-center border-b border-card-border pb-1.5">
+                              <span className="text-xs font-extrabold text-foreground">
+                                📞 Leader Direct Channels
+                              </span>
+                              <span className="text-[9px] bg-primary/20 text-primary font-bold px-2 py-0.5 rounded-full">
+                                Leader Only
+                              </span>
+                            </div>
+
+                            {/* Email Row */}
+                            <div className="space-y-1">
+                              <span className="text-[10px] text-muted font-bold uppercase tracking-wider block">Email Address:</span>
+                              <div className="flex items-center justify-between gap-2 p-2 bg-background/60 rounded-lg border border-card-border">
+                                <a
+                                  href={`mailto:${data.team.leaderContact.email}`}
+                                  className="text-xs font-semibold text-primary hover:underline truncate"
+                                >
+                                  ✉️ {data.team.leaderContact.email || 'leader@glbajaj.org'}
+                                </a>
+                                <button
+                                  type="button"
+                                  onClick={() => navigator.clipboard.writeText(data.team.leaderContact.email || '')}
+                                  className="text-[10px] font-bold bg-primary/10 hover:bg-primary/20 text-primary px-2 py-1 rounded transition-colors"
+                                >
+                                  Copy
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Phone / WhatsApp Row */}
+                            <div className="space-y-1">
+                              <span className="text-[10px] text-muted font-bold uppercase tracking-wider block">Phone / WhatsApp:</span>
+                              <div className="flex items-center justify-between gap-2 p-2 bg-background/60 rounded-lg border border-card-border">
+                                <div className="flex gap-2">
+                                  <a
+                                    href={`tel:${data.team.leaderContact.whatsapp || '+91 9876543210'}`}
+                                    className="text-xs font-semibold text-green-400 hover:underline"
+                                  >
+                                    📱 {data.team.leaderContact.whatsapp || '+91 9876543210'}
+                                  </a>
+                                  {data.team.leaderContact.whatsapp && (
+                                    <a
+                                      href={`https://wa.me/${data.team.leaderContact.whatsapp.replace(/\D/g, '')}`}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="text-xs font-bold text-teal-400 hover:underline"
+                                    >
+                                      💬 WhatsApp
+                                    </a>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     )}

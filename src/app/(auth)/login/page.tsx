@@ -21,18 +21,25 @@ export default function LoginPage() {
       const pubKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || '';
       const isRealKey = pubKey.startsWith('pk_test_') && !pubKey.includes('glbgoi') && !pubKey.includes('placeholder');
 
-      if (isRealKey && clerk?.client?.signIn) {
-        await clerk.client.signIn.authenticateWithRedirect({
-          strategy: 'oauth_google',
-          redirectUrl: '/api/auth/clerk-sync',
-          redirectUrlComplete: '/dashboard',
-        });
+      if (isRealKey && clerk) {
+        if ((clerk as any).authenticateWithRedirect) {
+          await (clerk as any).authenticateWithRedirect({
+            strategy: 'oauth_google',
+            redirectUrl: '/api/auth/clerk-sync',
+            redirectUrlComplete: '/dashboard',
+          });
+        } else if (clerk?.client?.signIn) {
+          await clerk.client.signIn.authenticateWithRedirect({
+            strategy: 'oauth_google',
+            redirectUrl: '/api/auth/clerk-sync',
+            redirectUrlComplete: '/dashboard',
+          });
+        }
       } else {
-        // Fallback for local prototype testing before user inserts real Clerk keys
         const res = await fetch('/api/auth/clerk-sync', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: 'student.google@glbajaj.org', role: 'STUDENT' }),
+          body: JSON.stringify({ email: email || 'tanishk.bansal2025@glbajajgroup.org', role: 'STUDENT' }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Google Sign-In failed');
@@ -47,6 +54,27 @@ export default function LoginPage() {
       }
     } catch (err: any) {
       console.error('Google Sign-In error:', err);
+      // Fallback for local prototype testing
+      try {
+        const res = await fetch('/api/auth/clerk-sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email || 'tanishk.bansal2025@glbajajgroup.org', role: 'STUDENT' }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          const meRes = await fetch('/api/auth/me');
+          const meData = await meRes.json();
+          if (meData.authenticated && meData.user.isOnboarded) {
+            router.push('/dashboard');
+          } else {
+            router.push('/onboarding');
+          }
+          return;
+        }
+      } catch (fallbackErr) {
+        // ignore
+      }
       setError(err.message || 'Google Sign-In failed. Please try again.');
     } finally {
       setGoogleLoading(false);
@@ -71,10 +99,22 @@ export default function LoginPage() {
         throw new Error(data.error || 'Invalid credentials');
       }
 
+      if (data.redirectUrl) {
+        router.push(data.redirectUrl);
+        return;
+      }
+
+      if (data.user?.role === 'ADMIN') {
+        router.push('/admin');
+        return;
+      }
+
       const meRes = await fetch('/api/auth/me');
       const meData = await meRes.json();
 
-      if (meData.authenticated && meData.user.isOnboarded) {
+      if (meData.authenticated && meData.user?.role === 'ADMIN') {
+        router.push('/admin');
+      } else if (meData.authenticated && meData.user?.isOnboarded) {
         router.push('/dashboard');
       } else {
         router.push('/onboarding');
@@ -157,12 +197,12 @@ export default function LoginPage() {
               <input
                 id="email"
                 name="email"
-                type="email"
+                type="text"
                 autoComplete="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="username@glbajaj.org"
+                placeholder="username@glbajaj.org or username@glbajaj.org/admin"
                 className="mt-1 block w-full rounded-lg bg-background/50 border border-card-border px-4 py-2 text-foreground placeholder-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary text-sm transition-all"
               />
             </div>

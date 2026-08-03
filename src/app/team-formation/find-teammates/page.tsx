@@ -276,21 +276,36 @@ export default function FindTeammatesPage() {
 
                 </div>
 
-                <div className="mt-6 flex items-center justify-between gap-4 border-t border-card-border pt-4">
-                  <div className="flex gap-2">
+                <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-card-border pt-4">
+                  <div className="flex flex-wrap gap-1.5">
                     {student.githubUrl && (
-                      <a href={student.githubUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-muted hover:text-foreground">
-                        GitHub
+                      <a
+                        href={student.githubUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[11px] font-bold text-foreground bg-background/60 border border-card-border hover:border-primary/50 px-2 py-1 rounded-md transition-all flex items-center gap-1"
+                      >
+                        🐙 GitHub ↗
                       </a>
                     )}
                     {student.linkedinUrl && (
-                      <a href={student.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-muted hover:text-foreground">
-                        LinkedIn
+                      <a
+                        href={student.linkedinUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[11px] font-bold text-cyan-400 bg-cyan-950/20 border border-cyan-800/30 hover:border-cyan-400/50 px-2 py-1 rounded-md transition-all flex items-center gap-1"
+                      >
+                        💼 LinkedIn ↗
                       </a>
                     )}
                     {student.resumeUrl && (
-                      <a href={student.resumeUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-muted hover:text-foreground">
-                        Resume
+                      <a
+                        href={student.resumeUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[11px] font-bold text-pink-400 bg-pink-950/20 border border-pink-800/30 hover:border-pink-400/50 px-2 py-1 rounded-md transition-all flex items-center gap-1"
+                      >
+                        📄 Resume ↗
                       </a>
                     )}
                   </div>

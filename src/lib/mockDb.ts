@@ -11,39 +11,166 @@ function loadDb() {
       mentorProfiles: [] as any[],
       tracks: [
         {
-          id: 'track-1',
-          name: 'Smart Health Monitoring System',
-          problemStatementCode: 'SIH1299',
-          description: 'Develop an AI-powered system that tracks patients vitals in real-time, predicts health anomalies, and alerts medical professionals automatically.',
-          category: 'Software',
+          id: 'sih-theme-1',
+          problemStatementCode: 'PS-MEDTECH',
+          name: 'MedTech / BioTech / HealthTech',
+          organization: 'Ministry of Health and Family Welfare / ICMR',
+          category: 'Healthcare & MedTech',
+          description: 'Cutting-edge technology in these sectors continues to be in demand. Recent shifts in healthcare trends, growing populations also present an array of opportunities for innovation.',
+          sihUrl: 'https://sih.gov.in/',
         },
         {
-          id: 'track-2',
-          name: 'Automated Crop Disease Detection',
-          problemStatementCode: 'SIH1300',
-          description: 'A mobile/web platform utilizing computer vision models to identify crop diseases from leaf images, providing remediation methods and weather risk assessments.',
-          category: 'Software',
+          id: 'sih-theme-2',
+          problemStatementCode: 'PS-AGRITECH',
+          name: 'Agriculture, FoodTech & Rural Development',
+          organization: 'Ministry of Agriculture & Farmers Welfare',
+          category: 'Agriculture & Rural Development',
+          description: 'Developing solutions, keeping in mind the need to enhance the primary sector of India - Agriculture and to manage and process our agriculture produce.',
+          sihUrl: 'https://sih.gov.in/',
         },
         {
-          id: 'track-3',
-          name: 'AI-based Traffic Management System',
-          problemStatementCode: 'SIH1301',
-          description: 'An intelligent system that leverages CCTV feeds to analyze traffic density at intersections and dynamically adjust signal timings to minimize congestion.',
-          category: 'Software',
+          id: 'sih-theme-3',
+          problemStatementCode: 'PS-VEHICLES',
+          name: 'Smart Vehicles',
+          organization: 'Ministry of Road Transport and Highways',
+          category: 'Smart Mobility',
+          description: 'Creating intelligent devices to improve commutation sector, emergency traffic corridors, and vehicular safety.',
+          sihUrl: 'https://sih.gov.in/',
         },
         {
-          id: 'track-4',
-          name: 'IoT Smart Electric Metering Grid',
-          problemStatementCode: 'SIH1302',
-          description: 'A hardware-software hybrid framework for real-time monitoring of electricity consumption, detection of line faults, and prevention of power theft.',
-          category: 'Hardware',
+          id: 'sih-theme-4',
+          problemStatementCode: 'PS-LOGISTICS',
+          name: 'Transportation & Logistics',
+          organization: 'Ministry of Ports, Shipping and Waterways',
+          category: 'Logistics & Infrastructure',
+          description: 'Submit your ideas to address the growing pressures on the city’s resources, transport networks, and logistic infrastructure.',
+          sihUrl: 'https://sih.gov.in/',
         },
         {
-          id: 'track-5',
-          name: 'Security Threat Assessment Portal',
-          problemStatementCode: 'SIH1303',
-          description: 'A cyber threat hunting tool that monitors log files, calculates risk factor metrics, and provides defensive playbook recommendations.',
-          category: 'Software',
+          id: 'sih-theme-5',
+          problemStatementCode: 'PS-ROBOTICS',
+          name: 'Robotics and Drones',
+          organization: 'National Disaster Management Authority (NDMA)',
+          category: 'Robotics & Hardware',
+          description: 'There is a need to design drones and robots that can solve some of the pressing challenges of India such as handling medical emergencies, search and rescue operations, etc.',
+          sihUrl: 'https://sih.gov.in/',
+        },
+        {
+          id: 'sih-theme-6',
+          problemStatementCode: 'PS-CLEANTECH',
+          name: 'Clean & Green Technology',
+          organization: 'Ministry of Environment, Forest and Climate Change',
+          category: 'Environment & Sustainability',
+          description: 'Solutions could be in the form of waste segregation, disposal, and improve sanitization system.',
+          sihUrl: 'https://sih.gov.in/',
+        },
+        {
+          id: 'sih-theme-7',
+          problemStatementCode: 'PS-TOURISM',
+          name: 'Tourism',
+          organization: 'Ministry of Tourism',
+          category: 'Culture & Hospitality',
+          description: 'A solution/idea that can boost the current situation of the tourism industries including hotels, travel and others.',
+          sihUrl: 'https://sih.gov.in/',
+        },
+        {
+          id: 'sih-theme-8',
+          problemStatementCode: 'PS-RENEWABLE',
+          name: 'Renewable / Sustainable Energy',
+          organization: 'Ministry of New and Renewable Energy',
+          category: 'Energy & Power',
+          description: 'Innovative ideas that help manage and generate renewable /sustainable sources more efficiently.',
+          sihUrl: 'https://sih.gov.in/',
+        },
+        {
+          id: 'sih-theme-9',
+          problemStatementCode: 'PS-CYBERSECURITY',
+          name: 'Blockchain & Cybersecurity',
+          organization: 'Ministry of Electronics & IT (MeitY)',
+          category: 'Cybersecurity & FinTech',
+          description: 'Provide ideas in a decentralized and distributed ledger technology used to store digital information that powers cryptocurrencies and NFTs and can radically change multiple sectors.',
+          sihUrl: 'https://sih.gov.in/',
+        },
+        {
+          id: 'sih-theme-10',
+          problemStatementCode: 'PS-FITNESS',
+          name: 'Fitness & Sports',
+          organization: 'Ministry of Youth Affairs and Sports',
+          category: 'Sports & Well-being',
+          description: 'Ideas that can boost fitness activities and assist in keeping fit.',
+          sihUrl: 'https://sih.gov.in/',
+        },
+        {
+          id: 'sih-theme-11',
+          problemStatementCode: 'PS-SPACETECH',
+          name: 'Space Technology',
+          organization: 'Indian Space Research Organisation (ISRO)',
+          category: 'Deep Tech & Aerospace',
+          description: 'For use in travel or activities beyond Earth’s atmosphere, for purposes such as spaceflight or space exploration.',
+          sihUrl: 'https://sih.gov.in/',
+        },
+        {
+          id: 'sih-theme-12',
+          problemStatementCode: 'PS-HERITAGE',
+          name: 'Heritage & Culture',
+          organization: 'Ministry of Culture',
+          category: 'Culture & Preservation',
+          description: 'Ideas that showcase the rich cultural heritage and traditions of India.',
+          sihUrl: 'https://sih.gov.in/',
+        },
+        {
+          id: 'sih-theme-13',
+          problemStatementCode: 'PS-EDUCATION',
+          name: 'Smart Education',
+          organization: 'Ministry of Education / AICTE',
+          category: 'EdTech & Learning',
+          description: 'Smart education, a concept that describes learning in digital age. It enables learners to learn more effectively, efficiently, flexibly and comfortably.',
+          sihUrl: 'https://sih.gov.in/',
+        },
+        {
+          id: 'sih-theme-14',
+          problemStatementCode: 'PS-DISASTER',
+          name: 'Disaster Management',
+          organization: 'Ministry of Home Affairs / NDMA',
+          category: 'Safety & Resilience',
+          description: 'Disaster management includes ideas related to risk mitigation, Planning and management before, after or during a disaster.',
+          sihUrl: 'https://sih.gov.in/',
+        },
+        {
+          id: 'sih-theme-15',
+          problemStatementCode: 'PS-GAMING',
+          name: 'Games & Toys',
+          organization: 'Ministry of Information and Broadcasting',
+          category: 'Gaming & Culture',
+          description: 'Challenge your creative mind to conceptualize and develop unique toys and games based on our civilization, history, and culture etc.',
+          sihUrl: 'https://sih.gov.in/',
+        },
+        {
+          id: 'sih-theme-16',
+          problemStatementCode: 'PS-MISCELLANEOUS',
+          name: 'Miscellaneous',
+          organization: 'Cross-Ministry / Open Innovation',
+          category: 'Open Category',
+          description: 'Technology ideas in tertiary sectors like Hospitality, Entertainment and Retail.',
+          sihUrl: 'https://sih.gov.in/',
+        },
+        {
+          id: 'sih-theme-17',
+          problemStatementCode: 'PS-FINTECH',
+          name: 'FinTech',
+          organization: 'Ministry of Finance / RBI',
+          category: 'Finance & Banking',
+          description: 'Challenges related to the financial services.',
+          sihUrl: 'https://sih.gov.in/',
+        },
+        {
+          id: 'sih-theme-18',
+          problemStatementCode: 'PS-AUTOMATION',
+          name: 'Smart Automation',
+          organization: 'Ministry of Heavy Industries / MeitY',
+          category: 'AI & Automation',
+          description: 'Ideas focused on the intelligent use of resources for transforming and advancements of technology with combining the artificial intelligence to explore more various sources and get valuable insights.',
+          sihUrl: 'https://sih.gov.in/',
         },
       ] as any[],
       mentorRegistrationKeys: [
@@ -81,6 +208,94 @@ function saveDb(data: any) {
   fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
 }
 
+// Admin Email Access Management
+export function getAdminEmails(): string[] {
+  const db = loadDb();
+  if (!db.adminEmails || !Array.isArray(db.adminEmails)) {
+    db.adminEmails = ['tanishk.bansal2025@glbajajgroup.org'];
+    saveDb(db);
+  }
+  return db.adminEmails;
+}
+
+export function addAdminEmail(email: string): string[] {
+  const db = loadDb();
+  if (!db.adminEmails || !Array.isArray(db.adminEmails)) {
+    db.adminEmails = ['tanishk.bansal2025@glbajajgroup.org'];
+  }
+  const clean = email.toLowerCase().trim();
+  if (clean && !db.adminEmails.map((e: string) => e.toLowerCase()).includes(clean)) {
+    db.adminEmails.push(clean);
+    const user = db.users.find((u: any) => u.email.toLowerCase() === clean);
+    if (user) {
+      user.role = 'ADMIN';
+    }
+    saveDb(db);
+  }
+  return db.adminEmails;
+}
+
+export function removeAdminEmail(email: string): string[] {
+  const db = loadDb();
+  if (!db.adminEmails) return [];
+  const clean = email.toLowerCase().trim();
+  if (clean === 'tanishk.bansal2025@glbajajgroup.org') {
+    return db.adminEmails;
+  }
+  db.adminEmails = db.adminEmails.filter((e: string) => e.toLowerCase() !== clean);
+  const user = db.users.find((u: any) => u.email.toLowerCase() === clean);
+  if (user && user.role === 'ADMIN') {
+    user.role = 'STUDENT';
+  }
+  saveDb(db);
+  return db.adminEmails;
+}
+
+export function isAuthorizedAdminEmail(email: string): boolean {
+  const clean = email.replace(/\/admin$/i, '').toLowerCase().trim();
+  const list = getAdminEmails();
+  return list.map((e: string) => e.toLowerCase()).includes(clean) || clean === 'tanishk.bansal2025@glbajajgroup.org';
+}
+
+// User Ban & Access Revocation Management
+export function getBannedEmails(): string[] {
+  const db = loadDb();
+  if (!db.bannedEmails || !Array.isArray(db.bannedEmails)) {
+    db.bannedEmails = [];
+    saveDb(db);
+  }
+  return db.bannedEmails;
+}
+
+export function banUserEmail(email: string): string[] {
+  const db = loadDb();
+  if (!db.bannedEmails || !Array.isArray(db.bannedEmails)) {
+    db.bannedEmails = [];
+  }
+  const clean = email.toLowerCase().trim();
+  if (clean && !db.bannedEmails.includes(clean)) {
+    db.bannedEmails.push(clean);
+    saveDb(db);
+  }
+  return db.bannedEmails;
+}
+
+export function unbanUserEmail(email: string): string[] {
+  const db = loadDb();
+  if (!db.bannedEmails) return [];
+  const clean = email.toLowerCase().trim();
+  db.bannedEmails = db.bannedEmails.filter((e: string) => e.toLowerCase() !== clean);
+  saveDb(db);
+  return db.bannedEmails;
+}
+
+export function isUserBanned(email: string): boolean {
+  if (!email) return false;
+  const clean = email.toLowerCase().trim();
+  const list = getBannedEmails();
+  return list.includes(clean);
+}
+
 // Generate random UUID
 function uuid() {
   return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
@@ -104,6 +319,18 @@ export const mockPrisma = {
         studentProfile: studentProfile || null,
         mentorProfile: mentorProfile || null,
       };
+    },
+    findMany: async () => {
+      const db = loadDb();
+      return db.users.map((u: any) => {
+        const studentProfile = db.studentProfiles.find((sp: any) => sp.userId === u.id);
+        const mentorProfile = db.mentorProfiles.find((mp: any) => mp.userId === u.id);
+        return {
+          ...u,
+          studentProfile: studentProfile || null,
+          mentorProfile: mentorProfile || null,
+        };
+      });
     },
     create: async (args: any) => {
       const db = loadDb();
@@ -224,6 +451,21 @@ export const mockPrisma = {
           user: user || null,
         };
       });
+    },
+    updateMany: async (args: any) => {
+      const db = loadDb();
+      const where = args.where || {};
+      let count = 0;
+      db.studentProfiles = db.studentProfiles.map((sp: any) => {
+        if (where.teamId && sp.teamId !== where.teamId) return sp;
+        count++;
+        return {
+          ...sp,
+          ...args.data,
+        };
+      });
+      saveDb(db);
+      return { count };
     },
   },
 

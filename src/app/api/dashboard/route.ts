@@ -61,12 +61,19 @@ export async function GET() {
           email: student.user.email,
           branch: student.branch,
           year: student.year,
+          gender: (student as any).gender || null,
+          rollNo: (student as any).rollNo || null,
+          section: (student as any).section || null,
           skills: student.skills,
           languages: student.languages,
           softSkills: student.softSkills,
           githubUrl: student.githubUrl,
           linkedinUrl: student.linkedinUrl,
           resumeUrl: student.resumeUrl,
+          avatarUrl: student.avatarUrl,
+          trackInterest: Array.isArray((student as any).trackInterest)
+            ? (student as any).trackInterest
+            : ((student as any).trackInterest?.map((t: any) => t.id) || []),
         },
         team: student.team
           ? (() => {

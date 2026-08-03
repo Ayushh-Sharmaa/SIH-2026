@@ -74,9 +74,18 @@ export default function Navbar() {
 
           <div className="flex items-center space-x-4">
             {user && (
-              <div className="hidden sm:flex flex-col text-right">
-                <span className="text-sm font-bold text-foreground">{user.name}</span>
-                <span className="text-[10px] text-muted capitalize">{user.role.toLowerCase()}</span>
+              <div className="hidden sm:flex items-center gap-3">
+                <div className="flex flex-col text-right">
+                  <span className="text-sm font-bold text-foreground">{user.name}</span>
+                  <span className="text-[10px] text-muted capitalize">{user.role.toLowerCase()}</span>
+                </div>
+                <Link
+                  href="/onboarding?edit=true"
+                  className="rounded-lg bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-semibold text-primary hover:bg-primary/20 transition-all"
+                  title="Edit Profile"
+                >
+                  ✏️ Edit
+                </Link>
               </div>
             )}
             <button

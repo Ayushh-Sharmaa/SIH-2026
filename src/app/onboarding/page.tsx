@@ -3,22 +3,29 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import { animate } from 'animejs';
 
 interface Track {
   id: string;
   name: string;
   problemStatementCode: string;
+  organization?: string;
+  category?: string;
+  description?: string;
+  sihUrl?: string;
+  youtubeUrl?: string;
 }
 
-// Categorized Technical Skills
-const SKILL_CATEGORIES = {
-  Frontend: ['React', 'HTML', 'CSS', 'JavaScript', 'Next.js', 'Tailwind', 'Vue', 'Angular', 'TypeScript'],
-  Backend: ['Node.js', 'Express', 'Python', 'Django', 'Go', 'Java', 'Spring Boot', 'PostgreSQL', 'MongoDB', 'Docker'],
-  'UI/UX': ['Figma', 'Adobe XD', 'Canva', 'Prototyping', 'Wireframing', 'User Research'],
-  Others: ['Git', 'Machine Learning', 'OpenCV', 'TensorFlow', 'PyTorch', 'REST APIs', 'Cloud Computing', 'SQL'],
-};
+// Flat pool of standard technical and engineering skills
+const STANDARD_SKILL_POOL = [
+  'React', 'Node.js', 'Python', 'JavaScript', 'TypeScript', 'Next.js', 'HTML', 'CSS',
+  'Tailwind', 'Vue', 'Angular', 'Express', 'Django', 'Go', 'Java', 'Spring Boot',
+  'PostgreSQL', 'MongoDB', 'Docker', 'Figma', 'Adobe XD', 'Canva', 'Prototyping',
+  'Wireframing', 'User Research', 'Git', 'Machine Learning', 'OpenCV', 'TensorFlow',
+  'PyTorch', 'REST APIs', 'Cloud Computing', 'SQL', 'Flutter', 'React Native', 'AWS',
+  'Kubernetes', 'Cybersecurity', 'C++', 'C#', 'Rust'
+];
 
-// Skill recommendations dictionary
 const SKILL_RECOMMENDATIONS: { [key: string]: string[] } = {
   react: ['Tailwind', 'Next.js', 'TypeScript', 'JavaScript'],
   html: ['CSS', 'JavaScript', 'Tailwind'],
@@ -35,6 +42,71 @@ const OFFICIAL_LANGUAGES = [
   'Sanskrit', 'Punjabi', 'Tamil', 'Telugu', 'Kannada', 'Bengali', 'Malayalam', 'Gujarati', 'Marathi', 'Urdu', 'Assamese', 'Kashmiri', 'Konkani', 'Nepali', 'Odia'
 ];
 
+// Helper to classify skill into category and return distinct vibrant theme styling
+const getSkillCategoryStyle = (skill: string) => {
+  const s = skill.toLowerCase();
+  if (s.includes('react') || s.includes('html') || s.includes('css') || s.includes('tailwind') || s.includes('vue') || s.includes('angular') || s.includes('next') || s.includes('frontend')) {
+    return {
+      category: 'Frontend Web',
+      color: '#38bdf8',
+      activeBg: 'bg-cyan-500/20 border-cyan-400 text-cyan-200 shadow-[0_0_12px_rgba(56,189,248,0.35)]',
+      inactiveBg: 'bg-card/80 border-card-border text-muted hover:border-cyan-500/40 hover:text-cyan-200',
+    };
+  }
+  if (s.includes('node') || s.includes('express') || s.includes('python') || s.includes('django') || s.includes('go') || s.includes('java') || s.includes('spring') || s.includes('postgres') || s.includes('mongo') || s.includes('sql') || s.includes('backend')) {
+    return {
+      category: 'Backend & DB',
+      color: '#34d399',
+      activeBg: 'bg-emerald-500/20 border-emerald-400 text-emerald-200 shadow-[0_0_12px_rgba(52,211,153,0.35)]',
+      inactiveBg: 'bg-card/80 border-card-border text-muted hover:border-emerald-500/40 hover:text-emerald-200',
+    };
+  }
+  if (s.includes('machine') || s.includes('learning') || s.includes('opencv') || s.includes('tensor') || s.includes('pytorch') || s.includes('docker') || s.includes('cloud') || s.includes('aws') || s.includes('kubernetes') || s.includes('git') || s.includes('api') || s.includes('cyber') || s.includes('rust') || s.includes('c++') || s.includes('c#')) {
+    return {
+      category: 'AI & Cloud & Tools',
+      color: '#c084fc',
+      activeBg: 'bg-purple-500/20 border-purple-400 text-purple-200 shadow-[0_0_12px_rgba(192,132,252,0.35)]',
+      inactiveBg: 'bg-card/80 border-card-border text-muted hover:border-purple-500/40 hover:text-purple-200',
+    };
+  }
+  if (s.includes('figma') || s.includes('adobe') || s.includes('canva') || s.includes('proto') || s.includes('wire') || s.includes('research') || s.includes('design') || s.includes('ux') || s.includes('ui') || s.includes('video') || s.includes('ppt')) {
+    return {
+      category: 'Design & Prototyping',
+      color: '#f472b6',
+      activeBg: 'bg-pink-500/20 border-pink-400 text-pink-200 shadow-[0_0_12px_rgba(244,114,182,0.35)]',
+      inactiveBg: 'bg-card/80 border-card-border text-muted hover:border-pink-500/40 hover:text-pink-200',
+    };
+  }
+  return {
+    category: 'General & Soft Skills',
+    color: '#818cf8',
+    activeBg: 'bg-indigo-500/20 border-indigo-400 text-indigo-200 shadow-[0_0_12px_rgba(129,140,248,0.35)]',
+    inactiveBg: 'bg-card/80 border-card-border text-muted hover:border-indigo-500/40 hover:text-indigo-200',
+  };
+};
+
+const classifySkillDomain = (name: string): 'Engineering' | 'Design' | 'Communication' => {
+  const n = name.toLowerCase();
+  if (
+    n.includes('figma') || n.includes('design') || n.includes('ux') ||
+    n.includes('ui') || n.includes('adobe') || n.includes('canva') ||
+    n.includes('wireframe') || n.includes('prototype') || n.includes('editing') ||
+    n.includes('ppt')
+  ) {
+    return 'Design';
+  }
+  if (
+    n.includes('speaking') || n.includes('writing') || n.includes('management') ||
+    n.includes('english') || n.includes('hindi') || n.includes('sanskrit') ||
+    n.includes('punjabi') || n.includes('tamil') || n.includes('telugu') ||
+    n.includes('bengali') || n.includes('marathi') || n.includes('gujarati') ||
+    n.includes('kannada') || n.includes('malayalam')
+  ) {
+    return 'Communication';
+  }
+  return 'Engineering';
+};
+
 export default function OnboardingPage() {
   const router = useRouter();
   const [session, setSession] = useState<any>(null);
@@ -44,24 +116,33 @@ export default function OnboardingPage() {
   const [step, setStep] = useState(1);
   const [error, setError] = useState('');
 
-  // Student form state - all fields initialized empty, requiring user input
+  // Student form state - complete academic & personal details
   const [studentForm, setStudentForm] = useState({
     name: '',
     year: '',
     branch: '',
+    gender: '',
+    rollNo: '',
+    section: '',
     githubUrl: '',
     linkedinUrl: '',
     resumeUrl: '',
-    avatarUrl: '', // Mandatory profile photo upload
+    avatarUrl: '', // Profile photo upload
     trackInterest: [] as string[],
   });
 
-  // Skills state
+  // Selected Technical Skills
   const [lockedSkills, setLockedSkills] = useState<string[]>([]);
   const [customSkillsText, setCustomSkillsText] = useState('');
   const [skillSearch, setSkillSearch] = useState('');
 
-  // Detailed Language & Fluency State
+  // Hover state for domain breakdown (defaults to Engineering to maintain fixed height)
+  const [hoveredDomain, setHoveredDomain] = useState<'Engineering' | 'Design' | 'Communication'>('Engineering');
+
+  // Active track preview for hover summary in Step 3
+  const [hoveredTrack, setHoveredTrack] = useState<Track | null>(null);
+
+  // Language & Fluency State
   const [languages, setLanguages] = useState<{ [key: string]: 'Basic' | 'Moderate' | 'Fluent' | null }>({
     English: null,
     Hindi: null,
@@ -101,14 +182,17 @@ export default function OnboardingPage() {
   });
 
   const softSkillsOptions = ['PPT Making', 'Public Speaking/Presenting', 'Technical Writing', 'UI/UX Design', 'Video Editing', 'Management'];
-  
-  // Strictly only the 3 allowed academic branches
   const branchOptions = ['CSE', 'CSE (AI/ML)', 'CS'];
   const yearOptions = ['1st Year', '2nd Year', '3rd Year', '4th Year'];
+  const genderOptions = ['Male', 'Female', 'Other', 'Prefer not to say'];
+  const sectionOptions = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'];
 
   useEffect(() => {
     async function initOnboarding() {
       try {
+        const searchParams = new URLSearchParams(window.location.search);
+        const isEditMode = searchParams.get('edit') === 'true';
+
         const meRes = await fetch('/api/auth/me');
         const meData = await meRes.json();
 
@@ -119,18 +203,57 @@ export default function OnboardingPage() {
 
         setSession(meData.user);
 
-        if (meData.user.role === 'STUDENT') {
-          // Pre-fill name only if it's set and not default fallback 'User'
-          if (meData.user.name && meData.user.name !== 'User') {
-            setStudentForm((prev) => ({ ...prev, name: meData.user.name }));
-          }
-        } else {
-          if (meData.user.name && meData.user.name !== 'User') {
-            setMentorForm((prev) => ({ ...prev, name: meData.user.name }));
+        // Pre-fill profile data from dashboard API
+        const dashRes = await fetch('/api/dashboard');
+        if (dashRes.ok) {
+          const dashData = await dashRes.json();
+          const prof = dashData.profile;
+          if (prof) {
+            if (meData.user.role === 'STUDENT') {
+              setStudentForm({
+                name: prof.name || meData.user.name || '',
+                year: prof.year || '',
+                branch: prof.branch || '',
+                gender: prof.gender || '',
+                rollNo: prof.rollNo || '',
+                section: prof.section || '',
+                githubUrl: prof.githubUrl || '',
+                linkedinUrl: prof.linkedinUrl || '',
+                resumeUrl: prof.resumeUrl || '',
+                avatarUrl: prof.avatarUrl || '', // Preserves uploaded avatar URL
+                trackInterest: prof.trackInterest || [],
+              });
+              if (Array.isArray(prof.skills) && prof.skills.length > 0) {
+                setLockedSkills(prof.skills);
+              }
+              if (Array.isArray(prof.softSkills) && prof.softSkills.length > 0) {
+                setSelectedSoftSkills(prof.softSkills);
+              }
+              if (Array.isArray(prof.languages) && prof.languages.length > 0) {
+                const langMap: { [key: string]: 'Basic' | 'Moderate' | 'Fluent' | null } = { English: null, Hindi: null };
+                prof.languages.forEach((item: string) => {
+                  const match = item.match(/^(.+?)\s*\((Basic|Moderate|Fluent)\)$/);
+                  if (match) {
+                    langMap[match[1]] = match[2] as any;
+                  }
+                });
+                setLanguages(langMap);
+              }
+            } else {
+              setMentorForm({
+                name: prof.name || meData.user.name || '',
+                designation: prof.designation || '',
+                organization: prof.organization || 'GL Bajaj Group of Institutions',
+                expertiseInput: Array.isArray(prof.expertise) ? prof.expertise.join(', ') : '',
+                capacity: prof.capacity || 2,
+                bio: prof.bio || '',
+                linkedinUrl: prof.linkedinUrl || '',
+              });
+            }
           }
         }
 
-        if (meData.user.isOnboarded) {
+        if (meData.user.isOnboarded && !isEditMode) {
           router.push('/dashboard');
           return;
         }
@@ -139,6 +262,9 @@ export default function OnboardingPage() {
         const tracksData = await tracksRes.json();
         if (tracksData.success) {
           setTracks(tracksData.tracks);
+          if (tracksData.tracks.length > 0) {
+            setHoveredTrack(tracksData.tracks[0]);
+          }
         }
       } catch (err) {
         console.error('Onboarding init failed:', err);
@@ -150,6 +276,18 @@ export default function OnboardingPage() {
     initOnboarding();
   }, [router]);
 
+  // Anime.js motion trigger whenever selected skills change
+  useEffect(() => {
+    if (typeof window !== 'undefined' && step === 2) {
+      animate('.pie-chart-glow', {
+        scale: [0.98, 1.02, 1],
+        opacity: [0.8, 1],
+        duration: 400,
+        ease: 'outQuad',
+      });
+    }
+  }, [lockedSkills, selectedSoftSkills, languages, step]);
+
   // Strict Validation logic for Student Form
   const validateStudentStep1 = () => {
     if (!studentForm.avatarUrl || !studentForm.avatarUrl.startsWith('data:image/')) {
@@ -160,12 +298,24 @@ export default function OnboardingPage() {
       setError('Name is mandatory. Please enter your full name.');
       return false;
     }
+    if (!studentForm.gender) {
+      setError('Gender is mandatory. Please select your gender.');
+      return false;
+    }
+    if (!studentForm.rollNo.trim()) {
+      setError('University Roll Number is mandatory. Please enter your roll number.');
+      return false;
+    }
     if (!studentForm.year) {
       setError('Year of Study is mandatory. Please select your year of study.');
       return false;
     }
     if (!studentForm.branch) {
       setError('Academic Branch is mandatory. Please select your academic branch.');
+      return false;
+    }
+    if (!studentForm.section) {
+      setError('Section is mandatory. Please select your section.');
       return false;
     }
     setError('');
@@ -212,16 +362,11 @@ export default function OnboardingPage() {
       setError('LinkedIn profile URL is mandatory. Please enter your LinkedIn link.');
       return false;
     }
-    if (!studentForm.resumeUrl.trim()) {
-      setError('Resume link is mandatory. Please enter a link to your resume.');
-      return false;
-    }
 
     setError('');
     return true;
   };
 
-  // Strict Validation logic for Mentor Form
   const validateMentorStep1 = () => {
     if (!mentorForm.name.trim()) {
       setError('Name is mandatory. Please enter your full name.');
@@ -284,6 +429,9 @@ export default function OnboardingPage() {
           name: studentForm.name.trim(),
           year: studentForm.year,
           branch: studentForm.branch,
+          gender: studentForm.gender,
+          rollNo: studentForm.rollNo.trim(),
+          section: studentForm.section,
           skills: finalSkills,
           languages: formattedLanguages,
           softSkills: selectedSoftSkills,
@@ -357,6 +505,27 @@ export default function OnboardingPage() {
     }
   };
 
+  const handleAddCustomSkill = (skillInput?: string) => {
+    const textToAdd = (skillInput || customSkillsText).trim();
+    if (!textToAdd) return;
+    const newItems = textToAdd
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => s !== '');
+
+    const updated = Array.from(new Set([...lockedSkills, ...newItems]));
+    setLockedSkills(updated);
+    setCustomSkillsText('');
+    setSkillSearch('');
+    setError('');
+
+    animate('.custom-add-badge', {
+      scale: [0.5, 1.2, 1],
+      duration: 350,
+      ease: 'outBack',
+    });
+  };
+
   const getRecommendations = () => {
     const recommended = new Set<string>();
     lockedSkills.forEach((s) => {
@@ -369,32 +538,88 @@ export default function OnboardingPage() {
         });
       }
     });
-    return Array.from(recommended).slice(0, 5);
+    return Array.from(recommended).slice(0, 6);
   };
 
-  const getSkillCategoryCounts = () => {
-    const counts = { Frontend: 0, Backend: 0, UIUX: 0, Others: 0 };
-    lockedSkills.forEach((skill) => {
-      if (SKILL_CATEGORIES.Frontend.includes(skill)) counts.Frontend++;
-      else if (SKILL_CATEGORIES.Backend.includes(skill)) counts.Backend++;
-      else if (SKILL_CATEGORIES['UI/UX'].includes(skill)) counts.UIUX++;
-      else counts.Others++;
+  // Comprehensive overall skills balance across ALL selected skills, soft skills, & active languages
+  const getOverallSkillBalance = () => {
+    const activeLangs = Object.entries(languages).filter(([_, lvl]) => lvl !== null).map(([lang]) => lang);
+    const allSelected = [...lockedSkills, ...selectedSoftSkills, ...activeLangs];
+
+    if (allSelected.length === 0) {
+      return {
+        total: 0,
+        engineering: { count: 0, pct: 0 },
+        design: { count: 0, pct: 0 },
+        communication: { count: 0, pct: 0 },
+      };
+    }
+
+    let eng = 0;
+    let des = 0;
+    let comm = 0;
+
+    allSelected.forEach((item) => {
+      const domain = classifySkillDomain(item);
+      if (domain === 'Engineering') eng++;
+      else if (domain === 'Design') des++;
+      else comm++;
     });
-    return counts;
+
+    const total = allSelected.length;
+    const engPct = Math.round((eng / total) * 100);
+    const desPct = Math.round((des / total) * 100);
+    const commPct = Math.round((comm / total) * 100);
+
+    return {
+      total,
+      engineering: { count: eng, pct: engPct },
+      design: { count: des, pct: desPct },
+      communication: { count: comm, pct: commPct },
+    };
   };
 
-  const counts = getSkillCategoryCounts();
-  const totalCounts = counts.Frontend + counts.Backend + counts.UIUX + counts.Others;
+  // Sub-breakdown for hover pop-out on Donut Slices (Frontend vs Backend vs AI vs Soft Skills)
+  const getSubBreakdown = (categoryKey: string) => {
+    const activeLangs = Object.entries(languages).filter(([_, lvl]) => lvl !== null).map(([lang]) => lang);
+    const allSelected = [...lockedSkills, ...selectedSoftSkills, ...activeLangs];
+    if (allSelected.length === 0) return [];
 
-  const chartAngles = (() => {
-    if (totalCounts === 0) return { frontend: 360, backend: 0, uiux: 0, others: 0 };
-    return {
-      frontend: (counts.Frontend / totalCounts) * 360,
-      backend: (counts.Backend / totalCounts) * 360,
-      uiux: (counts.UIUX / totalCounts) * 360,
-      others: (counts.Others / totalCounts) * 360,
-    };
-  })();
+    if (categoryKey === 'Engineering') {
+      const frontend = lockedSkills.filter((s) => getSkillCategoryStyle(s).category === 'Frontend Web');
+      const backend = lockedSkills.filter((s) => getSkillCategoryStyle(s).category === 'Backend & DB');
+      const aiInfra = lockedSkills.filter((s) => getSkillCategoryStyle(s).category === 'AI & Cloud & Tools');
+      const engTotal = frontend.length + backend.length + aiInfra.length || 1;
+
+      return [
+        { name: 'Frontend Web', count: frontend.length, pct: Math.round((frontend.length / engTotal) * 100), color: '#38bdf8' },
+        { name: 'Backend & DB', count: backend.length, pct: Math.round((backend.length / engTotal) * 100), color: '#34d399' },
+        { name: 'AI, Cloud & Tools', count: aiInfra.length, pct: Math.round((aiInfra.length / engTotal) * 100), color: '#c084fc' },
+      ];
+    }
+
+    if (categoryKey === 'Design') {
+      const designSkills = [...lockedSkills, ...selectedSoftSkills].filter((s) => getSkillCategoryStyle(s).category === 'Design & Prototyping');
+      return [
+        { name: 'UI/UX & Prototyping', count: designSkills.length, pct: 100, color: '#f472b6' },
+      ];
+    }
+
+    // Communication & Soft Skills
+    const softs = selectedSoftSkills.filter((s) => getSkillCategoryStyle(s).category === 'General & Soft Skills');
+    const commTotal = softs.length + activeLangs.length || 1;
+
+    return [
+      { name: 'Public Speaking & Mgmt', count: softs.length, pct: Math.round((softs.length / commTotal) * 100), color: '#818cf8' },
+      { name: 'Multilingual Fluency', count: activeLangs.length, pct: Math.round((activeLangs.length / commTotal) * 100), color: '#fbbf24' },
+    ];
+  };
+
+  const overallBalance = getOverallSkillBalance();
+  const availableSkillPool = Array.from(new Set([...STANDARD_SKILL_POOL, ...lockedSkills]));
+  const filteredSkillPool = availableSkillPool.filter((skill) =>
+    skill.toLowerCase().includes(skillSearch.toLowerCase())
+  );
 
   if (loading) {
     return (
@@ -413,13 +638,13 @@ export default function OnboardingPage() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-12 sm:px-6 lg:px-8 relative overflow-hidden">
-      {/* Glow background */}
+      {/* Dynamic ambient glow backgrounds */}
       <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/10 rounded-full filter blur-[120px] pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-[500px] h-[500px] bg-accent/10 rounded-full filter blur-[120px] pointer-events-none" />
 
       <div className="w-full max-w-3xl space-y-8 z-10">
         <div className="text-center">
-          <h1 className="text-3xl font-extrabold tracking-tight text-foreground">
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight bg-gradient-to-r from-primary via-accent to-pink-500 bg-clip-text text-transparent">
             Complete Your Profile
           </h1>
           <p className="mt-2 text-sm text-muted">
@@ -430,7 +655,7 @@ export default function OnboardingPage() {
           </p>
         </div>
 
-        <div className="glass-card rounded-2xl p-8 shadow-2xl border border-card-border relative overflow-hidden">
+        <div className="glass-card rounded-2xl p-6 sm:p-8 shadow-2xl border border-card-border relative overflow-hidden">
           {error && (
             <div className="mb-6 rounded-lg bg-red-950/60 p-4 text-sm font-medium text-red-300 border border-red-800/50 flex items-center gap-2">
               <span className="text-red-400 font-bold">⚠️ Error:</span> {error}
@@ -440,32 +665,35 @@ export default function OnboardingPage() {
           {isStudent ? (
             /* Student Onboarding Form */
             <div className="space-y-6">
-              {/* Step Indicators */}
-              <div className="flex justify-between items-center mb-8 border-b border-card-border pb-4">
-                {[1, 2, 3].map((s) => (
-                  <div key={s} className="flex items-center space-x-2">
-                    <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-colors duration-300 ${
-                        step === s ? 'bg-primary text-white' : step > s ? 'bg-green-600 text-white' : 'bg-card border border-card-border text-muted'
-                      }`}
-                    >
-                      {s}
+              {/* Step Indicators with Kinetic Line */}
+              <div className="relative mb-8">
+                <div className="flex justify-between items-center relative z-10">
+                  {[1, 2, 3].map((s) => (
+                    <div key={s} className="flex items-center space-x-2 bg-card/80 px-3 py-1 rounded-full border border-card-border">
+                      <motion.div
+                        whileHover={{ scale: 1.1 }}
+                        className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-colors duration-300 ${
+                          step === s ? 'bg-primary text-white shadow-[0_0_12px_rgba(99,102,241,0.5)]' : step > s ? 'bg-green-600 text-white' : 'bg-card border border-card-border text-muted'
+                        }`}
+                      >
+                        {s}
+                      </motion.div>
+                      <span className={`text-xs font-semibold ${step === s ? 'text-primary' : 'text-muted'}`}>
+                        {s === 1 ? 'Academic' : s === 2 ? 'Skills & Fluency' : 'Preferences'}
+                      </span>
                     </div>
-                    <span className={`text-xs font-semibold ${step === s ? 'text-primary' : 'text-muted'}`}>
-                      {s === 1 ? 'Academic' : s === 2 ? 'Skills & Fluency' : 'Preferences'}
-                    </span>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
 
               <AnimatePresence mode="wait">
                 {step === 1 && (
                   <motion.div
                     key="step1"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    transition={{ duration: 0.3 }}
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -15 }}
+                    transition={{ duration: 0.25 }}
                     className="space-y-6"
                   >
                     <h3 className="text-lg font-bold text-foreground">Academic Information</h3>
@@ -477,7 +705,7 @@ export default function OnboardingPage() {
                       </label>
 
                       {studentForm.avatarUrl ? (
-                        /* Showcase uploaded photo preview */
+                        /* Showcase uploaded profile photo preview */
                         <div className="p-4 bg-background/40 border border-card-border rounded-2xl flex flex-col sm:flex-row items-center gap-5">
                           <div className="relative w-24 h-24 rounded-2xl overflow-hidden border-2 border-primary shadow-lg bg-card flex-shrink-0">
                             {/* eslint-disable-next-html-element-suppression */}
@@ -489,7 +717,7 @@ export default function OnboardingPage() {
                           </div>
                           <div className="flex-1 space-y-1 text-center sm:text-left">
                             <span className="inline-flex items-center rounded-full bg-green-500/10 px-2.5 py-0.5 text-xs font-semibold text-green-400 border border-green-500/20">
-                              ✓ Photo Uploaded & Showcase Active
+                              ✓ Photo Active & Preserved
                             </span>
                             <p className="text-xs text-foreground font-semibold">Your custom profile photo will be displayed across team search and cards.</p>
                             <div className="pt-2 flex flex-wrap gap-2 justify-center sm:justify-start">
@@ -532,20 +760,55 @@ export default function OnboardingPage() {
                       )}
                     </div>
 
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-foreground">
+                          Full Name <span className="text-red-400">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Enter your full name"
+                          value={studentForm.name}
+                          onChange={(e) => setStudentForm({ ...studentForm, name: e.target.value })}
+                          className="mt-1 block w-full rounded-lg bg-background/50 border border-card-border px-4 py-2 text-foreground text-sm focus:outline-none focus:border-primary transition-all"
+                        />
+                      </div>
+
+                      {/* Gender Selection */}
+                      <div>
+                        <label className="block text-sm font-medium text-foreground">
+                          Gender <span className="text-red-400">*</span>
+                        </label>
+                        <select
+                          value={studentForm.gender}
+                          onChange={(e) => setStudentForm({ ...studentForm, gender: e.target.value })}
+                          className="mt-1 block w-full rounded-lg bg-background/50 border border-card-border px-4 py-2 text-foreground text-sm focus:outline-none focus:border-primary cursor-pointer"
+                        >
+                          <option value="" className="bg-card text-muted">Select Gender *</option>
+                          {genderOptions.map((opt) => (
+                            <option key={opt} value={opt} className="bg-card text-foreground">
+                              {opt}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* University Roll No */}
                     <div>
                       <label className="block text-sm font-medium text-foreground">
-                        Full Name <span className="text-red-400">*</span>
+                        University Roll Number <span className="text-red-400">*</span>
                       </label>
                       <input
                         type="text"
-                        placeholder="Enter your full name"
-                        value={studentForm.name}
-                        onChange={(e) => setStudentForm({ ...studentForm, name: e.target.value })}
-                        className="mt-1 block w-full rounded-lg bg-background/50 border border-card-border px-4 py-2 text-foreground text-sm focus:outline-none focus:border-primary"
+                        placeholder="e.g. 2100970100045"
+                        value={studentForm.rollNo}
+                        onChange={(e) => setStudentForm({ ...studentForm, rollNo: e.target.value })}
+                        className="mt-1 block w-full rounded-lg bg-background/50 border border-card-border px-4 py-2 text-foreground text-sm focus:outline-none focus:border-primary transition-all"
                       />
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-foreground">
                           Year of Study <span className="text-red-400">*</span>
@@ -555,7 +818,7 @@ export default function OnboardingPage() {
                           onChange={(e) => setStudentForm({ ...studentForm, year: e.target.value })}
                           className="mt-1 block w-full rounded-lg bg-background/50 border border-card-border px-4 py-2 text-foreground text-sm focus:outline-none focus:border-primary cursor-pointer"
                         >
-                          <option value="" className="bg-card text-muted">Select Year of Study *</option>
+                          <option value="" className="bg-card text-muted">Select Year *</option>
                           {yearOptions.map((opt) => (
                             <option key={opt} value={opt} className="bg-card text-foreground">
                               {opt}
@@ -572,8 +835,27 @@ export default function OnboardingPage() {
                           onChange={(e) => setStudentForm({ ...studentForm, branch: e.target.value })}
                           className="mt-1 block w-full rounded-lg bg-background/50 border border-card-border px-4 py-2 text-foreground text-sm focus:outline-none focus:border-primary cursor-pointer"
                         >
-                          <option value="" className="bg-card text-muted">Select Academic Branch *</option>
+                          <option value="" className="bg-card text-muted">Select Branch *</option>
                           {branchOptions.map((opt) => (
+                            <option key={opt} value={opt} className="bg-card text-foreground">
+                              {opt}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Section Selection */}
+                      <div>
+                        <label className="block text-sm font-medium text-foreground">
+                          Section <span className="text-red-400">*</span>
+                        </label>
+                        <select
+                          value={studentForm.section}
+                          onChange={(e) => setStudentForm({ ...studentForm, section: e.target.value })}
+                          className="mt-1 block w-full rounded-lg bg-background/50 border border-card-border px-4 py-2 text-foreground text-sm focus:outline-none focus:border-primary cursor-pointer"
+                        >
+                          <option value="" className="bg-card text-muted">Select Section *</option>
+                          {sectionOptions.map((opt) => (
                             <option key={opt} value={opt} className="bg-card text-foreground">
                               {opt}
                             </option>
@@ -583,14 +865,16 @@ export default function OnboardingPage() {
                     </div>
 
                     <div className="pt-4 flex justify-end">
-                      <button
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
                         onClick={() => {
                           if (validateStudentStep1()) setStep(2);
                         }}
-                        className="rounded-lg bg-primary hover:bg-primary-hover px-5 py-2 text-sm font-semibold text-white cursor-pointer transform hover:-translate-y-0.5 active:translate-y-0 transition-all"
+                        className="rounded-lg bg-primary hover:bg-primary-hover px-5 py-2 text-sm font-semibold text-white cursor-pointer shadow-lg shadow-primary/25 transition-all"
                       >
                         Next Step →
-                      </button>
+                      </motion.button>
                     </div>
                   </motion.div>
                 )}
@@ -598,153 +882,322 @@ export default function OnboardingPage() {
                 {step === 2 && (
                   <motion.div
                     key="step2"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    transition={{ duration: 0.3 }}
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -15 }}
+                    transition={{ duration: 0.25 }}
                     className="space-y-6"
                   >
-                    <h3 className="text-lg font-bold text-foreground">Skills & Language Fluency</h3>
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-lg font-bold text-foreground">Skills & Fluency Breakdown</h3>
+                      <span className="text-xs font-semibold text-primary bg-primary/10 border border-primary/20 px-3 py-1 rounded-full">
+                        {lockedSkills.length} Technical Skills Selected
+                      </span>
+                    </div>
 
-                    {/* Technical Skills Categorized Tiles & Search */}
+                    {/* Technical Skills Selection Pool & Real-Time Filter */}
                     <div className="space-y-4">
-                      <div className="flex justify-between items-center">
-                        <label className="block text-sm font-medium text-foreground">
-                          Technical Skills <span className="text-red-400">*</span>
-                        </label>
-                        <span className="text-[10px] text-muted font-semibold">{lockedSkills.length} selected</span>
+                      {/* Search Bar with Live Filter & Instant Add */}
+                      <div className="relative">
+                        <input
+                          type="text"
+                          placeholder="Search or add skills (e.g. React, Python, Flutter, Go)..."
+                          value={skillSearch}
+                          onChange={(e) => setSkillSearch(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              if (skillSearch.trim()) {
+                                handleAddCustomSkill(skillSearch);
+                              }
+                            }
+                          }}
+                          className="w-full rounded-xl bg-background/50 border border-card-border px-4 py-2.5 text-sm text-foreground focus:outline-none focus:border-primary pr-32 transition-all shadow-inner"
+                        />
+                        {skillSearch.trim() && (
+                          <motion.button
+                            type="button"
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => handleAddCustomSkill(skillSearch)}
+                            className="absolute right-2 top-1.5 text-xs font-bold bg-primary hover:bg-primary-hover text-white px-3 py-1.5 rounded-lg transition-all shadow-md cursor-pointer flex items-center gap-1"
+                          >
+                            + Add "{skillSearch.trim()}"
+                          </motion.button>
+                        )}
                       </div>
 
-                      {/* Live search input */}
-                      <input
-                        type="text"
-                        placeholder="Search standard skills (e.g. React, Python)..."
-                        value={skillSearch}
-                        onChange={(e) => setSkillSearch(e.target.value)}
-                        className="w-full rounded-lg bg-background/50 border border-card-border px-4 py-2 text-sm text-foreground focus:outline-none focus:border-primary"
-                      />
+                      {/* Selected Skills Chips Row with Category-Specific Color Themes */}
+                      {lockedSkills.length > 0 && (
+                        <div className="p-3 bg-card/60 border border-card-border rounded-xl space-y-1.5">
+                          <span className="text-[10px] text-muted font-bold uppercase tracking-wider block">
+                            Your Selected Skills ({lockedSkills.length}):
+                          </span>
+                          <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto custom-scroll">
+                            {lockedSkills.map((skill) => {
+                              const style = getSkillCategoryStyle(skill);
+                              return (
+                                <motion.span
+                                  key={skill}
+                                  layout
+                                  initial={{ scale: 0.8, opacity: 0 }}
+                                  animate={{ scale: 1, opacity: 1 }}
+                                  exit={{ scale: 0.8, opacity: 0 }}
+                                  className={`custom-add-badge inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold border ${style.activeBg} cursor-pointer`}
+                                  onClick={() => toggleSkillTile(skill)}
+                                >
+                                  ✓ {skill}
+                                  <span className="hover:text-red-300 font-extrabold text-sm ml-0.5">×</span>
+                                </motion.span>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
 
-                      {/* Grid of categorized tiles */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-56 overflow-y-auto border border-card-border rounded-xl p-3 bg-background/20 custom-scroll">
-                        {Object.entries(SKILL_CATEGORIES).map(([categoryName, skillsList]) => {
-                          const filtered = skillsList.filter((s) => s.toLowerCase().includes(skillSearch.toLowerCase()));
-                          if (filtered.length === 0) return null;
-                          return (
-                            <div key={categoryName} className="space-y-2">
-                              <span className="text-[10px] text-muted font-bold uppercase tracking-wider block">{categoryName}</span>
-                              <div className="flex flex-wrap gap-1.5">
-                                {filtered.map((skill) => {
-                                  const isSelected = lockedSkills.includes(skill);
-                                  return (
-                                    <motion.button
-                                      key={skill}
-                                      type="button"
-                                      onClick={() => toggleSkillTile(skill)}
-                                      whileHover={{ scale: 1.05 }}
-                                      className={`px-2 py-1 text-xs font-semibold rounded-lg border transition-all cursor-pointer ${
-                                        isSelected
-                                          ? 'bg-primary border-primary text-white shadow-[0_0_10px_rgba(99,102,241,0.25)]'
-                                          : 'bg-card border-card-border text-muted hover:border-primary/20 hover:text-foreground'
-                                      }`}
-                                    >
-                                      {skill} {isSelected && '🔒'}
-                                    </motion.button>
-                                  );
-                                })}
-                              </div>
+                      {/* Unified Scrollable Skill Pool with Category Differentiated Styles */}
+                      <div>
+                        <span className="text-xs font-bold text-muted uppercase tracking-wider block mb-2">
+                          Available Skill Pool (Click to select/unselect):
+                        </span>
+                        <div className="flex flex-wrap gap-2 max-h-52 overflow-y-auto border border-card-border rounded-xl p-3.5 bg-background/30 custom-scroll">
+                          {filteredSkillPool.length > 0 ? (
+                            filteredSkillPool.map((skill) => {
+                              const isSelected = lockedSkills.includes(skill);
+                              const style = getSkillCategoryStyle(skill);
+                              return (
+                                <motion.button
+                                  key={skill}
+                                  type="button"
+                                  onClick={() => toggleSkillTile(skill)}
+                                  whileHover={{ scale: 1.06, y: -2 }}
+                                  whileTap={{ scale: 0.95 }}
+                                  className={`px-3 py-1.5 text-xs font-semibold rounded-xl border transition-all cursor-pointer flex items-center gap-1.5 ${
+                                    isSelected ? style.activeBg : style.inactiveBg
+                                  }`}
+                                >
+                                  {isSelected && <span className="text-xs">✓</span>}
+                                  {skill}
+                                </motion.button>
+                              );
+                            })
+                          ) : (
+                            <div className="w-full text-center py-4">
+                              <p className="text-xs text-muted font-medium mb-2">No matching standard skill found for "{skillSearch}"</p>
+                              <button
+                                type="button"
+                                onClick={() => handleAddCustomSkill(skillSearch)}
+                                className="text-xs font-bold bg-primary text-white px-4 py-1.5 rounded-lg shadow cursor-pointer hover:bg-primary-hover transition-all"
+                              >
+                                + Add Custom Skill "{skillSearch}"
+                              </button>
                             </div>
-                          );
-                        })}
+                          )}
+                        </div>
                       </div>
 
                       {/* Recommendations */}
                       {getRecommendations().length > 0 && (
-                        <div className="p-3 bg-primary/5 rounded-xl border border-primary/20 space-y-1.5">
-                          <span className="text-[10px] text-primary font-bold uppercase tracking-wider block">Recommended for you</span>
+                        <div className="p-3 bg-accent/5 rounded-xl border border-accent/20 space-y-1.5">
+                          <span className="text-[10px] text-accent font-bold uppercase tracking-wider block">Recommended for your stack</span>
                           <div className="flex flex-wrap gap-1.5">
                             {getRecommendations().map((rec) => (
-                              <button
+                              <motion.button
                                 key={rec}
                                 type="button"
+                                whileHover={{ scale: 1.05 }}
                                 onClick={() => toggleSkillTile(rec)}
-                                className="px-2 py-0.5 text-[10px] bg-background/50 border border-card-border hover:border-primary/20 rounded-md text-foreground transition-all cursor-pointer"
+                                className="px-2.5 py-1 text-[11px] font-semibold bg-background/50 border border-card-border hover:border-accent/40 rounded-lg text-foreground transition-all cursor-pointer flex items-center gap-1"
                               >
-                                + {rec}
-                              </button>
+                                <span>+</span> {rec}
+                              </motion.button>
                             ))}
                           </div>
                         </div>
                       )}
 
-                      {/* Free-text Custom input */}
+                      {/* Custom Skills Text Input */}
                       <div>
-                        <span className="text-[10px] text-muted font-bold block mb-1">Add Custom Skills (comma separated)</span>
-                        <input
-                          type="text"
-                          placeholder="Or type other custom skills..."
-                          value={customSkillsText}
-                          onChange={(e) => setCustomSkillsText(e.target.value)}
-                          className="w-full rounded-lg bg-background/50 border border-card-border px-4 py-2 text-xs text-foreground focus:outline-none focus:border-primary placeholder-muted"
-                        />
+                        <span className="text-xs font-bold text-muted block mb-1">Type Custom Skills (Press Enter or use commas)</span>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            placeholder="e.g. OpenCV, Solidity, Three.js..."
+                            value={customSkillsText}
+                            onChange={(e) => setCustomSkillsText(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleAddCustomSkill();
+                              }
+                            }}
+                            className="flex-1 rounded-xl bg-background/50 border border-card-border px-4 py-2 text-xs text-foreground focus:outline-none focus:border-primary placeholder-muted"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleAddCustomSkill()}
+                            className="px-4 py-2 text-xs font-bold bg-card border border-card-border hover:bg-card-border/50 text-foreground rounded-xl transition-all cursor-pointer"
+                          >
+                            + Add Skill
+                          </button>
+                        </div>
                       </div>
 
-                      {/* Dynamic Skill Donut/Pie Chart Visualization */}
-                      {lockedSkills.length > 0 && (
-                        <div className="p-4 bg-background/50 border border-card-border rounded-xl flex flex-col sm:flex-row items-center gap-6">
-                          <div className="relative w-24 h-24 flex items-center justify-center">
+                      {/* STABLE, FIXED-HEIGHT Overall Skills Balance Donut / Pie Chart & Domain Split */}
+                      {overallBalance.total > 0 && (
+                        <div className="pie-chart-glow p-5 bg-background/50 border border-card-border rounded-2xl flex flex-col md:flex-row items-center gap-6 shadow-xl">
+                          {/* SVG Donut Chart */}
+                          <div className="relative w-36 h-36 flex items-center justify-center flex-shrink-0">
                             <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                              <circle cx="18" cy="18" r="15.915" fill="transparent" stroke="#27272a" strokeWidth="2.5" />
-                              {chartAngles.frontend > 0 && (
+                              <circle cx="18" cy="18" r="15.915" fill="transparent" stroke="#27272a" strokeWidth="3" />
+                              
+                              {/* Engineering Arc */}
+                              {overallBalance.engineering.pct > 0 && (
                                 <circle
                                   cx="18" cy="18" r="15.915"
                                   fill="transparent"
                                   stroke="#6366f1"
-                                  strokeWidth="2.5"
-                                  strokeDasharray={`${(chartAngles.frontend / 360) * 100} ${100 - (chartAngles.frontend / 360) * 100}`}
+                                  strokeWidth={hoveredDomain === 'Engineering' ? 4.5 : 3.5}
+                                  strokeDasharray={`${overallBalance.engineering.pct} ${100 - overallBalance.engineering.pct}`}
                                   strokeDashoffset="0"
+                                  className="transition-all duration-200 cursor-pointer"
+                                  onMouseEnter={() => setHoveredDomain('Engineering')}
                                 />
                               )}
-                              {chartAngles.backend > 0 && (
-                                <circle
-                                  cx="18" cy="18" r="15.915"
-                                  fill="transparent"
-                                  stroke="#a78bfa"
-                                  strokeWidth="2.5"
-                                  strokeDasharray={`${(chartAngles.backend / 360) * 100} ${100 - (chartAngles.backend / 360) * 100}`}
-                                  strokeDashoffset={`-${((chartAngles.frontend) / 360) * 100}`}
-                                />
-                              )}
-                              {chartAngles.uiux > 0 && (
+                              
+                              {/* Design Arc */}
+                              {overallBalance.design.pct > 0 && (
                                 <circle
                                   cx="18" cy="18" r="15.915"
                                   fill="transparent"
                                   stroke="#ec4899"
-                                  strokeWidth="2.5"
-                                  strokeDasharray={`${(chartAngles.uiux / 360) * 100} ${100 - (chartAngles.uiux / 360) * 100}`}
-                                  strokeDashoffset={`-${((chartAngles.frontend + chartAngles.backend) / 360) * 100}`}
+                                  strokeWidth={hoveredDomain === 'Design' ? 4.5 : 3.5}
+                                  strokeDasharray={`${overallBalance.design.pct} ${100 - overallBalance.design.pct}`}
+                                  strokeDashoffset={`-${overallBalance.engineering.pct}`}
+                                  className="transition-all duration-200 cursor-pointer"
+                                  onMouseEnter={() => setHoveredDomain('Design')}
                                 />
                               )}
-                              {chartAngles.others > 0 && (
+                              
+                              {/* Communication Arc */}
+                              {overallBalance.communication.pct > 0 && (
                                 <circle
                                   cx="18" cy="18" r="15.915"
                                   fill="transparent"
                                   stroke="#14b8a6"
-                                  strokeWidth="2.5"
-                                  strokeDasharray={`${(chartAngles.others / 360) * 100} ${100 - (chartAngles.others / 360) * 100}`}
-                                  strokeDashoffset={`-${((chartAngles.frontend + chartAngles.backend + chartAngles.uiux) / 360) * 100}`}
+                                  strokeWidth={hoveredDomain === 'Communication' ? 4.5 : 3.5}
+                                  strokeDasharray={`${overallBalance.communication.pct} ${100 - overallBalance.communication.pct}`}
+                                  strokeDashoffset={`-${overallBalance.engineering.pct + overallBalance.design.pct}`}
+                                  className="transition-all duration-200 cursor-pointer"
+                                  onMouseEnter={() => setHoveredDomain('Communication')}
                                 />
                               )}
                             </svg>
-                            <div className="absolute text-[9px] font-bold text-muted uppercase">Balance</div>
+
+                            <div className="absolute flex flex-col items-center justify-center text-center pointer-events-none">
+                              <span className="skill-balance-counter text-xl font-extrabold text-foreground leading-none">{overallBalance.total}</span>
+                              <span className="text-[9px] font-bold text-muted uppercase mt-0.5">Skills</span>
+                            </div>
                           </div>
 
-                          <div className="flex-1 space-y-1.5 text-xs text-foreground">
-                            <span className="font-bold text-muted block mb-1">Your Skills Balance:</span>
-                            <div className="grid grid-cols-2 gap-2 text-[10px] font-semibold">
-                              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 bg-primary rounded-full" /> Frontend: {counts.Frontend}</span>
-                              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 bg-accent rounded-full" /> Backend: {counts.Backend}</span>
-                              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 bg-pink-500 rounded-full" /> UI/UX: {counts.UIUX}</span>
-                              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 bg-teal-500 rounded-full" /> Others: {counts.Others}</span>
+                          {/* Domain Percentage Breakdown Rows & FIXED-HEIGHT Breakdown Panel */}
+                          <div className="flex-1 w-full space-y-3">
+                            <div className="flex justify-between items-center border-b border-card-border pb-1.5">
+                              <span className="text-xs font-bold text-foreground">Overall Skill Domain Split:</span>
+                              <span className="text-[10px] text-muted font-semibold">
+                                Hover rows to switch breakdown
+                              </span>
+                            </div>
+
+                            <div className="space-y-1.5 text-xs">
+                              {/* Engineering Row */}
+                              <div
+                                onMouseEnter={() => setHoveredDomain('Engineering')}
+                                className={`p-2.5 rounded-xl border transition-all cursor-pointer ${
+                                  hoveredDomain === 'Engineering'
+                                    ? 'bg-primary/10 border-primary/40 shadow-sm'
+                                    : 'bg-card/40 border-card-border hover:bg-card-border/30'
+                                }`}
+                              >
+                                <div className="flex justify-between items-center mb-1">
+                                  <span className="flex items-center gap-1.5 font-bold text-foreground text-[11px]">
+                                    <span className="w-2.5 h-2.5 bg-primary rounded-full" /> Engineering & Code
+                                  </span>
+                                  <span className="font-bold text-primary">{overallBalance.engineering.count} ({overallBalance.engineering.pct}%)</span>
+                                </div>
+                                <div className="w-full h-2 bg-card-border rounded-full overflow-hidden">
+                                  <div
+                                    style={{ width: `${overallBalance.engineering.pct}%` }}
+                                    className="h-full bg-primary rounded-full transition-all duration-300"
+                                  />
+                                </div>
+                              </div>
+
+                              {/* Design Row */}
+                              <div
+                                onMouseEnter={() => setHoveredDomain('Design')}
+                                className={`p-2.5 rounded-xl border transition-all cursor-pointer ${
+                                  hoveredDomain === 'Design'
+                                    ? 'bg-pink-500/10 border-pink-500/40 shadow-sm'
+                                    : 'bg-card/40 border-card-border hover:bg-card-border/30'
+                                }`}
+                              >
+                                <div className="flex justify-between items-center mb-1">
+                                  <span className="flex items-center gap-1.5 font-bold text-foreground text-[11px]">
+                                    <span className="w-2.5 h-2.5 bg-pink-500 rounded-full" /> Design & UI/UX
+                                  </span>
+                                  <span className="font-bold text-pink-400">{overallBalance.design.count} ({overallBalance.design.pct}%)</span>
+                                </div>
+                                <div className="w-full h-2 bg-card-border rounded-full overflow-hidden">
+                                  <div
+                                    style={{ width: `${overallBalance.design.pct}%` }}
+                                    className="h-full bg-pink-500 rounded-full transition-all duration-300"
+                                  />
+                                </div>
+                              </div>
+
+                              {/* Communication & Soft Skills Row */}
+                              <div
+                                onMouseEnter={() => setHoveredDomain('Communication')}
+                                className={`p-2.5 rounded-xl border transition-all cursor-pointer ${
+                                  hoveredDomain === 'Communication'
+                                    ? 'bg-teal-500/10 border-teal-500/40 shadow-sm'
+                                    : 'bg-card/40 border-card-border hover:bg-card-border/30'
+                                }`}
+                              >
+                                <div className="flex justify-between items-center mb-1">
+                                  <span className="flex items-center gap-1.5 font-bold text-foreground text-[11px]">
+                                    <span className="w-2.5 h-2.5 bg-teal-500 rounded-full" /> Communication & Soft Skills
+                                  </span>
+                                  <span className="font-bold text-teal-400">{overallBalance.communication.count} ({overallBalance.communication.pct}%)</span>
+                                </div>
+                                <div className="w-full h-2 bg-card-border rounded-full overflow-hidden">
+                                  <div
+                                    style={{ width: `${overallBalance.communication.pct}%` }}
+                                    className="h-full bg-teal-500 rounded-full transition-all duration-300"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* RESERVED FIXED-HEIGHT Breakdown Box (Prevents Layout Shifting) */}
+                            <div className="min-h-[105px] mt-3 p-3 bg-card border border-card-border rounded-xl shadow-lg flex flex-col justify-center">
+                              <span className="text-[10px] text-primary font-bold uppercase tracking-wider block mb-1">
+                                🔍 Granular {hoveredDomain} Breakdown:
+                              </span>
+                              <div className="space-y-1.5">
+                                {getSubBreakdown(hoveredDomain).map((sub) => (
+                                  <div key={sub.name} className="flex items-center justify-between text-[11px]">
+                                    <span className="flex items-center gap-1.5 font-semibold text-foreground">
+                                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: sub.color }} />
+                                      {sub.name}
+                                    </span>
+                                    <span className="font-bold" style={{ color: sub.color }}>
+                                      {sub.count} skills ({sub.pct}%)
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -766,7 +1219,7 @@ export default function OnboardingPage() {
                             }
                             e.target.value = '';
                           }}
-                          className="bg-card border border-card-border text-xs rounded px-2.5 py-1 text-foreground focus:outline-none cursor-pointer"
+                          className="bg-card border border-card-border text-xs rounded-lg px-3 py-1.5 text-foreground focus:outline-none cursor-pointer hover:border-primary/40 transition-colors"
                         >
                           <option value="">+ Add language</option>
                           {OFFICIAL_LANGUAGES.filter((lang) => !languages[lang]).map((lang) => (
@@ -782,7 +1235,7 @@ export default function OnboardingPage() {
                               key={lang}
                               className={`border rounded-xl p-4 transition-all duration-300 relative ${
                                 level
-                                  ? 'bg-primary/5 border-primary/40 shadow-[0_0_15px_rgba(99,102,241,0.05)]'
+                                  ? 'bg-amber-500/5 border-amber-500/40 shadow-[0_0_15px_rgba(251,191,36,0.05)]'
                                   : 'bg-background/20 border-card-border hover:border-card-border/80'
                               }`}
                             >
@@ -802,7 +1255,7 @@ export default function OnboardingPage() {
 
                               <div className="flex justify-between items-center mb-2">
                                 <span className="text-sm font-bold text-foreground">{lang}</span>
-                                {level && <span className="text-xs text-primary font-semibold">{level}</span>}
+                                {level && <span className="text-xs text-amber-400 font-semibold">{level}</span>}
                               </div>
 
                               <div className="grid grid-cols-3 gap-1.5 mb-3">
@@ -811,9 +1264,9 @@ export default function OnboardingPage() {
                                     key={lvl}
                                     type="button"
                                     onClick={() => setLanguages({ ...languages, [lang]: lvl as any })}
-                                    className={`py-1 text-[10px] font-bold rounded border transition-all cursor-pointer ${
+                                    className={`py-1 text-[10px] font-bold rounded-lg border transition-all cursor-pointer ${
                                       level === lvl
-                                        ? 'bg-primary border-primary text-white'
+                                        ? 'bg-amber-500 border-amber-500 text-black font-extrabold shadow-sm'
                                         : 'bg-card border-card-border text-muted hover:text-foreground'
                                     }`}
                                   >
@@ -830,7 +1283,7 @@ export default function OnboardingPage() {
                                   initial={{ width: 0 }}
                                   animate={{ width: level ? fluencyMap[level] : 0 }}
                                   transition={{ type: 'spring', stiffness: 60, damping: 10 }}
-                                  className="h-full bg-gradient-to-r from-primary to-accent rounded-full"
+                                  className="h-full bg-gradient-to-r from-amber-400 to-amber-600 rounded-full"
                                 />
                               </motion.div>
                             </div>
@@ -852,14 +1305,15 @@ export default function OnboardingPage() {
                               key={opt}
                               type="button"
                               onClick={() => toggleSoftSkill(opt)}
-                              whileHover={{ scale: 1.025 }}
-                              whileTap={{ scale: 0.975 }}
-                              className={`py-2 px-3 text-xs font-semibold rounded-xl border text-center transition-all cursor-pointer ${
+                              whileHover={{ scale: 1.03 }}
+                              whileTap={{ scale: 0.96 }}
+                              className={`py-2.5 px-3 text-xs font-semibold rounded-xl border text-center transition-all cursor-pointer ${
                                 isSelected
-                                  ? 'bg-accent/10 border-accent/40 text-accent shadow-[0_0_15px_rgba(167,139,250,0.05)]'
+                                  ? 'bg-indigo-500/20 border-indigo-400 text-indigo-200 shadow-[0_0_15px_rgba(129,140,248,0.15)] font-bold'
                                   : 'bg-background/30 border-card-border text-muted hover:border-card-border/80 hover:text-foreground'
                               }`}
                             >
+                              {isSelected && '✓ '}
                               {opt}
                             </motion.button>
                           );
@@ -874,14 +1328,16 @@ export default function OnboardingPage() {
                       >
                         ← Back
                       </button>
-                      <button
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
                         onClick={() => {
                           if (validateStudentStep2()) setStep(3);
                         }}
-                        className="rounded-lg bg-primary hover:bg-primary-hover px-5 py-2 text-sm font-semibold text-white cursor-pointer transform hover:-translate-y-0.5 active:translate-y-0 transition-all"
+                        className="rounded-lg bg-primary hover:bg-primary-hover px-5 py-2 text-sm font-semibold text-white cursor-pointer shadow-lg shadow-primary/25 transition-all"
                       >
                         Next Step →
-                      </button>
+                      </motion.button>
                     </div>
                   </motion.div>
                 )}
@@ -889,40 +1345,150 @@ export default function OnboardingPage() {
                 {step === 3 && (
                   <motion.div
                     key="step3"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    transition={{ duration: 0.3 }}
-                    className="space-y-4"
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -15 }}
+                    transition={{ duration: 0.25 }}
+                    className="space-y-6"
                   >
                     <h3 className="text-lg font-bold text-foreground">Preferences & Social Links</h3>
 
-                    {/* Track Interest Selector */}
+                    {/* Rich Interactive SIH Problem Statements Section */}
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">
-                        Preferred SIH Problem Statements <span className="text-red-400">*</span>
-                      </label>
-                      <div className="space-y-2 max-h-44 overflow-y-auto border border-card-border rounded-lg p-3 bg-background/30 custom-scroll">
-                        {tracks.map((track) => (
-                          <label key={track.id} className="flex items-start text-xs text-foreground cursor-pointer p-1.5 hover:bg-card-border/30 rounded-lg transition-colors">
-                            <input
-                              type="checkbox"
-                              checked={studentForm.trackInterest.includes(track.id)}
-                              onChange={(e) => {
-                                const updated = e.target.checked
-                                  ? [...studentForm.trackInterest, track.id]
-                                  : studentForm.trackInterest.filter((t) => t !== track.id);
-                                setStudentForm({ ...studentForm, trackInterest: updated });
-                              }}
-                              className="rounded border-card-border text-primary bg-background/50 focus:ring-primary mr-2.5 mt-0.5"
-                            />
-                            <div>
-                              <span className="font-semibold text-primary">{track.problemStatementCode}: </span>
-                              {track.name}
-                            </div>
-                          </label>
-                        ))}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                        <label className="block text-sm font-medium text-foreground">
+                          Preferred SIH Problem Statements <span className="text-red-400">*</span>
+                        </label>
+                        <span className="text-xs font-bold text-primary bg-primary/10 border border-primary/20 px-2.5 py-0.5 rounded-full">
+                          {studentForm.trackInterest.length} / 2 Selected (Max 2 PS)
+                        </span>
                       </div>
+
+                      {/* Official PS Not Released Notice Banner */}
+                      <div className="mb-3 p-3 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-sm">
+                        <div className="flex items-center gap-2">
+                          <span className="text-base">📢</span>
+                          <span className="font-semibold">
+                            Official SIH 2026 Problem Statements are not out yet. Showing reference tracks based on official SIH themes.
+                          </span>
+                        </div>
+                        <a
+                          href="https://sih.gov.in/"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="shrink-0 text-[11px] font-bold bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/40 px-2.5 py-1 rounded-lg transition-colors"
+                        >
+                          ↗ SIH Portal
+                        </a>
+                      </div>
+
+                      {/* Problem Statement Selection List */}
+                      <div className="space-y-2.5 max-h-60 overflow-y-auto border border-card-border rounded-xl p-3 bg-background/30 custom-scroll">
+                        {tracks.map((track) => {
+                          const isSelected = studentForm.trackInterest.includes(track.id);
+                          return (
+                            <div
+                              key={track.id}
+                              onMouseEnter={() => setHoveredTrack(track)}
+                              onClick={() => {
+                                if (isSelected) {
+                                  setStudentForm({
+                                    ...studentForm,
+                                    trackInterest: studentForm.trackInterest.filter((t) => t !== track.id),
+                                  });
+                                  setError('');
+                                } else {
+                                  if (studentForm.trackInterest.length >= 2) {
+                                    setError('Maximum 2 problem statements can be selected per team.');
+                                    return;
+                                  }
+                                  setStudentForm({
+                                    ...studentForm,
+                                    trackInterest: [...studentForm.trackInterest, track.id],
+                                  });
+                                  setError('');
+                                }
+                              }}
+                              className={`p-2.5 rounded-xl border transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${
+                                isSelected
+                                  ? 'bg-primary/10 border-primary shadow-[0_0_12px_rgba(99,102,241,0.15)]'
+                                  : 'bg-card/40 border-card-border hover:border-primary/40'
+                              }`}
+                            >
+                              <div className="flex items-start gap-2.5 flex-1">
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() => {}} // Handled by outer div
+                                  className="rounded border-card-border text-primary bg-background/50 focus:ring-primary mt-1 pointer-events-none"
+                                />
+                                <div className="space-y-0.5">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <span className="text-xs font-extrabold text-primary bg-primary/15 px-2 py-0.5 rounded border border-primary/30">
+                                      {track.problemStatementCode}
+                                    </span>
+                                    <span className="text-xs font-bold text-foreground">
+                                      {track.name}
+                                    </span>
+                                  </div>
+                                  {track.organization && (
+                                    <p className="text-[11px] text-muted font-medium">
+                                      🏛️ {track.organization} • <span className="text-accent">{track.category}</span>
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-2 self-end sm:self-center">
+                                {track.sihUrl && (
+                                  <a
+                                    href={track.sihUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="text-[10px] font-bold bg-background/60 hover:bg-card border border-card-border px-2.5 py-1 rounded text-primary hover:text-white transition-colors flex items-center gap-1"
+                                  >
+                                    ↗ Official SIH
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Active Hovered PS Summary Box */}
+                      {hoveredTrack && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="mt-3 p-4 bg-card/80 border border-primary/40 rounded-xl space-y-2 shadow-xl"
+                        >
+                          <div className="flex justify-between items-center border-b border-card-border pb-1.5">
+                            <span className="text-xs font-extrabold text-primary flex items-center gap-1.5">
+                              🔍 Problem Statement Details: {hoveredTrack.problemStatementCode}
+                            </span>
+                            <span className="text-[10px] text-accent font-bold px-2 py-0.5 bg-accent/10 rounded-full border border-accent/20">
+                              {hoveredTrack.category}
+                            </span>
+                          </div>
+                          <p className="text-xs text-foreground font-semibold">{hoveredTrack.name}</p>
+                          <p className="text-xs text-muted leading-relaxed">{hoveredTrack.description}</p>
+                          <div className="pt-1 flex justify-between items-center text-[11px]">
+                            <span className="text-muted font-medium">Ministry / Org: <strong className="text-foreground">{hoveredTrack.organization}</strong></span>
+                            {hoveredTrack.sihUrl && (
+                              <a
+                                href={hoveredTrack.sihUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary hover:underline font-bold"
+                              >
+                                Open SIH Portal ↗
+                              </a>
+                            )}
+                          </div>
+                        </motion.div>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -954,7 +1520,7 @@ export default function OnboardingPage() {
 
                     <div>
                       <label className="block text-sm font-medium text-foreground">
-                        Resume Link <span className="text-red-400">*</span>
+                        Resume Link <span className="text-muted text-xs font-normal">(Optional)</span>
                       </label>
                       <input
                         type="url"
@@ -972,13 +1538,15 @@ export default function OnboardingPage() {
                       >
                         ← Back
                       </button>
-                      <button
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
                         onClick={handleStudentSubmit}
                         disabled={submitting}
-                        className="rounded-lg bg-primary hover:bg-primary-hover px-5 py-2 text-sm font-semibold text-white cursor-pointer disabled:opacity-50 transform hover:-translate-y-0.5 active:translate-y-0 transition-all"
+                        className="rounded-lg bg-primary hover:bg-primary-hover px-5 py-2 text-sm font-semibold text-white cursor-pointer disabled:opacity-50 shadow-lg shadow-primary/25 transition-all"
                       >
                         {submitting ? 'Saving Profile...' : 'Complete Onboarding'}
-                      </button>
+                      </motion.button>
                     </div>
                   </motion.div>
                 )}
@@ -989,10 +1557,10 @@ export default function OnboardingPage() {
             <div className="space-y-6">
               <div className="flex justify-between items-center mb-8 border-b border-card-border pb-4">
                 {[1, 2].map((s) => (
-                  <div key={s} className="flex items-center space-x-2">
+                  <div key={s} className="flex items-center space-x-2 bg-card/80 px-3 py-1 rounded-full border border-card-border">
                     <div
                       className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-colors duration-300 ${
-                        step === s ? 'bg-primary text-white' : step > s ? 'bg-green-600 text-white' : 'bg-card border border-card-border text-muted'
+                        step === s ? 'bg-primary text-white shadow-[0_0_12px_rgba(99,102,241,0.5)]' : step > s ? 'bg-green-600 text-white' : 'bg-card border border-card-border text-muted'
                       }`}
                     >
                       {s}
@@ -1008,10 +1576,10 @@ export default function OnboardingPage() {
                 {step === 1 && (
                   <motion.div
                     key="mentorStep1"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    transition={{ duration: 0.3 }}
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -15 }}
+                    transition={{ duration: 0.25 }}
                     className="space-y-4"
                   >
                     <h3 className="text-lg font-bold text-foreground">Professional Info</h3>
@@ -1055,14 +1623,16 @@ export default function OnboardingPage() {
                     </div>
 
                     <div className="pt-4 flex justify-end">
-                      <button
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
                         onClick={() => {
                           if (validateMentorStep1()) setStep(2);
                         }}
-                        className="rounded-lg bg-primary hover:bg-primary-hover px-5 py-2 text-sm font-semibold text-white cursor-pointer transform hover:-translate-y-0.5 active:translate-y-0 transition-all"
+                        className="rounded-lg bg-primary hover:bg-primary-hover px-5 py-2 text-sm font-semibold text-white cursor-pointer shadow-lg shadow-primary/25 transition-all"
                       >
                         Next Step →
-                      </button>
+                      </motion.button>
                     </div>
                   </motion.div>
                 )}
@@ -1070,10 +1640,10 @@ export default function OnboardingPage() {
                 {step === 2 && (
                   <motion.div
                     key="mentorStep2"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    transition={{ duration: 0.3 }}
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -15 }}
+                    transition={{ duration: 0.25 }}
                     className="space-y-4"
                   >
                     <h3 className="text-lg font-bold text-foreground">Expertise & Stated Capacity</h3>
@@ -1138,13 +1708,15 @@ export default function OnboardingPage() {
                       >
                         ← Back
                       </button>
-                      <button
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
                         onClick={handleMentorSubmit}
                         disabled={submitting}
-                        className="rounded-lg bg-primary hover:bg-primary-hover px-5 py-2 text-sm font-semibold text-white cursor-pointer disabled:opacity-50 transform hover:-translate-y-0.5 active:translate-y-0 transition-all"
+                        className="rounded-lg bg-primary hover:bg-primary-hover px-5 py-2 text-sm font-semibold text-white cursor-pointer disabled:opacity-50 shadow-lg shadow-primary/25 transition-all"
                       >
                         {submitting ? 'Saving Profile...' : 'Complete Onboarding'}
-                      </button>
+                      </motion.button>
                     </div>
                   </motion.div>
                 )}

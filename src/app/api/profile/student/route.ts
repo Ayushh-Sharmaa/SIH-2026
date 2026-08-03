@@ -22,6 +22,9 @@ export async function PUT(request: Request) {
       name,
       year,
       branch,
+      gender,
+      rollNo,
+      section,
       skills,
       languages,
       softSkills,
@@ -43,6 +46,9 @@ export async function PUT(request: Request) {
         name,
         year,
         branch,
+        gender: gender || null,
+        rollNo: rollNo || null,
+        section: section || null,
         skills: skills || [],
         languages: languages || [],
         softSkills: softSkills || [],
@@ -55,6 +61,19 @@ export async function PUT(request: Request) {
         },
       },
     });
+
+    // If user is a team leader, update their team's selected track
+    if (updatedProfile.teamId && Array.isArray(trackInterest) && trackInterest.length > 0) {
+      const team = await prisma.team.findUnique({
+        where: { id: updatedProfile.teamId },
+      });
+      if (team && team.leaderId === decoded.userId) {
+        await prisma.team.update({
+          where: { id: team.id },
+          data: { trackId: trackInterest[0] },
+        });
+      }
+    }
 
     return NextResponse.json({ success: true, profile: updatedProfile });
   } catch (error) {

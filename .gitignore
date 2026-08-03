@@ -33,13 +33,24 @@ yarn-error.log*
 *.db
 *.db-journal
 
-# Agent Customizations & Logs
+# Agent Customizations, MCP, & Logs
 .agents/
 skills-lock.json
 .gemini/
+.mcp/
+mcp.json
+mcp-config.json
+mcp_config.json
 
 # System / IDE files
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
+
+# clerk configuration (can include secrets)
+/.clerk/
+
+# Animejs local clone/files
+/anime/
+/animejs/

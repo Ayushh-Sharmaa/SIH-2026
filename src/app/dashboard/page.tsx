@@ -1,29 +1,174 @@
-
-
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import Image from 'next/image';
 import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
+import {
+  Aurora,
+  Counter,
+  PremiumButton,
+  Reveal,
+  RevealGroup,
+  RevealItem,
+  SplitText,
+  TiltCard,
+  DURATION,
+  EASE,
+  SPRING,
+} from '@/components/motion';
 
-const AVATAR_PRESETS: Record<string, { emoji: string; color: string }> = {
-  hacker: { emoji: '🥷', color: 'from-cyan-500 to-blue-500' },
-  developer: { emoji: '💻', color: 'from-blue-500 to-indigo-500' },
-  designer: { emoji: '🎨', color: 'from-pink-500 to-rose-500' },
-  scientist: { emoji: '🧪', color: 'from-emerald-500 to-teal-500' },
-  manager: { emoji: '👑', color: 'from-amber-500 to-yellow-500' },
-  writer: { emoji: '✍️', color: 'from-teal-500 to-blue-600' },
+const AVATAR_PRESETS: Record<string, { emoji: string; wash: string }> = {
+  hacker: { emoji: '🥷', wash: 'from-[#AC9C8D] to-[#D1C7BD]' },
+  developer: { emoji: '💻', wash: 'from-[#D1C7BD] to-[#EFE9E1]' },
+  designer: { emoji: '🎨', wash: 'from-[#D9D9D9] to-[#AC9C8D]' },
+  scientist: { emoji: '🧪', wash: 'from-[#EFE9E1] to-[#D1C7BD]' },
+  manager: { emoji: '👑', wash: 'from-[#AC9C8D] to-[#D9D9D9]' },
+  writer: { emoji: '✍️', wash: 'from-[#D1C7BD] to-[#D9D9D9]' },
 };
 
-function Avatar({ avatarUrl, name, className = '' }: { avatarUrl?: string | null; name: string; className?: string }) {
+function Avatar({
+  avatarUrl,
+  name,
+  className = '',
+}: {
+  avatarUrl?: string | null;
+  name: string;
+  className?: string;
+}) {
   if (avatarUrl?.startsWith('data:image/') || avatarUrl?.startsWith('http')) {
-    return <Image unoptimized src={avatarUrl} alt={`${name}'s profile`} width={96} height={96} className={`object-cover ${className}`} />;
+    return (
+      <Image
+        unoptimized
+        src={avatarUrl}
+        alt={`${name}'s profile`}
+        width={128}
+        height={128}
+        className={`object-cover ${className}`}
+      />
+    );
   }
 
   const preset = AVATAR_PRESETS[avatarUrl || 'developer'] || AVATAR_PRESETS.developer;
-  return <span aria-label={`${name}'s profile`} className={`flex items-center justify-center bg-gradient-to-br ${preset.color} ${className}`}>{preset.emoji}</span>;
+  return (
+    <span
+      aria-label={`${name}'s profile`}
+      className={`flex items-center justify-center bg-gradient-to-br ${preset.wash} ${className}`}
+    >
+      {preset.emoji}
+    </span>
+  );
+}
+
+function Label({ children }: { children: ReactNode }) {
+  return (
+    <span className="block text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
+      {children}
+    </span>
+  );
+}
+
+const CHIP_TONES = {
+  neutral: 'border-[rgba(209,199,189,0.7)] bg-[rgba(239,233,225,0.8)] text-foreground/75',
+  accent: 'border-[rgba(172,156,141,0.55)] bg-[rgba(172,156,141,0.18)] text-foreground',
+  primary: 'border-[rgba(114,56,61,0.22)] bg-[rgba(114,56,61,0.08)] text-primary',
+} as const;
+
+function Chip({
+  children,
+  tone = 'neutral',
+}: {
+  children: ReactNode;
+  tone?: keyof typeof CHIP_TONES;
+}) {
+  return (
+    <span
+      className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-semibold ${CHIP_TONES[tone]}`}
+    >
+      {children}
+    </span>
+  );
+}
+
+function DeckStat({
+  value,
+  label,
+  text,
+}: {
+  value?: number;
+  label: string;
+  text?: string;
+}) {
+  return (
+    <RevealItem className="min-w-0">
+      <TiltCard intensity={5} className="h-full">
+        <div className="surface-raised h-full rounded-2xl px-4 py-3.5">
+          <div className="truncate text-2xl font-extrabold capitalize tracking-tight text-foreground sm:text-[1.7rem]">
+            {text ?? <Counter to={value ?? 0} duration={1.4} />}
+          </div>
+          <div className="mt-1 truncate text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
+            {label}
+          </div>
+        </div>
+      </TiltCard>
+    </RevealItem>
+  );
+}
+
+function Panel({
+  title,
+  action,
+  children,
+  className = '',
+}: {
+  title: string;
+  action?: ReactNode;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={`surface-raised rounded-3xl p-6 sm:p-7 ${className}`}>
+      <div className="mb-5 flex items-center justify-between gap-4">
+        <h3 className="text-sm font-extrabold uppercase tracking-[0.14em] text-foreground">
+          {title}
+        </h3>
+        {action}
+      </div>
+      <div className="mb-5 h-px bg-gradient-to-r from-[rgba(172,156,141,0.55)] via-[rgba(209,199,189,0.35)] to-transparent" />
+      {children}
+    </div>
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="min-h-screen bg-background text-foreground">
+      <Navbar />
+      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        <div className="flex items-center gap-5">
+          <div className="size-20 rounded-2xl skeleton-shimmer" />
+          <div className="flex-1 space-y-3">
+            <div className="h-6 w-64 max-w-full rounded-lg skeleton-shimmer" />
+            <div className="h-3.5 w-80 max-w-full rounded skeleton-shimmer" />
+          </div>
+        </div>
+        <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="h-20 rounded-2xl skeleton-shimmer" />
+          ))}
+        </div>
+        <div className="mt-10 grid grid-cols-1 gap-6 lg:grid-cols-5">
+          <div className="h-96 rounded-3xl skeleton-shimmer lg:col-span-2" />
+          <div className="space-y-6 lg:col-span-3">
+            <div className="h-56 rounded-3xl skeleton-shimmer" />
+            <div className="h-40 rounded-3xl skeleton-shimmer" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function DashboardPage() {
@@ -31,26 +176,31 @@ export default function DashboardPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
-  const fetchDashboard = async () => {
+  const fetchDashboard = useCallback(async () => {
     try {
       const res = await fetch('/api/dashboard');
-      if (!res.ok) {
-        throw new Error('Failed to fetch dashboard data');
-      }
-      const result = await res.json();
-      setData(result);
+      if (!res.ok) throw new Error('Failed to fetch dashboard data');
+      setData(await res.json());
     } catch (err) {
       console.error(err);
       router.push('/login');
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
 
   useEffect(() => {
     fetchDashboard();
-  }, []);
+  }, [fetchDashboard]);
+
+  useEffect(() => {
+    if (!notice) return;
+    const t = window.setTimeout(() => setNotice(null), 4000);
+    return () => window.clearTimeout(t);
+  }, [notice]);
 
   const handleRequestResponse = async (requestId: string, action: 'accept' | 'decline') => {
     setActionLoading(requestId);
@@ -62,522 +212,643 @@ export default function DashboardPage() {
       });
       const result = await res.json();
       if (!res.ok) {
-        alert(result.error || 'Failed to process request');
+        setNotice(result.error || 'Failed to process request');
       } else {
         await fetchDashboard();
       }
     } catch (err) {
       console.error(err);
-      alert('An error occurred');
+      setNotice('Something went wrong. Please try again.');
     } finally {
       setActionLoading(null);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background text-foreground flex flex-col p-6 space-y-6">
-        {/* Header bar skeleton */}
-        <div className="flex justify-between items-center border-b border-card-border pb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded skeleton-shimmer" />
-            <div className="h-4 w-28 skeleton-shimmer" />
-          </div>
-          <div className="h-8 w-20 rounded-xl skeleton-shimmer" />
-        </div>
-
-        {/* Hero Welcome banner skeleton */}
-        <div className="h-28 rounded-2xl bg-card border border-card-border/50 p-6 flex flex-col justify-center space-y-2">
-          <div className="h-5 w-48 skeleton-shimmer" />
-          <div className="h-3.5 w-96 skeleton-shimmer" />
-        </div>
-
-        {/* Main body skeleton grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1">
-          {/* Left Card skeleton */}
-          <div className="p-6 rounded-2xl border border-card-border bg-card/60 flex flex-col space-y-4">
-            <div className="h-4 w-24 skeleton-shimmer" />
-            <div className="h-px bg-card-border w-full" />
-            <div className="h-3 w-full skeleton-shimmer" />
-            <div className="h-3 w-5/6 skeleton-shimmer" />
-            <div className="h-3 w-4/6 skeleton-shimmer" />
-          </div>
-
-          {/* Right Columns skeleton */}
-          <div className="lg:col-span-2 p-6 rounded-2xl border border-card-border bg-card/60 flex flex-col space-y-4">
-            <div className="h-4 w-32 skeleton-shimmer" />
-            <div className="h-px bg-card-border w-full" />
-            <div className="h-20 skeleton-shimmer rounded-xl" />
-            <div className="h-10 skeleton-shimmer rounded-xl" />
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <DashboardSkeleton />;
 
   const isStudent = data?.role === 'STUDENT';
   const profile = data?.profile;
-
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-      },
-    },
-  } as const;
-
-  const cardVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: {
-        type: 'spring',
-        stiffness: 100,
-        damping: 15,
-      },
-    },
-  } as const;
+  const team = data?.team;
+  const filledSeats = team?.members?.length ?? 0;
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="flex min-h-screen flex-col bg-background text-foreground">
       <Navbar />
 
-      <motion.main
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-8"
-      >
-        {/* Welcome Banner */}
-        <motion.div
-          variants={cardVariants}
-          className="p-6 rounded-2xl bg-gradient-to-r from-primary/15 to-accent/5 border border-primary/20 relative overflow-hidden"
-        >
-          <motion.div
-            animate={{
-              rotate: [0, 360],
-            }}
-            transition={{
-              duration: 40,
-              repeat: Infinity,
-              ease: 'linear',
-            }}
-            className="absolute -top-12 -right-12 w-64 h-64 bg-primary/10 rounded-full filter blur-3xl pointer-events-none"
-          />
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground">
-            Welcome back, {profile?.name || 'User'}!
-          </h2>
-          <p className="text-sm text-muted mt-1">
-            {isStudent ? 'Track your team formation status and explore matches.' : 'Manage your mentored hackathon teams and requests.'}
-          </p>
-        </motion.div>
+      <main id="main" className="flex-1">
+        {/* ── COMMAND DECK ── */}
+        <section className="relative overflow-hidden pb-14 pt-8 sm:pt-12">
+          <Aurora variant="cool" spotlight />
+          <div aria-hidden className="grid-lines absolute inset-0" />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-          {/* LEFT COLUMN: Profile info */}
-          <motion.div variants={cardVariants} className="space-y-6">
-            <div className="glass-card parallax-card rounded-2xl p-6 border border-card-border shadow-xl">
-              <div className="flex justify-between items-center mb-4 border-b border-card-border pb-2">
-                <h3 className="text-base font-bold text-foreground">
-                  My Profile
-                </h3>
-                <button
-                  onClick={() => router.push('/onboarding?edit=true')}
-                  className="text-xs font-semibold text-primary hover:text-primary-hover bg-primary/10 border border-primary/20 px-2.5 py-1 rounded-md transition-all cursor-pointer flex items-center gap-1"
-                >
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                  </svg>
-                  Edit Profile
-                </button>
-              </div>
-              <div className="space-y-4">
-                <div>
-                  <span className="text-[10px] text-muted uppercase tracking-wider block font-bold">Email ID</span>
-                  <span className="text-sm font-semibold text-foreground">{profile?.email || 'N/A'}</span>
+          <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, filter: 'blur(10px)' }}
+                animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+                transition={{ duration: DURATION.hero, ease: EASE.outExpo }}
+                className="relative shrink-0"
+              >
+                <div className="surface-raised grid size-20 place-items-center overflow-hidden rounded-2xl p-1 sm:size-24">
+                  <Avatar
+                    avatarUrl={profile?.avatarUrl}
+                    name={profile?.name || 'User'}
+                    className="size-full rounded-xl text-3xl"
+                  />
                 </div>
+                <span className="absolute -bottom-1 -right-1 grid size-6 place-items-center rounded-full border border-[rgba(239,233,225,0.9)] bg-primary text-[10px] font-black text-[#FBF9F6]">
+                  {isStudent ? 'S' : 'M'}
+                </span>
+              </motion.div>
+
+              <div className="min-w-0 flex-1">
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: DURATION.reveal, ease: EASE.outExpo }}
+                  className="mb-2 flex flex-wrap items-center gap-2"
+                >
+                  <Chip tone="primary">{isStudent ? 'Student' : 'Faculty mentor'}</Chip>
+                  {!isStudent && (
+                    <Chip tone={profile?.verified ? 'accent' : 'neutral'}>
+                      {profile?.verified ? 'Verified' : 'Awaiting verification'}
+                    </Chip>
+                  )}
+                </motion.div>
+
+                <SplitText
+                  as="h1"
+                  text={`Welcome back, ${profile?.name || 'User'}`}
+                  className="text-3xl font-extrabold leading-[1.1] tracking-tight text-foreground sm:text-4xl"
+                  delay={0.1}
+                />
+
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.45, duration: 0.5 }}
+                  className="mt-2 max-w-xl text-sm leading-relaxed text-foreground/65"
+                >
+                  {isStudent
+                    ? 'Track your team formation status, review your profile, and explore matches.'
+                    : 'Manage the hackathon teams you guide and respond to incoming mentorship requests.'}
+                </motion.p>
+              </div>
+
+              <div className="shrink-0">
+                <PremiumButton
+                  variant="glass"
+                  size="sm"
+                  onClick={() => router.push('/onboarding?edit=true')}
+                >
+                  Edit profile
+                </PremiumButton>
+              </div>
+            </div>
+
+            <RevealGroup
+              className="mt-9 grid grid-cols-2 gap-3 sm:grid-cols-4"
+              stagger={0.07}
+              amount={0.2}
+            >
+              {isStudent ? (
+                <>
+                  <DeckStat value={filledSeats} label="Team members" />
+                  <DeckStat value={Math.max(0, 6 - filledSeats)} label="Open seats" />
+                  <DeckStat
+                    text={team ? (team.mentor ? 'Yes' : 'No') : '—'}
+                    label="Mentor assigned"
+                  />
+                  <DeckStat
+                    text={team ? String(team.status).toLowerCase() : 'No team'}
+                    label="Team status"
+                  />
+                </>
+              ) : (
+                <>
+                  <DeckStat value={profile?.currentLoad ?? 0} label="Teams mentored" />
+                  <DeckStat value={profile?.capacity ?? 0} label="Total capacity" />
+                  <DeckStat value={data?.pendingRequests?.length ?? 0} label="Pending requests" />
+                  <DeckStat
+                    value={Math.max(0, (profile?.capacity ?? 0) - (profile?.currentLoad ?? 0))}
+                    label="Slots free"
+                  />
+                </>
+              )}
+            </RevealGroup>
+          </div>
+        </section>
+
+        {/* ── WORKSPACE ── */}
+        <section className="relative">
+          <div
+            aria-hidden
+            className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[rgba(172,156,141,0.6)] to-transparent"
+          />
+          <div className="surface-sunken border-x-0">
+            <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 px-4 py-12 sm:px-6 lg:grid-cols-5 lg:px-8">
+              {/* LEFT RAIL */}
+              <Reveal direction="right" className="lg:col-span-2">
+                <div className="lg:sticky lg:top-28">
+                  <Panel title="My profile">
+                    <div className="space-y-5">
+                      <div>
+                        <Label>Email ID</Label>
+                        <span className="text-sm font-semibold text-foreground">
+                          {profile?.email || 'N/A'}
+                        </span>
+                      </div>
+
+                      {isStudent ? (
+                        <>
+                          <div>
+                            <Label>Academic info</Label>
+                            <span className="text-sm font-semibold text-foreground">
+                              {profile?.branch} ({profile?.year})
+                            </span>
+                          </div>
+
+                          <div>
+                            <Label>Languages</Label>
+                            <div className="mt-1.5 flex flex-wrap gap-1.5">
+                              {profile?.languages?.map((l: string) => (
+                                <Chip key={l}>{l}</Chip>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div>
+                            <Label>Technical skills</Label>
+                            <div className="mt-1.5 flex flex-wrap gap-1.5">
+                              {profile?.skills?.map((s: string) => (
+                                <Chip key={s} tone="primary">
+                                  {s}
+                                </Chip>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div>
+                            <Label>Soft skills</Label>
+                            <div className="mt-1.5 flex flex-wrap gap-1.5">
+                              {profile?.softSkills?.map((s: string) => (
+                                <Chip key={s} tone="accent">
+                                  {s}
+                                </Chip>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div>
+                            <Label>Profiles &amp; links</Label>
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {[
+                                { url: profile?.githubUrl, label: 'GitHub' },
+                                { url: profile?.linkedinUrl, label: 'LinkedIn' },
+                                { url: profile?.resumeUrl, label: 'Résumé' },
+                              ]
+                                .filter((l) => l.url)
+                                .map((l) => (
+                                  <motion.a
+                                    key={l.label}
+                                    href={l.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    whileHover={{ y: -2 }}
+                                    transition={SPRING.snappy}
+                                    className="group inline-flex items-center gap-1.5 rounded-lg border border-[rgba(209,199,189,0.7)] bg-[rgba(248,246,242,0.75)] px-3 py-1.5 text-xs font-bold text-foreground transition-colors hover:border-[rgba(114,56,61,0.28)] hover:text-primary"
+                                  >
+                                    {l.label}
+                                    <span className="transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5">
+                                      ↗
+                                    </span>
+                                  </motion.a>
+                                ))}
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div>
+                            <Label>Designation</Label>
+                            <span className="text-sm font-semibold text-foreground">
+                              {profile?.designation} at {profile?.organization}
+                            </span>
+                          </div>
+
+                          <div>
+                            <Label>Expertise</Label>
+                            <div className="mt-1.5 flex flex-wrap gap-1.5">
+                              {profile?.expertise?.map((e: string) => (
+                                <Chip key={e} tone="accent">
+                                  {e}
+                                </Chip>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div>
+                            <Label>Biography</Label>
+                            <p className="mt-1.5 rounded-xl border border-[rgba(209,199,189,0.6)] bg-[rgba(239,233,225,0.6)] p-3 text-xs leading-relaxed text-foreground/75">
+                              {profile?.bio || 'No bio provided.'}
+                            </p>
+                          </div>
+
+                          <div>
+                            <Label>Verification status</Label>
+                            <div className="mt-1.5">
+                              <Chip tone={profile?.verified ? 'primary' : 'neutral'}>
+                                {profile?.verified
+                                  ? '✓ Verified mentor'
+                                  : '⌛ Awaiting verification'}
+                              </Chip>
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </Panel>
+                </div>
+              </Reveal>
+
+              {/* RIGHT COLUMN */}
+              <div className="space-y-6 lg:col-span-3">
                 {isStudent ? (
-                  <>
-                    <div>
-                      <span className="text-[10px] text-muted uppercase tracking-wider block font-bold">Academic Info</span>
-                      <span className="text-sm font-semibold text-foreground">{profile?.branch} ({profile?.year})</span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-muted uppercase tracking-wider block font-bold">Languages</span>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {profile?.languages?.map((l: string) => (
-                          <span key={l} className="text-[9px] bg-background/50 border border-card-border text-foreground px-2 py-0.5 rounded font-medium">
-                            {l}
-                          </span>
-                        ))}
+                  team ? (
+                    <>
+                      <Reveal direction="left">
+                        <Panel
+                          title="My team"
+                          action={<Chip tone="primary">{String(team.status).toLowerCase()}</Chip>}
+                        >
+                          <div className="mb-6">
+                            <h4 className="text-2xl font-extrabold tracking-tight text-foreground">
+                              {team.name}
+                            </h4>
+                            <p className="mt-1 text-xs text-foreground/60">
+                              Track{' '}
+                              <span className="font-bold text-primary">
+                                {team.track.problemStatementCode}
+                              </span>{' '}
+                              — {team.track.name}
+                            </p>
+                          </div>
+
+                          <div className="mb-6">
+                            <div className="mb-3 flex items-center justify-between gap-4">
+                              <Label>Team roster</Label>
+                              <span className="text-[11px] font-semibold text-foreground/60">
+                                {filledSeats} of 6 seats filled
+                              </span>
+                            </div>
+
+                            <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-[rgba(209,199,189,0.55)]">
+                              <motion.div
+                                initial={{ scaleX: 0 }}
+                                animate={{ scaleX: filledSeats / 6 }}
+                                transition={{ duration: 0.9, ease: EASE.outExpo, delay: 0.2 }}
+                                style={{ transformOrigin: 'left' }}
+                                className="h-full rounded-full bg-gradient-to-r from-[#AC9C8D] to-primary"
+                              />
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
+                              {Array.from({ length: 6 }, (_, index) => {
+                                const member = team.members[index];
+                                return member ? (
+                                  <motion.div
+                                    key={member.userId}
+                                    initial={{ opacity: 0, y: 12 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{
+                                      delay: 0.1 + index * 0.05,
+                                      duration: DURATION.card,
+                                      ease: EASE.outExpo,
+                                    }}
+                                    whileHover={{ y: -4, scale: 1.04 }}
+                                    className="min-w-0"
+                                  >
+                                    <Avatar
+                                      avatarUrl={member.avatarUrl}
+                                      name={member.name}
+                                      className="aspect-square w-full rounded-xl border border-[rgba(209,199,189,0.7)] text-xl shadow-[0_4px_16px_rgba(50,45,41,0.08)]"
+                                    />
+                                    <p className="mt-1.5 truncate text-center text-[10px] font-semibold text-foreground">
+                                      {member.name}
+                                    </p>
+                                    {member.userId === team.leaderId && (
+                                      <p className="text-center text-[9px] font-bold uppercase tracking-wider text-primary">
+                                        Leader
+                                      </p>
+                                    )}
+                                  </motion.div>
+                                ) : (
+                                  <div
+                                    key={`open-seat-${index}`}
+                                    aria-label="Open team seat"
+                                    className="grid aspect-square place-items-center rounded-xl border border-dashed border-[rgba(172,156,141,0.6)] bg-[rgba(239,233,225,0.45)] text-lg text-muted"
+                                  >
+                                    +
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {team.leaderContact && (
+                            <details className="group overflow-hidden rounded-2xl border border-[rgba(172,156,141,0.5)] bg-[rgba(239,233,225,0.6)]">
+                              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-3.5">
+                                <div className="min-w-0">
+                                  <Label>Team leader</Label>
+                                  <span className="text-sm font-bold text-foreground">
+                                    {team.leaderContact.name}
+                                  </span>
+                                </div>
+                                <span className="inline-flex shrink-0 items-center gap-1.5 text-xs font-bold text-primary">
+                                  Contact
+                                  <svg
+                                    className="size-3.5 transition-transform duration-300 group-open:rotate-180"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    aria-hidden
+                                  >
+                                    <path
+                                      d="m6 9 6 6 6-6"
+                                      stroke="currentColor"
+                                      strokeWidth="2"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    />
+                                  </svg>
+                                </span>
+                              </summary>
+
+                              <div className="space-y-3 border-t border-[rgba(209,199,189,0.6)] px-4 py-4">
+                                <div>
+                                  <Label>Email address</Label>
+                                  <div className="mt-1.5 flex items-center justify-between gap-2 rounded-lg border border-[rgba(209,199,189,0.7)] bg-[rgba(248,246,242,0.8)] px-3 py-2">
+                                    <a
+                                      href={`mailto:${team.leaderContact.email}`}
+                                      className="truncate text-xs font-semibold text-primary hover:underline"
+                                    >
+                                      {team.leaderContact.email || 'leader@glbajaj.org'}
+                                    </a>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(
+                                          team.leaderContact.email || ''
+                                        );
+                                        setCopied(true);
+                                        window.setTimeout(() => setCopied(false), 1600);
+                                      }}
+                                      className="shrink-0 rounded-md border border-[rgba(114,56,61,0.2)] bg-[rgba(114,56,61,0.08)] px-2 py-1 text-[10px] font-bold text-primary transition-colors hover:bg-[rgba(114,56,61,0.16)]"
+                                    >
+                                      {copied ? 'Copied' : 'Copy'}
+                                    </button>
+                                  </div>
+                                </div>
+
+                                <div>
+                                  <Label>Phone / WhatsApp</Label>
+                                  <div className="mt-1.5 flex flex-wrap items-center gap-3 rounded-lg border border-[rgba(209,199,189,0.7)] bg-[rgba(248,246,242,0.8)] px-3 py-2">
+                                    <a
+                                      href={`tel:${team.leaderContact.whatsapp || ''}`}
+                                      className="text-xs font-semibold text-foreground hover:text-primary"
+                                    >
+                                      {team.leaderContact.whatsapp || 'Not provided'}
+                                    </a>
+                                    {team.leaderContact.whatsapp && (
+                                      <a
+                                        href={`https://wa.me/${team.leaderContact.whatsapp.replace(/\D/g, '')}`}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="text-xs font-bold text-primary hover:underline"
+                                      >
+                                        Open WhatsApp ↗
+                                      </a>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </details>
+                          )}
+                        </Panel>
+                      </Reveal>
+
+                      <Reveal direction="left" delay={0.08}>
+                        <div className="surface-raised flex flex-col items-start justify-between gap-4 rounded-3xl p-6 sm:flex-row sm:items-center">
+                          <div>
+                            <Label>Assigned mentor</Label>
+                            {team.mentor ? (
+                              <p className="mt-1 text-sm font-bold text-foreground">
+                                {team.mentor.name}{' '}
+                                <span className="font-medium text-foreground/55">
+                                  ({team.mentor.designation})
+                                </span>
+                              </p>
+                            ) : (
+                              <p className="mt-1 text-sm font-semibold text-foreground/70">
+                                No mentor assigned yet.
+                              </p>
+                            )}
+                          </div>
+                          {!team.mentor && (
+                            <PremiumButton size="sm" href="/team-formation/find-mentors">
+                              Find mentors
+                            </PremiumButton>
+                          )}
+                        </div>
+                      </Reveal>
+                    </>
+                  ) : (
+                    <Reveal direction="left" scale>
+                      <div className="surface-raised relative overflow-hidden rounded-3xl p-8 text-center sm:p-12">
+                        <Aurora variant="rose" spotlight={false} />
+                        <div className="relative">
+                          <div className="mx-auto grid size-14 place-items-center rounded-2xl border border-[rgba(114,56,61,0.2)] bg-[rgba(114,56,61,0.08)] text-primary">
+                            <svg className="size-6" viewBox="0 0 24 24" fill="none" aria-hidden>
+                              <path
+                                d="M17 20h5v-2a3 3 0 0 0-5.36-1.87M17 20H7m10 0v-2c0-.66-.13-1.29-.36-1.87m0 0a5 5 0 0 0-9.28 0M7 20H2v-2a3 3 0 0 1 5.36-1.87M7 20v-2c0-.66.13-1.29.36-1.87m0 0a5 5 0 1 1 9.28 0M15 7a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
+                                stroke="currentColor"
+                                strokeWidth="1.7"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                            </svg>
+                          </div>
+                          <h3 className="mt-5 text-xl font-extrabold tracking-tight text-foreground">
+                            You don&apos;t have a team yet
+                          </h3>
+                          <p className="mx-auto mt-2.5 max-w-sm text-sm leading-relaxed text-foreground/65">
+                            To participate in SIH@GLBGOI you must either join an existing forming
+                            team or start a new one as a leader.
+                          </p>
+                          <div className="mt-7 flex flex-wrap justify-center gap-3">
+                            <PremiumButton href="/team-formation/create-team">
+                              Create a team
+                            </PremiumButton>
+                            <PremiumButton variant="glass" href="/team-formation/find-teammates">
+                              Find teammates
+                            </PremiumButton>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-muted uppercase tracking-wider block font-bold">Technical Skills</span>
-                      <div className="flex flex-wrap gap-1.5 mt-1">
-                        {profile?.skills?.map((s: string) => (
-                          <span key={s} className="text-[9px] bg-primary/10 border border-primary/20 text-primary px-2 py-0.5 rounded font-medium">
-                            {s}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-muted uppercase tracking-wider block font-bold">Soft Skills</span>
-                      <div className="flex flex-wrap gap-1.5 mt-1">
-                        {profile?.softSkills?.map((s: string) => (
-                          <span key={s} className="text-[9px] bg-accent/10 border border-accent/20 text-accent px-2 py-0.5 rounded font-medium">
-                            {s}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-muted uppercase tracking-wider block font-bold mb-1.5">Social Profiles & Links</span>
-                      <div className="flex flex-wrap gap-2">
-                        {profile?.githubUrl && (
-                          <a
-                            href={profile.githubUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-xs font-bold text-foreground bg-card border border-card-border hover:border-primary/40 px-2.5 py-1 rounded-lg transition-all"
-                          >
-                            🐙 GitHub ↗
-                          </a>
-                        )}
-                        {profile?.linkedinUrl && (
-                          <a
-                            href={profile.linkedinUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-xs font-bold text-cyan-400 bg-cyan-950/20 border border-cyan-800/30 hover:border-cyan-400/50 px-2.5 py-1 rounded-lg transition-all"
-                          >
-                            💼 LinkedIn ↗
-                          </a>
-                        )}
-                        {profile?.resumeUrl && (
-                          <a
-                            href={profile.resumeUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-xs font-bold text-pink-400 bg-pink-950/20 border border-pink-800/30 hover:border-pink-400/50 px-2.5 py-1 rounded-lg transition-all"
-                          >
-                            📄 Resume ↗
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                  </>
+                    </Reveal>
+                  )
                 ) : (
                   <>
-                    <div>
-                      <span className="text-[10px] text-muted uppercase tracking-wider block font-bold">Designation</span>
-                      <span className="text-sm font-semibold text-foreground">{profile?.designation} at {profile?.organization}</span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-muted uppercase tracking-wider block font-bold">Expertise</span>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {profile?.expertise?.map((e: string) => (
-                          <span key={e} className="text-[9px] bg-accent/10 border border-accent/20 text-accent px-2 py-0.5 rounded font-medium">
-                            {e}
+                    <Reveal direction="left">
+                      <Panel title="Mentoring capacity">
+                        <div className="mb-3 flex items-baseline justify-between gap-4">
+                          <span className="text-3xl font-extrabold tracking-tight text-foreground">
+                            <Counter to={profile?.currentLoad ?? 0} duration={1.2} />
+                            <span className="text-lg font-bold text-muted">
+                              {' '}
+                              / {profile?.capacity ?? 0}
+                            </span>
                           </span>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-muted uppercase tracking-wider block font-bold">Biography</span>
-                      <p className="text-xs text-muted leading-relaxed mt-1 bg-background/30 p-2.5 rounded-lg border border-card-border">{profile?.bio || 'No bio provided.'}</p>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-muted uppercase tracking-wider block font-bold mb-1">Verification Status</span>
-                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold border ${profile?.verified
-                          ? 'bg-green-600/10 border-green-500/20 text-green-400'
-                          : 'bg-yellow-600/10 border-yellow-500/20 text-yellow-400'
-                        }`}>
-                        {profile?.verified ? '✓ Verified Mentor' : '⌛ Awaiting Verification'}
-                      </span>
-                    </div>
+                          <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted">
+                            teams
+                          </span>
+                        </div>
+                        <div className="h-3 overflow-hidden rounded-full border border-[rgba(209,199,189,0.7)] bg-[rgba(217,217,217,0.6)]">
+                          <motion.div
+                            initial={{ scaleX: 0 }}
+                            animate={{
+                              scaleX: profile?.capacity
+                                ? Math.min(1, (profile.currentLoad ?? 0) / profile.capacity)
+                                : 0,
+                            }}
+                            transition={{ duration: 1, ease: EASE.outExpo, delay: 0.25 }}
+                            style={{ transformOrigin: 'left' }}
+                            className="h-full rounded-full bg-gradient-to-r from-[#AC9C8D] via-[#8F464C] to-primary"
+                          />
+                        </div>
+                      </Panel>
+                    </Reveal>
+
+                    <Reveal direction="left" delay={0.06}>
+                      <Panel title="Teams I guide">
+                        {data.teams.length > 0 ? (
+                          <RevealGroup className="space-y-3" stagger={0.06} amount={0.1}>
+                            {data.teams.map((t: any) => (
+                              <RevealItem key={t.id}>
+                                <motion.div
+                                  whileHover={{ y: -3 }}
+                                  transition={SPRING.snappy}
+                                  className="flex items-center justify-between gap-4 rounded-2xl border border-[rgba(209,199,189,0.65)] bg-[rgba(248,246,242,0.7)] p-4 transition-colors hover:border-[rgba(114,56,61,0.24)]"
+                                >
+                                  <div className="min-w-0">
+                                    <span className="block truncate text-sm font-bold text-foreground">
+                                      {t.name}
+                                    </span>
+                                    <span className="mt-0.5 block truncate text-xs text-foreground/60">
+                                      Track: {t.track.name}
+                                    </span>
+                                  </div>
+                                  <Chip tone="accent">{t.memberCount} / 6</Chip>
+                                </motion.div>
+                              </RevealItem>
+                            ))}
+                          </RevealGroup>
+                        ) : (
+                          <p className="py-8 text-center text-sm text-foreground/55">
+                            You are not mentoring any teams yet.
+                          </p>
+                        )}
+                      </Panel>
+                    </Reveal>
+
+                    <Reveal direction="left" delay={0.12}>
+                      <Panel
+                        title="Pending team requests"
+                        action={
+                          data.pendingRequests.length > 0 ? (
+                            <Chip tone="primary">{data.pendingRequests.length} waiting</Chip>
+                          ) : undefined
+                        }
+                      >
+                        {data.pendingRequests.length > 0 ? (
+                          <div className="space-y-3">
+                            <AnimatePresence initial={false}>
+                              {data.pendingRequests.map((req: any) => (
+                                <motion.div
+                                  key={req.id}
+                                  layout
+                                  initial={{ opacity: 0, y: 12 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, x: -24, filter: 'blur(6px)' }}
+                                  transition={{ duration: DURATION.card, ease: EASE.outExpo }}
+                                  className="space-y-4 rounded-2xl border border-[rgba(209,199,189,0.65)] bg-[rgba(248,246,242,0.7)] p-4"
+                                >
+                                  <div>
+                                    <span className="text-sm font-bold text-foreground">
+                                      {req.team.name}
+                                    </span>
+                                    <span className="mt-0.5 block text-xs text-foreground/60">
+                                      Track: {req.team.track.name}
+                                    </span>
+                                    {req.message && (
+                                      <p className="mt-2.5 rounded-xl border-l-2 border-[rgba(114,56,61,0.35)] bg-[rgba(239,233,225,0.7)] px-3 py-2 text-xs italic leading-relaxed text-foreground/75">
+                                        {req.message}
+                                      </p>
+                                    )}
+                                  </div>
+
+                                  <div className="flex flex-wrap gap-2">
+                                    <PremiumButton
+                                      size="sm"
+                                      loading={actionLoading === req.id}
+                                      disabled={actionLoading !== null}
+                                      onClick={() => handleRequestResponse(req.id, 'accept')}
+                                    >
+                                      Accept
+                                    </PremiumButton>
+                                    <PremiumButton
+                                      size="sm"
+                                      variant="glass"
+                                      disabled={actionLoading !== null}
+                                      onClick={() => handleRequestResponse(req.id, 'decline')}
+                                    >
+                                      Decline
+                                    </PremiumButton>
+                                  </div>
+                                </motion.div>
+                              ))}
+                            </AnimatePresence>
+                          </div>
+                        ) : (
+                          <p className="py-8 text-center text-sm text-foreground/55">
+                            No incoming team requests.
+                          </p>
+                        )}
+                      </Panel>
+                    </Reveal>
                   </>
                 )}
               </div>
             </div>
-          </motion.div>
-
-          {/* RIGHT COLUMN: Action center and team status */}
-          <div className="lg:col-span-2 space-y-6">
-            {isStudent ? (
-              /* Student Dashboard Content */
-              <div className="space-y-6">
-                {data.team ? (
-                  /* Team card */
-                  <motion.div
-                    variants={cardVariants}
-                    className="glass-card rounded-2xl p-6 border border-card-border space-y-6 shadow-xl"
-                  >
-                    <div className="flex justify-between items-start border-b border-card-border pb-4">
-                      <div>
-                        <span className="text-[10px] text-primary font-bold tracking-wider uppercase">My Team</span>
-                        <h3 className="text-2xl font-extrabold text-foreground mt-0.5">{data.team.name}</h3>
-                        <p className="text-xs text-muted mt-1">
-                          Track: <span className="text-foreground font-semibold">{data.team.track.problemStatementCode}</span> - {data.team.track.name}
-                        </p>
-                      </div>
-                      <span className="inline-flex items-center rounded-md bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-bold text-primary capitalize">
-                        {data.team.status}
-                      </span>
-                    </div>
-
-                    {/* Team roster */}
-                    <div>
-                      <div className="mb-3 flex items-center justify-between gap-4">
-                        <h4 className="text-[10px] font-bold text-muted uppercase tracking-wider">Team roster</h4>
-                        <span className="text-xs text-muted">{data.team.members.length} of 6 seats filled</span>
-                      </div>
-                      <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
-                        {Array.from({ length: 6 }, (_, index) => {
-                          const member = data.team.members[index];
-                          return member ? (
-                            <motion.div key={member.userId} whileHover={{ y: -3, scale: 1.03 }} className="group min-w-0">
-                              <Avatar avatarUrl={member.avatarUrl} name={member.name} className="aspect-square w-full rounded-xl border border-card-border shadow-lg" />
-                              <p className="mt-1.5 truncate text-center text-[10px] font-semibold text-foreground">{member.name}</p>
-                              {member.userId === data.team.leaderId && <p className="text-center text-[9px] font-semibold text-primary">Leader</p>}
-                            </motion.div>
-                          ) : (
-                            <div key={`open-seat-${index}`} className="aspect-square rounded-xl border border-dashed border-card-border bg-background/30 flex items-center justify-center text-lg text-muted" aria-label="Open team seat">+</div>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Interactive Team Leader Contact Button & Hover Popover */}
-                    {data.team.leaderContact && (
-                      <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-md">
-                        <div>
-                          <h4 className="text-sm font-bold text-foreground flex items-center gap-1.5">
-                            👑 Team Leader Contact
-                          </h4>
-                          <p className="text-xs text-muted mt-0.5">
-                            Leader: <strong className="text-primary font-bold">{data.team.leaderContact.name}</strong>
-                          </p>
-                        </div>
-
-                        <div className="relative group">
-                          <button
-                            type="button"
-                            className="rounded-xl bg-primary hover:bg-primary-hover px-4 py-2 text-xs font-bold text-white shadow-lg shadow-primary/20 transition-all flex items-center gap-1.5 cursor-pointer"
-                          >
-                            📞 Contact Team Leader
-                          </button>
-
-                          {/* Hover / Click Contact Details Card */}
-                          <div className="absolute right-0 bottom-full mb-2 w-72 p-4 bg-card border border-primary/40 rounded-2xl shadow-2xl space-y-3 hidden group-hover:block group-focus-within:block z-50 animate-in fade-in zoom-in-95 duration-150">
-                            <div className="flex justify-between items-center border-b border-card-border pb-1.5">
-                              <span className="text-xs font-extrabold text-foreground">
-                                📞 Leader Direct Channels
-                              </span>
-                              <span className="text-[9px] bg-primary/20 text-primary font-bold px-2 py-0.5 rounded-full">
-                                Leader Only
-                              </span>
-                            </div>
-
-                            {/* Email Row */}
-                            <div className="space-y-1">
-                              <span className="text-[10px] text-muted font-bold uppercase tracking-wider block">Email Address:</span>
-                              <div className="flex items-center justify-between gap-2 p-2 bg-background/60 rounded-lg border border-card-border">
-                                <a
-                                  href={`mailto:${data.team.leaderContact.email}`}
-                                  className="text-xs font-semibold text-primary hover:underline truncate"
-                                >
-                                  ✉️ {data.team.leaderContact.email || 'leader@glbajaj.org'}
-                                </a>
-                                <button
-                                  type="button"
-                                  onClick={() => navigator.clipboard.writeText(data.team.leaderContact.email || '')}
-                                  className="text-[10px] font-bold bg-primary/10 hover:bg-primary/20 text-primary px-2 py-1 rounded transition-colors"
-                                >
-                                  Copy
-                                </button>
-                              </div>
-                            </div>
-
-                            {/* Phone / WhatsApp Row */}
-                            <div className="space-y-1">
-                              <span className="text-[10px] text-muted font-bold uppercase tracking-wider block">Phone / WhatsApp:</span>
-                              <div className="flex items-center justify-between gap-2 p-2 bg-background/60 rounded-lg border border-card-border">
-                                <div className="flex gap-2">
-                                  <a
-                                    href={`tel:${data.team.leaderContact.whatsapp || '+91 9876543210'}`}
-                                    className="text-xs font-semibold text-green-400 hover:underline"
-                                  >
-                                    📱 {data.team.leaderContact.whatsapp || '+91 9876543210'}
-                                  </a>
-                                  {data.team.leaderContact.whatsapp && (
-                                    <a
-                                      href={`https://wa.me/${data.team.leaderContact.whatsapp.replace(/\D/g, '')}`}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      className="text-xs font-bold text-teal-400 hover:underline"
-                                    >
-                                      💬 WhatsApp
-                                    </a>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Mentor Status */}
-                    <div className="p-4 rounded-xl bg-background/30 border border-card-border flex items-center justify-between">
-                      <div>
-                        <h4 className="text-[10px] font-bold text-muted uppercase tracking-wider">Assigned Mentor</h4>
-                        {data.team.mentor ? (
-                          <p className="text-sm font-bold text-foreground mt-1">
-                            {data.team.mentor.name} <span className="text-xs text-muted">({data.team.mentor.designation})</span>
-                          </p>
-                        ) : (
-                          <p className="text-xs text-yellow-400 font-semibold mt-1">No mentor assigned yet.</p>
-                        )}
-                      </div>
-                      {!data.team.mentor && (
-                        <button
-                          onClick={() => router.push('/team-formation/find-mentors')}
-                          className="rounded-lg bg-primary hover:bg-primary-hover px-4 py-2 text-xs font-bold text-white cursor-pointer transform hover:-translate-y-0.5 transition-all"
-                        >
-                          Find Mentors
-                        </button>
-                      )}
-                    </div>
-                  </motion.div>
-                ) : (
-                  /* No team card */
-                  <motion.div
-                    variants={cardVariants}
-                    className="glass-card rounded-2xl p-8 border border-card-border text-center space-y-6 shadow-xl"
-                  >
-                    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 border border-primary/20 text-primary text-2xl">
-                      🚀
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-bold text-foreground">You don't have a team yet</h3>
-                      <p className="text-sm text-muted mt-2 max-w-sm mx-auto leading-relaxed">
-                        To participate in SIH@GLBGOI, you must either join an existing forming team or start a new one as a leader.
-                      </p>
-                    </div>
-                    <div className="flex justify-center gap-4 pt-2">
-                      <button
-                        onClick={() => router.push('/team-formation/create-team')}
-                        className="rounded-lg bg-primary hover:bg-primary-hover px-6 py-2.5 text-sm font-bold text-white cursor-pointer shadow-lg shadow-primary/20"
-                      >
-                        Create a Team
-                      </button>
-                      <button
-                        onClick={() => router.push('/team-formation/find-teammates')}
-                        className="rounded-lg bg-card-border border border-card-border px-6 py-2.5 text-sm font-bold text-foreground hover:bg-background transition-colors cursor-pointer"
-                      >
-                        Find Teammates
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
-              </div>
-            ) : (
-              /* Mentor Dashboard Content */
-              <div className="space-y-6">
-                {/* Mentorship stats capacity bar */}
-                <motion.div variants={cardVariants} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="glass-card rounded-2xl p-6 border border-card-border space-y-4">
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs text-muted block font-bold uppercase tracking-wider">Mentoring Capacity</span>
-                      <span className="text-xl font-extrabold text-primary">{profile?.currentLoad} / {profile?.capacity} teams</span>
-                    </div>
-                    {/* Animated Capacity Progress Bar */}
-                    <div className="w-full h-3 bg-card-border rounded-full overflow-hidden border border-card-border">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${(profile?.currentLoad / profile?.capacity) * 100}%` }}
-                        transition={{ type: 'spring', stiffness: 50, damping: 10, delay: 0.2 }}
-                        className="h-full bg-gradient-to-r from-primary to-accent rounded-full"
-                      />
-                    </div>
-                  </div>
-                  <div className="glass-card rounded-2xl p-6 border border-card-border flex flex-col justify-center">
-                    <span className="text-xs text-muted block font-bold uppercase tracking-wider">Incoming Requests</span>
-                    <span className="text-3xl font-extrabold text-accent mt-1">{data.pendingRequests?.length || 0}</span>
-                  </div>
-                </motion.div>
-
-                {/* Left column: Mentored Teams */}
-                <motion.div variants={cardVariants} className="glass-card rounded-2xl p-6 border border-card-border shadow-xl">
-                  <h3 className="text-base font-bold text-foreground mb-4">Teams I Guide</h3>
-                  {data.teams.length > 0 ? (
-                    <div className="space-y-4">
-                      {data.teams.map((t: any) => (
-                        <div key={t.id} className="flex justify-between items-center border border-card-border p-4 rounded-xl bg-background/50 pop-out-hover">
-                          <div>
-                            <span className="text-sm font-bold text-foreground block">{t.name}</span>
-                            <span className="text-xs text-muted mt-0.5">Track: {t.track.name}</span>
-                          </div>
-                          <span className="text-xs font-semibold text-muted bg-card-border border border-card-border px-3 py-1 rounded-md">
-                            {t.memberCount} / 6 Members
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted text-center py-6">You are not mentoring any teams yet.</p>
-                  )}
-                </motion.div>
-
-                {/* Right column: Pending requests */}
-                <motion.div variants={cardVariants} className="glass-card rounded-2xl p-6 border border-card-border shadow-xl">
-                  <h3 className="text-base font-bold text-foreground mb-4">Pending Team Requests</h3>
-                  {data.pendingRequests.length > 0 ? (
-                    <div className="space-y-4">
-                      {data.pendingRequests.map((req: any) => (
-                        <div key={req.id} className="border border-card-border p-4 rounded-xl bg-background/50 space-y-4 pop-out-hover">
-                          <div>
-                            <span className="text-sm font-bold text-foreground">{req.team.name}</span>
-                            <span className="text-xs text-muted block mt-1">Track: {req.team.track.name}</span>
-                            {req.message && (
-                              <p className="text-xs text-foreground italic mt-2 bg-background/80 p-2.5 rounded-lg border border-card-border">
-                                "{req.message}"
-                              </p>
-                            )}
-                          </div>
-
-                          <div className="flex gap-2">
-                            <button
-                              disabled={actionLoading !== null}
-                              onClick={() => handleRequestResponse(req.id, 'accept')}
-                              className="rounded-lg bg-green-600 hover:bg-green-700 px-4 py-2 text-xs font-bold text-white cursor-pointer disabled:opacity-50"
-                            >
-                              {actionLoading === req.id ? 'Loading...' : 'Accept'}
-                            </button>
-                            <button
-                              disabled={actionLoading !== null}
-                              onClick={() => handleRequestResponse(req.id, 'decline')}
-                              className="rounded-lg bg-card-border border border-card-border px-4 py-2 text-xs font-bold text-foreground hover:bg-background cursor-pointer disabled:opacity-50"
-                            >
-                              Decline
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted text-center py-6">No incoming team requests.</p>
-                  )}
-                </motion.div>
-              </div>
-            )}
           </div>
-        </div>
-      </motion.main>
+        </section>
+      </main>
+
+      <Footer />
+
+      <AnimatePresence>
+        {notice && (
+          <motion.div
+            role="status"
+            initial={{ opacity: 0, y: 24, filter: 'blur(8px)' }}
+            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, y: 16, filter: 'blur(8px)' }}
+            transition={{ duration: DURATION.card, ease: EASE.outExpo }}
+            className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-2xl border border-[rgba(114,56,61,0.25)] bg-[rgba(248,246,242,0.92)] px-5 py-3 text-sm font-semibold text-foreground shadow-[0_16px_48px_rgba(50,45,41,0.16)] backdrop-blur-xl"
+          >
+            {notice}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

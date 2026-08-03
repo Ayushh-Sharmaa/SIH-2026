@@ -1,9 +1,20 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import Image from 'next/image';
 import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
+import {
+  Aurora,
+  Counter,
+  PremiumButton,
+  Reveal,
+  SplitText,
+  TiltCard,
+  DURATION,
+  EASE,
+} from '@/components/motion';
 
 interface Student {
   userId: string;
@@ -25,27 +36,70 @@ interface Track {
   name: string;
 }
 
-const AVATAR_COLORS = ['from-blue-500 to-indigo-500', 'from-emerald-500 to-teal-500', 'from-rose-500 to-pink-500', 'from-amber-500 to-orange-500'];
+const AVATAR_WASHES = [
+  'from-[#AC9C8D] to-[#D1C7BD]',
+  'from-[#D1C7BD] to-[#D9D9D9]',
+  'from-[#D9D9D9] to-[#AC9C8D]',
+  'from-[#EFE9E1] to-[#D1C7BD]',
+];
+
+const SOFT_SKILL_OPTIONS = [
+  'PPT Making',
+  'Public Speaking/Presenting',
+  'Technical Writing',
+  'UI/UX Design',
+  'Video Editing',
+  'Management',
+];
+const LANGUAGE_OPTIONS = ['English', 'Hindi'];
 
 function ProfileAvatar({ avatarUrl, name }: { avatarUrl?: string | null; name: string }) {
   if (avatarUrl?.startsWith('data:image/') || avatarUrl?.startsWith('http')) {
-    return <Image unoptimized src={avatarUrl} alt={`${name}'s profile`} width={48} height={48} className="h-12 w-12 rounded-xl object-cover" />;
+    return (
+      <Image
+        unoptimized
+        src={avatarUrl}
+        alt={`${name}'s profile`}
+        width={56}
+        height={56}
+        className="size-12 rounded-2xl object-cover"
+      />
+    );
   }
 
-  const color = AVATAR_COLORS[name.length % AVATAR_COLORS.length];
+  const wash = AVATAR_WASHES[name.length % AVATAR_WASHES.length];
   return (
-    <span aria-label={`${name}'s profile`} className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${color} text-sm font-bold text-white`}>
-      {name.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase()}
+    <span
+      aria-label={`${name}'s profile`}
+      className={`flex size-12 shrink-0 items-center justify-center rounded-2xl border border-[rgba(209,199,189,0.7)] bg-gradient-to-br ${wash} text-sm font-black text-foreground`}
+    >
+      {name
+        .split(' ')
+        .map((part) => part[0])
+        .join('')
+        .slice(0, 2)
+        .toUpperCase()}
     </span>
   );
 }
+
+function FilterLabel({ children }: { children: string }) {
+  return (
+    <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
+      {children}
+    </span>
+  );
+}
+
+const CONTROL =
+  'w-full rounded-xl border border-[rgba(209,199,189,0.8)] bg-[rgba(248,246,242,0.65)] px-3.5 py-2 text-sm text-foreground outline-none transition-[border-color,box-shadow,background-color] duration-250 focus:border-primary focus:bg-[rgba(248,246,242,0.95)] focus:shadow-[0_0_0_4px_rgba(114,56,61,0.10)]';
 
 export default function FindTeammatesPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [tracks, setTracks] = useState<Track[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // Filters state
   const [skill, setSkill] = useState('');
   const [softSkill, setSoftSkill] = useState('');
   const [language, setLanguage] = useState('');
@@ -53,47 +107,53 @@ export default function FindTeammatesPage() {
   const [inviteState, setInviteState] = useState<Record<string, 'sending' | 'sent'>>({});
   const [notice, setNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  const softSkillsOptions = ['PPT Making', 'Public Speaking/Presenting', 'Technical Writing', 'UI/UX Design', 'Video Editing', 'Management'];
-  const languageOptions = ['English', 'Hindi'];
+  const fetchTeammates = useCallback(
+    async (filters?: { skill: string; softSkill: string; language: string; trackId: string }) => {
+      const f = filters ?? { skill, softSkill, language, trackId };
+      setRefreshing(true);
+      try {
+        const queryParams = new URLSearchParams();
+        if (f.skill) queryParams.append('skill', f.skill);
+        if (f.softSkill) queryParams.append('softSkill', f.softSkill);
+        if (f.language) queryParams.append('language', f.language);
+        if (f.trackId) queryParams.append('trackId', f.trackId);
 
-  const fetchTeammates = async () => {
-    try {
-      const queryParams = new URLSearchParams();
-      if (skill) queryParams.append('skill', skill);
-      if (softSkill) queryParams.append('softSkill', softSkill);
-      if (language) queryParams.append('language', language);
-      if (trackId) queryParams.append('trackId', trackId);
-
-      const res = await fetch(`/api/students?${queryParams.toString()}`);
-      const data = await res.json();
-      if (data.success) {
-        setStudents(data.students);
+        const res = await fetch(`/api/students?${queryParams.toString()}`);
+        const data = await res.json();
+        if (data.success) setStudents(data.students);
+      } catch (err) {
+        console.error('Fetch teammates error:', err);
+      } finally {
+        setRefreshing(false);
       }
-    } catch (err) {
-      console.error('Fetch teammates error:', err);
-    }
-  };
+    },
+    [skill, softSkill, language, trackId]
+  );
 
   useEffect(() => {
     async function initPage() {
-      setLoading(true);
-      // Fetch tracks first
       try {
         const res = await fetch('/api/tracks');
         const data = await res.json();
-        if (data.success) {
-          setTracks(data.tracks);
-        }
+        if (data.success) setTracks(data.tracks);
       } catch (err) {
         console.error('Fetch tracks failed:', err);
       }
-      await fetchTeammates();
+      await fetchTeammates({ skill: '', softSkill: '', language: '', trackId: '' });
       setLoading(false);
     }
     initPage();
+    // Runs once on mount; later fetches are user-driven.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleSearch = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (!notice) return;
+    const t = window.setTimeout(() => setNotice(null), 5000);
+    return () => window.clearTimeout(t);
+  }, [notice]);
+
+  const handleSearch = (e: FormEvent) => {
     e.preventDefault();
     fetchTeammates();
   };
@@ -103,9 +163,7 @@ export default function FindTeammatesPage() {
     setSoftSkill('');
     setLanguage('');
     setTrackId('');
-    setTimeout(() => {
-      fetchTeammates();
-    }, 50);
+    fetchTeammates({ skill: '', softSkill: '', language: '', trackId: '' });
   };
 
   const sendInvite = async (student: Student) => {
@@ -122,212 +180,339 @@ export default function FindTeammatesPage() {
       if (!response.ok) throw new Error(result.error || 'Could not send the invitation.');
 
       setInviteState((previous) => ({ ...previous, [student.userId]: 'sent' }));
-      setNotice({ type: 'success', message: `Invitation sent to ${student.name}. They can accept it from their notifications.` });
+      setNotice({
+        type: 'success',
+        message: `Invitation sent to ${student.name}. They can accept it from their notifications.`,
+      });
     } catch (error: unknown) {
       setInviteState((previous) => {
         const next = { ...previous };
         delete next[student.userId];
         return next;
       });
-      setNotice({ type: 'error', message: error instanceof Error ? error.message : 'Could not send the invitation.' });
+      setNotice({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'Could not send the invitation.',
+      });
     }
   };
 
+  const activeFilters = [skill, softSkill, language, trackId].filter(Boolean).length;
+
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="flex min-h-screen flex-col bg-background text-foreground">
       <Navbar />
 
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-extrabold tracking-tight text-foreground">
-            Find Teammates
-          </h1>
-          <p className="text-sm text-muted mt-1">
-            Browse and filter students looking for SIH teams based on their skills, fluency, and track interests.
-          </p>
-        </div>
+      <main id="main" className="flex-1">
+        {/* ── HEADER BAND ── */}
+        <section className="section-dune relative overflow-hidden">
+          <Aurora variant="warm" spotlight={false} />
+          <div className="relative mx-auto flex max-w-7xl flex-col gap-6 px-4 py-12 sm:px-6 lg:flex-row lg:items-end lg:justify-between lg:px-8">
+            <div>
+              <Reveal direction="none" blur={false}>
+                <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary">
+                  Talent directory
+                </span>
+              </Reveal>
+              <SplitText
+                as="h1"
+                text="Find teammates"
+                className="mt-3 text-4xl font-extrabold leading-[1.05] tracking-tight text-foreground sm:text-5xl"
+                delay={0.08}
+              />
+              <Reveal delay={0.28} className="mt-3">
+                <p className="max-w-xl text-sm leading-relaxed text-foreground/65">
+                  Browse students looking for SIH teams and filter by technical skill, soft skill,
+                  language fluency, and track interest.
+                </p>
+              </Reveal>
+            </div>
 
-        {/* Filter Bar */}
-        <form onSubmit={handleSearch} className="glass-card rounded-2xl p-6 border border-card-border mb-8 grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
-          <div>
-            <label className="block text-xs font-semibold text-muted mb-1.5 uppercase tracking-wider">Tech Skill</label>
-            <input
-              type="text"
-              placeholder="e.g. React"
-              value={skill}
-              onChange={(e) => setSkill(e.target.value)}
-              className="w-full rounded-lg bg-background/50 border border-card-border px-3.5 py-1.5 text-sm text-foreground focus:outline-none focus:border-primary"
-            />
+            <Reveal direction="left" delay={0.2}>
+              <div className="surface-raised flex items-center gap-5 rounded-2xl px-5 py-4">
+                <div>
+                  <div className="text-3xl font-extrabold tracking-tight text-foreground">
+                    <Counter to={students.length} duration={1.2} />
+                  </div>
+                  <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
+                    profiles shown
+                  </div>
+                </div>
+                <div className="h-10 w-px bg-[rgba(172,156,141,0.5)]" />
+                <div>
+                  <div className="text-3xl font-extrabold tracking-tight text-foreground">
+                    {activeFilters}
+                  </div>
+                  <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
+                    filters active
+                  </div>
+                </div>
+              </div>
+            </Reveal>
           </div>
+        </section>
 
-          <div>
-            <label className="block text-xs font-semibold text-muted mb-1.5 uppercase tracking-wider">Soft Skill</label>
-            <select
-              value={softSkill}
-              onChange={(e) => setSoftSkill(e.target.value)}
-              className="w-full rounded-lg bg-background/50 border border-card-border px-3.5 py-1.5 text-sm text-foreground focus:outline-none focus:border-primary"
-            >
-              <option value="" className="bg-card text-muted">All Soft Skills</option>
-              {softSkillsOptions.map((opt) => (
-                <option key={opt} value={opt} className="bg-card text-foreground">{opt}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-muted mb-1.5 uppercase tracking-wider">Language</label>
-            <select
-              value={language}
-              onChange={(e) => setLanguage(e.target.value)}
-              className="w-full rounded-lg bg-background/50 border border-card-border px-3.5 py-1.5 text-sm text-foreground focus:outline-none focus:border-primary"
-            >
-              <option value="" className="bg-card text-muted">All Languages</option>
-              {languageOptions.map((opt) => (
-                <option key={opt} value={opt} className="bg-card text-foreground">{opt}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-muted mb-1.5 uppercase tracking-wider">Problem Statement</label>
-            <select
-              value={trackId}
-              onChange={(e) => setTrackId(e.target.value)}
-              className="w-full rounded-lg bg-background/50 border border-card-border px-3.5 py-1.5 text-sm text-foreground focus:outline-none focus:border-primary"
-            >
-              <option value="" className="bg-card text-muted">All Tracks</option>
-              {tracks.map((track) => (
-                <option key={track.id} value={track.id} className="bg-card text-foreground">
-                  {track.problemStatementCode}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex gap-2">
-            <button
-              type="submit"
-              className="flex-1 rounded-lg bg-primary hover:bg-primary-hover py-1.5 text-sm font-semibold text-white cursor-pointer"
-            >
-              Filter
-            </button>
-            <button
-              type="button"
-              onClick={handleReset}
-              className="flex-1 rounded-lg bg-card-border border border-card-border py-1.5 text-sm font-semibold text-foreground hover:bg-background transition-all cursor-pointer"
-            >
-              Reset
-            </button>
-          </div>
-        </form>
-
-        {notice && (
-          <div role="status" className={`mb-6 rounded-xl border px-4 py-3 text-sm ${notice.type === 'success' ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-300' : 'border-red-500/25 bg-red-500/10 text-red-300'}`}>
-            {notice.message}
-          </div>
-        )}
-
-        {loading ? (
-          <p className="text-center text-muted">Updating listings...</p>
-        ) : students.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {students.map((student) => (
-              <motion.article
-                key={student.userId}
-                whileHover={{ y: -3 }}
-                transition={{ duration: 0.18, ease: 'easeOut' }}
-                className="glass-card flex flex-col justify-between rounded-2xl border border-card-border p-6 shadow-lg transition-colors hover:border-primary/35"
+        {/* ── WORKSPACE: filter rail + results ── */}
+        <section className="surface-sunken">
+          <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 px-4 py-10 sm:px-6 lg:grid-cols-[280px_1fr] lg:px-8">
+            {/* filter rail */}
+            <Reveal direction="right">
+              <form
+                onSubmit={handleSearch}
+                className="surface-raised rounded-3xl p-6 lg:sticky lg:top-28"
               >
+                <h2 className="text-sm font-extrabold uppercase tracking-[0.14em] text-foreground">
+                  Refine
+                </h2>
+                <div className="my-5 h-px bg-gradient-to-r from-[rgba(172,156,141,0.55)] to-transparent" />
+
                 <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <ProfileAvatar avatarUrl={student.avatarUrl} name={student.name} />
-                    <div className="min-w-0">
-                      <h3 className="truncate text-lg font-bold text-foreground">{student.name}</h3>
-                      <span className="mt-0.5 block text-xs text-muted">{student.branch} · {student.year}</span>
-                    </div>
-                  </div>
+                  <label className="block">
+                    <FilterLabel>Tech skill</FilterLabel>
+                    <input
+                      type="text"
+                      placeholder="e.g. React"
+                      value={skill}
+                      onChange={(e) => setSkill(e.target.value)}
+                      className={CONTROL}
+                    />
+                  </label>
 
-                  <div>
-                    <span className="text-[10px] text-muted block font-semibold uppercase tracking-wider">Tech Skills</span>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {student.skills.map((sk) => (
-                        <span key={sk} className="text-[9px] bg-primary/10 border border-primary/20 text-primary px-1.5 py-0.5 rounded">
-                          {sk}
-                        </span>
+                  <label className="block">
+                    <FilterLabel>Soft skill</FilterLabel>
+                    <select
+                      value={softSkill}
+                      onChange={(e) => setSoftSkill(e.target.value)}
+                      className={CONTROL}
+                    >
+                      <option value="">All soft skills</option>
+                      {SOFT_SKILL_OPTIONS.map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
                       ))}
-                    </div>
-                  </div>
+                    </select>
+                  </label>
 
-                  <div>
-                    <span className="text-[10px] text-muted block font-semibold uppercase tracking-wider">Soft Skills & Language</span>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {student.softSkills.map((sk) => (
-                        <span key={sk} className="text-[9px] bg-accent/10 border border-accent/20 text-accent px-1.5 py-0.5 rounded">
-                          {sk}
-                        </span>
+                  <label className="block">
+                    <FilterLabel>Language</FilterLabel>
+                    <select
+                      value={language}
+                      onChange={(e) => setLanguage(e.target.value)}
+                      className={CONTROL}
+                    >
+                      <option value="">All languages</option>
+                      {LANGUAGE_OPTIONS.map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
                       ))}
-                      {student.languages.map((ln) => (
-                        <span key={ln} className="text-[9px] bg-background/80 border border-card-border text-foreground px-1.5 py-0.5 rounded">
-                          {ln}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
+                    </select>
+                  </label>
 
+                  <label className="block">
+                    <FilterLabel>Problem statement</FilterLabel>
+                    <select
+                      value={trackId}
+                      onChange={(e) => setTrackId(e.target.value)}
+                      className={CONTROL}
+                    >
+                      <option value="">All tracks</option>
+                      {tracks.map((track) => (
+                        <option key={track.id} value={track.id}>
+                          {track.problemStatementCode}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                 </div>
 
-                <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-card-border pt-4">
-                  <div className="flex flex-wrap gap-1.5">
-                    {student.githubUrl && (
-                      <a
-                        href={student.githubUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[11px] font-bold text-foreground bg-background/60 border border-card-border hover:border-primary/50 px-2 py-1 rounded-md transition-all flex items-center gap-1"
-                      >
-                        🐙 GitHub ↗
-                      </a>
-                    )}
-                    {student.linkedinUrl && (
-                      <a
-                        href={student.linkedinUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[11px] font-bold text-cyan-400 bg-cyan-950/20 border border-cyan-800/30 hover:border-cyan-400/50 px-2 py-1 rounded-md transition-all flex items-center gap-1"
-                      >
-                        💼 LinkedIn ↗
-                      </a>
-                    )}
-                    {student.resumeUrl && (
-                      <a
-                        href={student.resumeUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[11px] font-bold text-pink-400 bg-pink-950/20 border border-pink-800/30 hover:border-pink-400/50 px-2 py-1 rounded-md transition-all flex items-center gap-1"
-                      >
-                        📄 Resume ↗
-                      </a>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => sendInvite(student)}
-                    disabled={Boolean(inviteState[student.userId])}
-                    className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+                <div className="mt-6 flex gap-2">
+                  <PremiumButton
+                    type="submit"
+                    size="sm"
+                    loading={refreshing}
+                    magnetic={false}
+                    className="flex-1"
                   >
-                    {inviteState[student.userId] === 'sending' ? 'Sending…' : inviteState[student.userId] === 'sent' ? 'Invite sent' : 'Invite'}
-                  </button>
+                    Apply
+                  </PremiumButton>
+                  <PremiumButton
+                    variant="glass"
+                    size="sm"
+                    magnetic={false}
+                    onClick={handleReset}
+                    className="flex-1"
+                  >
+                    Reset
+                  </PremiumButton>
                 </div>
-              </motion.article>
-            ))}
+              </form>
+            </Reveal>
+
+            {/* results */}
+            <div>
+              {loading ? (
+                <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+                  {Array.from({ length: 6 }, (_, i) => (
+                    <div key={i} className="h-64 rounded-3xl skeleton-shimmer" />
+                  ))}
+                </div>
+              ) : students.length > 0 ? (
+                <motion.div
+                  layout
+                  className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3"
+                >
+                  <AnimatePresence mode="popLayout" initial={false}>
+                    {students.map((student, i) => {
+                      const state = inviteState[student.userId];
+                      return (
+                        <motion.div
+                          key={student.userId}
+                          layout
+                          initial={{ opacity: 0, y: 20, filter: 'blur(8px)' }}
+                          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                          exit={{ opacity: 0, scale: 0.96, filter: 'blur(8px)' }}
+                          transition={{
+                            duration: DURATION.card,
+                            ease: EASE.outExpo,
+                            delay: Math.min(i * 0.03, 0.3),
+                          }}
+                        >
+                          <TiltCard intensity={5} className="h-full">
+                            <article className="surface-raised flex h-full flex-col justify-between rounded-3xl p-6">
+                              <div className="space-y-4">
+                                <div className="flex items-center gap-3">
+                                  <ProfileAvatar
+                                    avatarUrl={student.avatarUrl}
+                                    name={student.name}
+                                  />
+                                  <div className="min-w-0">
+                                    <h3 className="truncate text-base font-extrabold tracking-tight text-foreground">
+                                      {student.name}
+                                    </h3>
+                                    <span className="mt-0.5 block truncate text-xs text-foreground/60">
+                                      {student.branch} · {student.year}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <div>
+                                  <FilterLabel>Tech skills</FilterLabel>
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {student.skills.map((sk) => (
+                                      <span
+                                        key={sk}
+                                        className="rounded-md border border-[rgba(114,56,61,0.22)] bg-[rgba(114,56,61,0.08)] px-2 py-0.5 text-[10px] font-semibold text-primary"
+                                      >
+                                        {sk}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+
+                                <div>
+                                  <FilterLabel>Soft skills &amp; language</FilterLabel>
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {student.softSkills.map((sk) => (
+                                      <span
+                                        key={sk}
+                                        className="rounded-md border border-[rgba(172,156,141,0.55)] bg-[rgba(172,156,141,0.18)] px-2 py-0.5 text-[10px] font-semibold text-foreground"
+                                      >
+                                        {sk}
+                                      </span>
+                                    ))}
+                                    {student.languages.map((ln) => (
+                                      <span
+                                        key={ln}
+                                        className="rounded-md border border-[rgba(209,199,189,0.7)] bg-[rgba(239,233,225,0.8)] px-2 py-0.5 text-[10px] font-semibold text-foreground/75"
+                                      >
+                                        {ln}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-[rgba(209,199,189,0.6)] pt-4">
+                                <div className="flex flex-wrap gap-1.5">
+                                  {[
+                                    { url: student.githubUrl, label: 'GitHub' },
+                                    { url: student.linkedinUrl, label: 'LinkedIn' },
+                                    { url: student.resumeUrl, label: 'Résumé' },
+                                  ]
+                                    .filter((l) => l.url)
+                                    .map((l) => (
+                                      <a
+                                        key={l.label}
+                                        href={l.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="rounded-md border border-[rgba(209,199,189,0.75)] bg-[rgba(239,233,225,0.7)] px-2 py-1 text-[10px] font-bold text-foreground transition-colors duration-250 hover:border-[rgba(114,56,61,0.3)] hover:text-primary"
+                                      >
+                                        {l.label} ↗
+                                      </a>
+                                    ))}
+                                </div>
+
+                                <PremiumButton
+                                  size="sm"
+                                  variant={state === 'sent' ? 'glass' : 'primary'}
+                                  loading={state === 'sending'}
+                                  disabled={Boolean(state)}
+                                  magnetic={false}
+                                  onClick={() => sendInvite(student)}
+                                >
+                                  {state === 'sent' ? 'Invite sent' : 'Invite'}
+                                </PremiumButton>
+                              </div>
+                            </article>
+                          </TiltCard>
+                        </motion.div>
+                      );
+                    })}
+                  </AnimatePresence>
+                </motion.div>
+              ) : (
+                <div className="surface-raised rounded-3xl border-dashed px-6 py-20 text-center">
+                  <p className="text-base font-extrabold tracking-tight text-foreground">
+                    No teammate profiles match these filters.
+                  </p>
+                  <p className="mt-1.5 text-sm text-foreground/60">
+                    Clear a filter or widen your skill search to discover more collaborators.
+                  </p>
+                  <div className="mt-6 flex justify-center">
+                    <PremiumButton variant="glass" size="sm" onClick={handleReset}>
+                      Reset filters
+                    </PremiumButton>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-        ) : (
-          <div className="rounded-2xl border border-dashed border-card-border bg-card/40 px-6 py-14 text-center">
-            <p className="text-base font-semibold text-foreground">No teammate profiles match these filters.</p>
-            <p className="mt-1 text-sm text-muted">Clear a filter or widen your skill search to discover more collaborators.</p>
-          </div>
-        )}
+        </section>
       </main>
+
+      <Footer />
+
+      <AnimatePresence>
+        {notice && (
+          <motion.div
+            role="status"
+            initial={{ opacity: 0, y: 24, filter: 'blur(8px)' }}
+            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, y: 16, filter: 'blur(8px)' }}
+            transition={{ duration: DURATION.card, ease: EASE.outExpo }}
+            className={`fixed bottom-6 left-1/2 z-50 max-w-md -translate-x-1/2 rounded-2xl border bg-[rgba(248,246,242,0.94)] px-5 py-3 text-sm font-semibold shadow-[0_16px_48px_rgba(50,45,41,0.16)] backdrop-blur-xl ${
+              notice.type === 'success'
+                ? 'border-[rgba(172,156,141,0.65)] text-foreground'
+                : 'border-[rgba(114,56,61,0.35)] text-primary'
+            }`}
+          >
+            {notice.message}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

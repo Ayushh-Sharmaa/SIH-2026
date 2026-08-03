@@ -1,82 +1,98 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useClerk } from '@clerk/nextjs';
-import { motion, AnimatePresence } from 'framer-motion';
-import { animate, createSpring } from 'animejs';
+import { AnimatePresence, motion } from 'framer-motion';
+import {
+  Aurora,
+  Field,
+  PremiumButton,
+  Reveal,
+  SplitText,
+  DURATION,
+  EASE,
+  SPRING,
+} from '@/components/motion';
 
 const hasClerkKey = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
-// Inline Animated NexaSphere Logo
-function NexaSphereLogo({ className = "w-12 h-12" }: { className?: string }) {
+type Role = 'STUDENT' | 'MENTOR';
+
+const ROLES: { value: Role; label: string; blurb: string }[] = [
+  { value: 'STUDENT', label: 'Student', blurb: 'Form a team, pick a track, find a mentor.' },
+  { value: 'MENTOR', label: 'Mentor', blurb: 'Guide teams through problem selection and review.' },
+];
+
+/** Full-screen hand-off shown while the profile is provisioned. */
+function OnboardingHandoff() {
   return (
-    <svg className={`${className}`} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="signupNexaGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#72383d" />
-          <stop offset="100%" stopColor="#ac9c8d" />
-        </linearGradient>
-      </defs>
-      <motion.polygon
-        points="50,12 85,32 85,72 50,92 15,72 15,32"
-        stroke="url(#signupNexaGrad)"
-        strokeWidth="3.5"
-        animate={{ rotate: [0, 360] }}
-        transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
-      />
-      <motion.circle
-        cx="50"
-        cy="50"
-        r="24"
-        stroke="#ac9c8d"
-        strokeWidth="2.5"
-        strokeDasharray="6 4"
-        animate={{ rotate: -360 }}
-        transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-      />
-      <circle cx="50" cy="50" r="14" fill="url(#signupNexaGrad)" className="filter drop-shadow-[0_0_8px_rgba(114,56,61,0.5)]" />
-    </svg>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: DURATION.hover, ease: EASE.outExpo }}
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-[rgba(239,233,225,0.96)] p-6 backdrop-blur-xl"
+      role="status"
+      aria-live="polite"
+    >
+      <div className="w-full max-w-md space-y-5">
+        <div className="flex items-center justify-between">
+          <div className="h-3.5 w-24 rounded skeleton-shimmer" />
+          <div className="h-3.5 w-16 rounded skeleton-shimmer" />
+        </div>
+        <div className="space-y-5 rounded-3xl border border-[rgba(209,199,189,0.7)] bg-[rgba(248,246,242,0.6)] p-8">
+          <div className="h-5 w-40 rounded skeleton-shimmer" />
+          <div className="h-3.5 w-full rounded skeleton-shimmer" />
+          <div className="h-px w-full bg-[rgba(209,199,189,0.8)]" />
+          {Array.from({ length: 3 }, (_, i) => (
+            <div key={i} className="space-y-2">
+              <div className="h-3 w-20 rounded skeleton-shimmer" />
+              <div className="h-10 w-full rounded-xl skeleton-shimmer" />
+            </div>
+          ))}
+          <div className="h-11 w-full rounded-xl skeleton-shimmer" />
+        </div>
+      </div>
+      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
+        Preparing your onboarding
+      </p>
+    </motion.div>
   );
 }
 
-// Onboarding Preparation Skeleton Loader
-function OnboardingSkeletonLoader() {
+function GoogleButton({ loading, onClick }: { loading: boolean; onClick: () => void }) {
   return (
-    <div className="fixed inset-0 bg-background/95 z-50 flex flex-col p-6 justify-center items-center space-y-6 animate-in fade-in duration-200">
-      <div className="w-full max-w-md space-y-6">
-        {/* Step indicator skeleton */}
-        <div className="flex justify-between items-center px-2">
-          <div className="h-3.5 w-24 bg-card-border rounded animate-pulse" />
-          <div className="h-3.5 w-16 bg-card-border rounded animate-pulse" />
-        </div>
-
-        {/* Builder card skeleton */}
-        <div className="p-8 rounded-3xl border border-card-border bg-card/60 space-y-6">
-          <div className="h-5 w-40 bg-card-border rounded animate-pulse" />
-          <div className="h-3.5 w-full bg-card-border rounded animate-pulse" />
-          
-          <div className="h-px bg-card-border w-full" />
-          
-          {/* Input list skeleton */}
-          <div className="space-y-4">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="space-y-2">
-                <div className="h-3 w-20 bg-card-border rounded animate-pulse" />
-                <div className="h-10 w-full bg-card-border/40 rounded-xl animate-pulse" />
-              </div>
-            ))}
-          </div>
-
-          <div className="h-10 w-full bg-card-border rounded-xl animate-pulse" />
-        </div>
-      </div>
-
-      <div className="text-xs text-muted font-mono tracking-wider animate-pulse">
-        Provisioning student profile matrix...
-      </div>
-    </div>
+    <motion.button
+      type="button"
+      onClick={onClick}
+      disabled={loading}
+      whileHover={{ y: -2 }}
+      whileTap={{ scale: 0.985 }}
+      transition={{ duration: DURATION.hover, ease: EASE.outExpo }}
+      className="flex w-full items-center justify-center gap-3 rounded-xl border border-[rgba(209,199,189,0.85)] bg-[rgba(248,246,242,0.7)] px-4 py-3 text-sm font-bold text-foreground shadow-[0_2px_10px_rgba(50,45,41,0.05)] backdrop-blur-sm transition-colors duration-250 hover:border-[rgba(114,56,61,0.3)] hover:bg-[rgba(248,246,242,0.95)] disabled:cursor-not-allowed disabled:opacity-55"
+    >
+      <svg className="size-4 shrink-0" viewBox="0 0 24 24" aria-hidden>
+        <path
+          fill="#4285F4"
+          d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+        />
+        <path
+          fill="#34A853"
+          d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+        />
+        <path
+          fill="#FBBC05"
+          d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+        />
+        <path
+          fill="#EA4335"
+          d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+        />
+      </svg>
+      {loading ? 'Connecting to Google…' : 'Sign up with Google'}
+    </motion.button>
   );
 }
 
@@ -93,30 +109,19 @@ function ClerkSignupPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'STUDENT' | 'MENTOR'>('STUDENT');
+  const [role, setRole] = useState<Role>('STUDENT');
   const [registrationKey, setRegistrationKey] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-
-  useEffect(() => {
-    animate('.anime-card', {
-      opacity: [0, 1],
-      y: [30, 0],
-      duration: 1000,
-      ease: createSpring({
-        stiffness: 110,
-        damping: 12
-      })
-    });
-  }, []);
 
   const handleGoogleSignUp = async () => {
     setError('');
     setGoogleLoading(true);
     try {
       const pubKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || '';
-      const isRealKey = pubKey.startsWith('pk_test_') && !pubKey.includes('glbgoi') && !pubKey.includes('placeholder');
+      const isRealKey =
+        pubKey.startsWith('pk_test_') && !pubKey.includes('glbgoi') && !pubKey.includes('placeholder');
 
       if (isRealKey && clerk) {
         if ((clerk as any).authenticateWithRedirect) {
@@ -150,13 +155,12 @@ function ClerkSignupPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: email || 'student.google@glbajajgroup.org', role }),
         });
-        const data = await res.json();
         if (res.ok) {
           router.push('/onboarding');
           return;
         }
-      } catch (fallbackErr) {
-        // ignore
+      } catch {
+        // fall through to the surfaced error
       }
       setError(err.message || 'Google Sign-Up failed. Please try again.');
     } finally {
@@ -164,7 +168,7 @@ function ClerkSignupPage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
@@ -192,7 +196,7 @@ function ClerkSignupPage() {
     } catch (err: any) {
       setLoading(false);
       if (err.message?.includes('already exists')) {
-        setError('This email is already registered! Please sign in using your email and password above.');
+        setError('This email is already registered — sign in instead.');
       } else {
         setError(err.message || 'Something went wrong');
       }
@@ -201,9 +205,7 @@ function ClerkSignupPage() {
 
   return (
     <>
-      <AnimatePresence>
-        {loading && <OnboardingSkeletonLoader />}
-      </AnimatePresence>
+      <AnimatePresence>{loading && <OnboardingHandoff />}</AnimatePresence>
       <SignupTemplate
         name={name}
         setName={setName}
@@ -216,6 +218,7 @@ function ClerkSignupPage() {
         registrationKey={registrationKey}
         setRegistrationKey={setRegistrationKey}
         error={error}
+        loading={loading}
         googleLoading={googleLoading}
         handleGoogleSignUp={handleGoogleSignUp}
         handleSubmit={handleSubmit}
@@ -229,23 +232,11 @@ function CustomSignupPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'STUDENT' | 'MENTOR'>('STUDENT');
+  const [role, setRole] = useState<Role>('STUDENT');
   const [registrationKey, setRegistrationKey] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-
-  useEffect(() => {
-    animate('.anime-card', {
-      opacity: [0, 1],
-      y: [30, 0],
-      duration: 1000,
-      ease: createSpring({
-        stiffness: 110,
-        damping: 12
-      })
-    });
-  }, []);
 
   const handleGoogleSignUp = async () => {
     setError('');
@@ -267,7 +258,7 @@ function CustomSignupPage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
@@ -295,7 +286,7 @@ function CustomSignupPage() {
     } catch (err: any) {
       setLoading(false);
       if (err.message?.includes('already exists')) {
-        setError('This email is already registered! Please sign in using your email and password above.');
+        setError('This email is already registered — sign in instead.');
       } else {
         setError(err.message || 'Something went wrong');
       }
@@ -304,9 +295,7 @@ function CustomSignupPage() {
 
   return (
     <>
-      <AnimatePresence>
-        {loading && <OnboardingSkeletonLoader />}
-      </AnimatePresence>
+      <AnimatePresence>{loading && <OnboardingHandoff />}</AnimatePresence>
       <SignupTemplate
         name={name}
         setName={setName}
@@ -319,6 +308,7 @@ function CustomSignupPage() {
         registrationKey={registrationKey}
         setRegistrationKey={setRegistrationKey}
         error={error}
+        loading={loading}
         googleLoading={googleLoading}
         handleGoogleSignUp={handleGoogleSignUp}
         handleSubmit={handleSubmit}
@@ -328,20 +318,21 @@ function CustomSignupPage() {
 }
 
 interface SignupTemplateProps {
-  name: any;
-  setName: any;
-  email: any;
-  setEmail: any;
-  password: any;
-  setPassword: any;
-  role: any;
-  setRole: any;
-  registrationKey: any;
-  setRegistrationKey: any;
-  error: any;
-  googleLoading: any;
-  handleGoogleSignUp: any;
-  handleSubmit: any;
+  name: string;
+  setName: (v: string) => void;
+  email: string;
+  setEmail: (v: string) => void;
+  password: string;
+  setPassword: (v: string) => void;
+  role: Role;
+  setRole: (v: Role) => void;
+  registrationKey: string;
+  setRegistrationKey: (v: string) => void;
+  error: string;
+  loading: boolean;
+  googleLoading: boolean;
+  handleGoogleSignUp: () => void;
+  handleSubmit: (e: FormEvent) => void;
 }
 
 function SignupTemplate({
@@ -356,214 +347,209 @@ function SignupTemplate({
   registrationKey,
   setRegistrationKey,
   error,
+  loading,
   googleLoading,
   handleGoogleSignUp,
   handleSubmit,
 }: SignupTemplateProps) {
+  const alreadyRegistered = error.includes('already registered');
+  const activeRole = ROLES.find((r) => r.value === role)!;
+
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-12 sm:px-6 lg:px-8 relative overflow-hidden dot-grid">
-      
-      {/* Glow overlays */}
-      <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/10 rounded-full filter blur-[100px] pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-96 h-96 bg-accent/8 rounded-full filter blur-[100px] pointer-events-none" />
+    <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
+      {/* ── TOP BAND: wide, centred masthead — the inverse of login's side rail ── */}
+      <section className="section-cream relative overflow-hidden">
+        <Aurora variant="taupe" spotlight={false} />
+        <div aria-hidden className="grid-lines absolute inset-0" />
 
-      <div className="w-full max-w-md space-y-8 z-10">
-        
-        {/* Header branding */}
-        <div className="text-center space-y-2">
-          <Link href="/" className="inline-flex items-center gap-3 justify-center">
-            <div className="relative p-1.5 rounded-xl bg-card-border/10 border border-card-border/20 backdrop-blur-sm flex items-center justify-center">
-              <img src="/Logo/NexaSphere Icon without Background.png" className="w-9 h-9 object-contain" alt="NexaSphere Logo" />
-            </div>
-            <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              SIH@GLBGOI
-            </h1>
-          </Link>
-          <p className="text-xs text-muted font-bold uppercase tracking-wider">
-            Team Formation & Mentorship Platform
-          </p>
-        </div>
-
-        {/* Form Container Card */}
-        <div className="anime-card opacity-0 glass-card rounded-3xl p-8 border border-card-border shadow-2xl bg-card/60 backdrop-blur-md cyber-glow">
-          <h2 className="text-lg font-bold text-foreground mb-6 text-center tracking-wide uppercase">
-            Create an account
-          </h2>
-
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, y: -5 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-4 rounded-xl bg-red-950/20 p-4 text-xs text-red-400 border border-red-900/30 font-medium"
-            >
-              {error}
-              {error.includes('already registered') && (
-                <div className="mt-2">
-                  <Link href="/login" className="font-bold underline text-primary hover:text-primary-hover">
-                    Go to Sign In →
-                  </Link>
-                </div>
-              )}
-            </motion.div>
-          )}
-
-          {/* Social signup */}
-          <button
-            type="button"
-            onClick={handleGoogleSignUp}
-            disabled={googleLoading}
-            className="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-xl border border-card-border bg-background/40 hover:bg-card hover:border-primary/40 text-foreground font-semibold text-xs transition-all shadow-md cursor-pointer mb-6 disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98]"
-          >
-            <svg className="w-4 h-4" viewBox="0 0 24 24">
-              <path
-                fill="#4285F4"
-                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+        <div className="relative mx-auto max-w-3xl px-5 pb-16 pt-12 text-center sm:px-6">
+          <Reveal direction="none" blur={false}>
+            <Link href="/" className="inline-flex items-center gap-2.5">
+              <img
+                src="/Logo/NexaSphere Icon without Background.png"
+                alt=""
+                className="size-8 object-contain"
               />
-              <path
-                fill="#34A853"
-                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-              />
-              <path
-                fill="#FBBC05"
-                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-              />
-              <path
-                fill="#EA4335"
-                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-              />
-            </svg>
-            {googleLoading ? 'Connecting to Google...' : 'Continue with Google'}
-          </button>
-
-          <div className="relative flex items-center justify-center mb-6">
-            <div className="border-t border-card-border w-full" />
-            <span className="bg-card px-3 text-[10px] text-muted font-bold uppercase tracking-wider absolute">or credential lock</span>
-          </div>
-
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            <div>
-              <label htmlFor="name" className="block text-xs font-bold uppercase tracking-wider text-muted mb-1.5">
-                Full Name
-              </label>
-              <input
-                id="name"
-                name="name"
-                type="text"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="John Doe"
-                className="block w-full rounded-xl bg-background/30 border border-card-border px-4 py-2.5 text-foreground placeholder-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary text-xs transition-all"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="email" className="block text-xs font-bold uppercase tracking-wider text-muted mb-1.5">
-                College Email ID
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="username@glbajaj.org"
-                className="block w-full rounded-xl bg-background/30 border border-card-border px-4 py-2.5 text-foreground placeholder-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary text-xs transition-all"
-              />
-              <span className="text-[9px] text-muted mt-1 block leading-relaxed">
-                Must be an official workspace ID (@glbajaj.org or @glbajajgroup.org)
+              <span className="text-sm font-extrabold uppercase tracking-[0.18em] text-foreground">
+                SIH@GLBGOI
               </span>
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-xs font-bold uppercase tracking-wider text-muted mb-1.5">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="block w-full rounded-xl bg-background/30 border border-card-border px-4 py-2.5 text-foreground placeholder-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary text-xs transition-all"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-muted mb-2">
-                I am registering as a
-              </label>
-              <div className="grid grid-cols-2 gap-4">
-                <button
-                  type="button"
-                  onClick={() => setRole('STUDENT')}
-                  className={`py-2.5 px-4 text-xs font-bold uppercase tracking-wider rounded-xl border transition-all cursor-pointer ${
-                    role === 'STUDENT'
-                      ? 'bg-primary/20 border-primary text-primary'
-                      : 'bg-background/20 border-card-border text-muted hover:text-foreground hover:scale-[1.01]'
-                  }`}
-                >
-                  Student
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRole('MENTOR')}
-                  className={`py-2.5 px-4 text-xs font-bold uppercase tracking-wider rounded-xl border transition-all cursor-pointer ${
-                    role === 'MENTOR'
-                      ? 'bg-primary/20 border-primary text-primary'
-                      : 'bg-background/20 border-card-border text-muted hover:text-foreground hover:scale-[1.01]'
-                  }`}
-                >
-                  Mentor
-                </button>
-              </div>
-            </div>
-
-            {role === 'MENTOR' && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                className="overflow-hidden"
-              >
-                <label htmlFor="registrationKey" className="block text-xs font-bold uppercase tracking-wider text-muted mb-1.5">
-                  Mentor Registration Key <span className="text-[10px] text-muted/60">(Optional)</span>
-                </label>
-                <input
-                  id="registrationKey"
-                  name="registrationKey"
-                  type="text"
-                  value={registrationKey}
-                  onChange={(e) => setRegistrationKey(e.target.value)}
-                  placeholder="GLB-MENTOR-XXXX-XXXX"
-                  className="block w-full rounded-xl bg-background/30 border border-card-border px-4 py-2.5 text-foreground placeholder-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary text-xs transition-all"
-                />
-                <span className="text-[9px] text-muted mt-1 block leading-relaxed">
-                  Use key for instant verification. Leave blank if registering for manual admin approval.
-                </span>
-              </motion.div>
-            )}
-
-            <div className="pt-2">
-              <button
-                type="submit"
-                className="w-full flex justify-center items-center py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-primary/25 transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
-              >
-                Sign up
-              </button>
-            </div>
-          </form>
-
-          <div className="mt-6 text-center text-xs">
-            <span className="text-muted">Already have a workspace account? </span>
-            <Link href="/login" className="font-bold text-primary hover:text-primary-hover transition-colors">
-              Sign in
             </Link>
-          </div>
+          </Reveal>
+
+          <SplitText
+            as="h1"
+            text="Create your account."
+            className="mt-8 text-4xl font-extrabold leading-[1.05] tracking-tight text-foreground sm:text-5xl"
+            delay={0.1}
+          />
+
+          <Reveal delay={0.32} className="mt-4">
+            <p className="mx-auto max-w-md text-sm leading-relaxed text-foreground/60">
+              One workspace account gets you team formation, the mentor directory, and the full
+              problem-statement index.
+            </p>
+          </Reveal>
         </div>
-      </div>
+      </section>
+
+      {/* ── FORM CARD: lifted, overlapping the band above ── */}
+      <main id="main" className="section-mist relative">
+        <div className="relative mx-auto max-w-lg px-5 pb-16 sm:px-6">
+          <Reveal scale delay={0.12} className="-mt-10">
+            <div className="surface-raised rounded-3xl p-6 sm:p-9">
+              <GoogleButton loading={googleLoading} onClick={handleGoogleSignUp} />
+
+              <div className="my-7 flex items-center gap-3">
+                <span className="h-px flex-1 bg-[rgba(209,199,189,0.8)]" />
+                <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted">
+                  or with email
+                </span>
+                <span className="h-px flex-1 bg-[rgba(209,199,189,0.8)]" />
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {/* role segmented control */}
+                <div>
+                  <p className="mb-2 pl-1 text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
+                    I am registering as
+                  </p>
+                  <div
+                    role="radiogroup"
+                    aria-label="Account type"
+                    className="grid grid-cols-2 gap-1.5 rounded-2xl border border-[rgba(209,199,189,0.75)] bg-[rgba(239,233,225,0.6)] p-1.5"
+                  >
+                    {ROLES.map((r) => {
+                      const active = r.value === role;
+                      return (
+                        <button
+                          key={r.value}
+                          type="button"
+                          role="radio"
+                          aria-checked={active}
+                          onClick={() => setRole(r.value)}
+                          className={`relative rounded-xl px-4 py-2.5 text-xs font-bold uppercase tracking-[0.1em] transition-colors duration-250 ${
+                            active ? 'text-[#FBF9F6]' : 'text-foreground/60 hover:text-primary'
+                          }`}
+                        >
+                          {active && (
+                            <motion.span
+                              layoutId="signupRolePill"
+                              transition={SPRING.snappy}
+                              className="absolute inset-0 rounded-xl bg-primary shadow-[0_4px_16px_rgba(114,56,61,0.28)]"
+                            />
+                          )}
+                          <span className="relative z-10">{r.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <AnimatePresence mode="wait" initial={false}>
+                    <motion.p
+                      key={activeRole.value}
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 4 }}
+                      transition={{ duration: DURATION.hover, ease: EASE.outExpo }}
+                      className="mt-2 pl-1 text-[11px] text-foreground/55"
+                    >
+                      {activeRole.blurb}
+                    </motion.p>
+                  </AnimatePresence>
+                </div>
+
+                <Field
+                  label="Full name"
+                  autoComplete="name"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+
+                <Field
+                  label="College email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  hint="Must be @glbajaj.org or @glbajajgroup.org"
+                  error={error && !alreadyRegistered ? error : undefined}
+                />
+
+                <Field
+                  label="Password"
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+
+                <AnimatePresence initial={false}>
+                  {role === 'MENTOR' && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: DURATION.card, ease: EASE.outExpo }}
+                      className="overflow-hidden"
+                    >
+                      <Field
+                        label="Mentor registration key (optional)"
+                        value={registrationKey}
+                        onChange={(e) => setRegistrationKey(e.target.value)}
+                        hint="Leave blank to request manual admin approval."
+                      />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <AnimatePresence initial={false}>
+                  {alreadyRegistered && (
+                    <motion.div
+                      role="alert"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: DURATION.card, ease: EASE.outExpo }}
+                      className="overflow-hidden"
+                    >
+                      <div className="rounded-xl border border-[rgba(114,56,61,0.28)] bg-[rgba(114,56,61,0.07)] px-4 py-3 text-xs font-semibold text-primary">
+                        {error}{' '}
+                        <Link href="/login" className="underline underline-offset-2">
+                          Go to sign in →
+                        </Link>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <div className="pt-1.5">
+                  <PremiumButton
+                    type="submit"
+                    size="lg"
+                    loading={loading}
+                    className="w-full"
+                    magnetic={false}
+                  >
+                    {loading ? 'Creating account…' : 'Create account'}
+                  </PremiumButton>
+                </div>
+              </form>
+
+              <p className="mt-7 text-center text-xs text-foreground/55">
+                Already have a workspace account?{' '}
+                <Link
+                  href="/login"
+                  className="font-bold text-primary transition-colors duration-250 hover:text-[var(--primary-hover)]"
+                >
+                  Sign in
+                </Link>
+              </p>
+            </div>
+          </Reveal>
+        </div>
+      </main>
     </div>
   );
 }

@@ -1,8 +1,123 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
+import Navbar from '@/components/layout/Navbar';
+import {
+  Aurora,
+  Counter,
+  PremiumButton,
+  Reveal,
+  RevealGroup,
+  RevealItem,
+  SplitText,
+  TiltCard,
+  DURATION,
+  EASE,
+  SPRING,
+} from '@/components/motion';
+
+type TabKey = 'access' | 'teams' | 'students' | 'ps_tracks' | 'mentors';
+
+const TABS: { key: TabKey; label: string; blurb: string }[] = [
+  { key: 'access', label: 'Admin access', blurb: 'Grant or revoke console permissions' },
+  { key: 'teams', label: 'Teams', blurb: 'Roster, status and disband controls' },
+  { key: 'students', label: 'Students', blurb: 'Directory with multi-attribute filters' },
+  { key: 'ps_tracks', label: 'Participation', blurb: 'Theme-by-theme team distribution' },
+  { key: 'mentors', label: 'Mentors', blurb: 'Faculty capacity and verification' },
+];
+
+const SUPER_ADMIN = 'tanishk.bansal2025@glbajajgroup.org';
+
+const CONTROL =
+  'w-full rounded-xl border border-[rgba(209,199,189,0.8)] bg-[rgba(248,246,242,0.65)] px-3.5 py-2 text-xs text-foreground outline-none transition-[border-color,box-shadow,background-color] duration-250 focus:border-primary focus:bg-[rgba(248,246,242,0.95)] focus:shadow-[0_0_0_4px_rgba(114,56,61,0.10)]';
+
+const TONES = {
+  neutral: 'border-[rgba(209,199,189,0.75)] bg-[rgba(239,233,225,0.75)] text-foreground/70',
+  accent: 'border-[rgba(172,156,141,0.6)] bg-[rgba(172,156,141,0.2)] text-foreground',
+  primary: 'border-[rgba(114,56,61,0.24)] bg-[rgba(114,56,61,0.09)] text-primary',
+} as const;
+
+function Chip({
+  children,
+  tone = 'neutral',
+}: {
+  children: ReactNode;
+  tone?: keyof typeof TONES;
+}) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${TONES[tone]}`}
+    >
+      {children}
+    </span>
+  );
+}
+
+function Panel({
+  title,
+  description,
+  action,
+  children,
+}: {
+  title: string;
+  description?: string;
+  action?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <section className="surface-raised rounded-3xl p-5 sm:p-6">
+      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-extrabold uppercase tracking-[0.14em] text-foreground">
+            {title}
+          </h2>
+          {description && (
+            <p className="mt-1 max-w-xl text-xs leading-relaxed text-foreground/55">
+              {description}
+            </p>
+          )}
+        </div>
+        {action}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function Overlay({ onClose, children }: { onClose: () => void; children: ReactNode }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: DURATION.hover, ease: EASE.outExpo }}
+      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(50,45,41,0.32)] p-4 backdrop-blur-md"
+    >
+      <motion.div
+        role="dialog"
+        aria-modal="true"
+        onClick={(e) => e.stopPropagation()}
+        initial={{ opacity: 0, y: 28, scale: 0.97, filter: 'blur(8px)' }}
+        animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
+        exit={{ opacity: 0, y: 16, scale: 0.98, filter: 'blur(6px)' }}
+        transition={{ duration: DURATION.card, ease: EASE.outExpo }}
+        className="max-h-[88vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-[rgba(209,199,189,0.9)] bg-[rgba(248,246,242,0.97)] p-6 shadow-[0_32px_90px_rgba(50,45,41,0.24)]"
+      >
+        {children}
+      </motion.div>
+    </motion.div>
+  );
+}
+
+interface ConfirmState {
+  title: string;
+  body: string;
+  confirmLabel: string;
+  onConfirm: () => void;
+}
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -10,9 +125,9 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
-  const [activeTab, setActiveTab] = useState<'access' | 'teams' | 'students' | 'mentors' | 'ps_tracks'>('access');
+  const [activeTab, setActiveTab] = useState<TabKey>('access');
+  const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
 
-  // Admin Data State
   const [stats, setStats] = useState<any>(null);
   const [adminEmails, setAdminEmails] = useState<string[]>([]);
   const [teams, setTeams] = useState<any[]>([]);
@@ -20,16 +135,12 @@ export default function AdminDashboardPage() {
   const [mentors, setMentors] = useState<any[]>([]);
   const [problemStatementStats, setProblemStatementStats] = useState<any[]>([]);
 
-  // Selected Detail Modals
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [selectedTeam, setSelectedTeam] = useState<any>(null);
-  const [selectedPSTrack, setSelectedPSTrack] = useState<any>(null);
 
-  // Admin Email Access Form State
   const [newAdminEmail, setNewAdminEmail] = useState('');
   const [granting, setGranting] = useState(false);
 
-  // Student Filters
   const [studentSearch, setStudentSearch] = useState('');
   const [studentYearFilter, setStudentYearFilter] = useState('ALL');
   const [studentBranchFilter, setStudentBranchFilter] = useState('ALL');
@@ -37,20 +148,14 @@ export default function AdminDashboardPage() {
   const [studentGenderFilter, setStudentGenderFilter] = useState('ALL');
   const [studentStatusFilter, setStudentStatusFilter] = useState('ALL');
 
-  // Team Filters
   const [teamSearch, setTeamSearch] = useState('');
   const [teamStatusFilter, setTeamStatusFilter] = useState('ALL');
   const [teamTrackFilter, setTeamTrackFilter] = useState('ALL');
   const [allFemaleFilter, setAllFemaleFilter] = useState(false);
 
-  // PS Track Filters
   const [psSearch, setPsSearch] = useState('');
 
-  useEffect(() => {
-    fetchAdminData();
-  }, []);
-
-  const fetchAdminData = async () => {
+  const fetchAdminData = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
@@ -78,9 +183,19 @@ export default function AdminDashboardPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
 
-  const handleGrantAdminAccess = async (e: React.FormEvent) => {
+  useEffect(() => {
+    fetchAdminData();
+  }, [fetchAdminData]);
+
+  useEffect(() => {
+    if (!successMsg) return;
+    const t = window.setTimeout(() => setSuccessMsg(''), 4000);
+    return () => window.clearTimeout(t);
+  }, [successMsg]);
+
+  const handleGrantAdminAccess = async (e: FormEvent) => {
     e.preventDefault();
     if (!newAdminEmail) return;
 
@@ -100,8 +215,7 @@ export default function AdminDashboardPage() {
 
       setAdminEmails(data.adminEmails);
       setNewAdminEmail('');
-      setSuccessMsg(`Success: ${data.message}`);
-      setTimeout(() => setSuccessMsg(''), 4000);
+      setSuccessMsg(data.message);
       fetchAdminData();
     } catch (err: any) {
       setError(err.message);
@@ -110,9 +224,7 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const handleRevokeAdminAccess = async (emailToRevoke: string) => {
-    if (!confirm(`Are you sure you want to revoke admin permissions from ${emailToRevoke}?`)) return;
-
+  const revokeAdminAccess = async (emailToRevoke: string) => {
     setError('');
     setSuccessMsg('');
     try {
@@ -126,18 +238,14 @@ export default function AdminDashboardPage() {
       if (!res.ok) throw new Error(data.error || 'Failed to revoke access');
 
       setAdminEmails(data.adminEmails);
-      setSuccessMsg(`Success: Revoked admin access from ${emailToRevoke}`);
-      setTimeout(() => setSuccessMsg(''), 4000);
+      setSuccessMsg(`Revoked admin access from ${emailToRevoke}`);
       fetchAdminData();
     } catch (err: any) {
       setError(err.message);
     }
   };
 
-  const handleStudentAccessToggle = async (studentEmail: string, action: 'ban' | 'restore') => {
-    const actionLabel = action === 'ban' ? 'suspend user access for' : 'restore access for';
-    if (!confirm(`Are you sure you want to ${actionLabel} ${studentEmail}?`)) return;
-
+  const toggleStudentAccess = async (studentEmail: string, action: 'ban' | 'restore') => {
     setError('');
     setSuccessMsg('');
     try {
@@ -150,8 +258,7 @@ export default function AdminDashboardPage() {
 
       if (!res.ok) throw new Error(data.error || 'Failed to update student access');
 
-      setSuccessMsg(`Success: ${data.message}`);
-      setTimeout(() => setSuccessMsg(''), 4000);
+      setSuccessMsg(data.message);
       setSelectedStudent(null);
       fetchAdminData();
     } catch (err: any) {
@@ -167,14 +274,14 @@ export default function AdminDashboardPage() {
         body: JSON.stringify({ teamId, action: 'update_status', status }),
       });
       if (!res.ok) throw new Error('Failed to update team status');
+      setSuccessMsg(`Team status set to ${status}.`);
       fetchAdminData();
     } catch (err: any) {
-      alert(err.message);
+      setError(err.message);
     }
   };
 
-  const handleDisbandTeam = async (teamId: string) => {
-    if (!confirm('Are you sure you want to disband this team? All members will be returned to Looking For Team status.')) return;
+  const disbandTeam = async (teamId: string) => {
     try {
       const res = await fetch('/api/admin/team', {
         method: 'POST',
@@ -182,9 +289,11 @@ export default function AdminDashboardPage() {
         body: JSON.stringify({ teamId, action: 'delete' }),
       });
       if (!res.ok) throw new Error('Failed to disband team');
+      setSelectedTeam(null);
+      setSuccessMsg('Team disbanded. Members returned to looking-for-team.');
       fetchAdminData();
     } catch (err: any) {
-      alert(err.message);
+      setError(err.message);
     }
   };
 
@@ -193,773 +302,1082 @@ export default function AdminDashboardPage() {
     router.push('/login');
   };
 
-  // Filtered Students List
   const filteredStudents = students.filter((s) => {
+    const q = studentSearch.toLowerCase();
     const matchesSearch =
-      s.name.toLowerCase().includes(studentSearch.toLowerCase()) ||
-      s.email.toLowerCase().includes(studentSearch.toLowerCase()) ||
-      s.rollNo.toLowerCase().includes(studentSearch.toLowerCase()) ||
-      s.branch.toLowerCase().includes(studentSearch.toLowerCase());
+      s.name.toLowerCase().includes(q) ||
+      s.email.toLowerCase().includes(q) ||
+      s.rollNo.toLowerCase().includes(q) ||
+      s.branch.toLowerCase().includes(q);
 
     const matchesYear = studentYearFilter === 'ALL' || s.year === studentYearFilter;
     const matchesBranch = studentBranchFilter === 'ALL' || s.branch === studentBranchFilter;
     const matchesSection = studentSectionFilter === 'ALL' || s.section === studentSectionFilter;
-    const matchesGender = studentGenderFilter === 'ALL' || s.gender?.toLowerCase() === studentGenderFilter.toLowerCase();
+    const matchesGender =
+      studentGenderFilter === 'ALL' ||
+      s.gender?.toLowerCase() === studentGenderFilter.toLowerCase();
     const matchesStatus =
       studentStatusFilter === 'ALL' ||
       (studentStatusFilter === 'BANNED' ? s.isBanned : !s.isBanned);
 
-    return matchesSearch && matchesYear && matchesBranch && matchesSection && matchesGender && matchesStatus;
+    return (
+      matchesSearch && matchesYear && matchesBranch && matchesSection && matchesGender && matchesStatus
+    );
   });
 
-  // Filtered Teams List
   const filteredTeams = teams.filter((t) => {
+    const q = teamSearch.toLowerCase();
     const matchesSearch =
-      t.name.toLowerCase().includes(teamSearch.toLowerCase()) ||
-      t.trackName.toLowerCase().includes(teamSearch.toLowerCase()) ||
-      t.leaderName.toLowerCase().includes(teamSearch.toLowerCase()) ||
-      t.members.some((m: any) => m.name.toLowerCase().includes(teamSearch.toLowerCase()));
+      t.name.toLowerCase().includes(q) ||
+      t.trackName.toLowerCase().includes(q) ||
+      t.leaderName.toLowerCase().includes(q) ||
+      t.members.some((m: any) => m.name.toLowerCase().includes(q));
 
     const matchesStatus = teamStatusFilter === 'ALL' || t.status === teamStatusFilter;
-    const matchesTrack = teamTrackFilter === 'ALL' || t.trackId === teamTrackFilter || t.trackCode === teamTrackFilter;
+    const matchesTrack =
+      teamTrackFilter === 'ALL' || t.trackId === teamTrackFilter || t.trackCode === teamTrackFilter;
     const matchesAllFemale = !allFemaleFilter || t.isAllFemale;
 
     return matchesSearch && matchesStatus && matchesTrack && matchesAllFemale;
   });
 
-  // Filtered PS Track Stats
-  const filteredPSTracks = problemStatementStats.filter(
-    (tr) =>
-      tr.code.toLowerCase().includes(psSearch.toLowerCase()) ||
-      tr.name.toLowerCase().includes(psSearch.toLowerCase()) ||
-      tr.category.toLowerCase().includes(psSearch.toLowerCase())
-  );
+  const filteredPSTracks = problemStatementStats.filter((tr) => {
+    const q = psSearch.toLowerCase();
+    return (
+      tr.code.toLowerCase().includes(q) ||
+      tr.name.toLowerCase().includes(q) ||
+      tr.category.toLowerCase().includes(q)
+    );
+  });
+
+  const resetStudentFilters = () => {
+    setStudentSearch('');
+    setStudentYearFilter('ALL');
+    setStudentBranchFilter('ALL');
+    setStudentSectionFilter('ALL');
+    setStudentGenderFilter('ALL');
+    setStudentStatusFilter('ALL');
+  };
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
-        <div className="text-center space-y-4">
-          <div className="inline-block w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-muted font-bold">Loading SIH Admin Control Console...</p>
+      <div className="min-h-screen bg-background text-foreground">
+        <Navbar />
+        <div className="mx-auto max-w-7xl space-y-6 px-4 py-12 sm:px-6 lg:px-8">
+          <div className="h-32 rounded-3xl skeleton-shimmer" />
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            {Array.from({ length: 4 }, (_, i) => (
+              <div key={i} className="h-28 rounded-2xl skeleton-shimmer" />
+            ))}
+          </div>
+          <div className="grid gap-6 lg:grid-cols-[230px_1fr]">
+            <div className="h-72 rounded-3xl skeleton-shimmer" />
+            <div className="h-72 rounded-3xl skeleton-shimmer" />
+          </div>
         </div>
       </div>
     );
   }
 
+  const METRICS: { tab: TabKey; label: string; value: number; foot: string }[] = [
+    {
+      tab: 'students',
+      label: 'Students',
+      value: stats?.totalStudents || 0,
+      foot: 'Filter by year, section, roll no, gender',
+    },
+    {
+      tab: 'teams',
+      label: 'Teams',
+      value: stats?.totalTeams || 0,
+      foot: `${stats?.fullTeams || 0} full · ${stats?.formingTeams || 0} forming · ${
+        stats?.allFemaleTeams || 0
+      } all-female`,
+    },
+    {
+      tab: 'mentors',
+      label: 'Mentors',
+      value: stats?.totalMentors || 0,
+      foot: `${stats?.verifiedMentors || 0} verified`,
+    },
+    {
+      tab: 'access',
+      label: 'Admins',
+      value: stats?.totalAuthorizedAdmins || 1,
+      foot: 'Grant or revoke console permissions',
+    },
+  ];
+
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans p-4 sm:p-8 space-y-8 max-w-7xl mx-auto">
-      {/* Admin Top Command Header */}
-      <header className="glass-card rounded-3xl p-6 border border-card-border shadow-2xl flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-extrabold px-3 py-1 rounded-full bg-primary/20 text-primary border border-primary/30 uppercase tracking-wider">
-              🛡️ Admin Command Center
-            </span>
-            <span className="text-xs font-semibold text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/30">
-              ● Security Console Active
-            </span>
-          </div>
-          <h1 className="text-3xl font-extrabold text-foreground tracking-tight mt-2">
-            SIH@GLBGOI Administration
-          </h1>
-          <p className="text-xs sm:text-sm text-muted">
-            Comprehensive control center for student verification, team management, SIH problem statement participation, and admin security permissions.
-          </p>
-        </div>
+    <div className="min-h-screen bg-background text-foreground">
+      <Navbar />
 
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={fetchAdminData}
-            className="px-4 py-2 text-xs font-bold rounded-xl bg-card border border-card-border hover:bg-card-border text-foreground transition-all cursor-pointer"
-          >
-            🔄 Refresh Data
-          </button>
-          <button
-            type="button"
-            onClick={handleSignOut}
-            className="px-4 py-2 text-xs font-bold rounded-xl bg-rose-500/20 text-rose-300 border border-rose-500/40 hover:bg-rose-500/30 transition-all cursor-pointer"
-          >
-            Sign Out
-          </button>
-        </div>
-      </header>
+      <main id="main">
+        {/* ── COMMAND BAR ── */}
+        <section className="section-taupe relative overflow-hidden">
+          <Aurora variant="rose" spotlight />
+          <div aria-hidden className="grid-lines absolute inset-0" />
 
-      {/* Secret /admin Security Shortcut Tip */}
-      <div className="rounded-2xl border border-primary/30 bg-primary/10 p-4 text-xs sm:text-sm text-primary flex items-center gap-3 shadow-lg">
-        <span className="text-xl">💡</span>
-        <div>
-          <strong className="font-bold">Secret Admin Login Shortcut:</strong> You can log in directly to this Admin Command Center by appending <code className="bg-primary/20 px-1.5 py-0.5 rounded font-mono font-bold">/admin</code> to any authorized college email address on the login form (e.g. <code className="bg-primary/20 px-1.5 py-0.5 rounded font-mono font-bold">tanishk.bansal2025@glbajajgroup.org/admin</code>).
-        </div>
-      </div>
+          <div className="relative mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+            <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+              <div>
+                <Reveal direction="none" blur={false}>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Chip tone="primary">Admin console</Chip>
+                    <Chip tone="accent">Session active</Chip>
+                  </div>
+                </Reveal>
 
-      {/* Error / Success Notifications */}
-      {error && (
-        <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-sm font-bold flex justify-between items-center">
-          <span>⚠️ {error}</span>
-          <button onClick={() => setError('')} className="text-xs">✕</button>
-        </div>
-      )}
-      {successMsg && (
-        <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-sm font-bold flex justify-between items-center">
-          <span>✅ {successMsg}</span>
-          <button onClick={() => setSuccessMsg('')} className="text-xs">✕</button>
-        </div>
-      )}
+                <SplitText
+                  as="h1"
+                  text="Administration"
+                  className="mt-4 text-4xl font-extrabold leading-[1.05] tracking-tight text-foreground sm:text-5xl"
+                  delay={0.08}
+                />
 
-      {/* Clickable Metric Cards Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <button
-          type="button"
-          onClick={() => setActiveTab('students')}
-          className={`glass-card p-5 rounded-2xl border text-left transition-all cursor-pointer transform hover:-translate-y-1 ${
-            activeTab === 'students' ? 'border-primary shadow-[0_0_20px_rgba(99,102,241,0.25)]' : 'border-card-border hover:border-primary/40'
-          }`}
-        >
-          <span className="text-xs font-bold text-muted uppercase tracking-wider block">Total Students ↗</span>
-          <span className="text-3xl font-extrabold text-foreground mt-1 block">{stats?.totalStudents || 0}</span>
-          <span className="text-[10px] text-primary font-semibold block mt-1">Click to filter by Year, Sec, Roll No, Gender</span>
-        </button>
+                <Reveal delay={0.3} className="mt-3">
+                  <p className="max-w-xl text-sm leading-relaxed text-foreground/60">
+                    Student verification, team management, problem-statement participation and
+                    console permissions — all in one place.
+                  </p>
+                </Reveal>
+              </div>
 
-        <button
-          type="button"
-          onClick={() => setActiveTab('teams')}
-          className={`glass-card p-5 rounded-2xl border text-left transition-all cursor-pointer transform hover:-translate-y-1 ${
-            activeTab === 'teams' ? 'border-primary shadow-[0_0_20px_rgba(99,102,241,0.25)]' : 'border-card-border hover:border-primary/40'
-          }`}
-        >
-          <div className="flex justify-between items-start">
-            <span className="text-xs font-bold text-muted uppercase tracking-wider block">Total Teams ↗</span>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-pink-500/20 text-pink-300 border border-pink-500/30">
-              👩‍💻 {stats?.allFemaleTeams || 0} All-Female
-            </span>
-          </div>
-          <span className="text-3xl font-extrabold text-foreground mt-1 block">{stats?.totalTeams || 0}</span>
-          <span className="text-[10px] text-emerald-400 font-semibold block mt-1">
-            {stats?.fullTeams || 0} Full / {stats?.formingTeams || 0} Forming
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab('mentors')}
-          className={`glass-card p-5 rounded-2xl border text-left transition-all cursor-pointer transform hover:-translate-y-1 ${
-            activeTab === 'mentors' ? 'border-primary shadow-[0_0_20px_rgba(99,102,241,0.25)]' : 'border-card-border hover:border-primary/40'
-          }`}
-        >
-          <span className="text-xs font-bold text-muted uppercase tracking-wider block">Faculty Mentors ↗</span>
-          <span className="text-3xl font-extrabold text-foreground mt-1 block">{stats?.totalMentors || 0}</span>
-          <span className="text-[10px] text-accent font-semibold block mt-1">{stats?.verifiedMentors || 0} Verified Mentors</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab('access')}
-          className={`glass-card p-5 rounded-2xl border text-left transition-all cursor-pointer transform hover:-translate-y-1 ${
-            activeTab === 'access' ? 'border-primary shadow-[0_0_20px_rgba(99,102,241,0.25)]' : 'border-card-border hover:border-primary/40'
-          }`}
-        >
-          <span className="text-xs font-bold text-muted uppercase tracking-wider block">Admin Accounts ↗</span>
-          <span className="text-3xl font-extrabold text-foreground mt-1 block">{stats?.totalAuthorizedAdmins || 1}</span>
-          <span className="text-[10px] text-purple-400 font-semibold block mt-1">Click to grant/revoke admin access</span>
-        </button>
-      </div>
-
-      {/* Main Navigation Tabs */}
-      <div className="flex border-b border-card-border gap-2 overflow-x-auto pb-1">
-        <button
-          type="button"
-          onClick={() => setActiveTab('access')}
-          className={`px-4 py-2.5 text-xs sm:text-sm font-bold rounded-t-xl transition-all cursor-pointer shrink-0 ${
-            activeTab === 'access'
-              ? 'bg-card border-t border-x border-card-border text-primary border-b-2 border-b-primary'
-              : 'text-muted hover:text-foreground'
-          }`}
-        >
-          🛡️ Admin Access Permissions ({adminEmails.length})
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('teams')}
-          className={`px-4 py-2.5 text-xs sm:text-sm font-bold rounded-t-xl transition-all cursor-pointer shrink-0 ${
-            activeTab === 'teams'
-              ? 'bg-card border-t border-x border-card-border text-primary border-b-2 border-b-primary'
-              : 'text-muted hover:text-foreground'
-          }`}
-        >
-          👥 Team Management ({teams.length})
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('students')}
-          className={`px-4 py-2.5 text-xs sm:text-sm font-bold rounded-t-xl transition-all cursor-pointer shrink-0 ${
-            activeTab === 'students'
-              ? 'bg-card border-t border-x border-card-border text-primary border-b-2 border-b-primary'
-              : 'text-muted hover:text-foreground'
-          }`}
-        >
-          🎓 Student Directory ({students.length})
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('ps_tracks')}
-          className={`px-4 py-2.5 text-xs sm:text-sm font-bold rounded-t-xl transition-all cursor-pointer shrink-0 ${
-            activeTab === 'ps_tracks'
-              ? 'bg-card border-t border-x border-card-border text-primary border-b-2 border-b-primary'
-              : 'text-muted hover:text-foreground'
-          }`}
-        >
-          📊 Problem Statement Participation ({problemStatementStats.length})
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('mentors')}
-          className={`px-4 py-2.5 text-xs sm:text-sm font-bold rounded-t-xl transition-all cursor-pointer shrink-0 ${
-            activeTab === 'mentors'
-              ? 'bg-card border-t border-x border-card-border text-primary border-b-2 border-b-primary'
-              : 'text-muted hover:text-foreground'
-          }`}
-        >
-          👨‍🏫 Faculty Mentors ({mentors.length})
-        </button>
-      </div>
-
-      {/* TAB 1: Admin Access Permissions */}
-      {activeTab === 'access' && (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-          <div className="glass-card p-6 rounded-3xl border border-card-border space-y-4">
-            <div>
-              <h3 className="text-lg font-extrabold text-foreground">Grant Admin Access Permissions</h3>
-              <p className="text-xs text-muted mt-0.5">
-                Add college email addresses authorized to log into this Admin Command Center via the <code className="bg-primary/20 px-1 py-0.5 rounded font-mono font-bold">/admin</code> command.
-              </p>
+              <Reveal direction="left" delay={0.18}>
+                <div className="flex gap-2.5">
+                  <PremiumButton variant="glass" size="sm" onClick={fetchAdminData}>
+                    Refresh
+                  </PremiumButton>
+                  <PremiumButton variant="ghost" size="sm" onClick={handleSignOut}>
+                    Sign out
+                  </PremiumButton>
+                </div>
+              </Reveal>
             </div>
 
-            <form onSubmit={handleGrantAdminAccess} className="flex flex-col sm:flex-row gap-3 max-w-xl">
-              <input
-                type="email"
-                required
-                placeholder="Enter college email (e.g. user@glbajajgroup.org)"
-                value={newAdminEmail}
-                onChange={(e) => setNewAdminEmail(e.target.value)}
-                className="flex-1 rounded-xl bg-background border border-card-border px-4 py-2.5 text-sm text-foreground focus:outline-none focus:border-primary"
-              />
-              <button
-                type="submit"
-                disabled={granting}
-                className="rounded-xl bg-primary hover:bg-primary-hover px-5 py-2.5 text-xs font-bold text-white shadow-lg transition-all disabled:opacity-50 cursor-pointer shrink-0"
-              >
-                {granting ? 'Granting...' : '+ Grant Admin Access'}
-              </button>
-            </form>
-          </div>
-
-          <div className="glass-card p-6 rounded-3xl border border-card-border space-y-4">
-            <h3 className="text-base font-extrabold text-foreground">Authorized Admin Email Accounts ({adminEmails.length})</h3>
-
-            <div className="divide-y divide-card-border border border-card-border rounded-2xl overflow-hidden bg-background/40">
-              {adminEmails.map((email) => {
-                const isSuperAdmin = email.toLowerCase() === 'tanishk.bansal2025@glbajajgroup.org';
-                return (
-                  <div key={email} className="p-4 flex items-center justify-between gap-4 hover:bg-card/40 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <span className="p-2 rounded-xl bg-primary/10 text-primary text-base">🛡️</span>
-                      <div>
-                        <span className="text-sm font-bold text-foreground block">{email}</span>
-                        <span className="text-[10px] text-muted block">
-                          {isSuperAdmin ? 'Primary Super Admin (Perpetual)' : 'Granted Admin Permissions'}
-                        </span>
-                      </div>
-                    </div>
-
-                    {isSuperAdmin ? (
-                      <span className="text-xs font-bold px-3 py-1 rounded-full bg-primary/20 text-primary border border-primary/30">
-                        Primary Super Admin
+            <RevealGroup
+              className="mt-9 grid grid-cols-2 gap-3 md:grid-cols-4"
+              stagger={0.07}
+              delay={0.2}
+            >
+              {METRICS.map((m) => (
+                <RevealItem key={m.label}>
+                  <TiltCard intensity={5}>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab(m.tab)}
+                      className={`h-full w-full rounded-2xl border p-4 text-left transition-colors duration-250 ${
+                        activeTab === m.tab
+                          ? 'border-[rgba(114,56,61,0.42)] bg-[rgba(248,246,242,0.92)] shadow-[0_14px_40px_rgba(50,45,41,0.12)]'
+                          : 'border-[rgba(209,199,189,0.8)] bg-[rgba(248,246,242,0.62)] hover:border-[rgba(114,56,61,0.28)]'
+                      }`}
+                    >
+                      <span className="block text-[10px] font-bold uppercase tracking-[0.16em] text-muted">
+                        {m.label}
                       </span>
-                    ) : (
+                      <span className="mt-1 block text-3xl font-extrabold tracking-tight text-foreground">
+                        <Counter to={m.value} duration={1.3} />
+                      </span>
+                      <span className="mt-1.5 block text-[10px] leading-relaxed text-foreground/50">
+                        {m.foot}
+                      </span>
+                    </button>
+                  </TiltCard>
+                </RevealItem>
+              ))}
+            </RevealGroup>
+          </div>
+        </section>
+
+        {/* ── WORKSPACE: vertical tab rail + panel ── */}
+        <section className="surface-sunken">
+          <div className="mx-auto grid max-w-7xl gap-6 px-4 py-10 sm:px-6 lg:grid-cols-[230px_1fr] lg:px-8">
+            {/* rail */}
+            <nav aria-label="Console sections" className="lg:sticky lg:top-28 lg:self-start">
+              <ul className="marquee-mask flex gap-2 overflow-x-auto pb-2 lg:flex-col lg:overflow-visible lg:pb-0">
+                {TABS.map((t) => {
+                  const active = t.key === activeTab;
+                  return (
+                    <li key={t.key} className="shrink-0 lg:shrink">
                       <button
                         type="button"
-                        onClick={() => handleRevokeAdminAccess(email)}
-                        className="px-3 py-1.5 text-xs font-bold rounded-xl bg-rose-500/20 text-rose-300 border border-rose-500/30 hover:bg-rose-500/30 transition-all cursor-pointer"
+                        onClick={() => setActiveTab(t.key)}
+                        aria-current={active ? 'page' : undefined}
+                        className={`relative w-full rounded-xl px-3.5 py-2.5 text-left transition-colors duration-250 ${
+                          active ? 'text-[#FBF9F6]' : 'text-foreground/65 hover:text-primary'
+                        }`}
                       >
-                        Revoke Access
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </motion.div>
-      )}
-
-      {/* TAB 2: Team Management */}
-      {activeTab === 'teams' && (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-          {/* Team Filters Toolbar */}
-          <div className="glass-card p-4 rounded-2xl border border-card-border flex flex-col md:flex-row gap-3 items-center justify-between">
-            <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
-              <input
-                type="text"
-                placeholder="Search team name, track, leader, member..."
-                value={teamSearch}
-                onChange={(e) => setTeamSearch(e.target.value)}
-                className="w-full sm:w-64 rounded-xl bg-background border border-card-border px-3.5 py-2 text-xs text-foreground focus:outline-none focus:border-primary"
-              />
-
-              <select
-                value={teamStatusFilter}
-                onChange={(e) => setTeamStatusFilter(e.target.value)}
-                className="rounded-xl bg-background border border-card-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary cursor-pointer"
-              >
-                <option value="ALL">All Statuses</option>
-                <option value="forming">Forming</option>
-                <option value="locked">Locked</option>
-                <option value="approved">Approved</option>
-              </select>
-
-              <select
-                value={teamTrackFilter}
-                onChange={(e) => setTeamTrackFilter(e.target.value)}
-                className="rounded-xl bg-background border border-card-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary cursor-pointer max-w-[200px] truncate"
-              >
-                <option value="ALL">All Problem Statements (18 Themes)</option>
-                {problemStatementStats.map((tr) => (
-                  <option key={tr.id} value={tr.code}>
-                    {tr.code} - {tr.name}
-                  </option>
-                ))}
-              </select>
-
-              {/* All Female Teams Quick Filter Toggle */}
-              <button
-                type="button"
-                onClick={() => setAllFemaleFilter(!allFemaleFilter)}
-                className={`px-3 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 border ${
-                  allFemaleFilter
-                    ? 'bg-pink-500/20 text-pink-300 border-pink-500/40 shadow-[0_0_15px_rgba(236,72,153,0.3)]'
-                    : 'bg-card border-card-border text-muted hover:text-foreground'
-                }`}
-              >
-                👩‍💻 All-Female Teams {allFemaleFilter && '✓'}
-              </button>
-            </div>
-
-            <span className="text-xs text-muted font-bold shrink-0">Showing {filteredTeams.length} of {teams.length} teams</span>
-          </div>
-
-          {/* Teams Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {filteredTeams.map((team) => (
-              <div key={team.id} className="glass-card p-6 rounded-3xl border border-card-border space-y-4 relative overflow-hidden">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h4 className="text-lg font-extrabold text-foreground">{team.name}</h4>
-                      {team.isAllFemale && (
-                        <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-pink-500/20 text-pink-300 border border-pink-500/40">
-                          👩‍💻 All-Female Team
+                        {active && (
+                          <motion.span
+                            layoutId="adminTabPill"
+                            transition={SPRING.snappy}
+                            className="absolute inset-0 rounded-xl bg-primary shadow-[0_6px_20px_rgba(114,56,61,0.26)]"
+                          />
+                        )}
+                        <span className="relative z-10 block whitespace-nowrap text-xs font-bold">
+                          {t.label}
                         </span>
-                      )}
-                    </div>
-                    <span className="text-xs font-bold text-primary block mt-1">{team.trackName}</span>
-                    <span className="text-xs text-muted block mt-0.5">Leader: {team.leaderName} ({team.leaderEmail})</span>
-                  </div>
+                        <span
+                          className={`relative z-10 mt-0.5 hidden text-[10px] leading-snug lg:block ${
+                            active ? 'text-[#FBF9F6]/70' : 'text-foreground/45'
+                          }`}
+                        >
+                          {t.blurb}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
 
-                  <span
-                    className={`text-xs font-bold px-3 py-1 rounded-full border ${
-                      team.status === 'approved'
-                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                        : team.status === 'locked'
-                        ? 'bg-blue-500/10 text-blue-400 border-blue-500/30'
-                        : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                    }`}
-                  >
-                    {team.status.toUpperCase()} ({team.memberCount}/6)
-                  </span>
-                </div>
+              <div className="mt-5 hidden rounded-2xl border border-[rgba(172,156,141,0.55)] bg-[rgba(172,156,141,0.14)] p-4 lg:block">
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
+                  Console shortcut
+                </p>
+                <p className="mt-1.5 text-[11px] leading-relaxed text-foreground/60">
+                  Append{' '}
+                  <code className="rounded bg-[rgba(114,56,61,0.12)] px-1 font-mono font-bold text-primary">
+                    /admin
+                  </code>{' '}
+                  to an authorised college email on the login form to land here directly.
+                </p>
+              </div>
+            </nav>
 
-                {/* Team Roster Members List */}
-                <div className="space-y-2 border-t border-card-border pt-3">
-                  <div className="flex justify-between items-center text-[10px] font-bold text-muted uppercase tracking-wider">
-                    <span>Roster Members ({team.memberCount}):</span>
-                    <span>Gender: {team.femaleCount} Female / {team.maleCount} Male</span>
-                  </div>
-                  <div className="grid grid-cols-1 gap-2">
-                    {team.members.map((m: any) => (
-                      <div
-                        key={m.id}
-                        onClick={() => setSelectedStudent(m)}
-                        className="p-2.5 rounded-xl bg-background/50 border border-card-border hover:border-primary/40 flex items-center justify-between cursor-pointer transition-colors"
+            {/* panels */}
+            <div className="min-w-0">
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.div
+                  key={activeTab}
+                  initial={{ opacity: 0, y: 16, filter: 'blur(6px)' }}
+                  animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                  exit={{ opacity: 0, y: -12, filter: 'blur(6px)' }}
+                  transition={{ duration: DURATION.card, ease: EASE.outExpo }}
+                  className="space-y-6"
+                >
+                  {activeTab === 'access' && (
+                    <>
+                      <Panel
+                        title="Grant console access"
+                        description="Add college email addresses authorised to open this console."
                       >
-                        <div className="flex items-center gap-2 text-xs font-semibold">
-                          <span>👤 {m.name}</span>
-                          <span className="text-[10px] text-muted">({m.branch || 'CSE'}, Yr: {m.year || 'N/A'}, Sec: {m.section || 'N/A'})</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-[10px]">
-                          <span className="px-2 py-0.5 rounded-md bg-card border border-card-border text-muted">
-                            {m.gender || 'Not specified'}
-                          </span>
-                          <span className="text-primary font-bold">Inspect ↗</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                        <form
+                          onSubmit={handleGrantAdminAccess}
+                          className="flex max-w-xl flex-col gap-2.5 sm:flex-row"
+                        >
+                          <input
+                            type="email"
+                            required
+                            placeholder="user@glbajajgroup.org"
+                            aria-label="College email to authorise"
+                            value={newAdminEmail}
+                            onChange={(e) => setNewAdminEmail(e.target.value)}
+                            className={CONTROL}
+                          />
+                          <PremiumButton
+                            type="submit"
+                            size="sm"
+                            loading={granting}
+                            magnetic={false}
+                            className="shrink-0"
+                          >
+                            Grant access
+                          </PremiumButton>
+                        </form>
+                      </Panel>
 
-                {/* Actions Toolbar */}
-                <div className="flex flex-wrap gap-2 pt-3 border-t border-card-border">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedTeam(team)}
-                    className="px-3.5 py-1.5 text-xs font-bold rounded-xl bg-primary/20 text-primary border border-primary/30 hover:bg-primary/30 transition-all cursor-pointer"
-                  >
-                    🔍 Inspect Team Details
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleUpdateTeamStatus(team.id, 'approved')}
-                    className="px-3.5 py-1.5 text-xs font-bold rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30 transition-all cursor-pointer"
-                  >
-                    ✓ Approve
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleUpdateTeamStatus(team.id, 'forming')}
-                    className="px-3.5 py-1.5 text-xs font-bold rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30 transition-all cursor-pointer"
-                  >
-                    Set Forming
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDisbandTeam(team.id)}
-                    className="px-3.5 py-1.5 text-xs font-bold rounded-xl bg-rose-500/20 text-rose-300 border border-rose-500/30 hover:bg-rose-500/30 transition-all cursor-pointer ml-auto"
-                  >
-                    Disband
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-      )}
+                      <Panel title={`Authorised accounts (${adminEmails.length})`}>
+                        <ul className="divide-y divide-[rgba(209,199,189,0.7)] overflow-hidden rounded-2xl border border-[rgba(209,199,189,0.7)]">
+                          {adminEmails.map((email) => {
+                            const isSuper = email.toLowerCase() === SUPER_ADMIN;
+                            return (
+                              <li
+                                key={email}
+                                className="flex flex-wrap items-center justify-between gap-3 bg-[rgba(248,246,242,0.5)] p-4 transition-colors duration-250 hover:bg-[rgba(248,246,242,0.85)]"
+                              >
+                                <div className="min-w-0">
+                                  <span className="block truncate text-sm font-bold text-foreground">
+                                    {email}
+                                  </span>
+                                  <span className="mt-0.5 block text-[10px] text-muted">
+                                    {isSuper
+                                      ? 'Primary super admin — cannot be revoked'
+                                      : 'Granted console permissions'}
+                                  </span>
+                                </div>
 
-      {/* TAB 3: Advanced Student Directory */}
-      {activeTab === 'students' && (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-          {/* Advanced Multi-Attribute Filters Toolbar */}
-          <div className="glass-card p-4 rounded-2xl border border-card-border space-y-3">
-            <span className="text-xs font-bold text-primary uppercase tracking-wider block">Student Directory Multi-Attribute Filters</span>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-2.5">
-              <input
-                type="text"
-                placeholder="Search Name, Email, Roll No..."
-                value={studentSearch}
-                onChange={(e) => setStudentSearch(e.target.value)}
-                className="rounded-xl bg-background border border-card-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary"
-              />
-
-              <select
-                value={studentYearFilter}
-                onChange={(e) => setStudentYearFilter(e.target.value)}
-                className="rounded-xl bg-background border border-card-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary cursor-pointer"
-              >
-                <option value="ALL">All Years</option>
-                <option value="1st Year">1st Year</option>
-                <option value="2nd Year">2nd Year</option>
-                <option value="3rd Year">3rd Year</option>
-                <option value="4th Year">4th Year</option>
-              </select>
-
-              <select
-                value={studentBranchFilter}
-                onChange={(e) => setStudentBranchFilter(e.target.value)}
-                className="rounded-xl bg-background border border-card-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary cursor-pointer"
-              >
-                <option value="ALL">All Branches</option>
-                <option value="CSE">CSE</option>
-                <option value="CSE (AI/ML)">CSE (AI/ML)</option>
-                <option value="CS">CS</option>
-              </select>
-
-              <select
-                value={studentSectionFilter}
-                onChange={(e) => setStudentSectionFilter(e.target.value)}
-                className="rounded-xl bg-background border border-card-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary cursor-pointer"
-              >
-                <option value="ALL">All Sections (A-I)</option>
-                {['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'].map((sec) => (
-                  <option key={sec} value={sec}>Section {sec}</option>
-                ))}
-              </select>
-
-              <select
-                value={studentGenderFilter}
-                onChange={(e) => setStudentGenderFilter(e.target.value)}
-                className="rounded-xl bg-background border border-card-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary cursor-pointer"
-              >
-                <option value="ALL">All Genders</option>
-                <option value="Female">Female</option>
-                <option value="Male">Male</option>
-                <option value="Other">Other</option>
-              </select>
-
-              <select
-                value={studentStatusFilter}
-                onChange={(e) => setStudentStatusFilter(e.target.value)}
-                className="rounded-xl bg-background border border-card-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary cursor-pointer"
-              >
-                <option value="ALL">All Access Statuses</option>
-                <option value="ACTIVE">Active Users</option>
-                <option value="BANNED">Suspended Users</option>
-              </select>
-            </div>
-            <div className="flex justify-between items-center text-xs text-muted pt-1">
-              <span>Showing {filteredStudents.length} of {students.length} students</span>
-              <button
-                type="button"
-                onClick={() => {
-                  setStudentSearch('');
-                  setStudentYearFilter('ALL');
-                  setStudentBranchFilter('ALL');
-                  setStudentSectionFilter('ALL');
-                  setStudentGenderFilter('ALL');
-                  setStudentStatusFilter('ALL');
-                }}
-                className="text-primary font-bold hover:underline cursor-pointer"
-              >
-                Reset Filters
-              </button>
-            </div>
-          </div>
-
-          {/* Students Directory Table / Cards */}
-          <div className="divide-y divide-card-border border border-card-border rounded-3xl overflow-hidden glass-card">
-            {filteredStudents.map((student) => (
-              <div key={student.id} className="p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-card/40 transition-colors">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-base font-extrabold text-foreground">{student.name}</span>
-                    {student.isBanned ? (
-                      <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40">
-                        🚫 Access Suspended
-                      </span>
-                    ) : (
-                      <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                        Active Account
-                      </span>
-                    )}
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30">
-                      {student.branch} • {student.year}
-                    </span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-card border border-card-border text-muted">
-                      Sec: {student.section}
-                    </span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-card border border-card-border text-muted">
-                      Gender: {student.gender}
-                    </span>
-                  </div>
-                  <div className="text-xs text-muted flex items-center gap-3">
-                    <span>{student.email}</span>
-                    <span>• Roll: {student.rollNo}</span>
-                    {student.teamName && <span className="text-primary font-semibold">• Team: {student.teamName}</span>}
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedStudent(student)}
-                    className="px-3.5 py-1.5 text-xs font-bold rounded-xl bg-primary/20 text-primary border border-primary/30 hover:bg-primary/30 transition-all cursor-pointer"
-                  >
-                    🔍 Inspect Profile
-                  </button>
-
-                  {student.isBanned ? (
-                    <button
-                      type="button"
-                      onClick={() => handleStudentAccessToggle(student.email, 'restore')}
-                      className="px-3.5 py-1.5 text-xs font-bold rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30 transition-all cursor-pointer"
-                    >
-                      ✅ Restore Access
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => handleStudentAccessToggle(student.email, 'ban')}
-                      className="px-3.5 py-1.5 text-xs font-bold rounded-xl bg-rose-500/20 text-rose-300 border border-rose-500/40 hover:bg-rose-500/30 transition-all cursor-pointer"
-                    >
-                      🚫 Remove Access
-                    </button>
+                                {isSuper ? (
+                                  <Chip tone="primary">Super admin</Chip>
+                                ) : (
+                                  <PremiumButton
+                                    variant="ghost"
+                                    size="sm"
+                                    magnetic={false}
+                                    onClick={() =>
+                                      setConfirmState({
+                                        title: 'Revoke admin access?',
+                                        body: `${email} will immediately lose access to this console.`,
+                                        confirmLabel: 'Revoke access',
+                                        onConfirm: () => revokeAdminAccess(email),
+                                      })
+                                    }
+                                  >
+                                    Revoke
+                                  </PremiumButton>
+                                )}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </Panel>
+                    </>
                   )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-      )}
 
-      {/* TAB 4: Problem Statement Wide Participation Analytics */}
-      {activeTab === 'ps_tracks' && (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-          <div className="glass-card p-4 rounded-2xl border border-card-border flex flex-col sm:flex-row items-center justify-between gap-3">
-            <input
-              type="text"
-              placeholder="Filter by PS Code, Theme Name, Category..."
-              value={psSearch}
-              onChange={(e) => setPsSearch(e.target.value)}
-              className="w-full sm:w-80 rounded-xl bg-background border border-card-border px-4 py-2 text-xs text-foreground focus:outline-none focus:border-primary"
-            />
-            <span className="text-xs text-muted font-bold">18 Official SIH 2026 Themes Participation Overview</span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {filteredPSTracks.map((track) => (
-              <div key={track.id} className="glass-card p-6 rounded-3xl border border-card-border space-y-4">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <span className="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30 font-mono">
-                      {track.code}
-                    </span>
-                    <h4 className="text-lg font-extrabold text-foreground mt-1">{track.name}</h4>
-                    <span className="text-xs text-muted block">{track.category} • {track.organization}</span>
-                  </div>
-
-                  <span className="text-xs font-extrabold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                    {track.teamCount} Teams Joined
-                  </span>
-                </div>
-
-                <p className="text-xs text-muted leading-relaxed line-clamp-2">{track.description}</p>
-
-                {track.teams.length > 0 ? (
-                  <div className="space-y-2 border-t border-card-border pt-3">
-                    <span className="text-[10px] font-bold text-muted uppercase tracking-wider block">Participating Teams ({track.teams.length}):</span>
-                    <div className="space-y-1.5">
-                      {track.teams.map((t: any) => (
-                        <div key={t.id} className="p-2 rounded-xl bg-background/50 border border-card-border flex items-center justify-between text-xs">
-                          <span className="font-bold text-foreground">🚀 {t.name} (Leader: {t.leaderName})</span>
-                          <span className="text-[10px] font-semibold text-primary">{t.memberCount}/6 Members</span>
+                  {activeTab === 'teams' && (
+                    <>
+                      <Panel
+                        title="Team filters"
+                        action={
+                          <span className="text-[11px] font-bold text-muted">
+                            {filteredTeams.length} of {teams.length}
+                          </span>
+                        }
+                      >
+                        <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+                          <input
+                            type="text"
+                            placeholder="Search team, track, leader, member"
+                            aria-label="Search teams"
+                            value={teamSearch}
+                            onChange={(e) => setTeamSearch(e.target.value)}
+                            className={`${CONTROL} sm:col-span-2`}
+                          />
+                          <select
+                            value={teamStatusFilter}
+                            onChange={(e) => setTeamStatusFilter(e.target.value)}
+                            aria-label="Team status"
+                            className={CONTROL}
+                          >
+                            <option value="ALL">All statuses</option>
+                            <option value="forming">Forming</option>
+                            <option value="locked">Locked</option>
+                            <option value="approved">Approved</option>
+                          </select>
+                          <select
+                            value={teamTrackFilter}
+                            onChange={(e) => setTeamTrackFilter(e.target.value)}
+                            aria-label="Problem statement"
+                            className={CONTROL}
+                          >
+                            <option value="ALL">All problem statements</option>
+                            {problemStatementStats.map((tr) => (
+                              <option key={tr.id} value={tr.code}>
+                                {tr.code} — {tr.name}
+                              </option>
+                            ))}
+                          </select>
                         </div>
+
+                        <button
+                          type="button"
+                          onClick={() => setAllFemaleFilter(!allFemaleFilter)}
+                          aria-pressed={allFemaleFilter}
+                          className={`mt-3 rounded-full border px-3.5 py-1.5 text-[11px] font-bold transition-colors duration-250 ${
+                            allFemaleFilter
+                              ? 'border-transparent bg-primary text-[#FBF9F6]'
+                              : 'border-[rgba(209,199,189,0.85)] bg-[rgba(248,246,242,0.6)] text-foreground/65 hover:border-[rgba(114,56,61,0.3)]'
+                          }`}
+                        >
+                          All-female teams only {allFemaleFilter && '✓'}
+                        </button>
+                      </Panel>
+
+                      <motion.div layout className="grid gap-4 xl:grid-cols-2">
+                        <AnimatePresence mode="popLayout" initial={false}>
+                          {filteredTeams.map((team, i) => (
+                            <motion.article
+                              key={team.id}
+                              layout
+                              initial={{ opacity: 0, y: 20, filter: 'blur(6px)' }}
+                              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                              exit={{ opacity: 0, scale: 0.97, filter: 'blur(6px)' }}
+                              transition={{
+                                duration: DURATION.card,
+                                ease: EASE.outExpo,
+                                delay: Math.min(i * 0.03, 0.3),
+                              }}
+                              className="surface-raised space-y-4 rounded-3xl p-5"
+                            >
+                              <div className="flex flex-wrap items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <h3 className="text-base font-extrabold tracking-tight text-foreground">
+                                      {team.name}
+                                    </h3>
+                                    {team.isAllFemale && <Chip tone="accent">All-female</Chip>}
+                                  </div>
+                                  <p className="mt-1 text-xs font-bold text-primary">
+                                    {team.trackName}
+                                  </p>
+                                  <p className="mt-0.5 text-[11px] text-foreground/55">
+                                    Leader: {team.leaderName} ({team.leaderEmail})
+                                  </p>
+                                </div>
+                                <Chip tone={team.status === 'approved' ? 'primary' : 'neutral'}>
+                                  {team.status.toUpperCase()} · {team.memberCount}/6
+                                </Chip>
+                              </div>
+
+                              <div className="border-t border-[rgba(209,199,189,0.65)] pt-3">
+                                <div className="mb-2 flex justify-between text-[10px] font-bold uppercase tracking-[0.12em] text-muted">
+                                  <span>Roster ({team.memberCount})</span>
+                                  <span>
+                                    {team.femaleCount}F / {team.maleCount}M
+                                  </span>
+                                </div>
+                                <ul className="space-y-1.5">
+                                  {team.members.map((m: any) => (
+                                    <li key={m.id}>
+                                      <button
+                                        type="button"
+                                        onClick={() => setSelectedStudent(m)}
+                                        className="flex w-full items-center justify-between gap-3 rounded-xl border border-[rgba(209,199,189,0.7)] bg-[rgba(239,233,225,0.55)] px-3 py-2 text-left transition-colors duration-250 hover:border-[rgba(114,56,61,0.28)] hover:bg-[rgba(248,246,242,0.9)]"
+                                      >
+                                        <span className="min-w-0 truncate text-xs font-semibold text-foreground">
+                                          {m.name}
+                                          <span className="ml-1.5 text-[10px] font-normal text-foreground/50">
+                                            {m.branch || 'CSE'} · Yr {m.year || 'N/A'} · Sec{' '}
+                                            {m.section || 'N/A'}
+                                          </span>
+                                        </span>
+                                        <span className="shrink-0 text-[10px] font-bold text-primary">
+                                          Inspect ↗
+                                        </span>
+                                      </button>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+
+                              <div className="flex flex-wrap gap-2 border-t border-[rgba(209,199,189,0.65)] pt-3">
+                                <PremiumButton
+                                  size="sm"
+                                  variant="glass"
+                                  magnetic={false}
+                                  onClick={() => setSelectedTeam(team)}
+                                >
+                                  Inspect team
+                                </PremiumButton>
+                                <PremiumButton
+                                  size="sm"
+                                  magnetic={false}
+                                  onClick={() => handleUpdateTeamStatus(team.id, 'approved')}
+                                >
+                                  Approve
+                                </PremiumButton>
+                                <PremiumButton
+                                  size="sm"
+                                  variant="ghost"
+                                  magnetic={false}
+                                  onClick={() => handleUpdateTeamStatus(team.id, 'forming')}
+                                >
+                                  Set forming
+                                </PremiumButton>
+                                <PremiumButton
+                                  size="sm"
+                                  variant="ghost"
+                                  magnetic={false}
+                                  className="ml-auto"
+                                  onClick={() =>
+                                    setConfirmState({
+                                      title: `Disband ${team.name}?`,
+                                      body: 'All members return to looking-for-team status. This cannot be undone.',
+                                      confirmLabel: 'Disband team',
+                                      onConfirm: () => disbandTeam(team.id),
+                                    })
+                                  }
+                                >
+                                  Disband
+                                </PremiumButton>
+                              </div>
+                            </motion.article>
+                          ))}
+                        </AnimatePresence>
+                      </motion.div>
+                    </>
+                  )}
+
+                  {activeTab === 'students' && (
+                    <>
+                      <Panel
+                        title="Student filters"
+                        action={
+                          <button
+                            type="button"
+                            onClick={resetStudentFilters}
+                            className="text-[11px] font-bold text-primary transition-colors duration-250 hover:text-[var(--primary-hover)]"
+                          >
+                            Reset filters
+                          </button>
+                        }
+                      >
+                        <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+                          <input
+                            type="text"
+                            placeholder="Search name, email, roll no"
+                            aria-label="Search students"
+                            value={studentSearch}
+                            onChange={(e) => setStudentSearch(e.target.value)}
+                            className={CONTROL}
+                          />
+                          <select
+                            value={studentYearFilter}
+                            onChange={(e) => setStudentYearFilter(e.target.value)}
+                            aria-label="Year"
+                            className={CONTROL}
+                          >
+                            <option value="ALL">All years</option>
+                            <option value="1st Year">1st Year</option>
+                            <option value="2nd Year">2nd Year</option>
+                            <option value="3rd Year">3rd Year</option>
+                            <option value="4th Year">4th Year</option>
+                          </select>
+                          <select
+                            value={studentBranchFilter}
+                            onChange={(e) => setStudentBranchFilter(e.target.value)}
+                            aria-label="Branch"
+                            className={CONTROL}
+                          >
+                            <option value="ALL">All branches</option>
+                            <option value="CSE">CSE</option>
+                            <option value="CSE (AI/ML)">CSE (AI/ML)</option>
+                            <option value="CS">CS</option>
+                          </select>
+                          <select
+                            value={studentSectionFilter}
+                            onChange={(e) => setStudentSectionFilter(e.target.value)}
+                            aria-label="Section"
+                            className={CONTROL}
+                          >
+                            <option value="ALL">All sections</option>
+                            {['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'].map((sec) => (
+                              <option key={sec} value={sec}>
+                                Section {sec}
+                              </option>
+                            ))}
+                          </select>
+                          <select
+                            value={studentGenderFilter}
+                            onChange={(e) => setStudentGenderFilter(e.target.value)}
+                            aria-label="Gender"
+                            className={CONTROL}
+                          >
+                            <option value="ALL">All genders</option>
+                            <option value="Female">Female</option>
+                            <option value="Male">Male</option>
+                            <option value="Other">Other</option>
+                          </select>
+                          <select
+                            value={studentStatusFilter}
+                            onChange={(e) => setStudentStatusFilter(e.target.value)}
+                            aria-label="Access status"
+                            className={CONTROL}
+                          >
+                            <option value="ALL">All access statuses</option>
+                            <option value="ACTIVE">Active</option>
+                            <option value="BANNED">Suspended</option>
+                          </select>
+                        </div>
+                        <p className="mt-3 text-[11px] font-bold text-muted">
+                          Showing {filteredStudents.length} of {students.length}
+                        </p>
+                      </Panel>
+
+                      <motion.ul
+                        layout
+                        className="surface-raised divide-y divide-[rgba(209,199,189,0.7)] overflow-hidden rounded-3xl"
+                      >
+                        <AnimatePresence mode="popLayout" initial={false}>
+                          {filteredStudents.map((student, i) => (
+                            <motion.li
+                              key={student.id}
+                              layout
+                              initial={{ opacity: 0, y: 12 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, x: -20 }}
+                              transition={{
+                                duration: DURATION.card,
+                                ease: EASE.outExpo,
+                                delay: Math.min(i * 0.015, 0.25),
+                              }}
+                              className="flex flex-col gap-3 p-4 transition-colors duration-250 hover:bg-[rgba(239,233,225,0.55)] md:flex-row md:items-center md:justify-between sm:p-5"
+                            >
+                              <div className="min-w-0 space-y-1.5">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="text-sm font-extrabold text-foreground">
+                                    {student.name}
+                                  </span>
+                                  <Chip tone={student.isBanned ? 'primary' : 'accent'}>
+                                    {student.isBanned ? 'Suspended' : 'Active'}
+                                  </Chip>
+                                  <Chip>
+                                    {student.branch} · {student.year}
+                                  </Chip>
+                                  <Chip>Sec {student.section}</Chip>
+                                  <Chip>{student.gender}</Chip>
+                                </div>
+                                <p className="text-[11px] text-foreground/55">
+                                  {student.email} · Roll {student.rollNo}
+                                  {student.teamName && (
+                                    <span className="font-semibold text-primary">
+                                      {' '}
+                                      · {student.teamName}
+                                    </span>
+                                  )}
+                                </p>
+                              </div>
+
+                              <div className="flex shrink-0 gap-2">
+                                <PremiumButton
+                                  size="sm"
+                                  variant="glass"
+                                  magnetic={false}
+                                  onClick={() => setSelectedStudent(student)}
+                                >
+                                  Inspect
+                                </PremiumButton>
+                                <PremiumButton
+                                  size="sm"
+                                  variant="ghost"
+                                  magnetic={false}
+                                  onClick={() =>
+                                    setConfirmState(
+                                      student.isBanned
+                                        ? {
+                                            title: 'Restore access?',
+                                            body: `${student.email} will regain access to the platform.`,
+                                            confirmLabel: 'Restore access',
+                                            onConfirm: () =>
+                                              toggleStudentAccess(student.email, 'restore'),
+                                          }
+                                        : {
+                                            title: 'Suspend access?',
+                                            body: `${student.email} will be signed out and blocked from the platform.`,
+                                            confirmLabel: 'Suspend access',
+                                            onConfirm: () =>
+                                              toggleStudentAccess(student.email, 'ban'),
+                                          }
+                                    )
+                                  }
+                                >
+                                  {student.isBanned ? 'Restore' : 'Suspend'}
+                                </PremiumButton>
+                              </div>
+                            </motion.li>
+                          ))}
+                        </AnimatePresence>
+                      </motion.ul>
+                    </>
+                  )}
+
+                  {activeTab === 'ps_tracks' && (
+                    <>
+                      <Panel
+                        title="Participation by theme"
+                        action={
+                          <span className="text-[11px] font-bold text-muted">
+                            {filteredPSTracks.length} of {problemStatementStats.length}
+                          </span>
+                        }
+                      >
+                        <input
+                          type="text"
+                          placeholder="Filter by code, theme name or category"
+                          aria-label="Filter problem statements"
+                          value={psSearch}
+                          onChange={(e) => setPsSearch(e.target.value)}
+                          className={`${CONTROL} sm:max-w-md`}
+                        />
+                      </Panel>
+
+                      <motion.div layout className="grid gap-4 xl:grid-cols-2">
+                        <AnimatePresence mode="popLayout" initial={false}>
+                          {filteredPSTracks.map((track, i) => (
+                            <motion.article
+                              key={track.id}
+                              layout
+                              initial={{ opacity: 0, y: 20, filter: 'blur(6px)' }}
+                              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                              exit={{ opacity: 0, scale: 0.97, filter: 'blur(6px)' }}
+                              transition={{
+                                duration: DURATION.card,
+                                ease: EASE.outExpo,
+                                delay: Math.min(i * 0.03, 0.3),
+                              }}
+                              className="surface-raised space-y-3.5 rounded-3xl p-5"
+                            >
+                              <div className="flex flex-wrap items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                  <span className="font-mono text-[10px] font-bold text-primary">
+                                    {track.code}
+                                  </span>
+                                  <h3 className="mt-1 text-base font-extrabold tracking-tight text-foreground">
+                                    {track.name}
+                                  </h3>
+                                  <p className="mt-0.5 text-[11px] text-foreground/55">
+                                    {track.category} · {track.organization}
+                                  </p>
+                                </div>
+                                <Chip tone="accent">{track.teamCount} teams</Chip>
+                              </div>
+
+                              <p className="line-clamp-2 text-xs leading-relaxed text-foreground/60">
+                                {track.description}
+                              </p>
+
+                              <div className="border-t border-[rgba(209,199,189,0.65)] pt-3">
+                                {track.teams.length > 0 ? (
+                                  <>
+                                    <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.12em] text-muted">
+                                      Participating teams ({track.teams.length})
+                                    </p>
+                                    <ul className="space-y-1.5">
+                                      {track.teams.map((t: any) => (
+                                        <li
+                                          key={t.id}
+                                          className="flex items-center justify-between gap-3 rounded-xl border border-[rgba(209,199,189,0.7)] bg-[rgba(239,233,225,0.55)] px-3 py-2"
+                                        >
+                                          <span className="min-w-0 truncate text-xs font-bold text-foreground">
+                                            {t.name}
+                                            <span className="ml-1.5 text-[10px] font-normal text-foreground/50">
+                                              led by {t.leaderName}
+                                            </span>
+                                          </span>
+                                          <span className="shrink-0 text-[10px] font-bold text-primary">
+                                            {t.memberCount}/6
+                                          </span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </>
+                                ) : (
+                                  <p className="text-xs italic text-foreground/45">
+                                    No teams registered under this theme yet.
+                                  </p>
+                                )}
+                              </div>
+                            </motion.article>
+                          ))}
+                        </AnimatePresence>
+                      </motion.div>
+                    </>
+                  )}
+
+                  {activeTab === 'mentors' && (
+                    <RevealGroup className="grid gap-4 sm:grid-cols-2" stagger={0.06}>
+                      {mentors.map((mentor) => (
+                        <RevealItem key={mentor.id}>
+                          <TiltCard intensity={5}>
+                            <div className="surface-raised h-full space-y-3 rounded-3xl p-5">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                  <h3 className="text-base font-extrabold tracking-tight text-foreground">
+                                    {mentor.name}
+                                  </h3>
+                                  <p className="mt-0.5 text-xs font-semibold text-primary">
+                                    {mentor.designation}
+                                  </p>
+                                  <p className="mt-0.5 truncate text-[11px] text-foreground/55">
+                                    {mentor.email}
+                                  </p>
+                                </div>
+                                <Chip tone="accent">Verified</Chip>
+                              </div>
+
+                              <div>
+                                <div className="mb-1.5 flex justify-between text-[10px] font-bold uppercase tracking-[0.12em] text-muted">
+                                  <span>Capacity</span>
+                                  <span>
+                                    {mentor.currentLoad} / {mentor.capacity}
+                                  </span>
+                                </div>
+                                <div className="h-1.5 overflow-hidden rounded-full bg-[rgba(209,199,189,0.7)]">
+                                  <motion.div
+                                    initial={{ scaleX: 0 }}
+                                    whileInView={{
+                                      scaleX:
+                                        mentor.capacity > 0
+                                          ? Math.min(1, mentor.currentLoad / mentor.capacity)
+                                          : 0,
+                                    }}
+                                    viewport={{ once: true, amount: 0.6 }}
+                                    transition={{ duration: 0.9, ease: EASE.outExpo, delay: 0.15 }}
+                                    style={{ transformOrigin: 'left' }}
+                                    className="h-full rounded-full bg-gradient-to-r from-[#AC9C8D] to-primary"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          </TiltCard>
+                        </RevealItem>
                       ))}
-                    </div>
-                  </div>
-                ) : (
-                  <span className="text-xs text-muted italic block border-t border-card-border pt-3">No teams registered under this theme yet.</span>
-                )}
-              </div>
-            ))}
+                    </RevealGroup>
+                  )}
+                </motion.div>
+              </AnimatePresence>
+            </div>
           </div>
-        </motion.div>
-      )}
+        </section>
+      </main>
 
-      {/* TAB 5: Faculty Mentors */}
-      {activeTab === 'mentors' && (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          {mentors.map((mentor) => (
-            <div key={mentor.id} className="glass-card p-6 rounded-3xl border border-card-border space-y-3">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h4 className="text-base font-extrabold text-foreground">{mentor.name}</h4>
-                  <span className="text-xs text-primary font-semibold block">{mentor.designation}</span>
-                  <span className="text-xs text-muted block">{mentor.email}</span>
+      <Footer />
+
+      {/* ── STUDENT DETAIL ── */}
+      <AnimatePresence>
+        {selectedStudent && (
+          <Overlay onClose={() => setSelectedStudent(null)}>
+            <div className="flex items-start justify-between gap-4 border-b border-[rgba(209,199,189,0.7)] pb-4">
+              <div className="min-w-0">
+                <h2 className="text-xl font-extrabold tracking-tight text-foreground">
+                  {selectedStudent.name}
+                </h2>
+                <p className="mt-0.5 truncate text-xs font-semibold text-primary">
+                  {selectedStudent.email}
+                </p>
+              </div>
+              <PremiumButton
+                variant="ghost"
+                size="sm"
+                magnetic={false}
+                onClick={() => setSelectedStudent(null)}
+              >
+                Close
+              </PremiumButton>
+            </div>
+
+            <dl className="mt-5 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+              {[
+                ['Roll number', selectedStudent.rollNo],
+                ['Section', `Section ${selectedStudent.section}`],
+                ['Branch & year', `${selectedStudent.branch} (${selectedStudent.year})`],
+                ['Gender', selectedStudent.gender],
+              ].map(([k, v]) => (
+                <div
+                  key={k as string}
+                  className="rounded-xl border border-[rgba(209,199,189,0.7)] bg-[rgba(239,233,225,0.6)] p-3"
+                >
+                  <dt className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted">
+                    {k}
+                  </dt>
+                  <dd className="mt-1 text-xs font-bold text-foreground">{v}</dd>
                 </div>
-                <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                  Verified Mentor
-                </span>
-              </div>
-              <div className="text-xs text-muted">
-                Capacity Allocation Load: <strong>{mentor.currentLoad} / {mentor.capacity} Teams Assigned</strong>
-              </div>
-            </div>
-          ))}
-        </motion.div>
-      )}
+              ))}
+            </dl>
 
-      {/* STUDENT PROFILE INSPECT MODAL */}
-      {selectedStudent && (
-        <div onClick={() => setSelectedStudent(null)} className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md p-4 flex items-center justify-center">
-          <div onClick={(e) => e.stopPropagation()} className="glass-card max-w-2xl w-full rounded-3xl p-6 border border-primary/40 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-start border-b border-card-border pb-3">
-              <div>
-                <h3 className="text-xl font-extrabold text-foreground">{selectedStudent.name}</h3>
-                <span className="text-xs text-primary font-semibold">{selectedStudent.email}</span>
+            {selectedStudent.skills?.length > 0 && (
+              <div className="mt-5 border-t border-[rgba(209,199,189,0.7)] pt-4">
+                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted">
+                  Skills
+                </p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {selectedStudent.skills.map((sk: string) => (
+                    <Chip key={sk} tone="accent">
+                      {sk}
+                    </Chip>
+                  ))}
+                </div>
               </div>
-              <button onClick={() => setSelectedStudent(null)} className="text-xs font-bold bg-card border border-card-border px-3 py-1.5 rounded-xl cursor-pointer">✕ Close</button>
-            </div>
+            )}
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-              <div className="p-3 bg-background/50 rounded-xl border border-card-border">
-                <span className="text-muted block text-[10px] uppercase font-bold">Roll Number</span>
-                <span className="font-bold text-foreground mt-0.5 block">{selectedStudent.rollNo}</span>
-              </div>
-              <div className="p-3 bg-background/50 rounded-xl border border-card-border">
-                <span className="text-muted block text-[10px] uppercase font-bold">Section</span>
-                <span className="font-bold text-foreground mt-0.5 block">Section {selectedStudent.section}</span>
-              </div>
-              <div className="p-3 bg-background/50 rounded-xl border border-card-border">
-                <span className="text-muted block text-[10px] uppercase font-bold">Branch & Year</span>
-                <span className="font-bold text-foreground mt-0.5 block">{selectedStudent.branch} ({selectedStudent.year})</span>
-              </div>
-              <div className="p-3 bg-background/50 rounded-xl border border-card-border">
-                <span className="text-muted block text-[10px] uppercase font-bold">Gender</span>
-                <span className="font-bold text-foreground mt-0.5 block">{selectedStudent.gender}</span>
-              </div>
-            </div>
-
-            <div className="space-y-2 border-t border-card-border pt-3">
-              <span className="text-xs font-bold text-foreground block">Skills & Technical Competencies</span>
-              <div className="flex flex-wrap gap-1.5">
-                {selectedStudent.skills?.map((sk: string) => (
-                  <span key={sk} className="text-xs bg-primary/10 text-primary border border-primary/20 px-2.5 py-1 rounded-lg font-bold">
-                    {sk}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Social Links */}
-            <div className="flex gap-3 pt-3 border-t border-card-border text-xs">
+            <div className="mt-5 flex flex-wrap items-center gap-4 border-t border-[rgba(209,199,189,0.7)] pt-4 text-xs">
               {selectedStudent.githubUrl && (
-                <a href={selectedStudent.githubUrl} target="_blank" rel="noreferrer" className="text-primary font-bold hover:underline">
-                  ↗ GitHub Profile
+                <a
+                  href={selectedStudent.githubUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-bold text-primary hover:underline"
+                >
+                  GitHub ↗
                 </a>
               )}
               {selectedStudent.linkedinUrl && (
-                <a href={selectedStudent.linkedinUrl} target="_blank" rel="noreferrer" className="text-primary font-bold hover:underline">
-                  ↗ LinkedIn Profile
+                <a
+                  href={selectedStudent.linkedinUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-bold text-primary hover:underline"
+                >
+                  LinkedIn ↗
                 </a>
               )}
               {selectedStudent.resumeUrl && (
-                <a href={selectedStudent.resumeUrl} target="_blank" rel="noreferrer" className="text-primary font-bold hover:underline">
-                  ↗ View Resume
+                <a
+                  href={selectedStudent.resumeUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-bold text-primary hover:underline"
+                >
+                  Resume ↗
                 </a>
               )}
+
+              <div className="ml-auto">
+                <PremiumButton
+                  size="sm"
+                  variant="glass"
+                  magnetic={false}
+                  onClick={() =>
+                    setConfirmState(
+                      selectedStudent.isBanned
+                        ? {
+                            title: 'Restore access?',
+                            body: `${selectedStudent.email} will regain access to the platform.`,
+                            confirmLabel: 'Restore access',
+                            onConfirm: () => toggleStudentAccess(selectedStudent.email, 'restore'),
+                          }
+                        : {
+                            title: 'Suspend access?',
+                            body: `${selectedStudent.email} will be signed out and blocked from the platform.`,
+                            confirmLabel: 'Suspend access',
+                            onConfirm: () => toggleStudentAccess(selectedStudent.email, 'ban'),
+                          }
+                    )
+                  }
+                >
+                  {selectedStudent.isBanned ? 'Restore access' : 'Suspend access'}
+                </PremiumButton>
+              </div>
+            </div>
+          </Overlay>
+        )}
+      </AnimatePresence>
+
+      {/* ── TEAM DETAIL ── */}
+      <AnimatePresence>
+        {selectedTeam && (
+          <Overlay onClose={() => setSelectedTeam(null)}>
+            <div className="flex items-start justify-between gap-4 border-b border-[rgba(209,199,189,0.7)] pb-4">
+              <div className="min-w-0">
+                <h2 className="text-xl font-extrabold tracking-tight text-foreground">
+                  {selectedTeam.name}
+                </h2>
+                <p className="mt-0.5 text-xs font-semibold text-primary">
+                  {selectedTeam.trackName}
+                </p>
+                <p className="mt-0.5 text-[11px] text-foreground/55">
+                  Leader: {selectedTeam.leaderName} ({selectedTeam.leaderEmail})
+                </p>
+              </div>
+              <PremiumButton
+                variant="ghost"
+                size="sm"
+                magnetic={false}
+                onClick={() => setSelectedTeam(null)}
+              >
+                Close
+              </PremiumButton>
             </div>
 
-            {/* Admin Action Bar */}
-            <div className="pt-4 border-t border-card-border flex justify-end">
-              {selectedStudent.isBanned ? (
-                <button
-                  type="button"
-                  onClick={() => handleStudentAccessToggle(selectedStudent.email, 'restore')}
-                  className="px-4 py-2 text-xs font-bold rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30 transition-all cursor-pointer"
-                >
-                  ✅ Restore User Access
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => handleStudentAccessToggle(selectedStudent.email, 'ban')}
-                  className="px-4 py-2 text-xs font-bold rounded-xl bg-rose-500/20 text-rose-300 border border-rose-500/40 hover:bg-rose-500/30 transition-all cursor-pointer"
-                >
-                  🚫 Remove / Suspend User Access
-                </button>
-              )}
+            <div className="mt-5 flex flex-wrap gap-2">
+              <Chip tone="primary">{selectedTeam.status.toUpperCase()}</Chip>
+              <Chip>{selectedTeam.memberCount}/6 members</Chip>
+              <Chip>
+                {selectedTeam.femaleCount}F / {selectedTeam.maleCount}M
+              </Chip>
+              {selectedTeam.isAllFemale && <Chip tone="accent">All-female</Chip>}
             </div>
-          </div>
-        </div>
-      )}
+
+            <ul className="mt-5 space-y-1.5">
+              {selectedTeam.members.map((m: any) => (
+                <li
+                  key={m.id}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-[rgba(209,199,189,0.7)] bg-[rgba(239,233,225,0.55)] px-3.5 py-2.5"
+                >
+                  <span className="min-w-0 truncate text-xs font-semibold text-foreground">
+                    {m.name}
+                    <span className="ml-1.5 text-[10px] font-normal text-foreground/50">
+                      {m.branch || 'CSE'} · Yr {m.year || 'N/A'} · Sec {m.section || 'N/A'}
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedTeam(null);
+                      setSelectedStudent(m);
+                    }}
+                    className="shrink-0 text-[10px] font-bold text-primary hover:underline"
+                  >
+                    Inspect ↗
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </Overlay>
+        )}
+      </AnimatePresence>
+
+      {/* ── CONFIRM ── */}
+      <AnimatePresence>
+        {confirmState && (
+          <Overlay onClose={() => setConfirmState(null)}>
+            <h2 className="text-lg font-extrabold tracking-tight text-foreground">
+              {confirmState.title}
+            </h2>
+            <p className="mt-2 text-sm leading-relaxed text-foreground/60">{confirmState.body}</p>
+            <div className="mt-6 flex justify-end gap-2.5">
+              <PremiumButton
+                variant="ghost"
+                size="sm"
+                magnetic={false}
+                onClick={() => setConfirmState(null)}
+              >
+                Cancel
+              </PremiumButton>
+              <PremiumButton
+                size="sm"
+                magnetic={false}
+                onClick={() => {
+                  confirmState.onConfirm();
+                  setConfirmState(null);
+                }}
+              >
+                {confirmState.confirmLabel}
+              </PremiumButton>
+            </div>
+          </Overlay>
+        )}
+      </AnimatePresence>
+
+      {/* ── TOASTS ── */}
+      <AnimatePresence>
+        {(successMsg || error) && (
+          <motion.div
+            role="status"
+            initial={{ opacity: 0, y: 24, filter: 'blur(8px)' }}
+            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, y: 16, filter: 'blur(8px)' }}
+            transition={{ duration: DURATION.card, ease: EASE.outExpo }}
+            className={`fixed bottom-6 left-1/2 z-[60] flex max-w-md -translate-x-1/2 items-center gap-4 rounded-2xl border bg-[rgba(248,246,242,0.95)] px-5 py-3 text-sm font-semibold shadow-[0_16px_48px_rgba(50,45,41,0.16)] backdrop-blur-xl ${
+              error
+                ? 'border-[rgba(114,56,61,0.38)] text-primary'
+                : 'border-[rgba(172,156,141,0.65)] text-foreground'
+            }`}
+          >
+            <span className="min-w-0">{error || successMsg}</span>
+            <button
+              type="button"
+              aria-label="Dismiss"
+              onClick={() => {
+                setError('');
+                setSuccessMsg('');
+              }}
+              className="shrink-0 text-xs text-muted transition-colors duration-250 hover:text-primary"
+            >
+              ✕
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

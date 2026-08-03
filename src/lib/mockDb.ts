@@ -96,7 +96,14 @@ export const mockPrisma = {
         if (where.id && u.id === where.id) return true;
         return false;
       });
-      return user || null;
+      if (!user) return null;
+      const studentProfile = db.studentProfiles.find((sp: any) => sp.userId === user.id);
+      const mentorProfile = db.mentorProfiles.find((mp: any) => mp.userId === user.id);
+      return {
+        ...user,
+        studentProfile: studentProfile || null,
+        mentorProfile: mentorProfile || null,
+      };
     },
     create: async (args: any) => {
       const db = loadDb();

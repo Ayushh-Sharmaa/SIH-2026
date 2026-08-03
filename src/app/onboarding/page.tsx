@@ -10,16 +10,6 @@ interface Track {
   problemStatementCode: string;
 }
 
-// Predefined Avatars with high-end tech themes
-const AVATAR_PRESETS = [
-  { id: 'hacker', name: 'Cyber Hacker', emoji: '🥷', color: 'from-cyan-500 to-blue-500' },
-  { id: 'developer', name: 'Tech Dev', emoji: '💻', color: 'from-blue-500 to-indigo-500' },
-  { id: 'designer', name: 'UI Designer', emoji: '🎨', color: 'from-pink-500 to-rose-500' },
-  { id: 'scientist', name: 'AI Scientist', emoji: '🧪', color: 'from-emerald-500 to-teal-500' },
-  { id: 'manager', name: 'Team Lead', emoji: '👑', color: 'from-amber-500 to-yellow-500' },
-  { id: 'writer', name: 'Tech Writer', emoji: '✍️', color: 'from-teal-500 to-blue-600' },
-];
-
 // Categorized Technical Skills
 const SKILL_CATEGORIES = {
   Frontend: ['React', 'HTML', 'CSS', 'JavaScript', 'Next.js', 'Tailwind', 'Vue', 'Angular', 'TypeScript'],
@@ -54,15 +44,15 @@ export default function OnboardingPage() {
   const [step, setStep] = useState(1);
   const [error, setError] = useState('');
 
-  // Student form state
+  // Student form state - all fields initialized empty, requiring user input
   const [studentForm, setStudentForm] = useState({
     name: '',
-    year: '3rd Year',
-    branch: 'CSE',
+    year: '',
+    branch: '',
     githubUrl: '',
     linkedinUrl: '',
     resumeUrl: '',
-    avatarUrl: 'developer', // Default preset
+    avatarUrl: '', // Mandatory profile photo upload
     trackInterest: [] as string[],
   });
 
@@ -83,7 +73,7 @@ export default function OnboardingPage() {
   const handleAvatarUpload = (file?: File) => {
     if (!file) return;
     if (!file.type.startsWith('image/')) {
-      setError('Please choose an image file for your profile photo.');
+      setError('Please choose an image file (PNG, JPG, WEBP) for your profile photo.');
       return;
     }
     if (file.size > 1_500_000) {
@@ -111,7 +101,9 @@ export default function OnboardingPage() {
   });
 
   const softSkillsOptions = ['PPT Making', 'Public Speaking/Presenting', 'Technical Writing', 'UI/UX Design', 'Video Editing', 'Management'];
-  const branchOptions = ['CSE', 'CSE (AIML)', 'CSE (DS)', 'CSE (IoT)', 'IT', 'CS', 'CS (AIML)'];
+  
+  // Strictly only the 3 allowed academic branches
+  const branchOptions = ['CSE', 'CSE (AI/ML)', 'CS'];
   const yearOptions = ['1st Year', '2nd Year', '3rd Year', '4th Year'];
 
   useEffect(() => {
@@ -128,9 +120,14 @@ export default function OnboardingPage() {
         setSession(meData.user);
 
         if (meData.user.role === 'STUDENT') {
-          setStudentForm((prev) => ({ ...prev, name: meData.user.name }));
+          // Pre-fill name only if it's set and not default fallback 'User'
+          if (meData.user.name && meData.user.name !== 'User') {
+            setStudentForm((prev) => ({ ...prev, name: meData.user.name }));
+          }
         } else {
-          setMentorForm((prev) => ({ ...prev, name: meData.user.name }));
+          if (meData.user.name && meData.user.name !== 'User') {
+            setMentorForm((prev) => ({ ...prev, name: meData.user.name }));
+          }
         }
 
         if (meData.user.isOnboarded) {
@@ -153,18 +150,128 @@ export default function OnboardingPage() {
     initOnboarding();
   }, [router]);
 
+  // Strict Validation logic for Student Form
+  const validateStudentStep1 = () => {
+    if (!studentForm.avatarUrl || !studentForm.avatarUrl.startsWith('data:image/')) {
+      setError('Profile photo is mandatory. Please upload a clear photo of yourself.');
+      return false;
+    }
+    if (!studentForm.name.trim()) {
+      setError('Name is mandatory. Please enter your full name.');
+      return false;
+    }
+    if (!studentForm.year) {
+      setError('Year of Study is mandatory. Please select your year of study.');
+      return false;
+    }
+    if (!studentForm.branch) {
+      setError('Academic Branch is mandatory. Please select your academic branch.');
+      return false;
+    }
+    setError('');
+    return true;
+  };
+
+  const validateStudentStep2 = () => {
+    const custom = customSkillsText
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => s !== '');
+    const totalSkills = Array.from(new Set([...lockedSkills, ...custom]));
+
+    if (totalSkills.length === 0) {
+      setError('Technical skills are mandatory. Please select or add at least one skill.');
+      return false;
+    }
+
+    const selectedLangs = Object.entries(languages).filter(([_, lvl]) => lvl !== null);
+    if (selectedLangs.length === 0) {
+      setError('Language fluency is mandatory. Please specify fluency for at least one language.');
+      return false;
+    }
+
+    if (selectedSoftSkills.length === 0) {
+      setError('Presenting / Soft skills are mandatory. Please select at least one skill.');
+      return false;
+    }
+
+    setError('');
+    return true;
+  };
+
+  const validateStudentStep3 = () => {
+    if (studentForm.trackInterest.length === 0) {
+      setError('Preferred Problem Statements are mandatory. Please select at least one track.');
+      return false;
+    }
+    if (!studentForm.githubUrl.trim()) {
+      setError('GitHub profile URL is mandatory. Please enter your GitHub link.');
+      return false;
+    }
+    if (!studentForm.linkedinUrl.trim()) {
+      setError('LinkedIn profile URL is mandatory. Please enter your LinkedIn link.');
+      return false;
+    }
+    if (!studentForm.resumeUrl.trim()) {
+      setError('Resume link is mandatory. Please enter a link to your resume.');
+      return false;
+    }
+
+    setError('');
+    return true;
+  };
+
+  // Strict Validation logic for Mentor Form
+  const validateMentorStep1 = () => {
+    if (!mentorForm.name.trim()) {
+      setError('Name is mandatory. Please enter your full name.');
+      return false;
+    }
+    if (!mentorForm.designation.trim()) {
+      setError('Designation is mandatory. Please enter your designation/role.');
+      return false;
+    }
+    if (!mentorForm.organization.trim()) {
+      setError('Organization is mandatory. Please enter your organization/department.');
+      return false;
+    }
+    setError('');
+    return true;
+  };
+
+  const validateMentorStep2 = () => {
+    if (!mentorForm.expertiseInput.trim()) {
+      setError('Expertise tags are mandatory. Please enter your areas of expertise.');
+      return false;
+    }
+    if (!mentorForm.capacity || mentorForm.capacity < 1) {
+      setError('Mentoring capacity is mandatory.');
+      return false;
+    }
+    if (!mentorForm.bio.trim()) {
+      setError('Short biography is mandatory. Please enter a brief bio.');
+      return false;
+    }
+    if (!mentorForm.linkedinUrl.trim()) {
+      setError('LinkedIn profile URL is mandatory. Please enter your LinkedIn link.');
+      return false;
+    }
+    setError('');
+    return true;
+  };
+
   const handleStudentSubmit = async () => {
+    if (!validateStudentStep3()) return;
+
     setError('');
     setSubmitting(true);
 
-    // Merge locked skills and custom typed skills
     const custom = customSkillsText
       .split(',')
       .map((s) => s.trim())
       .filter((s) => s !== '');
     const finalSkills = Array.from(new Set([...lockedSkills, ...custom]));
 
-    // Format languages: e.g. ["English (Fluent)", "Hindi (Moderate)"]
     const formattedLanguages = Object.entries(languages)
       .filter(([_, level]) => level !== null)
       .map(([lang, level]) => `${lang} (${level})`);
@@ -174,15 +281,15 @@ export default function OnboardingPage() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: studentForm.name,
+          name: studentForm.name.trim(),
           year: studentForm.year,
           branch: studentForm.branch,
           skills: finalSkills,
           languages: formattedLanguages,
           softSkills: selectedSoftSkills,
-          resumeUrl: studentForm.resumeUrl,
-          githubUrl: studentForm.githubUrl,
-          linkedinUrl: studentForm.linkedinUrl,
+          resumeUrl: studentForm.resumeUrl.trim(),
+          githubUrl: studentForm.githubUrl.trim(),
+          linkedinUrl: studentForm.linkedinUrl.trim(),
           avatarUrl: studentForm.avatarUrl,
           trackInterest: studentForm.trackInterest,
         }),
@@ -193,12 +300,14 @@ export default function OnboardingPage() {
 
       router.push('/dashboard');
     } catch (err: any) {
-      setError(err.message || 'An error occurred.');
+      setError(err.message || 'An error occurred while saving profile.');
       setSubmitting(false);
     }
   };
 
   const handleMentorSubmit = async () => {
+    if (!validateMentorStep2()) return;
+
     setError('');
     setSubmitting(true);
 
@@ -212,13 +321,13 @@ export default function OnboardingPage() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: mentorForm.name,
-          designation: mentorForm.designation,
-          organization: mentorForm.organization,
+          name: mentorForm.name.trim(),
+          designation: mentorForm.designation.trim(),
+          organization: mentorForm.organization.trim(),
           expertise,
           capacity: mentorForm.capacity,
-          bio: mentorForm.bio,
-          linkedinUrl: mentorForm.linkedinUrl,
+          bio: mentorForm.bio.trim(),
+          linkedinUrl: mentorForm.linkedinUrl.trim(),
         }),
       });
 
@@ -227,7 +336,7 @@ export default function OnboardingPage() {
 
       router.push('/dashboard');
     } catch (err: any) {
-      setError(err.message || 'An error occurred.');
+      setError(err.message || 'An error occurred while saving profile.');
       setSubmitting(false);
     }
   };
@@ -248,7 +357,6 @@ export default function OnboardingPage() {
     }
   };
 
-  // Recommendations builder based on lockedSkills
   const getRecommendations = () => {
     const recommended = new Set<string>();
     lockedSkills.forEach((s) => {
@@ -264,7 +372,6 @@ export default function OnboardingPage() {
     return Array.from(recommended).slice(0, 5);
   };
 
-  // Real-time skill chart calculations (Frontend, Backend, UIUX, Others)
   const getSkillCategoryCounts = () => {
     const counts = { Frontend: 0, Backend: 0, UIUX: 0, Others: 0 };
     lockedSkills.forEach((skill) => {
@@ -279,7 +386,6 @@ export default function OnboardingPage() {
   const counts = getSkillCategoryCounts();
   const totalCounts = counts.Frontend + counts.Backend + counts.UIUX + counts.Others;
 
-  // Chart SVG calculations
   const chartAngles = (() => {
     if (totalCounts === 0) return { frontend: 360, backend: 0, uiux: 0, others: 0 };
     return {
@@ -293,7 +399,7 @@ export default function OnboardingPage() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
-        <p className="text-lg">Loading onboarding wizard...</p>
+        <p className="text-lg font-semibold animate-pulse text-muted">Loading onboarding wizard...</p>
       </div>
     );
   }
@@ -319,12 +425,15 @@ export default function OnboardingPage() {
           <p className="mt-2 text-sm text-muted">
             Configure your {isStudent ? 'student' : 'mentor'} identity for SIH@GLBGOI
           </p>
+          <p className="mt-1 text-xs text-primary font-medium">
+            * All fields are mandatory to build a complete profile
+          </p>
         </div>
 
         <div className="glass-card rounded-2xl p-8 shadow-2xl border border-card-border relative overflow-hidden">
           {error && (
-            <div className="mb-6 rounded-lg bg-red-950/40 p-4 text-sm text-red-400 border border-red-900/30">
-              {error}
+            <div className="mb-6 rounded-lg bg-red-950/60 p-4 text-sm font-medium text-red-300 border border-red-800/50 flex items-center gap-2">
+              <span className="text-red-400 font-bold">⚠️ Error:</span> {error}
             </div>
           )}
 
@@ -361,51 +470,75 @@ export default function OnboardingPage() {
                   >
                     <h3 className="text-lg font-bold text-foreground">Academic Information</h3>
                     
-                    {/* Tech Character Avatar Presets Selector */}
+                    {/* Mandatory Profile Photo Upload with Showcase / Preview */}
                     <div>
-                      <div className="mb-2 flex items-center justify-between gap-3">
-                        <label className="block text-xs font-bold text-muted uppercase tracking-wider">Profile photo</label>
-                        <label className="cursor-pointer text-xs font-semibold text-primary hover:text-primary-hover">
-                          Upload your own
+                      <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">
+                        Profile Photo <span className="text-red-400">*</span>
+                      </label>
+
+                      {studentForm.avatarUrl ? (
+                        /* Showcase uploaded photo preview */
+                        <div className="p-4 bg-background/40 border border-card-border rounded-2xl flex flex-col sm:flex-row items-center gap-5">
+                          <div className="relative w-24 h-24 rounded-2xl overflow-hidden border-2 border-primary shadow-lg bg-card flex-shrink-0">
+                            {/* eslint-disable-next-html-element-suppression */}
+                            <img
+                              src={studentForm.avatarUrl}
+                              alt="Uploaded profile preview"
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div className="flex-1 space-y-1 text-center sm:text-left">
+                            <span className="inline-flex items-center rounded-full bg-green-500/10 px-2.5 py-0.5 text-xs font-semibold text-green-400 border border-green-500/20">
+                              ✓ Photo Uploaded & Showcase Active
+                            </span>
+                            <p className="text-xs text-foreground font-semibold">Your custom profile photo will be displayed across team search and cards.</p>
+                            <div className="pt-2 flex flex-wrap gap-2 justify-center sm:justify-start">
+                              <label className="cursor-pointer text-xs font-semibold bg-primary/20 hover:bg-primary/30 text-primary border border-primary/30 px-3 py-1.5 rounded-lg transition-colors inline-block">
+                                Change Photo
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="sr-only"
+                                  onChange={(e) => handleAvatarUpload(e.target.files?.[0])}
+                                />
+                              </label>
+                              <button
+                                type="button"
+                                onClick={() => setStudentForm({ ...studentForm, avatarUrl: '' })}
+                                className="text-xs font-semibold bg-red-950/30 hover:bg-red-950/50 text-red-400 border border-red-900/40 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        /* Interactive mandatory photo upload dropzone */
+                        <label className="group flex flex-col items-center justify-center p-6 border-2 border-dashed border-card-border hover:border-primary/60 bg-background/30 rounded-2xl cursor-pointer transition-all duration-300">
+                          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-2 group-hover:scale-110 transition-transform">
+                            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                          </div>
+                          <span className="text-sm font-bold text-foreground">Click to Upload Your Profile Photo <span className="text-red-400">*</span></span>
+                          <span className="text-xs text-muted mt-1">Mandatory photo upload (JPEG, PNG, WEBP up to 1.5 MB)</span>
                           <input
                             type="file"
                             accept="image/*"
                             className="sr-only"
-                            onChange={(event) => handleAvatarUpload(event.target.files?.[0])}
+                            onChange={(e) => handleAvatarUpload(e.target.files?.[0])}
                           />
                         </label>
-                      </div>
-                      <p className="mb-3 text-xs text-muted">Use a square photo (up to 1.5 MB), or choose a preset below.</p>
-                      <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
-                        {AVATAR_PRESETS.map((preset) => {
-                          const isSelected = studentForm.avatarUrl === preset.id;
-                          return (
-                            <motion.button
-                              key={preset.id}
-                              type="button"
-                              onClick={() => setStudentForm({ ...studentForm, avatarUrl: preset.id })}
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all cursor-pointer ${
-                                isSelected
-                                  ? `bg-primary/5 border-primary shadow-[0_0_15px_rgba(99,102,241,0.2)]`
-                                  : 'bg-background/30 border-card-border hover:border-card-border/80'
-                              }`}
-                            >
-                              <div className={`w-10 h-10 rounded-lg bg-gradient-to-tr ${preset.color} flex items-center justify-center text-xl shadow-md`}>
-                                {preset.emoji}
-                              </div>
-                              <span className="text-[9px] mt-1.5 font-bold text-foreground truncate max-w-full">{preset.name}</span>
-                            </motion.button>
-                          );
-                        })}
-                      </div>
+                      )}
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-foreground">Name</label>
+                      <label className="block text-sm font-medium text-foreground">
+                        Full Name <span className="text-red-400">*</span>
+                      </label>
                       <input
                         type="text"
+                        placeholder="Enter your full name"
                         value={studentForm.name}
                         onChange={(e) => setStudentForm({ ...studentForm, name: e.target.value })}
                         className="mt-1 block w-full rounded-lg bg-background/50 border border-card-border px-4 py-2 text-foreground text-sm focus:outline-none focus:border-primary"
@@ -414,12 +547,15 @@ export default function OnboardingPage() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-foreground">Year of Study</label>
+                        <label className="block text-sm font-medium text-foreground">
+                          Year of Study <span className="text-red-400">*</span>
+                        </label>
                         <select
                           value={studentForm.year}
                           onChange={(e) => setStudentForm({ ...studentForm, year: e.target.value })}
                           className="mt-1 block w-full rounded-lg bg-background/50 border border-card-border px-4 py-2 text-foreground text-sm focus:outline-none focus:border-primary cursor-pointer"
                         >
+                          <option value="" className="bg-card text-muted">Select Year of Study *</option>
                           {yearOptions.map((opt) => (
                             <option key={opt} value={opt} className="bg-card text-foreground">
                               {opt}
@@ -428,12 +564,15 @@ export default function OnboardingPage() {
                         </select>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-foreground">Academic Branch</label>
+                        <label className="block text-sm font-medium text-foreground">
+                          Academic Branch <span className="text-red-400">*</span>
+                        </label>
                         <select
                           value={studentForm.branch}
                           onChange={(e) => setStudentForm({ ...studentForm, branch: e.target.value })}
                           className="mt-1 block w-full rounded-lg bg-background/50 border border-card-border px-4 py-2 text-foreground text-sm focus:outline-none focus:border-primary cursor-pointer"
                         >
+                          <option value="" className="bg-card text-muted">Select Academic Branch *</option>
                           {branchOptions.map((opt) => (
                             <option key={opt} value={opt} className="bg-card text-foreground">
                               {opt}
@@ -445,10 +584,12 @@ export default function OnboardingPage() {
 
                     <div className="pt-4 flex justify-end">
                       <button
-                        onClick={() => setStep(2)}
+                        onClick={() => {
+                          if (validateStudentStep1()) setStep(2);
+                        }}
                         className="rounded-lg bg-primary hover:bg-primary-hover px-5 py-2 text-sm font-semibold text-white cursor-pointer transform hover:-translate-y-0.5 active:translate-y-0 transition-all"
                       >
-                        Next Step
+                        Next Step →
                       </button>
                     </div>
                   </motion.div>
@@ -468,7 +609,9 @@ export default function OnboardingPage() {
                     {/* Technical Skills Categorized Tiles & Search */}
                     <div className="space-y-4">
                       <div className="flex justify-between items-center">
-                        <label className="block text-sm font-medium text-foreground">Technical Skills</label>
+                        <label className="block text-sm font-medium text-foreground">
+                          Technical Skills <span className="text-red-400">*</span>
+                        </label>
                         <span className="text-[10px] text-muted font-semibold">{lockedSkills.length} selected</span>
                       </div>
 
@@ -535,26 +678,22 @@ export default function OnboardingPage() {
 
                       {/* Free-text Custom input */}
                       <div>
-                        <span className="text-[10px] text-muted font-bold block mb-1">Add Custom Skills</span>
+                        <span className="text-[10px] text-muted font-bold block mb-1">Add Custom Skills (comma separated)</span>
                         <input
                           type="text"
-                          placeholder="Or type other skills (comma separated)"
+                          placeholder="Or type other custom skills..."
                           value={customSkillsText}
                           onChange={(e) => setCustomSkillsText(e.target.value)}
                           className="w-full rounded-lg bg-background/50 border border-card-border px-4 py-2 text-xs text-foreground focus:outline-none focus:border-primary placeholder-muted"
                         />
                       </div>
 
-                      {/* Dynamic Skill Donut/Pie Chart Visualization (non-competitive) */}
+                      {/* Dynamic Skill Donut/Pie Chart Visualization */}
                       {lockedSkills.length > 0 && (
                         <div className="p-4 bg-background/50 border border-card-border rounded-xl flex flex-col sm:flex-row items-center gap-6">
-                          {/* SVG Donut Chart */}
                           <div className="relative w-24 h-24 flex items-center justify-center">
                             <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                              {/* Empty baseline ring */}
                               <circle cx="18" cy="18" r="15.915" fill="transparent" stroke="#27272a" strokeWidth="2.5" />
-                              
-                              {/* Frontend Ring */}
                               {chartAngles.frontend > 0 && (
                                 <circle
                                   cx="18" cy="18" r="15.915"
@@ -565,8 +704,6 @@ export default function OnboardingPage() {
                                   strokeDashoffset="0"
                                 />
                               )}
-
-                              {/* Backend Ring */}
                               {chartAngles.backend > 0 && (
                                 <circle
                                   cx="18" cy="18" r="15.915"
@@ -577,8 +714,6 @@ export default function OnboardingPage() {
                                   strokeDashoffset={`-${((chartAngles.frontend) / 360) * 100}`}
                                 />
                               )}
-
-                              {/* UIUX Ring */}
                               {chartAngles.uiux > 0 && (
                                 <circle
                                   cx="18" cy="18" r="15.915"
@@ -589,8 +724,6 @@ export default function OnboardingPage() {
                                   strokeDashoffset={`-${((chartAngles.frontend + chartAngles.backend) / 360) * 100}`}
                                 />
                               )}
-
-                              {/* Others Ring */}
                               {chartAngles.others > 0 && (
                                 <circle
                                   cx="18" cy="18" r="15.915"
@@ -618,19 +751,20 @@ export default function OnboardingPage() {
                       )}
                     </div>
 
-                    {/* Language Fluency Section (English, Hindi open by default, dropdown select toggle to add others) */}
+                    {/* Language Fluency Section */}
                     <div>
                       <div className="flex justify-between items-center mb-3">
-                        <label className="block text-sm font-medium text-foreground">Language Fluency</label>
+                        <label className="block text-sm font-medium text-foreground">
+                          Language Fluency <span className="text-red-400">*</span>
+                        </label>
                         
-                        {/* Dropdown to add official Indian language */}
                         <select
                           onChange={(e) => {
                             const val = e.target.value;
                             if (val && !languages[val]) {
                               setLanguages({ ...languages, [val]: null });
                             }
-                            e.target.value = ''; // Reset dropdown selector
+                            e.target.value = '';
                           }}
                           className="bg-card border border-card-border text-xs rounded px-2.5 py-1 text-foreground focus:outline-none cursor-pointer"
                         >
@@ -652,7 +786,6 @@ export default function OnboardingPage() {
                                   : 'bg-background/20 border-card-border hover:border-card-border/80'
                               }`}
                             >
-                              {/* Remove language button */}
                               {lang !== 'English' && lang !== 'Hindi' && (
                                 <button
                                   type="button"
@@ -672,7 +805,6 @@ export default function OnboardingPage() {
                                 {level && <span className="text-xs text-primary font-semibold">{level}</span>}
                               </div>
 
-                              {/* Fluency level selectors */}
                               <div className="grid grid-cols-3 gap-1.5 mb-3">
                                 {['Basic', 'Moderate', 'Fluent'].map((lvl) => (
                                   <button
@@ -690,10 +822,9 @@ export default function OnboardingPage() {
                                 ))}
                               </div>
 
-                              {/* Fluency Animated Progress Meter */}
                               <motion.div
                                 layout
-                                className="w-full h-2.5 bg-card-border rounded-full overflow-hidden relative pop-out-hover border border-card-border"
+                                className="w-full h-2.5 bg-card-border rounded-full overflow-hidden relative border border-card-border"
                               >
                                 <motion.div
                                   initial={{ width: 0 }}
@@ -710,7 +841,9 @@ export default function OnboardingPage() {
 
                     {/* Soft Skills badges grid */}
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-3">Presenting & Soft Skills</label>
+                      <label className="block text-sm font-medium text-foreground mb-3">
+                        Presenting & Soft Skills <span className="text-red-400">*</span>
+                      </label>
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                         {softSkillsOptions.map((opt) => {
                           const isSelected = selectedSoftSkills.includes(opt);
@@ -739,13 +872,15 @@ export default function OnboardingPage() {
                         onClick={() => setStep(1)}
                         className="rounded-lg bg-card border border-card-border px-5 py-2 text-sm font-semibold text-foreground hover:bg-background transition-colors cursor-pointer"
                       >
-                        Back
+                        ← Back
                       </button>
                       <button
-                        onClick={() => setStep(3)}
+                        onClick={() => {
+                          if (validateStudentStep2()) setStep(3);
+                        }}
                         className="rounded-lg bg-primary hover:bg-primary-hover px-5 py-2 text-sm font-semibold text-white cursor-pointer transform hover:-translate-y-0.5 active:translate-y-0 transition-all"
                       >
-                        Next Step
+                        Next Step →
                       </button>
                     </div>
                   </motion.div>
@@ -764,7 +899,9 @@ export default function OnboardingPage() {
 
                     {/* Track Interest Selector */}
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">Preferred SIH Problem Statements</label>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Preferred SIH Problem Statements <span className="text-red-400">*</span>
+                      </label>
                       <div className="space-y-2 max-h-44 overflow-y-auto border border-card-border rounded-lg p-3 bg-background/30 custom-scroll">
                         {tracks.map((track) => (
                           <label key={track.id} className="flex items-start text-xs text-foreground cursor-pointer p-1.5 hover:bg-card-border/30 rounded-lg transition-colors">
@@ -790,7 +927,9 @@ export default function OnboardingPage() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-foreground">GitHub Profile</label>
+                        <label className="block text-sm font-medium text-foreground">
+                          GitHub Profile <span className="text-red-400">*</span>
+                        </label>
                         <input
                           type="url"
                           placeholder="https://github.com/username"
@@ -800,7 +939,9 @@ export default function OnboardingPage() {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-foreground">LinkedIn Profile</label>
+                        <label className="block text-sm font-medium text-foreground">
+                          LinkedIn Profile <span className="text-red-400">*</span>
+                        </label>
                         <input
                           type="url"
                           placeholder="https://linkedin.com/in/username"
@@ -812,7 +953,9 @@ export default function OnboardingPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-foreground">Resume Link</label>
+                      <label className="block text-sm font-medium text-foreground">
+                        Resume Link <span className="text-red-400">*</span>
+                      </label>
                       <input
                         type="url"
                         placeholder="https://drive.google.com/... (Make link public)"
@@ -827,7 +970,7 @@ export default function OnboardingPage() {
                         onClick={() => setStep(2)}
                         className="rounded-lg bg-card border border-card-border px-5 py-2 text-sm font-semibold text-foreground hover:bg-background transition-colors cursor-pointer"
                       >
-                        Back
+                        ← Back
                       </button>
                       <button
                         onClick={handleStudentSubmit}
@@ -874,9 +1017,12 @@ export default function OnboardingPage() {
                     <h3 className="text-lg font-bold text-foreground">Professional Info</h3>
 
                     <div>
-                      <label className="block text-sm font-medium text-foreground">Name</label>
+                      <label className="block text-sm font-medium text-foreground">
+                        Full Name <span className="text-red-400">*</span>
+                      </label>
                       <input
                         type="text"
+                        placeholder="Enter your full name"
                         value={mentorForm.name}
                         onChange={(e) => setMentorForm({ ...mentorForm, name: e.target.value })}
                         className="mt-1 block w-full rounded-lg bg-background/50 border border-card-border px-4 py-2 text-foreground text-sm focus:outline-none focus:border-primary"
@@ -884,7 +1030,9 @@ export default function OnboardingPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-foreground">Designation / Role</label>
+                      <label className="block text-sm font-medium text-foreground">
+                        Designation / Role <span className="text-red-400">*</span>
+                      </label>
                       <input
                         type="text"
                         placeholder="Assistant Professor / Tech Lead"
@@ -895,7 +1043,9 @@ export default function OnboardingPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-foreground">Organization / Dept</label>
+                      <label className="block text-sm font-medium text-foreground">
+                        Organization / Dept <span className="text-red-400">*</span>
+                      </label>
                       <input
                         type="text"
                         value={mentorForm.organization}
@@ -906,10 +1056,12 @@ export default function OnboardingPage() {
 
                     <div className="pt-4 flex justify-end">
                       <button
-                        onClick={() => setStep(2)}
+                        onClick={() => {
+                          if (validateMentorStep1()) setStep(2);
+                        }}
                         className="rounded-lg bg-primary hover:bg-primary-hover px-5 py-2 text-sm font-semibold text-white cursor-pointer transform hover:-translate-y-0.5 active:translate-y-0 transition-all"
                       >
-                        Next Step
+                        Next Step →
                       </button>
                     </div>
                   </motion.div>
@@ -927,7 +1079,9 @@ export default function OnboardingPage() {
                     <h3 className="text-lg font-bold text-foreground">Expertise & Stated Capacity</h3>
 
                     <div>
-                      <label className="block text-sm font-medium text-foreground">Expertise Tags</label>
+                      <label className="block text-sm font-medium text-foreground">
+                        Expertise Tags <span className="text-red-400">*</span>
+                      </label>
                       <input
                         type="text"
                         placeholder="Machine Learning, Blockchain, IoT, App Development (comma separated)"
@@ -938,7 +1092,9 @@ export default function OnboardingPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-foreground">Max Team Mentoring Capacity</label>
+                      <label className="block text-sm font-medium text-foreground">
+                        Max Team Mentoring Capacity <span className="text-red-400">*</span>
+                      </label>
                       <input
                         type="number"
                         min={1}
@@ -950,7 +1106,9 @@ export default function OnboardingPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-foreground">Short Biography</label>
+                      <label className="block text-sm font-medium text-foreground">
+                        Short Biography <span className="text-red-400">*</span>
+                      </label>
                       <textarea
                         placeholder="Brief details about your mentorship domain or past projects guided..."
                         rows={3}
@@ -961,7 +1119,9 @@ export default function OnboardingPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-foreground">LinkedIn Profile</label>
+                      <label className="block text-sm font-medium text-foreground">
+                        LinkedIn Profile <span className="text-red-400">*</span>
+                      </label>
                       <input
                         type="url"
                         placeholder="https://linkedin.com/in/username"
@@ -976,7 +1136,7 @@ export default function OnboardingPage() {
                         onClick={() => setStep(1)}
                         className="rounded-lg bg-card border border-card-border px-5 py-2 text-sm font-semibold text-foreground hover:bg-background transition-colors cursor-pointer"
                       >
-                        Back
+                        ← Back
                       </button>
                       <button
                         onClick={handleMentorSubmit}

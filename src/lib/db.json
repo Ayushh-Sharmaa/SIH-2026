@@ -19,6 +19,16 @@
       "email": "ayush.sharma2025@glbajajgroup.org",
       "passwordHash": "$2b$10$kVHsD70JrCdymOMZUWY1vu41atHg0IyNOGy2AlpCTPN5uXFLMR082",
       "role": "STUDENT"
+    },
+    {
+      "id": "tfbudf0hdpzl02a1gn1jn",
+      "createdAt": "2026-08-03T10:57:49.829Z",
+      "updatedAt": "2026-08-03T10:57:49.829Z",
+      "college": "GL Bajaj Group of Institutions, Mathura",
+      "verifiedAt": null,
+      "email": "student.google@glbajaj.org",
+      "passwordHash": "clerk_oauth_google_user",
+      "role": "STUDENT"
     }
   ],
   "studentProfiles": [
@@ -79,6 +89,21 @@
       "trackInterest": [
         "track-5"
       ]
+    },
+    {
+      "skills": [],
+      "languages": [],
+      "softSkills": [],
+      "resumeUrl": null,
+      "githubUrl": null,
+      "linkedinUrl": null,
+      "avatarUrl": null,
+      "teamStatus": "OPEN",
+      "teamId": null,
+      "userId": "tfbudf0hdpzl02a1gn1jn",
+      "name": "student.google",
+      "year": "",
+      "branch": ""
     }
   ],
   "mentorProfiles": [],

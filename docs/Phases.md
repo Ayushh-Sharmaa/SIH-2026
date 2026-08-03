@@ -4,7 +4,7 @@ Each phase should be functionally usable end-to-end before moving to the next �
 
 ---
 
-## Phase 0 — Setup (pre-Week 1)
+## Phase 0 — Setup 
 
 - Repo scaffolding: Next.js + Tailwind + Prisma + Supabase wired together.
 - `.env.local` structure defined (no real secrets committed).
@@ -15,7 +15,7 @@ Each phase should be functionally usable end-to-end before moving to the next �
 
 ---
 
-## Phase 1 — Core (Week 1–2)
+## Phase 1 — Core
 
 - Auth: signup/login, role selection (Student/Mentor), college-email verification.
 - Student profile creation/edit (skills, track interest, resume/GitHub/LinkedIn).
@@ -28,7 +28,7 @@ Each phase should be functionally usable end-to-end before moving to the next �
 
 ---
 
-## Phase 2 — Team Formation Logic (Week 2–3)
+## Phase 2 — Team Formation Logic
 
 - `skills_covered` / `skills_needed` auto-calculation (`lib/derived.ts`), recalculated on every roster change.
 - Mentor request flow: team → mentor request → accept/decline → `current_load` updates.
@@ -40,7 +40,7 @@ Each phase should be functionally usable end-to-end before moving to the next �
 
 ---
 
-## Phase 3 — AI Agents (Week 3–4)
+## Phase 3 — AI Agents
 
 Build in this order, since each depends on stable data from earlier phases:
 
@@ -56,7 +56,7 @@ Each agent ships behind a graceful fallback per `Rules.md` (feature still works 
 
 ---
 
-## Phase 4 — Polish (Week 4–5)
+## Phase 4 — Polish
 
 - Realtime in-team chat.
 - Admin dashboard: mentor verification workflow, track management, reported issues, user removal.

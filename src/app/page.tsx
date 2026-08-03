@@ -1,820 +1,669 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
-import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
-import { animate, createTimeline, stagger } from 'animejs';
+import { useRef, useState } from 'react';
+import Image from 'next/image';
+import { AnimatePresence, motion, useScroll, useTransform } from 'framer-motion';
 
-// SIH Milestones
-const SIH_MILESTONES = [
+import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
+import Aurora from '@/components/motion/Aurora';
+import Reveal, { RevealGroup, RevealItem } from '@/components/motion/Reveal';
+import SplitText from '@/components/motion/SplitText';
+import PremiumButton from '@/components/motion/PremiumButton';
+import Counter from '@/components/motion/Counter';
+import { TiltCard } from '@/components/motion/Magnetic';
+import { EASE, SPRING } from '@/components/motion/tokens';
+import { usePrefersReducedMotion } from '@/components/motion/useReducedMotion';
+import { ALL_18_THEME_SETS, FAQS, SIH_MILESTONES } from '@/lib/content';
+import MilestoneIcon from '@/components/MilestoneIcon';
+
+const STATS = [
+  { value: 18, suffix: '', label: 'Official Themes' },
+  { value: 11, suffix: '', label: 'Timeline Phases' },
+  { value: 6, suffix: '', label: 'Members per Team' },
+  { value: 36, suffix: 'h', label: 'Grand Finale' },
+];
+
+const HIGHLIGHTS = [
   {
-    id: 1,
-    phase: 'Phase 01',
-    period: 'Jun - Aug 2026',
-    title: 'Registration of SPOCs',
-    desc: 'Institutional Single Point of Contact (SPOC) registration and college onboarding on the official SIH portal.',
-    icon: '📝',
-    badgeColor: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
+    title: 'Form the right team',
+    desc: 'Browse students by track and skill, spot the gaps in your roster, and invite the people who close them.',
+    href: '/team-formation/find-teammates',
+    cta: 'Find teammates',
+    path: 'M17 20h5v-2a3 3 0 0 0-5.36-1.9M17 20H7m10 0v-2c0-.7-.12-1.36-.36-1.9m0 0A5 5 0 0 0 7.36 16.1M7 20H2v-2a3 3 0 0 1 5.36-1.9M7 20v-2c0-.7.12-1.36.36-1.9m0 0a5 5 0 0 1 9.28 0M15 7a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2 2 0 1 1-4 0 2 2 0 0 1 4 0ZM7 10a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z',
   },
   {
-    id: 2,
-    phase: 'Phase 02',
-    period: 'Jun - Aug 2026',
-    title: 'Internal Hackathon',
-    desc: 'Campus-wide internal hackathon at GL Bajaj to screen, mentor, and select the top student teams.',
-    icon: '🚀',
-    badgeColor: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+    title: 'Match with mentors',
+    desc: 'Verified faculty mentors, filterable by domain. Send a request and track its status from your dashboard.',
+    href: '/team-formation/find-mentors',
+    cta: 'Find mentors',
+    path: 'M12 14l9-5-9-5-9 5 9 5Zm0 0 6.16-3.42a12.08 12.08 0 0 1 .66 6.48A11.95 11.95 0 0 0 12 20.05a11.95 11.95 0 0 0-6.82-3A12.08 12.08 0 0 1 5.84 10.6L12 14Z',
   },
   {
-    id: 3,
-    phase: 'Phase 03',
-    period: 'Jul - Aug 2026',
-    title: 'SIH PS Launch',
-    desc: 'Official nationwide release of problem statements across 18 ministries and industrial themes.',
-    icon: '🌐',
-    badgeColor: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
-  },
-  {
-    id: 4,
-    phase: 'Phase 04',
-    period: 'Jul - Aug 2026',
-    title: 'Report Upload',
-    desc: 'Internal hackathon evaluation reports and top team nomination details uploaded to SIH portal.',
-    icon: '📊',
-    badgeColor: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-  },
-  {
-    id: 5,
-    phase: 'Phase 05',
-    period: 'Aug - Sept 2026',
-    title: 'Idea Nomination',
-    desc: 'Official submission of executive PPTs, architecture diagrams, and prototype videos on SIH portal.',
-    icon: '💡',
-    badgeColor: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
-  },
-  {
-    id: 6,
-    phase: 'Phase 06',
-    period: 'Sep - Oct 2026',
-    title: 'Idea Screening',
-    desc: 'Rigorous multi-round evaluation of submitted proposals by national jury panels & ministry experts.',
-    icon: '🔎',
-    badgeColor: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-  },
-  {
-    id: 7,
-    phase: 'Phase 07',
-    period: 'Oct 2026',
-    title: 'Result Publication',
-    desc: 'Official publication of shortlisted finalist teams for the Smart India Hackathon Grand Finale.',
-    icon: '📢',
-    badgeColor: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
-  },
-  {
-    id: 8,
-    phase: 'Phase 08',
-    period: 'Nov 2026',
-    title: 'Finalist Alert',
-    desc: 'Dispatch of official finalist letters, nodal center assignments, and logistical instructions.',
-    icon: '✉️',
-    badgeColor: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-  },
-  {
-    id: 9,
-    phase: 'Phase 09',
-    period: 'Nov 2026',
-    title: 'Training Sessions',
-    desc: 'Intensive faculty mentorship, technical bootcamps, and mock presentation drills at GL Bajaj.',
-    icon: '🎓',
-    badgeColor: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
-  },
-  {
-    id: 10,
-    phase: 'Phase 10',
-    period: 'Nov 2026',
-    title: 'Roster Announcement',
-    desc: 'Final roster confirmation and travel preparation for teams heading to national nodal centers.',
-    icon: '📣',
-    badgeColor: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-  },
-  {
-    id: 11,
-    phase: 'Phase 11',
-    period: 'Dec 2026',
-    title: 'SIH Grand Finale',
-    desc: '36-hour non-stop national hackathon finale at assigned nodal centers across India!',
-    icon: '🏆',
-    badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.15)]',
+    title: 'Track every phase',
+    desc: 'All eleven official SIH milestones in one timeline, from SPOC registration through to the grand finale.',
+    href: '/tracks',
+    cta: 'Explore tracks',
+    path: 'M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01',
   },
 ];
 
-// SIH Themes
-const ALL_18_THEME_SETS = [
-  {
-    id: 1,
-    title: 'Fitness, Space Tech & Heritage',
-    themes: [
-      { name: 'Fitness & Sports', desc: 'Ideas that can boost fitness activities and assist in keeping fit.' },
-      { name: 'Space Technology', desc: 'For use in travel or activities beyond Earth’s atmosphere, for purposes such as spaceflight or space exploration.' },
-      { name: 'Heritage & Culture', desc: 'Ideas that showcase the rich cultural heritage and traditions of India.' },
-    ],
-  },
-  {
-    id: 2,
-    title: 'MedTech, Agriculture & Smart Vehicles',
-    themes: [
-      { name: 'MedTech / BioTech / HealthTech', desc: 'Cutting-edge technology in these sectors continues to be in demand. Recent shifts in healthcare trends, growing populations also present an array of opportunities for innovation.' },
-      { name: 'Agriculture, FoodTech & Rural Development', desc: 'Developing solutions, keeping in mind the need to enhance the primary sector of India - Agriculture and to manage and process our agriculture produce.' },
-      { name: 'Smart Vehicles', desc: 'Creating intelligent devices to improve commutation sector.' },
-    ],
-  },
-  {
-    id: 3,
-    title: 'Logistics, Robotics & Clean Tech',
-    themes: [
-      { name: 'Transportation & Logistics', desc: 'Submit your ideas to address the growing pressures on the city’s resources, transport networks, and logistic infrastructure.' },
-      { name: 'Robotics and Drones', desc: 'There is a need to design drones and robots that can solve some of the pressing challenges of India such as handling medical emergencies, search and rescue operations, etc.' },
-      { name: 'Clean & Green Technology', desc: 'Solutions could be in the form of waste segregation, disposal, and improve sanitization system.' },
-    ],
-  },
-  {
-    id: 4,
-    title: 'Tourism, Energy & Blockchain',
-    themes: [
-      { name: 'Tourism', desc: 'A solution/idea that can boost the current situation of the tourism industries including hotels, travel and others.' },
-      { name: 'Renewable / Sustainable Energy', desc: 'Innovative ideas that help manage and generate renewable /sustainable sources more efficiently.' },
-      { name: 'Blockchain & Cybersecurity', desc: 'Provide ideas in a decentralized and distributed ledger technology used to store digital information that powers cryptocurrencies and NFTs and can radically change multiple sectors.' },
-    ],
-  },
-  {
-    id: 5,
-    title: 'Smart Education, Disaster Mgmt & Games',
-    themes: [
-      { name: 'Smart Education', desc: 'Smart education, a concept that describes learning in digital age. It enables learners to learn more effectively, efficiently, flexibly and comfortably.' },
-      { name: 'Disaster Management', desc: 'Disaster management includes ideas related to risk mitigation, Planning and management before, after or during a disaster.' },
-      { name: 'Games & Toys', desc: 'Challenge your creative mind to conceptualize and develop unique toys and games based on our civilization, history, and culture etc.' },
-    ],
-  },
-  {
-    id: 6,
-    title: 'Miscellaneous, FinTech & Automation',
-    themes: [
-      { name: 'Miscellaneous', desc: 'Technology ideas in tertiary sectors like Hospitality, Entertainment and Retail.' },
-      { name: 'FinTech', desc: 'Challenges related to the financial services.' },
-      { name: 'Smart Automation', desc: 'Ideas focused on the intelligent use of resources for transforming and advancements of technology with combining the artificial intelligence to explore more various sources and get valuable insights.' },
-    ],
-  },
-];
+function ScrollHint() {
+  return (
+    <motion.a
+      href="#highlights"
+      aria-label="Scroll to content"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ delay: 1.6, duration: 0.8 }}
+      className="group absolute inset-x-0 bottom-8 z-20 mx-auto flex w-fit flex-col items-center gap-2"
+    >
+      <span className="text-[9px] font-bold uppercase tracking-[0.24em] text-muted transition-colors group-hover:text-primary">
+        Scroll
+      </span>
+      <span className="flex h-9 w-[22px] justify-center rounded-full border border-[rgba(172,156,141,0.6)] pt-2">
+        <span className="scroll-hint-dot block size-1 rounded-full bg-primary" />
+      </span>
+    </motion.a>
+  );
+}
 
-// Interactive Scroll-Assembly Shape Logo
-function ScrollAssemblyLogo() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ['start start', 'end start']
-  });
-
-  const shape1X = useTransform(scrollYProgress, [0, 0.7], [-120, 0]);
-  const shape1Y = useTransform(scrollYProgress, [0, 0.7], [-80, 0]);
-  const shape1Rotate = useTransform(scrollYProgress, [0, 0.7], [-240, 0]);
-  const shape1Scale = useTransform(scrollYProgress, [0, 0.7], [0.6, 1]);
-
-  const shape2X = useTransform(scrollYProgress, [0, 0.7], [140, 0]);
-  const shape2Y = useTransform(scrollYProgress, [0, 0.7], [-100, 0]);
-  const shape2Rotate = useTransform(scrollYProgress, [0, 0.7], [180, 0]);
-  const shape2Scale = useTransform(scrollYProgress, [0, 0.7], [0.5, 1]);
-
-  const shape3X = useTransform(scrollYProgress, [0, 0.7], [-160, 0]);
-  const shape3Y = useTransform(scrollYProgress, [0, 0.7], [120, 0]);
-  const shape3Rotate = useTransform(scrollYProgress, [0, 0.7], [120, 0]);
-  const shape3Scale = useTransform(scrollYProgress, [0, 0.7], [0.4, 1]);
-
-  const shape4X = useTransform(scrollYProgress, [0, 0.7], [150, 0]);
-  const shape4Y = useTransform(scrollYProgress, [0, 0.7], [110, 0]);
-  const shape4Rotate = useTransform(scrollYProgress, [0, 0.7], [-150, 0]);
-  const shape4Scale = useTransform(scrollYProgress, [0, 0.7], [0.7, 1]);
-
-  const centerScale = useTransform(scrollYProgress, [0, 0.7], [0.3, 1.1]);
-  const centerRotate = useTransform(scrollYProgress, [0, 0.7], [0, 360]);
+/** Floating glass panel that assembles as the hero scrolls. */
+function HeroVisual() {
+  const reduced = usePrefersReducedMotion();
 
   return (
-    <div ref={containerRef} className="w-full max-w-[400px] h-[360px] relative flex items-center justify-center pointer-events-none select-none">
-      <div className="absolute inset-0 bg-primary/10 rounded-full filter blur-[60px]" />
-      
-      {/* SHAPE 1: Left-Top Arc */}
-      <motion.div
-        style={{ x: shape1X, y: shape1Y, rotate: shape1Rotate, scale: shape1Scale }}
-        className="absolute w-[180px] h-[180px] border-t-4 border-l-4 border-primary rounded-tl-full opacity-80 filter drop-shadow-[0_0_15px_rgba(114,56,61,0.4)]"
+    <div className="relative mx-auto flex aspect-square w-full max-w-[26rem] items-center justify-center">
+      <div
+        aria-hidden
+        className="absolute inset-6 rounded-full bg-[radial-gradient(circle,rgba(172,156,141,0.4),transparent_66%)] blur-2xl"
       />
 
-      {/* SHAPE 2: Right-Top Diagonal Bar */}
+      {/* Orbit rings */}
       <motion.div
-        style={{ x: shape2X, y: shape2Y, rotate: shape2Rotate, scale: shape2Scale }}
-        className="absolute w-[80px] h-[8px] bg-gradient-to-r from-accent to-primary rounded-full opacity-80 filter drop-shadow-[0_0_10px_rgba(172,156,141,0.4)]"
+        aria-hidden
+        className="absolute inset-2 rounded-full border border-dashed border-[rgba(172,156,141,0.55)]"
+        animate={reduced ? undefined : { rotate: 360 }}
+        transition={{ duration: 48, repeat: Infinity, ease: 'linear' }}
+      />
+      <motion.div
+        aria-hidden
+        className="absolute inset-[18%] rounded-full border border-[rgba(114,56,61,0.22)]"
+        animate={reduced ? undefined : { rotate: -360 }}
+        transition={{ duration: 32, repeat: Infinity, ease: 'linear' }}
       />
 
-      {/* SHAPE 3: Left-Bottom Geometric Cross */}
+      {/* Core crest */}
       <motion.div
-        style={{ x: shape3X, y: shape3Y, rotate: shape3Rotate, scale: shape3Scale }}
-        className="absolute w-[36px] h-[36px] flex items-center justify-center"
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 1, delay: 0.35, ease: EASE.outExpo }}
+        className="relative flex size-40 items-center justify-center rounded-[2rem] border border-[rgba(209,199,189,0.7)] bg-[rgba(255,255,255,0.62)] shadow-[0_20px_60px_rgba(50,45,41,0.14)] backdrop-blur-xl"
       >
-        <div className="w-[8px] h-[36px] bg-primary rounded-full absolute filter drop-shadow-[0_0_8px_rgba(114,56,61,0.5)]" />
-        <div className="w-[36px] h-[8px] bg-primary rounded-full absolute filter drop-shadow-[0_0_8px_rgba(114,56,61,0.5)]" />
+        <motion.div
+          animate={reduced ? undefined : { y: [0, -8, 0] }}
+          transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+        >
+          <Image
+            src="/Logo/GL-BAJAJ-LOGO-3.png"
+            alt="GL Bajaj Group of Institutions crest"
+            width={92}
+            height={92}
+            className="object-contain"
+            priority
+          />
+        </motion.div>
       </motion.div>
 
-      {/* SHAPE 4: Right-Bottom Orbital Ring Segment */}
-      <motion.div
-        style={{ x: shape4X, y: shape4Y, rotate: shape4Rotate, scale: shape4Scale }}
-        className="absolute w-[200px] h-[200px] border-b-4 border-r-4 border-dashed border-accent rounded-br-full opacity-70"
-      />
-
-      {/* CORE OBJECT: Center Sphere */}
-      <motion.div
-        style={{ scale: centerScale, rotate: centerRotate }}
-        className="absolute w-[100px] h-[100px] rounded-full border border-primary/40 bg-gradient-to-br from-card/60 to-background/30 backdrop-blur-md flex items-center justify-center shadow-[inset_0_2px_8px_rgba(255,255,255,0.05)] border-white/10"
-      >
-        <div className="w-[40px] h-[40px] rounded-full bg-gradient-to-tr from-primary to-accent animate-pulse flex items-center justify-center filter drop-shadow-[0_0_15px_rgba(114,56,61,0.6)]">
-          <span className="text-foreground text-xs font-bold font-mono">N</span>
-        </div>
-        <div className="absolute w-[70px] h-[70px] rounded-full border border-dashed border-primary animate-[spin_10s_linear_infinite]" />
-      </motion.div>
-
-      <motion.div
-        style={{ opacity: useTransform(scrollYProgress, [0.6, 0.8], [0, 0.8]) }}
-        className="absolute w-[280px] h-[280px] border border-white/5 rounded-full"
-      />
-    </div>
-  );
-}
-
-// Inline Animated GL Bajaj Crest Logo
-function GLBgoiLogo({ className = "w-10 h-10" }: { className?: string }) {
-  return (
-    <svg className={`${className} text-primary`} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <motion.circle 
-        cx="50" cy="50" r="42" 
-        stroke="currentColor" strokeWidth="2.5" strokeDasharray="10 6"
-        animate={{ rotate: 360 }}
-        transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-      />
-      <motion.circle 
-        cx="50" cy="50" r="34" 
-        stroke="var(--color-accent)" strokeWidth="1.5"
-        animate={{ scale: [1, 1.05, 1] }}
-        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-      />
-      <path d="M50 20L30 45H42V75H58V45H70L50 20Z" fill="currentColor" opacity="0.15" />
-      <path d="M50 20L30 45H42V75H58V45H70L50 20Z" stroke="currentColor" strokeWidth="3" strokeLinejoin="round" />
-      <circle cx="50" cy="45" r="4" fill="var(--color-accent)" />
-    </svg>
-  );
-}
-
-// Inline Animated NexaSphere Logo
-function NexaSphereLogo({ className = "w-12 h-12" }: { className?: string }) {
-  return (
-    <svg className={`${className}`} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="nexaGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#72383d" />
-          <stop offset="100%" stopColor="#ac9c8d" />
-        </linearGradient>
-      </defs>
-      <motion.polygon
-        points="50,12 85,32 85,72 50,92 15,72 15,32"
-        stroke="url(#nexaGrad)"
-        strokeWidth="3.5"
-        animate={{ rotate: [0, 360] }}
-        transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
-      />
-      <motion.circle
-        cx="50"
-        cy="50"
-        r="24"
-        stroke="#ac9c8d"
-        strokeWidth="2.5"
-        strokeDasharray="6 4"
-        animate={{ rotate: -360 }}
-        transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-      />
-      <circle cx="50" cy="50" r="14" fill="url(#nexaGrad)" className="filter drop-shadow-[0_0_8px_rgba(114,56,61,0.5)]" />
-    </svg>
-  );
-}
-
-function MilestoneIcon({ id, className = "w-5 h-5" }: { id: number; className?: string }) {
-  switch (id) {
-    case 1:
-      return (
-        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-        </svg>
-      );
-    case 2:
-      return (
-        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-        </svg>
-      );
-    case 3:
-      return (
-        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
-        </svg>
-      );
-    case 4:
-      return (
-        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-      );
-    case 5:
-      return (
-        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-        </svg>
-      );
-    case 6:
-      return (
-        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
-      );
-    case 7:
-      return (
-        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-        </svg>
-      );
-    case 8:
-      return (
-        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-        </svg>
-      );
-    case 9:
-      return (
-        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" />
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
-          <path strokeLinecap="round" strokeLinejoin="round" d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
-        </svg>
-      );
-    case 10:
-      return (
-        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
-        </svg>
-      );
-    case 11:
-      return (
-        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138z" />
-        </svg>
-      );
-    default:
-      return null;
-  }
-}
-
-// Skeleton Loader Component for Timeline
-function TimelineSkeleton() {
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2.5">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="p-3 rounded-2xl border border-card-border bg-card/40 h-24 flex flex-col justify-between">
-          <div className="flex justify-between items-center w-full">
-            <div className="h-4 w-12 skeleton-shimmer" />
-            <div className="h-6 w-6 skeleton-shimmer rounded-full" />
-          </div>
-          <div>
-            <div className="h-2.5 w-16 skeleton-shimmer mb-2" />
-            <div className="h-3 w-24 skeleton-shimmer" />
-          </div>
-        </div>
+      {/* Orbiting satellite chips */}
+      {[
+        { label: 'Teams', top: '4%', left: '50%', delay: 0.7 },
+        { label: 'Mentors', top: '48%', left: '-2%', delay: 0.85 },
+        { label: 'Tracks', top: '78%', left: '76%', delay: 1 },
+      ].map((chip) => (
+        <motion.span
+          key={chip.label}
+          initial={{ opacity: 0, scale: 0.6, y: 12 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: chip.delay, ease: EASE.outExpo }}
+          style={{ top: chip.top, left: chip.left }}
+          className="absolute -translate-x-1/2 rounded-full border border-[rgba(209,199,189,0.8)] bg-[rgba(255,255,255,0.8)] px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-primary shadow-[0_6px_20px_rgba(50,45,41,0.1)] backdrop-blur-md"
+        >
+          <motion.span
+            className="block"
+            animate={reduced ? undefined : { y: [0, -5, 0] }}
+            transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: chip.delay }}
+          >
+            {chip.label}
+          </motion.span>
+        </motion.span>
       ))}
     </div>
   );
 }
 
-export default function Home() {
-  const [activeSlide, setActiveSlide] = useState(0);
-  const [activePhaseIndex, setActivePhaseIndex] = useState(0);
-  const [timelineLoading, setTimelineLoading] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  // Parallax scroll transforms
-  const { scrollYProgress } = useScroll({ target: containerRef, offset: ['start start', 'end end'] });
-  const heroY = useTransform(scrollYProgress, [0, 0.3], [0, -60]);
-  const heroScale = useTransform(scrollYProgress, [0, 0.15], [1, 0.97]);
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.2], [1, 0.6]);
-  const blobX1 = useTransform(scrollYProgress, [0, 1], [0, 80]);
-  const blobX2 = useTransform(scrollYProgress, [0, 1], [0, -60]);
-
-  const activePhase = SIH_MILESTONES[activePhaseIndex];
-
-  // AnimeJS Mount Entry Animations
-  useEffect(() => {
-    createTimeline()
-      .add('.anime-reveal', {
-        opacity: [0, 1],
-        y: [20, 0],
-        duration: 600,
-        ease: 'outQuad',
-        delay: stagger(80)
-      })
-      .add('.anime-step-btn', {
-        scale: [0.9, 1],
-        opacity: [0, 1],
-        duration: 500,
-        ease: 'outQuad',
-        delay: stagger(40)
-      }, '<0.25');
-  }, [timelineLoading]);
-
-  // Handler to simulate timeline loading state
-  const handleSimulateLoad = () => {
-    setTimelineLoading(true);
-    setTimeout(() => {
-      setTimelineLoading(false);
-    }, 1500);
-  };
-
-  // AnimeJS interactive spring scaling functions on Hover
-  const handleScaleHoverEnter = (e: React.MouseEvent<HTMLElement>) => {
-    animate(e.currentTarget, {
-      scale: 1.025,
-      duration: 250,
-      ease: 'outQuad'
-    });
-  };
-
-  const handleScaleHoverLeave = (e: React.MouseEvent<HTMLElement>) => {
-    animate(e.currentTarget, {
-      scale: 1,
-      duration: 250,
-      ease: 'outQuad'
-    });
-  };
-
-  const handleCTAEnter = (e: React.MouseEvent<HTMLElement>) => {
-    animate(e.currentTarget, {
-      scale: 1.04,
-      y: -2,
-      duration: 300,
-      ease: 'outQuad'
-    });
-  };
-
-  const handleCTALeave = (e: React.MouseEvent<HTMLElement>) => {
-    animate(e.currentTarget, {
-      scale: 1,
-      y: 0,
-      duration: 300,
-      ease: 'outQuad'
-    });
-  };
+function FaqItem({ q, a, index }: { q: string; a: string; index: number }) {
+  const [open, setOpen] = useState(index === 0);
 
   return (
-    <div ref={containerRef} className="flex flex-col min-h-screen bg-background text-foreground relative overflow-hidden font-sans dot-grid">
-      
-      {/* Background atmospheric blobs with parallax */}
-      <motion.div
-        style={{ x: blobX1 }}
-        animate={{
-          y: [0, -30, 40, 0],
-        }}
-        transition={{
-          duration: 20,
-          repeat: Infinity,
-          ease: 'easeInOut',
-        }}
-        className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/10 rounded-full filter blur-[150px] pointer-events-none"
-      />
-      <motion.div
-        style={{ x: blobX2 }}
-        animate={{
-          y: [0, 50, -30, 0],
-        }}
-        transition={{
-          duration: 25,
-          repeat: Infinity,
-          ease: 'easeInOut',
-        }}
-        className="absolute bottom-1/3 right-1/4 translate-x-1/2 translate-y-1/2 w-[500px] h-[500px] bg-accent/8 rounded-full filter blur-[150px] pointer-events-none"
-      />
-
-      {/* HEADER NAVBAR */}
-      <header className="border-b border-card-border bg-card/30 backdrop-blur-md sticky top-0 z-50 transition-all">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 justify-between items-center">
-            <Link href="/" className="flex items-center gap-2 sm:gap-3 group">
-              <div className="relative p-1 rounded-xl bg-card-border/10 border border-card-border/20 backdrop-blur-sm flex items-center justify-center">
-                <img src="/Logo/GL-BAJAJ-LOGO-3.png" className="w-8 h-8 object-contain" alt="GL Bajaj Logo" />
-              </div>
-              <div className="h-6 w-px bg-card-border/60" />
-              <div className="relative p-1 rounded-xl bg-card-border/10 border border-card-border/20 backdrop-blur-sm flex items-center justify-center">
-                <img src="/Logo/NexaSphere Icon without Background.png" className="w-8 h-8 object-contain" alt="NexaSphere Logo" />
-              </div>
-              <div className="flex flex-col text-left">
-                <span className="text-sm font-extrabold tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent group-hover:neon-text-glow transition-all leading-none">
-                  SIH@GLBGOI
-                </span>
-                <span className="text-[7px] text-muted tracking-wider uppercase font-semibold mt-0.5">
-                  by NexaSphere
-                </span>
-              </div>
-            </Link>
-
-            <div className="flex items-center gap-4">
-              <Link
-                href="/login"
-                className="text-xs sm:text-sm font-semibold text-muted hover:text-foreground px-3.5 py-1.5 transition-colors cursor-pointer"
-              >
-                Sign In
-              </Link>
-              <Link
-                href="/signup"
-                onMouseEnter={handleScaleHoverEnter}
-                onMouseLeave={handleScaleHoverLeave}
-                className="rounded-xl bg-primary px-4 py-2 text-xs sm:text-sm font-bold text-white shadow-lg shadow-primary/20 transition-all cursor-pointer"
-              >
-                Register
-              </Link>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* MAIN LAYOUT */}
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 space-y-24 z-10">
-        
-        {/* Notice Banner */}
-        <div className="anime-reveal w-full max-w-4xl mx-auto rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 text-xs sm:text-sm text-amber-300 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl backdrop-blur-sm">
-          <div className="flex items-center gap-3 text-left">
-            <span className="p-2 bg-amber-500/10 rounded-xl animate-pulse text-amber-400">
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
-            </span>
-            <div>
-              <strong className="font-bold block text-amber-200">Official SIH 2026 Problem Statements Notice</strong>
-              <span className="opacity-80 text-xs leading-relaxed">Official PS are not released yet. Platform tracks are configured with all 18 official SIH Themes.</span>
-            </div>
-          </div>
-          <a
-            href="https://sih.gov.in/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="shrink-0 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-200 border border-amber-500/30 px-3.5 py-1.5 text-xs font-bold transition-all"
-          >
-            ↗ SIH Portal
-          </a>
-        </div>
-
-        {/* HERO SECTION WITH PARALLAX ZOOM + SCROLL-ASSEMBLY ANIMATION */}
-        <motion.section
-          style={{ y: heroY, scale: heroScale, opacity: heroOpacity }}
-          className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center min-h-[50vh]"
+    <RevealItem>
+      <div
+        className={`gradient-border overflow-hidden rounded-2xl border transition-colors duration-300 ${
+          open
+            ? 'border-[rgba(114,56,61,0.28)] bg-[rgba(255,255,255,0.7)]'
+            : 'border-[rgba(209,199,189,0.6)] bg-[rgba(255,255,255,0.42)] hover:border-[rgba(172,156,141,0.9)]'
+        }`}
+      >
+        <button
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left sm:px-6 sm:py-5"
         >
-          {/* Left Column: Branding Details */}
-          <div className="lg:col-span-7 text-left space-y-6">
-            <div className="anime-reveal inline-flex items-center gap-2 rounded-full bg-primary/10 border border-primary/20 px-3 py-1 text-xs font-semibold text-primary">
-              <img src="/Logo/GL-BAJAJ-LOGO-3.png" className="w-5 h-5 object-contain" alt="GL Bajaj Logo" />
-              <span>Internal Hackathon Portal 2026</span>
-            </div>
-            
-            <h1 className="anime-reveal text-5xl sm:text-7xl font-extrabold tracking-tight leading-[1.05] bg-gradient-to-r from-primary via-accent to-emerald-300 bg-clip-text text-transparent animate-gradient">
-              SIH@GLBGOI
-            </h1>
-            
-            <p className="anime-reveal text-base sm:text-lg text-muted max-w-[55ch] leading-relaxed">
-              Streamline team formation, detect skill gaps, and match with verified mentors. The official internal hackathon platform of GL Bajaj Group of Institutions, Mathura.
-            </p>
+          <span className="text-sm font-bold text-foreground sm:text-base">{q}</span>
+          <motion.span
+            animate={{ rotate: open ? 45 : 0 }}
+            transition={{ duration: 0.3, ease: EASE.outExpo }}
+            className="flex size-7 shrink-0 items-center justify-center rounded-full border border-[rgba(172,156,141,0.6)] text-primary"
+          >
+            <svg viewBox="0 0 24 24" fill="none" className="size-3.5">
+              <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+            </svg>
+          </motion.span>
+        </button>
+        <AnimatePresence initial={false}>
+          {open && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.4, ease: EASE.outExpo }}
+              className="overflow-hidden"
+            >
+              <p className="px-5 pb-5 text-sm leading-relaxed text-muted sm:px-6 sm:pb-6">{a}</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </RevealItem>
+  );
+}
 
-            <div className="anime-reveal flex flex-col sm:flex-row gap-4 w-full max-w-sm pt-2">
-              <Link
-                href="/login"
-                onMouseEnter={handleCTAEnter}
-                onMouseLeave={handleCTALeave}
-                className="flex-1 rounded-xl bg-primary px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-primary/20 transition-all text-center cursor-pointer"
+export default function Home() {
+  const [activeSet, setActiveSet] = useState(0);
+  const [activePhase, setActivePhase] = useState(0);
+  const heroRef = useRef<HTMLElement>(null);
+  const reduced = usePrefersReducedMotion();
+
+  const { scrollYProgress } = useScroll({
+    target: heroRef,
+    offset: ['start start', 'end start'],
+  });
+  const heroY = useTransform(scrollYProgress, [0, 1], [0, 90]);
+  const heroFade = useTransform(scrollYProgress, [0, 0.75], [1, 0]);
+
+  const phase = SIH_MILESTONES[activePhase];
+  const marqueeItems = ALL_18_THEME_SETS.flatMap((s) => s.themes.map((t) => t.name));
+
+  return (
+    <>
+      <Navbar overlay />
+
+      <main id="main" className="flex-1">
+        {/* ─────────────── HERO ─────────────── */}
+        <section
+          ref={heroRef}
+          className="relative flex min-h-[100svh] items-center overflow-hidden pt-28 pb-24"
+        >
+          <Aurora variant="warm" spotlight />
+          <div aria-hidden className="absolute inset-0 grid-lines" />
+
+          <motion.div
+            style={reduced ? undefined : { y: heroY, opacity: heroFade }}
+            className="relative z-10 mx-auto grid w-full max-w-7xl grid-cols-1 items-center gap-14 px-6 lg:grid-cols-12 lg:gap-8 lg:px-8"
+          >
+            <div className="lg:col-span-7">
+              <motion.span
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, ease: EASE.outExpo }}
+                className="inline-flex items-center gap-2 rounded-full border border-[rgba(114,56,61,0.2)] bg-[rgba(255,255,255,0.6)] px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-primary backdrop-blur-md"
               >
-                Enter Portal
-              </Link>
-              <Link
-                href="/signup"
-                onMouseEnter={handleCTAEnter}
-                onMouseLeave={handleCTALeave}
-                className="flex-1 rounded-xl bg-card border border-card-border px-6 py-3.5 text-sm font-bold text-foreground transition-all text-center cursor-pointer"
+                <span className="relative flex size-1.5">
+                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-60" />
+                  <span className="relative inline-flex size-1.5 rounded-full bg-primary" />
+                </span>
+                Internal Hackathon Portal · 2026
+              </motion.span>
+
+              <h1 className="mt-7 text-[2.75rem] font-extrabold leading-[1.02] tracking-[-0.03em] text-foreground sm:text-6xl xl:text-7xl">
+                <SplitText text="Great teams" as="span" mode="word" delay={0.15} />
+                <br />
+                <span className="text-gradient-luxe">
+                  <SplitText text="start here." as="span" mode="word" delay={0.42} />
+                </span>
+              </h1>
+
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.75, ease: EASE.outExpo }}
+                className="mt-7 max-w-[52ch] text-base leading-relaxed text-muted sm:text-lg"
               >
-                Create Account
-              </Link>
-            </div>
-          </div>
+                Form balanced teams, close your skill gaps, and match with verified faculty
+                mentors — the official Smart India Hackathon portal of GL Bajaj Group of
+                Institutions, Mathura.
+              </motion.p>
 
-          {/* Right Column: Scroll-Assembly Shape Logo */}
-          <div className="anime-reveal lg:col-span-5 flex flex-col items-center justify-center relative py-8">
-            <ScrollAssemblyLogo />
-            <span className="text-[10px] text-muted font-mono tracking-widest uppercase mt-4 animate-pulse">
-              ↓ Scroll down to assemble logo
-            </span>
-          </div>
-        </motion.section>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.92, ease: EASE.outExpo }}
+                className="mt-9 flex flex-wrap items-center gap-3"
+              >
+                <PremiumButton href="/signup" size="lg">
+                  Create your account
+                  <svg viewBox="0 0 24 24" fill="none" className="size-4">
+                    <path
+                      d="M5 12h14m-6-6 6 6-6 6"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </PremiumButton>
+                <PremiumButton href="/login" variant="glass" size="lg">
+                  Enter portal
+                </PremiumButton>
+              </motion.div>
 
-        {/* LOGO WALL: Credibility strip */}
-        <section className="border-y border-card-border/60 py-6 my-12 bg-card/10 backdrop-blur-sm">
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-8 sm:gap-16">
-            <span className="text-[10px] font-bold text-muted uppercase tracking-widest">Organised by</span>
-            <div className="flex items-center gap-3 opacity-90 hover:opacity-100 transition-opacity">
-              <img src="/Logo/GL-BAJAJ-LOGO-2.png" className="h-10 object-contain" alt="GL Bajaj Logo" />
-              <div className="flex flex-col text-left">
-                <span className="text-sm font-black tracking-tight text-foreground leading-none">GL Bajaj</span>
-                <span className="text-[8px] text-muted font-mono uppercase tracking-wider -mt-0.5">Group of Institutions</span>
-              </div>
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.8, delay: 1.15 }}
+                className="mt-6 text-xs text-muted"
+              >
+                Official problem statements are released closer to the event. All 18 themes are
+                already configured here.
+              </motion.p>
             </div>
-            <div className="h-px sm:h-8 w-12 sm:w-px bg-card-border" />
-            <div className="flex items-center gap-3 opacity-90 hover:opacity-100 transition-opacity">
-              <img src="/Logo/nexasphere-logo.png" className="h-8 object-contain" alt="NexaSphere Logo" />
-              <div className="flex flex-col text-left">
-                <span className="text-sm font-black tracking-tight text-foreground leading-none">NexaSphere</span>
-                <span className="text-[8px] text-muted font-mono uppercase tracking-wider -mt-0.5">Hackathon Dev-suite</span>
-              </div>
+
+            <div className="lg:col-span-5">
+              <HeroVisual />
+            </div>
+          </motion.div>
+
+          <ScrollHint />
+        </section>
+
+        {/* ─────────────── MARQUEE ─────────────── */}
+        <section className="relative overflow-hidden border-y border-[rgba(209,199,189,0.6)] bg-[rgba(217,217,217,0.34)] py-5">
+          <div className="marquee-root marquee-mask">
+            <div className="marquee-track" style={{ ['--marquee-duration' as string]: '52s' }}>
+              {[0, 1].map((copy) => (
+                <div key={copy} className="flex shrink-0 items-center" aria-hidden={copy === 1}>
+                  {marqueeItems.map((name) => (
+                    <span key={`${copy}-${name}`} className="flex items-center whitespace-nowrap">
+                      <span className="px-6 text-xs font-bold uppercase tracking-[0.14em] text-muted">
+                        {name}
+                      </span>
+                      <span className="size-1 rounded-full bg-[rgba(172,156,141,0.7)]" />
+                    </span>
+                  ))}
+                </div>
+              ))}
             </div>
           </div>
         </section>
 
-        {/* TIMELINE ROADMAP WITH INTEGRATED SKELETON LOADERS */}
-        <section className="anime-reveal w-full glass-card rounded-3xl p-6 sm:p-8 border border-card-border text-left space-y-8 shadow-2xl relative overflow-hidden">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-card-border pb-4">
-            <div>
-              <span className="text-xs font-bold text-primary tracking-wider uppercase">Milestone Roadmap</span>
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground mt-0.5">
-                SIH 2026 Timeline Phases
+        {/* ─────────────── HIGHLIGHTS ─────────────── */}
+        <section id="highlights" className="section-mist relative py-24 sm:py-32">
+          <div className="mx-auto max-w-7xl px-6 lg:px-8">
+            <Reveal className="max-w-2xl">
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
+                What you get
+              </span>
+              <h2 className="mt-4 text-3xl font-extrabold tracking-[-0.02em] text-foreground sm:text-4xl">
+                <SplitText
+                  text="Everything the internal round demands, in one place."
+                  as="span"
+                  onScroll
+                />
               </h2>
-            </div>
-            <button
-              onClick={handleSimulateLoad}
-              disabled={timelineLoading}
-              className="text-xs font-semibold text-accent hover:text-primary bg-accent/10 border border-accent/20 px-3 py-1.5 rounded-lg transition-all cursor-pointer disabled:opacity-40"
-            >
-              {timelineLoading ? 'Simulating...' : 'Simulate Skeleton Loading'}
-            </button>
-          </div>
+            </Reveal>
 
-          {timelineLoading ? (
-            <TimelineSkeleton />
-          ) : (
-            <div className="space-y-6">
-              {/* Timeline Horizontal Stepper Steps */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2.5">
-                {SIH_MILESTONES.map((item, index) => {
-                  const isActive = index === activePhaseIndex;
+            <RevealGroup stagger={0.1} className="mt-14 grid gap-6 md:grid-cols-3">
+              {HIGHLIGHTS.map((item) => (
+                <RevealItem key={item.title}>
+                  <TiltCard className="h-full">
+                    <a
+                      href={item.href}
+                      className="surface-raised group relative flex h-full flex-col gap-4 overflow-hidden rounded-3xl p-7 transition-shadow duration-400 hover:shadow-[0_22px_60px_rgba(50,45,41,0.13)]"
+                    >
+                      <span className="flex size-12 items-center justify-center rounded-2xl border border-[rgba(114,56,61,0.18)] bg-[rgba(114,56,61,0.07)] text-primary transition-transform duration-400 group-hover:scale-105">
+                        <svg viewBox="0 0 24 24" fill="none" className="size-5">
+                          <path
+                            d={item.path}
+                            stroke="currentColor"
+                            strokeWidth="1.7"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </span>
+                      <h3 className="text-lg font-extrabold tracking-tight text-foreground">
+                        {item.title}
+                      </h3>
+                      <p className="text-sm leading-relaxed text-muted">{item.desc}</p>
+                      <span className="mt-auto inline-flex items-center gap-1.5 pt-2 text-xs font-bold uppercase tracking-[0.12em] text-primary">
+                        {item.cta}
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          className="size-3.5 transition-transform duration-300 group-hover:translate-x-1"
+                        >
+                          <path
+                            d="M5 12h14m-6-6 6 6-6 6"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </span>
+                    </a>
+                  </TiltCard>
+                </RevealItem>
+              ))}
+            </RevealGroup>
+          </div>
+        </section>
+
+        {/* ─────────────── STATS ─────────────── */}
+        <section className="section-dune relative overflow-hidden py-20">
+          <div className="mx-auto max-w-7xl px-6 lg:px-8">
+            <RevealGroup stagger={0.08} className="grid grid-cols-2 gap-y-12 lg:grid-cols-4">
+              {STATS.map((stat) => (
+                <RevealItem key={stat.label} className="text-center">
+                  <p className="text-4xl font-extrabold tracking-[-0.03em] text-primary sm:text-5xl">
+                    <Counter to={stat.value} suffix={stat.suffix} />
+                  </p>
+                  <p className="mt-2.5 text-[10px] font-bold uppercase tracking-[0.18em] text-muted">
+                    {stat.label}
+                  </p>
+                </RevealItem>
+              ))}
+            </RevealGroup>
+          </div>
+        </section>
+
+        {/* ─────────────── TIMELINE ─────────────── */}
+        <section className="section-linen relative py-24 sm:py-32">
+          <div className="mx-auto max-w-7xl px-6 lg:px-8">
+            <Reveal className="max-w-2xl">
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
+                Milestone roadmap
+              </span>
+              <h2 className="mt-4 text-3xl font-extrabold tracking-[-0.02em] text-foreground sm:text-4xl">
+                The road to the Grand Finale
+              </h2>
+              <p className="mt-4 text-sm leading-relaxed text-muted">
+                Eleven official phases, from SPOC registration in June through to the 36-hour
+                national finale in December.
+              </p>
+            </Reveal>
+
+            <div className="mt-14 grid gap-8 lg:grid-cols-12">
+              <Reveal direction="right" className="lg:col-span-5">
+                <div className="flex max-h-[30rem] flex-col gap-1.5 overflow-y-auto pr-2">
+                  {SIH_MILESTONES.map((m, i) => {
+                    const isActive = i === activePhase;
+                    return (
+                      <button
+                        key={m.id}
+                        onClick={() => setActivePhase(i)}
+                        aria-current={isActive}
+                        className="relative flex items-center gap-3.5 rounded-xl px-4 py-3 text-left transition-colors duration-250"
+                      >
+                        {isActive && (
+                          <motion.span
+                            layoutId="phasePill"
+                            transition={SPRING.snappy}
+                            className="absolute inset-0 rounded-xl border border-[rgba(114,56,61,0.24)] bg-[rgba(255,255,255,0.75)] shadow-[0_6px_20px_rgba(50,45,41,0.08)]"
+                          />
+                        )}
+                        <span
+                          className={`relative z-10 flex size-8 shrink-0 items-center justify-center rounded-lg border text-[10px] font-bold transition-colors duration-250 ${
+                            isActive
+                              ? 'border-[rgba(114,56,61,0.3)] bg-[rgba(114,56,61,0.1)] text-primary'
+                              : 'border-[rgba(209,199,189,0.7)] bg-white/40 text-muted'
+                          }`}
+                        >
+                          {String(m.id).padStart(2, '0')}
+                        </span>
+                        <span className="relative z-10 flex min-w-0 flex-col">
+                          <span
+                            className={`truncate text-sm font-bold transition-colors duration-250 ${
+                              isActive ? 'text-foreground' : 'text-muted'
+                            }`}
+                          >
+                            {m.title}
+                          </span>
+                          <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted/80">
+                            {m.period}
+                          </span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </Reveal>
+
+              <Reveal direction="left" delay={0.1} className="lg:col-span-7">
+                <div className="surface-raised relative min-h-[19rem] overflow-hidden rounded-3xl p-8">
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={phase.id}
+                      initial={{ opacity: 0, y: 16, filter: 'blur(6px)' }}
+                      animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                      exit={{ opacity: 0, y: -12, filter: 'blur(6px)' }}
+                      transition={{ duration: 0.4, ease: EASE.outExpo }}
+                    >
+                      <div className="flex items-center gap-3.5">
+                        <span className="flex size-12 items-center justify-center rounded-2xl border border-[rgba(114,56,61,0.18)] bg-[rgba(114,56,61,0.07)] text-primary">
+                          <MilestoneIcon id={phase.id} className="size-5" />
+                        </span>
+                        <div>
+                          <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
+                            {phase.phase}
+                          </span>
+                          <h3 className="text-xl font-extrabold tracking-tight text-foreground">
+                            {phase.title}
+                          </h3>
+                        </div>
+                      </div>
+
+                      <p className="mt-6 text-sm leading-relaxed text-muted">{phase.desc}</p>
+
+                      <div className="surface-sunken mt-7 flex items-center justify-between rounded-xl px-4 py-3">
+                        <span className="text-xs text-muted">
+                          Expected&nbsp;
+                          <strong className="font-bold text-foreground">{phase.period}</strong>
+                        </span>
+                        <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
+                          Phase {phase.id} / {SIH_MILESTONES.length}
+                        </span>
+                      </div>
+
+                      <div className="mt-4 h-1 overflow-hidden rounded-full bg-[rgba(172,156,141,0.25)]">
+                        <motion.div
+                          className="h-full rounded-full bg-gradient-to-r from-primary to-[#ac9c8d]"
+                          initial={{ scaleX: 0 }}
+                          animate={{ scaleX: (activePhase + 1) / SIH_MILESTONES.length }}
+                          transition={{ duration: 0.6, ease: EASE.outExpo }}
+                          style={{ transformOrigin: 'left' }}
+                        />
+                      </div>
+                    </motion.div>
+                  </AnimatePresence>
+                </div>
+              </Reveal>
+            </div>
+          </div>
+        </section>
+
+        {/* ─────────────── THEMES ─────────────── */}
+        <section className="relative overflow-hidden bg-[rgba(239,233,225,0.9)] py-24 sm:py-32">
+          <Aurora variant="taupe" spotlight={false} />
+
+          <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
+            <Reveal className="max-w-2xl">
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
+                Themes &amp; domains
+              </span>
+              <h2 className="mt-4 text-3xl font-extrabold tracking-[-0.02em] text-foreground sm:text-4xl">
+                All 18 official SIH tracks
+              </h2>
+              <p className="mt-4 text-sm leading-relaxed text-muted">
+                Ministry-defined themes spanning health, agriculture, space, security, and more.
+                Pick a direction before the statements drop.
+              </p>
+            </Reveal>
+
+            <div className="mt-14 grid gap-8 lg:grid-cols-12">
+              <div className="flex flex-col gap-2 lg:col-span-4">
+                {ALL_18_THEME_SETS.map((set, i) => {
+                  const isActive = i === activeSet;
                   return (
                     <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => setActivePhaseIndex(index)}
-                      className={`anime-step-btn parallax-card zoom-reveal zoom-delay-${(index % 6) + 1} p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between h-24 click-bounce ${
+                      key={set.id}
+                      onClick={() => setActiveSet(i)}
+                      aria-current={isActive}
+                      className={`group relative flex items-center justify-between gap-3 overflow-hidden rounded-2xl border px-5 py-4 text-left transition-all duration-300 ${
                         isActive
-                          ? 'bg-gradient-to-br from-primary/10 via-accent/5 to-transparent border-primary/50 shadow-lg shadow-primary/5'
-                          : 'bg-background/20 border-card-border hover:border-primary/30'
+                          ? 'border-[rgba(114,56,61,0.28)] bg-[rgba(255,255,255,0.78)] shadow-[0_8px_28px_rgba(50,45,41,0.09)]'
+                          : 'border-[rgba(209,199,189,0.6)] bg-[rgba(255,255,255,0.34)] hover:border-[rgba(172,156,141,0.9)] hover:bg-[rgba(255,255,255,0.6)]'
                       }`}
                     >
-                      <div className="flex justify-between items-center w-full">
-                        <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${item.badgeColor}`}>
-                          {item.phase}
-                        </span>
-                        <MilestoneIcon id={item.id} className="w-4 h-4 text-foreground/80" />
-                      </div>
-                      <div>
-                        <span className="text-[9px] font-semibold text-muted block">{item.period}</span>
-                        <span className="text-[11px] font-extrabold text-foreground truncate block mt-0.5">{item.title}</span>
-                      </div>
+                      <span
+                        className={`truncate text-sm font-bold transition-colors ${
+                          isActive ? 'text-foreground' : 'text-muted'
+                        }`}
+                      >
+                        {set.title}
+                      </span>
+                      <span
+                        className={`shrink-0 rounded-full border px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.1em] transition-colors ${
+                          isActive
+                            ? 'border-[rgba(114,56,61,0.3)] bg-[rgba(114,56,61,0.1)] text-primary'
+                            : 'border-[rgba(209,199,189,0.8)] text-muted'
+                        }`}
+                      >
+                        Set {String(set.id).padStart(2, '0')}
+                      </span>
                     </button>
                   );
                 })}
               </div>
 
-              {/* Active Milestone Card Box */}
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={activePhase.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.2 }}
-                  className="p-6 rounded-2xl bg-card/60 border border-card-border space-y-4 shadow-xl"
-                >
-                  <div className="flex items-center gap-3 border-b border-card-border pb-3">
-                    <span className="p-2.5 bg-primary/10 rounded-xl"><MilestoneIcon id={activePhase.id} className="w-5 h-5 text-primary" /></span>
-                    <div>
-                      <span className="text-[9px] font-bold uppercase tracking-wider text-primary">{activePhase.phase}</span>
-                      <h3 className="text-lg font-bold text-foreground">{activePhase.title}</h3>
-                    </div>
-                  </div>
-                  <p className="text-sm text-muted leading-relaxed">
-                    {activePhase.desc}
-                  </p>
-                  <div className="flex justify-between items-center text-[10px] text-muted bg-background/40 p-2.5 rounded-lg border border-card-border/60">
-                    <span>Expected Timeline: <strong>{activePhase.period}</strong></span>
-                    <span className="text-primary font-bold">● active</span>
-                  </div>
-                </motion.div>
-              </AnimatePresence>
-            </div>
-          )}
-        </section>
-
-        {/* 18 OFFICIAL SIH THEMES SLIDER BENTO */}
-        <section className="space-y-6">
-          <div className="text-center space-y-2">
-            <span className="text-xs font-bold text-primary tracking-wider uppercase">SIH Themes & Domains</span>
-            <h2 className="text-3xl font-extrabold text-foreground animate-reveal">
-              Official Smart India Hackathon Tracks
-            </h2>
-            <p className="text-sm text-muted max-w-xl mx-auto animate-reveal">
-              Explore the 18 official ministries themes configured directly inside the NexaSphere dev-suite portal.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            {/* Theme Navigation List (Bento left column) */}
-            <div className="lg:col-span-4 space-y-2.5">
-              {ALL_18_THEME_SETS.map((item, index) => {
-                const isActive = index === activeSlide;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => setActiveSlide(index)}
-                    className={`w-full p-4 rounded-2xl border text-left transition-all cursor-pointer flex justify-between items-center ${
-                      isActive
-                        ? 'bg-gradient-to-r from-card to-primary/5 border-primary text-foreground font-bold shadow-md'
-                        : 'bg-card/40 border-card-border text-muted hover:text-foreground hover:border-card-border/80'
-                    }`}
+              <div className="lg:col-span-8">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={activeSet}
+                    initial="hidden"
+                    animate="visible"
+                    exit={{ opacity: 0, y: -10, transition: { duration: 0.2 } }}
+                    variants={{ visible: { transition: { staggerChildren: 0.08 } } }}
+                    className="grid gap-5 sm:grid-cols-3"
                   >
-                    <span className="text-xs sm:text-sm font-semibold truncate">{item.title}</span>
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${isActive ? 'bg-primary/20 border-primary text-primary' : 'bg-background border-card-border text-muted'}`}>
-                      Set 0{item.id}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Selected Theme Detail Grid (Bento right column) */}
-            <div className="lg:col-span-8">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={activeSlide}
-                  initial={{ opacity: 0, x: 10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
-                  transition={{ duration: 0.2 }}
-                  className="grid grid-cols-1 md:grid-cols-3 gap-4"
-                >
-                  {ALL_18_THEME_SETS[activeSlide].themes.map((theme, i) => (
-                    <div
-                      key={theme.name}
-                      onMouseEnter={handleScaleHoverEnter}
-                      onMouseLeave={handleScaleHoverLeave}
-                      className="p-5 rounded-2xl border border-card-border bg-card/60 shadow-xl flex flex-col justify-between h-48 text-left transition-all duration-300"
-                    >
-                      <div className="space-y-2">
-                        <span className="text-[10px] font-bold text-accent tracking-wider uppercase font-mono">Theme 0{i + 1}</span>
-                        <h3 className="text-sm font-extrabold text-foreground line-clamp-2">{theme.name}</h3>
-                      </div>
-                      <p className="text-xs text-muted leading-relaxed line-clamp-3">
-                        {theme.desc}
-                      </p>
-                    </div>
-                  ))}
-                </motion.div>
-              </AnimatePresence>
+                    {ALL_18_THEME_SETS[activeSet].themes.map((theme, i) => (
+                      <motion.article
+                        key={theme.name}
+                        variants={{
+                          hidden: { opacity: 0, y: 24, filter: 'blur(8px)' },
+                          visible: {
+                            opacity: 1,
+                            y: 0,
+                            filter: 'blur(0px)',
+                            transition: { duration: 0.5, ease: EASE.outExpo },
+                          },
+                        }}
+                      >
+                        <TiltCard className="h-full" intensity={5}>
+                          <div className="surface-taupe flex h-full min-h-[13rem] flex-col justify-between overflow-hidden rounded-2xl p-6 backdrop-blur-md">
+                            <div>
+                              <span className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
+                                Theme {String(i + 1).padStart(2, '0')}
+                              </span>
+                              <h3 className="mt-2.5 text-sm font-extrabold leading-snug text-foreground">
+                                {theme.name}
+                              </h3>
+                            </div>
+                            <p className="mt-4 line-clamp-4 text-xs leading-relaxed text-foreground/65">
+                              {theme.desc}
+                            </p>
+                          </div>
+                        </TiltCard>
+                      </motion.article>
+                    ))}
+                  </motion.div>
+                </AnimatePresence>
+              </div>
             </div>
           </div>
         </section>
 
+        {/* ─────────────── FAQ ─────────────── */}
+        <section className="relative bg-[rgba(217,217,217,0.38)] py-24 sm:py-32">
+          <div className="mx-auto grid max-w-7xl gap-12 px-6 lg:grid-cols-12 lg:px-8">
+            <Reveal className="lg:col-span-4">
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
+                Questions
+              </span>
+              <h2 className="mt-4 text-3xl font-extrabold tracking-[-0.02em] text-foreground sm:text-4xl">
+                Before you register
+              </h2>
+              <p className="mt-4 text-sm leading-relaxed text-muted">
+                Still unsure about something? Reach out to the SIH cell at GL Bajaj and we will
+                get back to you.
+              </p>
+            </Reveal>
+
+            <RevealGroup stagger={0.07} className="flex flex-col gap-3 lg:col-span-8">
+              {FAQS.map((faq, i) => (
+                <FaqItem key={faq.q} q={faq.q} a={faq.a} index={i} />
+              ))}
+            </RevealGroup>
+          </div>
+        </section>
+
+        {/* ─────────────── CTA ─────────────── */}
+        <section className="relative overflow-hidden py-24 sm:py-32">
+          <Aurora variant="rose" spotlight={false} />
+          <div className="relative mx-auto max-w-3xl px-6 text-center">
+            <Reveal scale>
+              <h2 className="text-3xl font-extrabold tracking-[-0.025em] text-foreground sm:text-5xl">
+                Ready to build something
+                <span className="text-gradient-luxe"> worth shipping?</span>
+              </h2>
+              <p className="mx-auto mt-6 max-w-lg text-base leading-relaxed text-muted">
+                Register, complete your profile, and start assembling the team that takes GL Bajaj
+                to the Grand Finale.
+              </p>
+              <div className="mt-9 flex flex-wrap justify-center gap-3">
+                <PremiumButton href="/signup" size="lg">
+                  Get started
+                </PremiumButton>
+                <PremiumButton href="/tracks" variant="glass" size="lg">
+                  Browse tracks
+                </PremiumButton>
+              </div>
+            </Reveal>
+          </div>
+        </section>
       </main>
 
-      {/* FOOTER */}
-      <footer className="border-t border-card-border/60 bg-card/20 py-8 text-center text-xs text-muted relative z-10 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2 sm:gap-4 justify-center">
-            <div className="relative p-1 rounded-xl bg-card-border/10 border border-card-border/20 backdrop-blur-sm flex items-center justify-center">
-              <img src="/Logo/GL-BAJAJ-LOGO-3.png" className="w-6 h-6 object-contain" alt="GL Bajaj Logo" />
-            </div>
-            <div className="h-4 w-px bg-card-border/60" />
-            <div className="relative p-1 rounded-xl bg-card-border/10 border border-card-border/20 backdrop-blur-sm flex items-center justify-center">
-              <img src="/Logo/NexaSphere Icon without Background.png" className="w-6 h-6 object-contain" alt="NexaSphere Logo" />
-            </div>
-            <span className="font-extrabold tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              SIH@GLBGOI
-            </span>
-          </div>
-          <span>&copy; 2026 NexaSphere. Supported by GL Bajaj Group of Institutions, Mathura.</span>
-        </div>
-      </footer>
-    </div>
+      <Footer />
+    </>
   );
 }

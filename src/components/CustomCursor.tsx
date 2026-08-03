@@ -1,91 +1,124 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 
+type CursorMode = '' | 'is-link' | 'is-text' | 'is-view';
+
+const LINK_SELECTOR = 'a, button, [role="button"], summary, [data-cursor="link"]';
+const TEXT_SELECTOR = 'input:not([type="checkbox"]):not([type="radio"]), textarea, select, [contenteditable="true"]';
+
+/**
+ * Two-layer cursor: a dot that tracks the pointer exactly and a ring that
+ * lags behind with spring-like interpolation. The ring morphs based on what
+ * is underneath. Everything is written straight to style — no React state in
+ * the animation loop.
+ */
 export default function CustomCursor() {
-  const cursorRef = useRef<HTMLDivElement>(null);
+  const ringRef = useRef<HTMLDivElement>(null);
   const dotRef = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    // Only on desktop
-    if (typeof window === 'undefined' || window.matchMedia('(pointer: coarse)').matches) return;
-    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (prefersReduced) return;
+    const fine = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!fine || reduced) return;
 
-    const cursor = cursorRef.current;
+    const ring = ringRef.current;
     const dot = dotRef.current;
-    if (!cursor || !dot) return;
+    if (!ring || !dot) return;
 
-    let mouseX = 0, mouseY = 0;
-    let cursorX = 0, cursorY = 0;
+    document.documentElement.classList.add('has-custom-cursor');
 
-    const onMouseMove = (e: MouseEvent) => {
+    let mouseX = window.innerWidth / 2;
+    let mouseY = window.innerHeight / 2;
+    let ringX = mouseX;
+    let ringY = mouseY;
+    let scale = 1;
+    let targetScale = 1;
+    let visible = false;
+    let mode: CursorMode = '';
+
+    const setMode = (next: CursorMode, label = '') => {
+      if (next === mode) return;
+      ring.classList.remove('is-link', 'is-text', 'is-view');
+      if (next) ring.classList.add(next);
+      ring.textContent = label;
+      mode = next;
+    };
+
+    const onMove = (e: PointerEvent) => {
       mouseX = e.clientX;
       mouseY = e.clientY;
-      if (!visible) setVisible(true);
-      dot.style.left = `${mouseX - 2}px`;
-      dot.style.top = `${mouseY - 2}px`;
+
+      if (!visible) {
+        visible = true;
+        ring.style.opacity = '1';
+        dot.style.opacity = '1';
+        // Jump the ring to the pointer so it does not fly in from the corner.
+        ringX = mouseX;
+        ringY = mouseY;
+      }
+
+      const target = e.target as Element | null;
+      if (!target?.closest) return;
+
+      if (target.closest('[data-cursor="view"]')) {
+        setMode('is-view', 'View');
+        targetScale = 2.1;
+      } else if (target.closest(TEXT_SELECTOR)) {
+        setMode('is-text');
+        targetScale = 0.85;
+      } else if (target.closest(LINK_SELECTOR)) {
+        setMode('is-link');
+        targetScale = 1.55;
+      } else {
+        setMode('');
+        targetScale = 1;
+      }
     };
 
-    const onMouseLeave = () => setVisible(false);
-    const onMouseEnter = () => setVisible(true);
-
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseleave', onMouseLeave);
-    document.addEventListener('mouseenter', onMouseEnter);
-
-    // Smooth follow for outer ring
-    let animId: number;
-    const animate = () => {
-      cursorX += (mouseX - cursorX) * 0.12;
-      cursorY += (mouseY - cursorY) * 0.12;
-      cursor.style.left = `${cursorX - 10}px`;
-      cursor.style.top = `${cursorY - 10}px`;
-      animId = requestAnimationFrame(animate);
-    };
-    animId = requestAnimationFrame(animate);
-
-    // Scale on interactive elements
-    const interactiveEls = document.querySelectorAll('a, button, [role="button"], input, textarea, select, label');
-    const onEnterInteractive = () => {
-      cursor.style.transform = 'scale(1.6)';
-      cursor.style.borderColor = 'rgba(114,56,61,0.4)';
-    };
-    const onLeaveInteractive = () => {
-      cursor.style.transform = 'scale(1)';
-      cursor.style.borderColor = '';
+    const hide = () => {
+      visible = false;
+      ring.style.opacity = '0';
+      dot.style.opacity = '0';
     };
 
-    interactiveEls.forEach(el => {
-      el.addEventListener('mouseenter', onEnterInteractive);
-      el.addEventListener('mouseleave', onLeaveInteractive);
-    });
+    const onDown = () => { targetScale *= 0.72; };
+    const onUp = () => {
+      // Recompute from the current mode rather than guessing an inverse.
+      targetScale = mode === 'is-view' ? 2.1 : mode === 'is-link' ? 1.55 : mode === 'is-text' ? 0.85 : 1;
+    };
+
+    window.addEventListener('pointermove', onMove, { passive: true });
+    window.addEventListener('pointerdown', onDown, { passive: true });
+    window.addEventListener('pointerup', onUp, { passive: true });
+    document.addEventListener('mouseleave', hide);
+
+    let raf = 0;
+    const tick = () => {
+      ringX += (mouseX - ringX) * 0.16;
+      ringY += (mouseY - ringY) * 0.16;
+      scale += (targetScale - scale) * 0.18;
+
+      ring.style.transform = `translate3d(${ringX}px, ${ringY}px, 0) scale(${scale})`;
+      dot.style.transform = `translate3d(${mouseX}px, ${mouseY}px, 0)`;
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
 
     return () => {
-      document.removeEventListener('mousemove', onMouseMove);
-      document.removeEventListener('mouseleave', onMouseLeave);
-      document.removeEventListener('mouseenter', onMouseEnter);
-      cancelAnimationFrame(animId);
-      interactiveEls.forEach(el => {
-        el.removeEventListener('mouseenter', onEnterInteractive);
-        el.removeEventListener('mouseleave', onLeaveInteractive);
-      });
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerdown', onDown);
+      window.removeEventListener('pointerup', onUp);
+      document.removeEventListener('mouseleave', hide);
+      cancelAnimationFrame(raf);
+      document.documentElement.classList.remove('has-custom-cursor');
     };
-  }, [visible]);
+  }, []);
 
   return (
     <>
-      <div
-        ref={cursorRef}
-        className="cursor-glow hidden md:block"
-        style={{ opacity: visible ? 1 : 0 }}
-      />
-      <div
-        ref={dotRef}
-        className="cursor-dot hidden md:block"
-        style={{ opacity: visible ? 1 : 0 }}
-      />
+      <div ref={ringRef} aria-hidden className="cursor-ring" style={{ opacity: 0 }} />
+      <div ref={dotRef} aria-hidden className="cursor-dot" style={{ opacity: 0 }} />
     </>
   );
 }

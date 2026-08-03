@@ -2,205 +2,297 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
-import { motion } from 'framer-motion';
-import { animate } from 'animejs';
+import { AnimatePresence, motion, useMotionValueEvent, useScroll } from 'framer-motion';
+import { EASE, SPRING } from '@/components/motion/tokens';
+import Magnetic from '@/components/motion/Magnetic';
 
-// Inline Animated NexaSphere Logo
-function NexaSphereLogo({ className = "w-8 h-8" }: { className?: string }) {
-  return (
-    <svg className={`${className}`} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="navNexaGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#72383d" />
-          <stop offset="100%" stopColor="#ac9c8d" />
-        </linearGradient>
-      </defs>
-      <motion.polygon
-        points="50,12 85,32 85,72 50,92 15,72 15,32"
-        stroke="url(#navNexaGrad)"
-        strokeWidth="3.5"
-        animate={{ rotate: [0, 360] }}
-        transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
-      />
-      <motion.circle
-        cx="50"
-        cy="50"
-        r="24"
-        stroke="#ac9c8d"
-        strokeWidth="2.5"
-        strokeDasharray="6 4"
-        animate={{ rotate: -360 }}
-        transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-      />
-      <circle cx="50" cy="50" r="14" fill="url(#navNexaGrad)" className="filter drop-shadow-[0_0_8px_rgba(114,56,61,0.5)]" />
-    </svg>
-  );
+const NAV_LINKS = [
+  { name: 'Dashboard', path: '/dashboard' },
+  { name: 'Tracks', path: '/tracks' },
+  { name: 'Find Teammates', path: '/team-formation/find-teammates' },
+  { name: 'Find Mentors', path: '/team-formation/find-mentors' },
+];
+
+interface SessionUser {
+  name: string;
+  role: string;
 }
 
-export default function Navbar() {
+export default function Navbar({ overlay = false }: { overlay?: boolean }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<SessionUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [scrolled, setScrolled] = useState(false);
+  const [hidden, setHidden] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const { scrollY } = useScroll();
+
+  useMotionValueEvent(scrollY, 'change', (latest) => {
+    const previous = scrollY.getPrevious() ?? 0;
+    setScrolled(latest > 12);
+    // Hide going down, reveal going up — but never while the mobile menu is open.
+    if (menuOpen) return;
+    setHidden(latest > previous && latest > 140);
+  });
 
   useEffect(() => {
-    async function checkUser() {
+    let active = true;
+    (async () => {
       try {
         const res = await fetch('/api/auth/me');
         const data = await res.json();
-        if (data.authenticated) {
-          setUser(data.user);
-        } else {
-          setUser(null);
-        }
-      } catch (err) {
-        console.error('Check user failed:', err);
+        if (!active) return;
+        setUser(data.authenticated ? data.user : null);
+      } catch {
+        if (active) setUser(null);
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
-    }
-    checkUser();
+    })();
+    return () => {
+      active = false;
+    };
   }, [pathname]);
+
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    document.body.style.overflow = menuOpen ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [menuOpen]);
 
   const handleLogout = async () => {
     try {
       const res = await fetch('/api/auth/logout', { method: 'POST' });
-      if (res.ok) {
-        router.push('/login');
-      }
+      if (res.ok) router.push('/login');
     } catch (err) {
       console.error('Logout failed:', err);
     }
   };
 
-  const navLinks = [
-    { name: 'Dashboard', path: '/dashboard' },
-    { name: 'Tracks', path: '/tracks' },
-    { name: 'Find Teammates', path: '/team-formation/find-teammates' },
-    { name: 'Find Mentors', path: '/team-formation/find-mentors' },
-  ];
-
-  // AnimeJS interactive spring scaling on Hover
-  const handleScaleHoverEnter = (e: React.MouseEvent<HTMLElement>) => {
-    animate(e.currentTarget, {
-      scale: 1.03,
-      duration: 250,
-      ease: 'outQuad'
-    });
-  };
-
-  const handleScaleHoverLeave = (e: React.MouseEvent<HTMLElement>) => {
-    animate(e.currentTarget, {
-      scale: 1,
-      duration: 250,
-      ease: 'outQuad'
-    });
-  };
-
   return (
-    <nav className="border-b border-card-border bg-card/40 backdrop-blur-md sticky top-0 z-50 transition-all">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 justify-between items-center">
-          
-          {/* Logo brand section */}
-          <Link href="/dashboard" className="flex items-center gap-2 sm:gap-3 group">
-            <div className="relative p-1 rounded-xl bg-card-border/10 border border-card-border/20 backdrop-blur-sm flex items-center justify-center">
-              <img src="/Logo/GL-BAJAJ-LOGO-3.png" className="w-8 h-8 object-contain" alt="GL Bajaj Logo" />
-            </div>
-            <div className="h-6 w-px bg-card-border/60" />
-            <div className="relative p-1 rounded-xl bg-card-border/10 border border-card-border/20 backdrop-blur-sm flex items-center justify-center">
-              <img src="/Logo/NexaSphere Icon without Background.png" className="w-8 h-8 object-contain" alt="NexaSphere Logo" />
-            </div>
-            <div className="flex flex-col text-left">
-              <span className="text-sm font-extrabold tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent group-hover:neon-text-glow transition-all leading-none">
+    <>
+      {/* Reserves layout space so content is not covered by the fixed bar.
+          Pages with a full-bleed hero pass overlay to sit beneath it. */}
+      {!overlay && <div aria-hidden className="h-[76px] sm:h-[84px]" />}
+      <motion.header
+        initial={{ y: -80, opacity: 0 }}
+        animate={{ y: hidden ? -110 : 0, opacity: 1 }}
+        transition={{ duration: 0.5, ease: EASE.outExpo }}
+        className="fixed inset-x-0 top-0 z-50 px-3 pt-3 sm:px-5 sm:pt-4"
+      >
+        <nav
+          className={`mx-auto flex h-16 max-w-7xl items-center justify-between rounded-2xl border px-3 backdrop-blur-xl transition-[background-color,box-shadow,border-color] duration-500 sm:px-5 ${
+            scrolled
+              ? 'border-[rgba(209,199,189,0.6)] bg-[rgba(248,246,242,0.86)] shadow-[0_8px_32px_rgba(50,45,41,0.10)]'
+              : 'border-[rgba(209,199,189,0.32)] bg-[rgba(248,246,242,0.55)] shadow-[0_2px_18px_rgba(50,45,41,0.05)]'
+          }`}
+        >
+          <Link href="/" className="group flex items-center gap-2 sm:gap-3">
+            <span className="relative flex size-9 items-center justify-center rounded-xl border border-[rgba(209,199,189,0.5)] bg-white/50 p-1 transition-transform duration-300 group-hover:scale-105">
+              <Image
+                src="/Logo/GL-BAJAJ-LOGO-3.png"
+                alt="GL Bajaj"
+                width={28}
+                height={28}
+                className="object-contain"
+                priority
+              />
+            </span>
+            <span className="hidden h-6 w-px bg-[rgba(209,199,189,0.7)] sm:block" />
+            <span className="relative hidden size-9 items-center justify-center rounded-xl border border-[rgba(209,199,189,0.5)] bg-white/50 p-1 transition-transform duration-300 group-hover:scale-105 sm:flex">
+              <Image
+                src="/Logo/NexaSphere Icon without Background.png"
+                alt="NexaSphere"
+                width={28}
+                height={28}
+                className="object-contain"
+              />
+            </span>
+            <span className="flex flex-col leading-none">
+              <span className="text-gradient-luxe text-sm font-extrabold tracking-tight">
                 SIH@GLBGOI
               </span>
-              <span className="text-[7px] text-muted tracking-wider uppercase font-semibold mt-0.5">
+              <span className="mt-1 text-[7px] font-semibold uppercase tracking-[0.18em] text-muted">
                 by NexaSphere
               </span>
-            </div>
+            </span>
           </Link>
 
-          {/* Navigation links */}
-          <div className="hidden md:flex items-center gap-6">
-            {navLinks.map((link) => {
+          <div className="hidden items-center gap-1 md:flex">
+            {NAV_LINKS.map((link) => {
               const isActive = pathname === link.path;
               return (
                 <Link
                   key={link.path}
                   href={link.path}
-                  onMouseEnter={handleScaleHoverEnter}
-                  onMouseLeave={handleScaleHoverLeave}
-                  className={`text-xs font-bold uppercase tracking-wider relative py-1.5 transition-all ${
+                  aria-current={isActive ? 'page' : undefined}
+                  className={`relative rounded-lg px-3 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition-colors duration-250 ${
                     isActive ? 'text-primary' : 'text-muted hover:text-foreground'
                   }`}
                 >
-                  {link.name}
                   {isActive && (
-                    <motion.div
-                      layoutId="navIndicator"
-                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
-                      transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                    <motion.span
+                      layoutId="navPill"
+                      className="absolute inset-0 rounded-lg bg-[rgba(172,156,141,0.22)]"
+                      transition={SPRING.snappy}
                     />
                   )}
+                  <span className="relative z-10">{link.name}</span>
                 </Link>
               );
             })}
           </div>
 
-          {/* Auth operations */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center gap-2">
             {loading ? (
-              <div className="flex items-center gap-3 animate-pulse">
-                <div className="flex flex-col items-end gap-1.5">
-                  <div className="h-3 w-16 bg-card-border rounded" />
-                  <div className="h-2 w-10 bg-card-border rounded" />
+              <div className="flex items-center gap-2.5">
+                <div className="hidden flex-col items-end gap-1.5 sm:flex">
+                  <span className="skeleton-shimmer block h-2.5 w-20" />
+                  <span className="skeleton-shimmer block h-2 w-12" />
                 </div>
-                <div className="h-8 w-8 bg-card-border rounded-full" />
+                <span className="skeleton-shimmer block size-8 rounded-full" />
               </div>
             ) : user ? (
-              <div className="flex items-center gap-3">
-                <div className="hidden sm:flex flex-col text-right">
-                  <span className="text-xs font-bold text-foreground leading-none">{user.name}</span>
-                  <span className="text-[9px] text-muted capitalize mt-1 font-semibold tracking-wide">
+              <div className="flex items-center gap-2.5">
+                <span className="hidden flex-col text-right leading-none sm:flex">
+                  <span className="text-xs font-bold text-foreground">{user.name}</span>
+                  <span className="mt-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-muted">
                     {user.role.toLowerCase()}
                   </span>
-                </div>
-                <Link
-                  href="/onboarding?edit=true"
-                  onMouseEnter={handleScaleHoverEnter}
-                  onMouseLeave={handleScaleHoverLeave}
-                  className="rounded-lg bg-primary/10 border border-primary/20 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/20 transition-all"
-                  title="Edit Profile"
-                >
-                  Edit Profile
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  onMouseEnter={handleScaleHoverEnter}
-                  onMouseLeave={handleScaleHoverLeave}
-                  className="rounded-lg bg-card-border border border-card-border px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-foreground hover:bg-background transition-all cursor-pointer"
-                >
-                  Sign Out
-                </button>
+                </span>
+                <Magnetic strength={6} as="span" className="hidden sm:inline-flex">
+                  <Link
+                    href="/onboarding?edit=true"
+                    className="rounded-lg border border-[rgba(114,56,61,0.22)] bg-[rgba(114,56,61,0.08)] px-3 py-2 text-[10px] font-bold uppercase tracking-[0.1em] text-primary transition-colors duration-250 hover:bg-[rgba(114,56,61,0.16)]"
+                  >
+                    Profile
+                  </Link>
+                </Magnetic>
+                <Magnetic strength={6} as="span" className="inline-flex">
+                  <button
+                    onClick={handleLogout}
+                    className="rounded-lg border border-[rgba(209,199,189,0.7)] bg-white/40 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.1em] text-foreground transition-colors duration-250 hover:bg-white/80"
+                  >
+                    Sign Out
+                  </button>
+                </Magnetic>
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <Link
-                  href="/login"
-                  onMouseEnter={handleScaleHoverEnter}
-                  onMouseLeave={handleScaleHoverLeave}
-                  className="rounded-lg border border-card-border bg-card/60 px-3.5 py-1.5 text-xs font-bold text-foreground hover:bg-card-border transition-all"
-                >
-                  Sign In
-                </Link>
+                <Magnetic strength={6} as="span" className="hidden sm:inline-flex">
+                  <Link
+                    href="/login"
+                    className="rounded-lg border border-[rgba(209,199,189,0.7)] bg-white/40 px-4 py-2 text-xs font-bold text-foreground transition-colors duration-250 hover:bg-white/80"
+                  >
+                    Sign In
+                  </Link>
+                </Magnetic>
+                <Magnetic strength={6} as="span" className="inline-flex">
+                  <Link
+                    href="/signup"
+                    className="rounded-lg bg-primary px-4 py-2 text-xs font-bold text-[#FBF9F6] shadow-[0_2px_12px_rgba(114,56,61,0.22)] transition-shadow duration-250 hover:shadow-[0_8px_22px_rgba(114,56,61,0.3)]"
+                  >
+                    Get Started
+                  </Link>
+                </Magnetic>
               </div>
             )}
-          </div>
 
-        </div>
-      </div>
-    </nav>
+            <button
+              onClick={() => setMenuOpen((v) => !v)}
+              aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={menuOpen}
+              className="ml-1 flex size-9 flex-col items-center justify-center gap-[5px] rounded-lg border border-[rgba(209,199,189,0.6)] bg-white/40 md:hidden"
+            >
+              <motion.span
+                animate={menuOpen ? { rotate: 45, y: 3.5 } : { rotate: 0, y: 0 }}
+                transition={{ duration: 0.3, ease: EASE.outExpo }}
+                className="block h-[1.5px] w-4 rounded-full bg-foreground"
+              />
+              <motion.span
+                animate={menuOpen ? { rotate: -45, y: -3.5 } : { rotate: 0, y: 0 }}
+                transition={{ duration: 0.3, ease: EASE.outExpo }}
+                className="block h-[1.5px] w-4 rounded-full bg-foreground"
+              />
+            </button>
+          </div>
+        </nav>
+      </motion.header>
+
+      <AnimatePresence>
+        {menuOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 z-40 bg-[rgba(239,233,225,0.92)] backdrop-blur-2xl md:hidden"
+          >
+            <motion.ul
+              initial="hidden"
+              animate="visible"
+              variants={{ visible: { transition: { staggerChildren: 0.06, delayChildren: 0.12 } } }}
+              className="flex h-full flex-col items-start justify-center gap-2 px-8"
+            >
+              {NAV_LINKS.map((link) => (
+                <motion.li
+                  key={link.path}
+                  variants={{
+                    hidden: { opacity: 0, y: 24, filter: 'blur(6px)' },
+                    visible: {
+                      opacity: 1,
+                      y: 0,
+                      filter: 'blur(0px)',
+                      transition: { duration: 0.5, ease: EASE.outExpo },
+                    },
+                  }}
+                  className="w-full"
+                >
+                  <Link
+                    href={link.path}
+                    className={`block border-b border-[rgba(209,199,189,0.5)] py-4 text-2xl font-extrabold tracking-tight transition-colors ${
+                      pathname === link.path ? 'text-primary' : 'text-foreground'
+                    }`}
+                  >
+                    {link.name}
+                  </Link>
+                </motion.li>
+              ))}
+              {!user && (
+                <motion.li
+                  variants={{
+                    hidden: { opacity: 0, y: 24 },
+                    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: EASE.outExpo } },
+                  }}
+                  className="mt-6 flex w-full gap-3"
+                >
+                  <Link
+                    href="/login"
+                    className="flex-1 rounded-xl border border-[rgba(209,199,189,0.8)] bg-white/60 py-3 text-center text-sm font-bold"
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    href="/signup"
+                    className="flex-1 rounded-xl bg-primary py-3 text-center text-sm font-bold text-[#FBF9F6]"
+                  >
+                    Get Started
+                  </Link>
+                </motion.li>
+              )}
+            </motion.ul>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }

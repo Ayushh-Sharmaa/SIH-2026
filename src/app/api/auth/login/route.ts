@@ -24,8 +24,8 @@ export async function POST(request: Request) {
 
     const isAuthorizedAdmin = isAuthorizedAdminEmail(cleanEmail);
 
-    // If user attempted admin login via /admin shortcut or authorized admin email
-    if (isAdminIntent || isAuthorizedAdmin) {
+    // Admin login is ONLY allowed if they explicitly appended /admin in the email field
+    if (isAdminIntent) {
       if (!isAuthorizedAdmin) {
         return NextResponse.json(
           { error: 'Access Denied: This email address has not been granted Admin permissions.' },
@@ -102,7 +102,9 @@ export async function POST(request: Request) {
     }
 
     const name = user.studentProfile?.name || user.mentorProfile?.name || 'User';
-    const userRole = user.role;
+    // If they are an ADMIN in the database but logged in without /admin intent,
+    // downgrade their session role to STUDENT so they enter the standard portal.
+    const userRole = user.role === 'ADMIN' ? 'STUDENT' : user.role;
     const token = signToken({ userId: user.id, email: user.email, role: userRole });
 
     const response = NextResponse.json({

@@ -1,3 +1,5 @@
+
+
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -74,8 +76,41 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
-        <p className="text-lg font-semibold animate-pulse text-muted">Loading dashboard...</p>
+      <div className="min-h-screen bg-background text-foreground flex flex-col p-6 space-y-6">
+        {/* Header bar skeleton */}
+        <div className="flex justify-between items-center border-b border-card-border pb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded skeleton-shimmer" />
+            <div className="h-4 w-28 skeleton-shimmer" />
+          </div>
+          <div className="h-8 w-20 rounded-xl skeleton-shimmer" />
+        </div>
+
+        {/* Hero Welcome banner skeleton */}
+        <div className="h-28 rounded-2xl bg-card border border-card-border/50 p-6 flex flex-col justify-center space-y-2">
+          <div className="h-5 w-48 skeleton-shimmer" />
+          <div className="h-3.5 w-96 skeleton-shimmer" />
+        </div>
+
+        {/* Main body skeleton grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1">
+          {/* Left Card skeleton */}
+          <div className="p-6 rounded-2xl border border-card-border bg-card/60 flex flex-col space-y-4">
+            <div className="h-4 w-24 skeleton-shimmer" />
+            <div className="h-px bg-card-border w-full" />
+            <div className="h-3 w-full skeleton-shimmer" />
+            <div className="h-3 w-5/6 skeleton-shimmer" />
+            <div className="h-3 w-4/6 skeleton-shimmer" />
+          </div>
+
+          {/* Right Columns skeleton */}
+          <div className="lg:col-span-2 p-6 rounded-2xl border border-card-border bg-card/60 flex flex-col space-y-4">
+            <div className="h-4 w-32 skeleton-shimmer" />
+            <div className="h-px bg-card-border w-full" />
+            <div className="h-20 skeleton-shimmer rounded-xl" />
+            <div className="h-10 skeleton-shimmer rounded-xl" />
+          </div>
+        </div>
       </div>
     );
   }
@@ -143,7 +178,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
           {/* LEFT COLUMN: Profile info */}
           <motion.div variants={cardVariants} className="space-y-6">
-            <div className="glass-card rounded-2xl p-6 border border-card-border shadow-xl">
+            <div className="glass-card parallax-card rounded-2xl p-6 border border-card-border shadow-xl">
               <div className="flex justify-between items-center mb-4 border-b border-card-border pb-2">
                 <h3 className="text-base font-bold text-foreground">
                   My Profile
@@ -257,11 +292,10 @@ export default function DashboardPage() {
                     </div>
                     <div>
                       <span className="text-[10px] text-muted uppercase tracking-wider block font-bold mb-1">Verification Status</span>
-                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold border ${
-                        profile?.verified 
-                          ? 'bg-green-600/10 border-green-500/20 text-green-400' 
+                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold border ${profile?.verified
+                          ? 'bg-green-600/10 border-green-500/20 text-green-400'
                           : 'bg-yellow-600/10 border-yellow-500/20 text-yellow-400'
-                      }`}>
+                        }`}>
                         {profile?.verified ? '✓ Verified Mentor' : '⌛ Awaiting Verification'}
                       </span>
                     </div>

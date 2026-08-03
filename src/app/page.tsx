@@ -101,7 +101,7 @@ const SIH_MILESTONES = [
     id: 11,
     phase: 'Phase 11',
     period: 'Dec 2026',
-    title: 'SIH Grand Finale 🏆',
+    title: 'SIH Grand Finale',
     desc: '36-hour non-stop national hackathon finale at assigned nodal centers across India!',
     icon: '🏆',
     badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.15)]',
@@ -383,14 +383,14 @@ function TimelineSkeleton() {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2.5">
       {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="p-3 rounded-2xl border border-card-border bg-card/40 h-24 flex flex-col justify-between animate-pulse">
+        <div key={i} className="p-3 rounded-2xl border border-card-border bg-card/40 h-24 flex flex-col justify-between">
           <div className="flex justify-between items-center w-full">
-            <div className="h-4 w-12 bg-card-border rounded" />
-            <div className="h-6 w-6 bg-card-border rounded-full" />
+            <div className="h-4 w-12 skeleton-shimmer" />
+            <div className="h-6 w-6 skeleton-shimmer rounded-full" />
           </div>
           <div>
-            <div className="h-2.5 w-16 bg-card-border rounded mb-2" />
-            <div className="h-3 w-24 bg-card-border rounded" />
+            <div className="h-2.5 w-16 skeleton-shimmer mb-2" />
+            <div className="h-3 w-24 skeleton-shimmer" />
           </div>
         </div>
       ))}
@@ -402,6 +402,15 @@ export default function Home() {
   const [activeSlide, setActiveSlide] = useState(0);
   const [activePhaseIndex, setActivePhaseIndex] = useState(0);
   const [timelineLoading, setTimelineLoading] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Parallax scroll transforms
+  const { scrollYProgress } = useScroll({ target: containerRef, offset: ['start start', 'end end'] });
+  const heroY = useTransform(scrollYProgress, [0, 0.3], [0, -60]);
+  const heroScale = useTransform(scrollYProgress, [0, 0.15], [1, 0.97]);
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.2], [1, 0.6]);
+  const blobX1 = useTransform(scrollYProgress, [0, 1], [0, 80]);
+  const blobX2 = useTransform(scrollYProgress, [0, 1], [0, -60]);
 
   const activePhase = SIH_MILESTONES[activePhaseIndex];
 
@@ -468,12 +477,12 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-background text-foreground relative overflow-hidden font-sans dot-grid">
+    <div ref={containerRef} className="flex flex-col min-h-screen bg-background text-foreground relative overflow-hidden font-sans dot-grid">
       
-      {/* Background atmospheric blobs */}
+      {/* Background atmospheric blobs with parallax */}
       <motion.div
+        style={{ x: blobX1 }}
         animate={{
-          x: [0, 40, -20, 0],
           y: [0, -30, 40, 0],
         }}
         transition={{
@@ -484,8 +493,8 @@ export default function Home() {
         className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/10 rounded-full filter blur-[150px] pointer-events-none"
       />
       <motion.div
+        style={{ x: blobX2 }}
         animate={{
-          x: [0, -30, 40, 0],
           y: [0, 50, -30, 0],
         }}
         transition={{
@@ -564,8 +573,11 @@ export default function Home() {
           </a>
         </div>
 
-        {/* HERO SECTION WITH SCROLL-ASSEMBLY ANIMATION */}
-        <section className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center min-h-[50vh]">
+        {/* HERO SECTION WITH PARALLAX ZOOM + SCROLL-ASSEMBLY ANIMATION */}
+        <motion.section
+          style={{ y: heroY, scale: heroScale, opacity: heroOpacity }}
+          className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center min-h-[50vh]"
+        >
           {/* Left Column: Branding Details */}
           <div className="lg:col-span-7 text-left space-y-6">
             <div className="anime-reveal inline-flex items-center gap-2 rounded-full bg-primary/10 border border-primary/20 px-3 py-1 text-xs font-semibold text-primary">
@@ -608,7 +620,7 @@ export default function Home() {
               ↓ Scroll down to assemble logo
             </span>
           </div>
-        </section>
+        </motion.section>
 
         {/* LOGO WALL: Credibility strip */}
         <section className="border-y border-card-border/60 py-6 my-12 bg-card/10 backdrop-blur-sm">
@@ -644,9 +656,9 @@ export default function Home() {
             <button
               onClick={handleSimulateLoad}
               disabled={timelineLoading}
-              className="text-xs font-semibold text-accent hover:text-cyan-400 bg-accent/10 border border-accent/20 px-3 py-1.5 rounded-lg transition-all cursor-pointer disabled:opacity-40"
+              className="text-xs font-semibold text-accent hover:text-primary bg-accent/10 border border-accent/20 px-3 py-1.5 rounded-lg transition-all cursor-pointer disabled:opacity-40"
             >
-              {timelineLoading ? 'Simulating...' : '🔄 Simulate Skeleton Loading'}
+              {timelineLoading ? 'Simulating...' : 'Simulate Skeleton Loading'}
             </button>
           </div>
 
@@ -663,7 +675,7 @@ export default function Home() {
                       key={item.id}
                       type="button"
                       onClick={() => setActivePhaseIndex(index)}
-                      className={`anime-step-btn p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between h-24 ${
+                      className={`anime-step-btn parallax-card zoom-reveal zoom-delay-${(index % 6) + 1} p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between h-24 click-bounce ${
                         isActive
                           ? 'bg-gradient-to-br from-primary/10 via-accent/5 to-transparent border-primary/50 shadow-lg shadow-primary/5'
                           : 'bg-background/20 border-card-border hover:border-primary/30'

@@ -202,7 +202,7 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="username@glbajaj.org or username@glbajaj.org/admin"
+                placeholder="username@glbajajgroup.org"
                 className="mt-1 block w-full rounded-lg bg-background/50 border border-card-border px-4 py-2 text-foreground placeholder-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary text-sm transition-all"
               />
             </div>

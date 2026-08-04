@@ -2,7 +2,6 @@
 
 import { useState, type FormEvent } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useClerk } from '@clerk/nextjs';
 import { AnimatePresence, m } from 'framer-motion';
 import { useAuthenticatedRedirect } from '@/lib/session';
@@ -110,7 +109,6 @@ export default function LoginPage() {
 }
 
 function ClerkLoginPage() {
-  const router = useRouter();
   const goAuthenticated = useAuthenticatedRedirect();
   const clerk = useClerk();
   const [email, setEmail] = useState('');
@@ -251,7 +249,6 @@ function ClerkLoginPage() {
 }
 
 function CustomLoginPage() {
-  const router = useRouter();
   const goAuthenticated = useAuthenticatedRedirect();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

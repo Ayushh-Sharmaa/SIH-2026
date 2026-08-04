@@ -1,20 +1,19 @@
 import { NextResponse } from 'next/server';
 import { currentUser } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
-import { signToken } from '@/lib/auth';
+import { signToken, normalizeEmail, isAllowedCollegeEmail } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 
 async function syncClerkUser(email: string, defaultRole: 'STUDENT' | 'MENTOR' = 'STUDENT') {
+  const withProfiles = { studentProfile: true, mentorProfile: true } as const;
+
   let user = await prisma.user.findUnique({
     where: { email },
-    include: {
-      studentProfile: true,
-      mentorProfile: true,
-    },
+    include: withProfiles,
   });
 
   if (!user) {
-    user = await prisma.user.create({
+    const created = await prisma.user.create({
       data: {
         email,
         passwordHash: 'clerk_oauth_google_user',
@@ -25,7 +24,7 @@ async function syncClerkUser(email: string, defaultRole: 'STUDENT' | 'MENTOR' = 
     if (defaultRole === 'STUDENT') {
       await prisma.studentProfile.create({
         data: {
-          userId: user.id,
+          userId: created.id,
           name: email.split('@')[0] || 'Student User',
           year: '',
           branch: '',
@@ -34,7 +33,7 @@ async function syncClerkUser(email: string, defaultRole: 'STUDENT' | 'MENTOR' = 
     } else {
       await prisma.mentorProfile.create({
         data: {
-          userId: user.id,
+          userId: created.id,
           name: email.split('@')[0] || 'Mentor User',
           designation: '',
           organization: 'GL Bajaj Group of Institutions',
@@ -43,33 +42,45 @@ async function syncClerkUser(email: string, defaultRole: 'STUDENT' | 'MENTOR' = 
     }
 
     user = await prisma.user.findUnique({
-      where: { id: user.id },
-      include: {
-        studentProfile: true,
-        mentorProfile: true,
-      },
+      where: { id: created.id },
+      include: withProfiles,
     });
   }
 
-  const token = signToken({ userId: user!.id, email: user!.email, role: user!.role });
+  if (!user) {
+    throw new Error('Failed to load the synchronized Clerk user.');
+  }
+
+  const token = signToken({ userId: user.id, email: user.email, role: user.role });
 
   let isOnboarded = false;
-  if (user!.role === 'STUDENT' && user!.studentProfile?.branch) {
+  if (user.role === 'STUDENT' && user.studentProfile?.branch) {
     isOnboarded = true;
-  } else if (user!.role === 'MENTOR' && user!.mentorProfile?.designation) {
+  } else if (user.role === 'MENTOR' && user.mentorProfile?.designation) {
     isOnboarded = true;
   }
 
-  return { user: user!, token, isOnboarded };
+  return { user, token, isOnboarded };
 }
 
 export async function GET(request: Request) {
   try {
-    const clerkUser = await currentUser();
-    const email = clerkUser?.emailAddresses?.[0]?.emailAddress;
+    let email: string | undefined;
+    try {
+      const clerkUser = await currentUser();
+      email = clerkUser?.emailAddresses?.[0]?.emailAddress;
+    } catch (e) {
+      logger.error('Clerk currentUser() failed.', e);
+    }
 
     if (!email) {
-      return NextResponse.redirect(new URL('/login', request.url));
+      return NextResponse.redirect(new URL('/login?error=oauth_failed', request.url));
+    }
+
+    email = normalizeEmail(email);
+
+    if (!isAllowedCollegeEmail(email)) {
+      return NextResponse.redirect(new URL('/login?error=domain_not_allowed', request.url));
     }
 
     const { token, isOnboarded } = await syncClerkUser(email);
@@ -95,11 +106,33 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
-    const email = body.email || (await currentUser())?.emailAddresses?.[0]?.emailAddress;
+    let email = body.email;
+
+    if (!email) {
+      try {
+        const clerkUser = await currentUser();
+        email = clerkUser?.emailAddresses?.[0]?.emailAddress;
+      } catch (e) {
+        logger.error('Clerk currentUser() failed.', e);
+      }
+    }
+
     const role = body.role || 'STUDENT';
 
     if (!email) {
-      return NextResponse.json({ error: 'Email is required for Google Sync' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Please enter your college email address in the input box below to sign up.' },
+        { status: 400 }
+      );
+    }
+
+    email = normalizeEmail(email);
+
+    if (!isAllowedCollegeEmail(email)) {
+      return NextResponse.json(
+        { error: 'Access restricted. Please use your official GL Bajaj email ID.' },
+        { status: 403 }
+      );
     }
 
     const { user, token } = await syncClerkUser(email, role);
@@ -127,6 +160,6 @@ export async function POST(request: Request) {
     return response;
   } catch (error: any) {
     logger.error('Clerk POST Sync error', error);
-    return NextResponse.json({ error: 'Failed to synchronize user account' }, { status: 500 });
+    return NextResponse.json({ error: error?.message || 'Failed to synchronize user account' }, { status: 500 });
   }
 }

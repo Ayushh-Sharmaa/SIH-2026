@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useClerk } from '@clerk/nextjs';
 import { useAuthenticatedRedirect } from '@/lib/session';
 import { AnimatePresence, m } from 'framer-motion';
+import { looksLikeSandboxEmail } from '@/lib/sandboxShared';
 import { ArrowRight } from 'lucide-react';
 import Icon from '@/components/ui/Icon';
 import {
@@ -358,12 +359,13 @@ function SignupTemplate({
   handleGoogleSignUp,
   handleSubmit,
 }: SignupTemplateProps) {
+  const isSandbox = looksLikeSandboxEmail(email);
   const alreadyRegistered = error.includes('already registered');
   const activeRole = ROLES.find((r) => r.value === role)!;
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
-      {/* ── TOP BAND: wide, centred masthead — the inverse of login's side rail ── */}
+      {/* ── TOP BAND: wide, centred masthead ── */}
       <section className="section-cream relative overflow-hidden">
         <Aurora variant="taupe" spotlight={false} />
         <div aria-hidden className="grid-lines absolute inset-0" />
@@ -466,7 +468,8 @@ function SignupTemplate({
                 <Field
                   label="Full name"
                   autoComplete="name"
-                  required
+                  required={!isSandbox}
+                  disabled={isSandbox}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                 />
@@ -486,10 +489,20 @@ function SignupTemplate({
                   label="Password"
                   type="password"
                   autoComplete="new-password"
-                  required
+                  required={!isSandbox}
+                  disabled={isSandbox}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
+
+                {isSandbox && (
+                  <div className="rounded-xl bg-primary/10 border border-primary/25 p-3 text-[11px] leading-relaxed text-muted">
+                    <span className="font-bold text-primary">Sandbox mode.</span> Continuing as the
+                    troubleshooting account - no name or password needed. Append{' '}
+                    <code className="text-primary">/mentor</code> for the mentor dashboard or{' '}
+                    <code className="text-primary">/student</code> for the student one.
+                  </div>
+                )}
 
                 <AnimatePresence initial={false}>
                   {role === 'MENTOR' && (

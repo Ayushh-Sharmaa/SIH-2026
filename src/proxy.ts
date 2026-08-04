@@ -5,20 +5,7 @@ import { verifyToken } from '@/lib/auth';
 
 /**
  * Request gate.
- *
- * SECURITY: this previously admitted any request carrying a cookie merely
- * *named* `token`, without verifying it — `document.cookie = 'token=x'` in the
- * console was enough to walk past the gate. API routes verify properly, so no
- * data was exposed, but protected shells rendered and the check was one
- * refactor away from being the only line of defence. Signatures are now
- * verified.
- *
- * Runtime note: Next 16 renamed the `middleware` convention to `proxy`, which
- * defaults to the Node.js runtime (see node_modules/next/dist/docs/01-app/
- * 03-api-reference/03-file-conventions/proxy.md). The `middleware.ts` filename
- * is still honoured — the build reports it as "Proxy (Middleware)" — and is
- * kept because Clerk resolves its handler from this path. The Node runtime is
- * what allows `jsonwebtoken` to run here at all; on Edge it could not.
+ * Next 16 renamed the `middleware` convention to `proxy`.
  */
 
 const isPublicRoute = createRouteMatcher([
@@ -43,43 +30,53 @@ function redirectToLogin(req: NextRequest) {
   const url = req.nextUrl.clone();
   url.pathname = '/login';
   url.search = '';
-  // A path only, never an absolute URL: echoing a caller-supplied absolute
-  // target back into a redirect is an open-redirect vector.
   url.searchParams.set('next', req.nextUrl.pathname);
 
   const res = NextResponse.redirect(url);
-  // A cookie that failed verification is expired, tampered with, or signed by a
-  // rotated secret. Clear it so the user cannot get stuck in a redirect loop.
   if (req.cookies.has('token')) res.cookies.delete('token');
   return res;
 }
 
-function customAuthMiddleware(req: NextRequest) {
-  if (isPublicRoute(req)) return NextResponse.next();
-  if (hasValidSession(req)) return NextResponse.next();
+function customAuthProxy(req: NextRequest) {
+  if (isPublicRoute(req)) {
+    return NextResponse.next();
+  }
+  if (hasValidSession(req)) {
+    return NextResponse.next();
+  }
   return redirectToLogin(req);
 }
 
-export default hasClerkKey
+export const proxy = hasClerkKey
   ? clerkMiddleware(async (auth, req) => {
-      if (isPublicRoute(req)) return;
-      if (hasValidSession(req)) return;
-
-      // Fall back to a Clerk OAuth session.
-      try {
-        const authObj = await auth();
-        if (authObj?.userId) return;
-      } catch {
-        // Clerk unreachable or misconfigured — fall through to protect().
+      if (isPublicRoute(req)) {
+        return;
+      }
+      if (hasValidSession(req)) {
+        return;
       }
 
-      await auth.protect();
+      // Fall back to a live Clerk session (Google users mid-sync)
+      try {
+        const authObj = await auth();
+        if (authObj?.userId) {
+          return;
+        }
+      } catch {
+        // Clerk unreachable or misconfigured - fall through to the redirect
+      }
+
+      return redirectToLogin(req);
     })
-  : (req: NextRequest) => customAuthMiddleware(req);
+  : (req: NextRequest) => customAuthProxy(req);
+
+export default proxy;
 
 export const config = {
   matcher: [
-    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
+    // Skip Next.js internals and static files
+    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|pdf|docx?|xlsx?|zip|webmanifest)).*)',
+    // Always run for API routes so Clerk context is available to them
     '/(api|trpc)(.*)',
   ],
 };

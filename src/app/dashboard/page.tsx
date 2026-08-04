@@ -20,6 +20,7 @@ import Icon from '@/components/ui/Icon';
 import { useToast } from '@/components/ui/Toast';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
+import ViewingAsBanner from '@/components/layout/ViewingAsBanner';
 import {
   Aurora,
   Counter,
@@ -74,8 +75,6 @@ function Avatar({
       aria-label={`${name}'s profile`}
       className={`flex items-center justify-center bg-gradient-to-br text-body ${preset.wash} ${className}`}
     >
-      {/* The wrapper already carries the accessible name, so the glyph itself
-          stays decorative — otherwise it is announced twice. */}
       <Icon icon={preset.icon} size="md" />
     </span>
   );
@@ -217,7 +216,6 @@ export default function DashboardPage() {
     fetchDashboard();
   }, [fetchDashboard]);
 
-
   const handleRequestResponse = async (requestId: string, action: 'accept' | 'decline') => {
     setActionLoading(requestId);
     try {
@@ -249,6 +247,7 @@ export default function DashboardPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
+      <ViewingAsBanner />
       <Navbar />
 
       <main id="main" className="flex-1">

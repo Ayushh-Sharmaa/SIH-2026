@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
-import { banUserEmail, isAuthorizedAdminEmail, unbanUserEmail } from '@/lib/mockDb';
+import { banUserEmail, isAuthorizedAdminEmail, unbanUserEmail, SUPER_ADMIN_EMAIL } from '@/lib/admin';
 import { logger } from '@/lib/logger';
 
 export async function POST(request: Request) {
@@ -15,7 +14,7 @@ export async function POST(request: Request) {
     }
 
     const decoded = verifyToken(token);
-    if (!decoded || (decoded.role !== 'ADMIN' && !isAuthorizedAdminEmail(decoded.email))) {
+    if (!decoded || !(await isAuthorizedAdminEmail(decoded.email))) {
       return NextResponse.json({ error: 'Forbidden: Admin permissions required.' }, { status: 403 });
     }
 
@@ -28,10 +27,10 @@ export async function POST(request: Request) {
     const cleanEmail = email.trim().toLowerCase();
 
     if (action === 'ban' || action === 'remove') {
-      if (cleanEmail === 'tanishk.bansal2025@glbajajgroup.org') {
+      if (cleanEmail === SUPER_ADMIN_EMAIL) {
         return NextResponse.json({ error: 'Cannot ban Super Admin account.' }, { status: 400 });
       }
-      banUserEmail(cleanEmail);
+      await banUserEmail(cleanEmail, decoded.email);
       return NextResponse.json({
         success: true,
         message: `Suspended access for ${cleanEmail}. The user will be blocked from signing in.`,
@@ -39,7 +38,7 @@ export async function POST(request: Request) {
     }
 
     if (action === 'restore' || action === 'unban') {
-      unbanUserEmail(cleanEmail);
+      await unbanUserEmail(cleanEmail);
       return NextResponse.json({
         success: true,
         message: `Restored access for ${cleanEmail}. The user can now sign in normally.`,

@@ -333,6 +333,57 @@ query, both watched rather than sampled once. Phone visitors now fetch nothing.
 
 ---
 
+## Bundle: LazyMotion migration — done, and it did not pay off
+
+`motion.div` cannot be tree-shaken: importing it pulls drag, layout projection,
+pan gestures, SVG path animation and scroll into the bundle whether a page uses
+them or not. All 24 files that imported it therefore carried the whole library.
+
+Migrated to `LazyMotion` + the bare `m` component, with features supplied once in
+`MotionProvider`. 253 call sites across 25 files. `strict` is enabled, which
+makes any surviving `motion.*` throw — and since all 36 routes are statically
+generated, `next build` renders every one of them and turns that runtime guard
+into a build-time one. The build is clean, so the migration is complete.
+
+**Measured result: no saving.**
+
+| | raw | gzipped | files |
+| --- | --- | --- | --- |
+| Before | 1558.6 KB | 507.3 KB | 39 |
+| After | 1559.6 KB | 508.7 KB | 40 |
+
+The framer chunk did drop from 140.0 KB to 85.2 KB, but an equivalent feature
+chunk appeared alongside it. The reason is `domMax`: it contains layout
+projection plus drag plus every DOM animation feature, which is very nearly the
+whole library. Restructuring where those bytes live does not remove them.
+
+`domMax` is not optional today. Seven `layoutId` shared-layout pills — navbar,
+tracks filter, admin tabs, onboarding stepper, signup role selector, landing
+phase list — are layout animations, and layout projection ships only in
+`domMax`. `domAnimation`, the small feature set, would silently turn all seven
+into hard cuts.
+
+**What would actually move the number**, in descending order of value:
+
+1. **Rebuild the seven `layoutId` pills as CSS transitions** and drop to
+   `domAnimation`. Layout projection is the single heaviest part of the library.
+   Costs a signature interaction — the pill that morphs between nav items — so
+   this is a design call, not purely an engineering one.
+2. **Async features**: `features={() => import(...).then(r => r.domMax)}` moves
+   the feature bundle off the critical path. Total bytes are unchanged but the
+   initial parse shrinks. Not done, because `Reveal` renders its children at
+   `opacity: 0` until features arrive: if that chunk ever fails to load, page
+   content stays permanently invisible. That is a poor trade for parse time.
+3. **Server Components for the landing page** — see below. Much larger win than
+   either of the above.
+
+The migration is kept despite the null result: `strict` makes it impossible for
+a future file to import the full bundle *alongside* this one, which would be
+strictly worse than never having done it, and it is the prerequisite for both
+options above.
+
+---
+
 ## Logging and observability — added
 
 `src/lib/logger.ts` replaces 44 bare `console.error` calls across API routes and

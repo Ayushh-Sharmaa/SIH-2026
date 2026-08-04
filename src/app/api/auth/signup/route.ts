@@ -1,26 +1,45 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { hashPassword, signToken } from '@/lib/auth';
+import { hashPassword, signToken, normalizeEmail, isAllowedCollegeEmail } from '@/lib/auth';
+import { ensureSandboxUser, parseSandboxRequest } from '@/lib/sandbox';
 import { clientIp, createRateLimiter, tooManyRequests } from '@/lib/rateLimit';
 import { logger } from '@/lib/logger';
 
-const ALLOWED_DOMAINS = ['glbajaj.org', 'glbajajgroup.org'];
-
-/**
- * Account creation is expensive (a bcrypt hash at cost 12) and is the obvious
- * lever for filling the database with junk rows. Tighter than the login limit,
- * because a legitimate user signs up once.
- */
 const bySignupIp = createRateLimiter({ limit: 5, windowMs: 60 * 60_000, prefix: 'signup:ip' });
-
-/** Minimum that resists offline cracking if the table is ever dumped. */
 const MIN_PASSWORD_LENGTH = 8;
 
 export async function POST(request: Request) {
   try {
-    const { email, password, role, name, registrationKey } = await request.json();
+    const { email: rawEmail, password, role, name, registrationKey } = await request.json();
 
-    if (!email || !password || !role || !name) {
+    if (!rawEmail) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    const sandboxRole = parseSandboxRequest(String(rawEmail));
+    if (sandboxRole) {
+      const { user, name: sandboxName, role: resolvedRole } = await ensureSandboxUser(sandboxRole);
+      const token = signToken({ userId: user.id, email: user.email, role: resolvedRole });
+
+      const sandboxResponse = NextResponse.json({
+        success: true,
+        redirectUrl: '/dashboard',
+        sandbox: true,
+        user: { id: user.id, email: user.email, role: resolvedRole, name: sandboxName },
+      });
+
+      sandboxResponse.cookies.set('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 60 * 60 * 24 * 7,
+        path: '/',
+      });
+
+      return sandboxResponse;
+    }
+
+    if (!password || !role || !name) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
@@ -28,14 +47,14 @@ export async function POST(request: Request) {
     if (!rateCheck.ok) {
       return tooManyRequests(
         rateCheck,
-        'Too many accounts created from this connection. Please try again later.',
+        'Too many accounts created from this connection. Please try again later.'
       );
     }
 
     if (typeof password !== 'string' || password.length < MIN_PASSWORD_LENGTH) {
       return NextResponse.json(
         { error: `Please choose a password of at least ${MIN_PASSWORD_LENGTH} characters.` },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -43,13 +62,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid role specified' }, { status: 400 });
     }
 
-    // 1. Email domain check
-    const emailDomain = email.split('@')[1]?.toLowerCase();
-    if (!ALLOWED_DOMAINS.includes(emailDomain)) {
+    const email = normalizeEmail(rawEmail);
+
+    if (!isAllowedCollegeEmail(email)) {
       return NextResponse.json({ error: 'Access restricted. Please use your official GL Bajaj email ID.' }, { status: 400 });
     }
 
-    // 2. Check if user already exists
     const existingUser = await prisma.user.findUnique({
       where: { email },
     });
@@ -58,7 +76,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'User with this email already exists.' }, { status: 400 });
     }
 
-    // 3. Validation for Mentors Key if provided
     let isMentorVerified = false;
     if (role === 'MENTOR' && registrationKey) {
       const dbKey = await prisma.mentorRegistrationKey.findUnique({
@@ -71,10 +88,8 @@ export async function POST(request: Request) {
       isMentorVerified = true;
     }
 
-    // 4. Hash password
     const passwordHash = await hashPassword(password);
 
-    // 5. Create user and profile in a transaction
     const newUser = await prisma.$transaction(async (tx: any) => {
       const user = await tx.user.create({
         data: {
@@ -123,7 +138,6 @@ export async function POST(request: Request) {
       return user;
     });
 
-    // 6. Generate token and set cookie
     const token = signToken({ userId: newUser.id, email: newUser.email, role: newUser.role });
 
     const response = NextResponse.json({
@@ -140,7 +154,7 @@ export async function POST(request: Request) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
+      maxAge: 60 * 60 * 24 * 7,
       path: '/',
     });
 

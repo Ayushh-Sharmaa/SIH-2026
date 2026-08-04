@@ -112,6 +112,8 @@ describe('cookie clearing', () => {
     // place, so they are compared as a whole rather than field by field.
     const { maxAge: _setAge, ...setRest } = set.options;
     const { maxAge: _clearAge, ...clearRest } = cleared.options;
+    assert.ok(_setAge !== undefined);
+    assert.ok(_clearAge !== undefined);
     assert.deepEqual(clearRest, setRest);
   });
 });

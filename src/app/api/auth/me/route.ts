@@ -1,10 +1,8 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
-import { verifyToken, signToken, normalizeEmail, isAllowedCollegeEmail, type SessionClaims } from '@/lib/auth';
-import { currentUser } from '@clerk/nextjs/server';
+import { verifyToken, type SessionClaims } from '@/lib/auth';
 import { logger } from '@/lib/logger';
-import { setSessionCookie } from '@/lib/sessionCookie';
 
 export async function GET() {
   try {

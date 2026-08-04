@@ -225,7 +225,6 @@ function CustomLoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
 
   // No Google handler here, deliberately.
   //
@@ -298,7 +297,7 @@ function CustomLoginPage() {
         setPassword={setPassword}
         error={error}
         loading={loading}
-        googleLoading={googleLoading}
+        googleLoading={false}
         handleSubmit={handleSubmit}
       />
     </>

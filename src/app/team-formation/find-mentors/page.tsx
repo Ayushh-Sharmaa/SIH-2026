@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
 import { ArrowUpRight } from 'lucide-react';
 import Icon from '@/components/ui/Icon';
 import { useToast } from '@/components/ui/Toast';
@@ -49,7 +49,7 @@ function CapacityDial({ load, capacity }: { load: number; capacity: number }) {
           stroke="rgba(209,199,189,0.7)"
           strokeWidth="4"
         />
-        <motion.circle
+        <m.circle
           cx="28"
           cy="28"
           r={r}
@@ -227,13 +227,13 @@ export default function FindMentorsPage() {
                 ))}
               </div>
             ) : mentors.length > 0 ? (
-              <motion.div layout className="space-y-4">
+              <m.div layout className="space-y-4">
                 <AnimatePresence mode="popLayout" initial={false}>
                   {mentors.map((mentor, i) => {
                     const full = mentor.currentLoad >= mentor.capacity;
                     const sent = requested[mentor.userId];
                     return (
-                      <motion.article
+                      <m.article
                         key={mentor.userId}
                         layout
                         initial={{ opacity: 0, y: 24, filter: 'blur(8px)' }}
@@ -294,7 +294,7 @@ export default function FindMentorsPage() {
                             </PremiumButton>
 
                             {mentor.linkedinUrl && (
-                              <motion.a
+                              <m.a
                                 href={mentor.linkedinUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
@@ -303,7 +303,7 @@ export default function FindMentorsPage() {
                                 className="text-caption font-bold text-body transition-colors duration-250 hover:text-primary"
                               >
                                 LinkedIn <Icon icon={ArrowUpRight} size="xs" />
-                              </motion.a>
+                              </m.a>
                             )}
                           </div>
                         </div>
@@ -312,11 +312,11 @@ export default function FindMentorsPage() {
                           aria-hidden
                           className="h-0.5 w-full bg-gradient-to-r from-[rgba(172,156,141,0.55)] via-[rgba(114,56,61,0.25)] to-transparent"
                         />
-                      </motion.article>
+                      </m.article>
                     );
                   })}
                 </AnimatePresence>
-              </motion.div>
+              </m.div>
             ) : (
               <div className="surface-sunken rounded-3xl px-6 py-20 text-center">
                 <p className="text-base font-extrabold tracking-tight text-foreground">

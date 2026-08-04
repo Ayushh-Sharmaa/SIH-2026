@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 import { DURATION, EASE } from '@/components/motion/tokens';
 
@@ -65,7 +65,7 @@ export default function PageTransition({ children }: { children: React.ReactNode
   // not to make changes snap.
 
   return (
-    <motion.div
+    <m.div
       key={pathname}
       // `false` on the first paint means no `opacity: 0` start, so LCP is not
       // delayed by this wrapper on a cold load.
@@ -78,6 +78,6 @@ export default function PageTransition({ children }: { children: React.ReactNode
       className="flex min-h-dvh flex-col"
     >
       {children}
-    </motion.div>
+    </m.div>
   );
 }

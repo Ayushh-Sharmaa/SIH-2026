@@ -2,11 +2,10 @@
 
 import { useState, type FormEvent } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useClerk } from '@clerk/nextjs';
 import { useAuthenticatedRedirect } from '@/lib/session';
+import { AnimatePresence, m } from 'framer-motion';
 import { looksLikeSandboxEmail } from '@/lib/sandboxShared';
-import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import Icon from '@/components/ui/Icon';
 import {
@@ -33,7 +32,7 @@ const ROLES: { value: Role; label: string; blurb: string }[] = [
 /** Full-screen hand-off shown while the profile is provisioned. */
 function OnboardingHandoff() {
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -63,13 +62,13 @@ function OnboardingHandoff() {
       <p className="text-label uppercase text-muted">
         Preparing your onboarding
       </p>
-    </motion.div>
+    </m.div>
   );
 }
 
 function GoogleButton({ loading, onClick }: { loading: boolean; onClick: () => void }) {
   return (
-    <motion.button
+    <m.button
       type="button"
       onClick={onClick}
       disabled={loading}
@@ -97,7 +96,7 @@ function GoogleButton({ loading, onClick }: { loading: boolean; onClick: () => v
         />
       </svg>
       {loading ? 'Connecting to Google…' : 'Sign up with Google'}
-    </motion.button>
+    </m.button>
   );
 }
 
@@ -109,7 +108,6 @@ export default function SignupPage() {
 }
 
 function ClerkSignupPage() {
-  const router = useRouter();
   const goAuthenticated = useAuthenticatedRedirect();
   const clerk = useClerk();
   const [name, setName] = useState('');
@@ -234,7 +232,6 @@ function ClerkSignupPage() {
 }
 
 function CustomSignupPage() {
-  const router = useRouter();
   const goAuthenticated = useAuthenticatedRedirect();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -440,7 +437,7 @@ function SignupTemplate({
                           }`}
                         >
                           {active && (
-                            <motion.span
+                            <m.span
                               layoutId="signupRolePill"
                               transition={SPRING.snappy}
                               className="absolute inset-0 rounded-xl bg-primary shadow-[0_4px_16px_rgba(114,56,61,0.28)]"
@@ -452,7 +449,7 @@ function SignupTemplate({
                     })}
                   </div>
                   <AnimatePresence mode="wait" initial={false}>
-                    <motion.p
+                    <m.p
                       key={activeRole.value}
                       initial={{ opacity: 0, y: -4 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -461,7 +458,7 @@ function SignupTemplate({
                       className="mt-2 pl-1 text-caption text-muted"
                     >
                       {activeRole.blurb}
-                    </motion.p>
+                    </m.p>
                   </AnimatePresence>
                 </div>
 
@@ -506,7 +503,7 @@ function SignupTemplate({
 
                 <AnimatePresence initial={false}>
                   {role === 'MENTOR' && (
-                    <motion.div
+                    <m.div
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
@@ -519,13 +516,13 @@ function SignupTemplate({
                         onChange={(e) => setRegistrationKey(e.target.value)}
                         hint="Leave blank to request manual admin approval."
                       />
-                    </motion.div>
+                    </m.div>
                   )}
                 </AnimatePresence>
 
                 <AnimatePresence initial={false}>
                   {alreadyRegistered && (
-                    <motion.div
+                    <m.div
                       role="alert"
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
@@ -539,7 +536,7 @@ function SignupTemplate({
                           Go to sign in <Icon icon={ArrowRight} size="xs" />
                         </Link>
                       </div>
-                    </motion.div>
+                    </m.div>
                   )}
                 </AnimatePresence>
 

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
 import Image from 'next/image';
 import {
   ArrowUpRight,
@@ -258,7 +258,7 @@ export default function DashboardPage() {
 
           <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
-              <motion.div
+              <m.div
                 initial={{ opacity: 0, scale: 0.9, filter: 'blur(10px)' }}
                 animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
                 transition={{ duration: DURATION.hero, ease: EASE.outExpo }}
@@ -274,10 +274,10 @@ export default function DashboardPage() {
                 <span className="absolute -bottom-1 -right-1 grid size-6 place-items-center rounded-full border border-[rgba(239,233,225,0.9)] bg-primary text-caption font-black text-on-accent">
                   {isStudent ? 'S' : 'M'}
                 </span>
-              </motion.div>
+              </m.div>
 
               <div className="min-w-0 flex-1">
-                <motion.div
+                <m.div
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: DURATION.reveal, ease: EASE.outExpo }}
@@ -289,7 +289,7 @@ export default function DashboardPage() {
                       {profile?.verified ? 'Verified' : 'Awaiting verification'}
                     </Chip>
                   )}
-                </motion.div>
+                </m.div>
 
                 <SplitText
                   as="h1"
@@ -298,7 +298,7 @@ export default function DashboardPage() {
                   delay={0.1}
                 />
 
-                <motion.p
+                <m.p
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.45, duration: 0.5 }}
@@ -307,7 +307,7 @@ export default function DashboardPage() {
                   {isStudent
                     ? 'Track your team formation status, review your profile, and explore matches.'
                     : 'Manage the hackathon teams you guide and respond to incoming mentorship requests.'}
-                </motion.p>
+                </m.p>
               </div>
 
               <div className="shrink-0">
@@ -424,7 +424,7 @@ export default function DashboardPage() {
                               ]
                                 .filter((l) => l.url)
                                 .map((l) => (
-                                  <motion.a
+                                  <m.a
                                     key={l.label}
                                     href={l.url}
                                     target="_blank"
@@ -437,7 +437,7 @@ export default function DashboardPage() {
                                     <span className="transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5">
                                       <Icon icon={ArrowUpRight} size="xs" />
                                     </span>
-                                  </motion.a>
+                                  </m.a>
                                 ))}
                             </div>
                           </div>
@@ -524,7 +524,7 @@ export default function DashboardPage() {
                             </div>
 
                             <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-[rgba(209,199,189,0.55)]">
-                              <motion.div
+                              <m.div
                                 initial={{ scaleX: 0 }}
                                 animate={{ scaleX: filledSeats / 6 }}
                                 transition={{ duration: 0.9, ease: EASE.outExpo, delay: 0.2 }}
@@ -537,7 +537,7 @@ export default function DashboardPage() {
                               {Array.from({ length: 6 }, (_, index) => {
                                 const member = team.members[index];
                                 return member ? (
-                                  <motion.div
+                                  <m.div
                                     key={member.userId}
                                     initial={{ opacity: 0, y: 12 }}
                                     animate={{ opacity: 1, y: 0 }}
@@ -562,7 +562,7 @@ export default function DashboardPage() {
                                         Leader
                                       </p>
                                     )}
-                                  </motion.div>
+                                  </m.div>
                                 ) : (
                                   <div
                                     key={`open-seat-${index}`}
@@ -734,7 +734,7 @@ export default function DashboardPage() {
                           </span>
                         </div>
                         <div className="h-3 overflow-hidden rounded-full border border-[rgba(209,199,189,0.7)] bg-[rgba(217,217,217,0.6)]">
-                          <motion.div
+                          <m.div
                             initial={{ scaleX: 0 }}
                             animate={{
                               scaleX: profile?.capacity
@@ -755,7 +755,7 @@ export default function DashboardPage() {
                           <RevealGroup className="space-y-3" stagger={0.06} amount={0.1}>
                             {data.teams.map((t: any) => (
                               <RevealItem key={t.id}>
-                                <motion.div
+                                <m.div
                                   whileHover={{ y: -3 }}
                                   transition={SPRING.snappy}
                                   className="flex items-center justify-between gap-4 rounded-2xl border border-[rgba(209,199,189,0.65)] bg-[rgba(248,246,242,0.7)] p-4 transition-colors hover:border-[rgba(114,56,61,0.24)]"
@@ -769,7 +769,7 @@ export default function DashboardPage() {
                                     </span>
                                   </div>
                                   <Chip tone="accent">{t.memberCount} / 6</Chip>
-                                </motion.div>
+                                </m.div>
                               </RevealItem>
                             ))}
                           </RevealGroup>
@@ -794,7 +794,7 @@ export default function DashboardPage() {
                           <div className="space-y-3">
                             <AnimatePresence initial={false}>
                               {data.pendingRequests.map((req: any) => (
-                                <motion.div
+                                <m.div
                                   key={req.id}
                                   layout
                                   initial={{ opacity: 0, y: 12 }}
@@ -835,7 +835,7 @@ export default function DashboardPage() {
                                       Decline
                                     </PremiumButton>
                                   </div>
-                                </motion.div>
+                                </m.div>
                               ))}
                             </AnimatePresence>
                           </div>

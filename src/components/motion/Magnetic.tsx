@@ -1,6 +1,6 @@
 'use client';
 
-import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
+import { m, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { useRef, type ReactNode, type MouseEvent } from 'react';
 import { SPRING } from './tokens';
 import { usePrefersReducedMotion, useIsCoarsePointer } from './useReducedMotion';
@@ -47,7 +47,7 @@ export default function Magnetic({
     y.set(0);
   };
 
-  const MotionTag = as === 'span' ? motion.span : motion.div;
+  const MotionTag = as === 'span' ? m.span : m.div;
 
   return (
     <MotionTag
@@ -108,7 +108,7 @@ export function TiltCard({
   };
 
   return (
-    <motion.div
+    <m.div
       ref={ref}
       onMouseMove={onMove}
       onMouseLeave={onLeave}
@@ -124,6 +124,6 @@ export function TiltCard({
       {glare && !disabled && (
         <span aria-hidden className="tilt-glare" />
       )}
-    </motion.div>
+    </m.div>
   );
 }

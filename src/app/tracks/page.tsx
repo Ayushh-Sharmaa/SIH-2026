@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
 import { ArrowUpRight } from 'lucide-react';
 import Icon from '@/components/ui/Icon';
 import { useToast } from '@/components/ui/Toast';
@@ -182,7 +182,7 @@ export default function TracksPage() {
                     }`}
                   >
                     {active && (
-                      <motion.span
+                      <m.span
                         layoutId="trackFilterPill"
                         transition={SPRING.snappy}
                         className="absolute inset-0 rounded-full bg-primary shadow-[0_4px_14px_rgba(114,56,61,0.28)]"
@@ -227,12 +227,12 @@ export default function TracksPage() {
               Showing {visible.length} of {tracks.length}
             </p>
 
-            <motion.ol layout className="space-y-2.5">
+            <m.ol layout className="space-y-2.5">
               <AnimatePresence mode="popLayout" initial={false}>
                 {visible.map((track, i) => {
                   const open = openId === track.id;
                   return (
-                    <motion.li
+                    <m.li
                       key={track.id}
                       layout
                       initial={{ opacity: 0, y: 16, filter: 'blur(6px)' }}
@@ -268,7 +268,7 @@ export default function TracksPage() {
                           {track.problemStatementCode}
                         </span>
 
-                        <motion.span
+                        <m.span
                           aria-hidden
                           animate={{ rotate: open ? 180 : 0 }}
                           transition={{ duration: DURATION.hover, ease: EASE.outExpo }}
@@ -283,12 +283,12 @@ export default function TracksPage() {
                               strokeLinejoin="round"
                             />
                           </svg>
-                        </motion.span>
+                        </m.span>
                       </button>
 
                       <AnimatePresence initial={false}>
                         {open && (
-                          <motion.div
+                          <m.div
                             initial={{ height: 0, opacity: 0 }}
                             animate={{ height: 'auto', opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
@@ -322,17 +322,17 @@ export default function TracksPage() {
                                 </div>
                               )}
                             </div>
-                          </motion.div>
+                          </m.div>
                         )}
                       </AnimatePresence>
-                    </motion.li>
+                    </m.li>
                   );
                 })}
               </AnimatePresence>
-            </motion.ol>
+            </m.ol>
 
             {visible.length === 0 && (
-              <motion.div
+              <m.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="surface-sunken rounded-3xl px-6 py-16 text-center"
@@ -353,7 +353,7 @@ export default function TracksPage() {
                     Reset filters
                   </PremiumButton>
                 </div>
-              </motion.div>
+              </m.div>
             )}
           </Container>
         </Section>

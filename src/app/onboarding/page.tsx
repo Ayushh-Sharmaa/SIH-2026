@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
+import { ArrowUpRight, Check } from 'lucide-react';
+import Icon from '@/components/ui/Icon';
 import {
   Aurora,
   Field,
@@ -172,7 +174,7 @@ function Labelled({
   label: string;
   required?: boolean;
   hint?: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <label className="block">
@@ -817,7 +819,7 @@ export default function OnboardingPage() {
                             : 'bg-[rgba(209,199,189,0.7)] text-foreground/45'
                       }`}
                     >
-                      {done ? '✓' : s.n}
+                      {done ? <Icon icon={Check} size="xs" /> : s.n}
                     </span>
                     <span className="relative z-10 whitespace-nowrap text-xs font-bold">
                       {s.label}
@@ -1558,7 +1560,7 @@ export default function OnboardingPage() {
                         rel="noopener noreferrer"
                         className="shrink-0 rounded-lg border border-[rgba(114,56,61,0.3)] bg-[rgba(248,246,242,0.7)] px-2.5 py-1 text-[10px] font-bold text-primary transition-colors duration-250 hover:bg-[rgba(248,246,242,0.95)]"
                       >
-                        SIH portal ↗
+                        SIH portal <Icon icon={ArrowUpRight} size="xs" />
                       </a>
                     </div>
 
@@ -1609,13 +1611,13 @@ export default function OnboardingPage() {
                             <div className="flex min-w-0 items-start gap-2.5">
                               <span
                                 aria-hidden
-                                className={`mt-0.5 grid size-4 shrink-0 place-items-center rounded border text-[9px] font-black transition-colors duration-250 ${
+                                className={`mt-0.5 grid size-4 shrink-0 place-items-center rounded border transition-colors duration-250 ${
                                   isSelected
                                     ? 'border-transparent bg-primary text-[#FBF9F6]'
                                     : 'border-[rgba(172,156,141,0.9)] bg-transparent text-transparent'
                                 }`}
                               >
-                                ✓
+                                <Icon icon={Check} size="xs" strokeWidth={3} />
                               </span>
                               <div className="min-w-0">
                                 <div className="flex flex-wrap items-center gap-2">
@@ -1642,7 +1644,7 @@ export default function OnboardingPage() {
                                 onClick={(e) => e.stopPropagation()}
                                 className="shrink-0 self-end text-[10px] font-bold text-primary transition-colors duration-250 hover:text-[var(--primary-hover)] sm:self-center"
                               >
-                                Official ↗
+                                Official <Icon icon={ArrowUpRight} size="xs" />
                               </a>
                             )}
                           </div>
@@ -1686,7 +1688,7 @@ export default function OnboardingPage() {
                                 rel="noopener noreferrer"
                                 className="font-bold text-primary hover:underline"
                               >
-                                Open SIH portal ↗
+                                Open SIH portal <Icon icon={ArrowUpRight} size="xs" />
                               </a>
                             )}
                           </div>

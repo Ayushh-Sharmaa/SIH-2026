@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useClerk } from '@clerk/nextjs';
 import { AnimatePresence, motion } from 'framer-motion';
+import { ArrowRight } from 'lucide-react';
+import Icon from '@/components/ui/Icon';
 import {
   Aurora,
   Field,
@@ -517,7 +519,7 @@ function SignupTemplate({
                       <div className="rounded-xl border border-[rgba(114,56,61,0.28)] bg-[rgba(114,56,61,0.07)] px-4 py-3 text-xs font-semibold text-primary">
                         {error}{' '}
                         <Link href="/login" className="underline underline-offset-2">
-                          Go to sign in →
+                          Go to sign in <Icon icon={ArrowRight} size="xs" />
                         </Link>
                       </div>
                     </motion.div>

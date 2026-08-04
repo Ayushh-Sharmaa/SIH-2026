@@ -3,6 +3,8 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
+import { Check } from 'lucide-react';
+import Icon from '@/components/ui/Icon';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import {
@@ -118,7 +120,7 @@ export default function CreateTeamPage() {
                           : 'border-[rgba(172,156,141,0.6)] bg-[rgba(239,233,225,0.7)] text-muted'
                       }`}
                     >
-                      {i < filled ? '✓' : i + 1}
+                      {i < filled ? <Icon icon={Check} size="xs" strokeWidth={3} /> : i + 1}
                     </span>
                     <span className="min-w-0">
                       <span className="block text-sm font-bold text-foreground">{s.label}</span>

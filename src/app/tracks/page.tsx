@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { ArrowUpRight } from 'lucide-react';
+import Icon from '@/components/ui/Icon';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import {
@@ -138,7 +140,7 @@ export default function TracksPage() {
                 </p>
                 <div className="mt-5">
                   <PremiumButton variant="glass" size="sm" href="https://sih.gov.in/">
-                    Official SIH portal ↗
+                    Official SIH portal <Icon icon={ArrowUpRight} size="xs" />
                   </PremiumButton>
                 </div>
               </div>
@@ -296,7 +298,7 @@ export default function TracksPage() {
                                       rel="noopener noreferrer"
                                       className="font-bold text-primary hover:underline"
                                     >
-                                      SIH portal ↗
+                                      SIH portal <Icon icon={ArrowUpRight} size="xs" />
                                     </a>
                                   )}
                                 </div>

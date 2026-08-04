@@ -7,7 +7,9 @@ const isMock =
   process.env.DATABASE_URL.includes('[PROJECT-ID]');
 
 if (isMock) {
-  console.log('⚠️ DATABASE_URL is not configured. Running SIH@GLBGOI in local mock prototype mode.');
+  console.warn(
+    '[SIH@GLBGOI] DATABASE_URL is not configured — running in local mock prototype mode.',
+  );
 }
 
 export const prisma = isMock

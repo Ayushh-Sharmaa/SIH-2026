@@ -4,6 +4,19 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import Image from 'next/image';
+import {
+  ArrowUpRight,
+  BadgeCheck,
+  Clock,
+  Code2,
+  Crown,
+  FlaskConical,
+  Palette,
+  PenLine,
+  Terminal,
+  type LucideIcon,
+} from 'lucide-react';
+import Icon from '@/components/ui/Icon';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import {
@@ -20,13 +33,13 @@ import {
   SPRING,
 } from '@/components/motion';
 
-const AVATAR_PRESETS: Record<string, { emoji: string; wash: string }> = {
-  hacker: { emoji: '🥷', wash: 'from-[#AC9C8D] to-[#D1C7BD]' },
-  developer: { emoji: '💻', wash: 'from-[#D1C7BD] to-[#EFE9E1]' },
-  designer: { emoji: '🎨', wash: 'from-[#D9D9D9] to-[#AC9C8D]' },
-  scientist: { emoji: '🧪', wash: 'from-[#EFE9E1] to-[#D1C7BD]' },
-  manager: { emoji: '👑', wash: 'from-[#AC9C8D] to-[#D9D9D9]' },
-  writer: { emoji: '✍️', wash: 'from-[#D1C7BD] to-[#D9D9D9]' },
+const AVATAR_PRESETS: Record<string, { icon: LucideIcon; wash: string }> = {
+  hacker: { icon: Terminal, wash: 'from-[#AC9C8D] to-[#D1C7BD]' },
+  developer: { icon: Code2, wash: 'from-[#D1C7BD] to-[#EFE9E1]' },
+  designer: { icon: Palette, wash: 'from-[#D9D9D9] to-[#AC9C8D]' },
+  scientist: { icon: FlaskConical, wash: 'from-[#EFE9E1] to-[#D1C7BD]' },
+  manager: { icon: Crown, wash: 'from-[#AC9C8D] to-[#D9D9D9]' },
+  writer: { icon: PenLine, wash: 'from-[#D1C7BD] to-[#D9D9D9]' },
 };
 
 function Avatar({
@@ -54,10 +67,13 @@ function Avatar({
   const preset = AVATAR_PRESETS[avatarUrl || 'developer'] || AVATAR_PRESETS.developer;
   return (
     <span
+      role="img"
       aria-label={`${name}'s profile`}
-      className={`flex items-center justify-center bg-gradient-to-br ${preset.wash} ${className}`}
+      className={`flex items-center justify-center bg-gradient-to-br text-ink/70 ${preset.wash} ${className}`}
     >
-      {preset.emoji}
+      {/* The wrapper already carries the accessible name, so the glyph itself
+          stays decorative — otherwise it is announced twice. */}
+      <Icon icon={preset.icon} size="md" />
     </span>
   );
 }
@@ -85,7 +101,7 @@ function Chip({
 }) {
   return (
     <span
-      className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-semibold ${CHIP_TONES[tone]}`}
+      className={`inline-flex items-center gap-1.5 rounded-control border px-2 py-0.5 text-label normal-case ${CHIP_TONES[tone]}`}
     >
       {children}
     </span>
@@ -420,7 +436,7 @@ export default function DashboardPage() {
                                   >
                                     {l.label}
                                     <span className="transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5">
-                                      ↗
+                                      <Icon icon={ArrowUpRight} size="xs" />
                                     </span>
                                   </motion.a>
                                 ))}
@@ -458,9 +474,17 @@ export default function DashboardPage() {
                             <Label>Verification status</Label>
                             <div className="mt-1.5">
                               <Chip tone={profile?.verified ? 'primary' : 'neutral'}>
-                                {profile?.verified
-                                  ? '✓ Verified mentor'
-                                  : '⌛ Awaiting verification'}
+                                {profile?.verified ? (
+                                  <>
+                                    <Icon icon={BadgeCheck} size="xs" />
+                                    Verified mentor
+                                  </>
+                                ) : (
+                                  <>
+                                    <Icon icon={Clock} size="xs" />
+                                    Awaiting verification
+                                  </>
+                                )}
                               </Chip>
                             </div>
                           </div>
@@ -625,7 +649,7 @@ export default function DashboardPage() {
                                         rel="noreferrer"
                                         className="text-xs font-bold text-primary hover:underline"
                                       >
-                                        Open WhatsApp ↗
+                                        Open WhatsApp <Icon icon={ArrowUpRight} size="xs" />
                                       </a>
                                     )}
                                   </div>

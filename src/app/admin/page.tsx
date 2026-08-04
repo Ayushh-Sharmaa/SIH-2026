@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
+import { ArrowUpRight, Check, X } from 'lucide-react';
+import Icon from '@/components/ui/Icon';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import {
@@ -410,10 +412,10 @@ export default function AdminDashboardPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="flex min-h-screen flex-col bg-background text-foreground">
       <Navbar />
 
-      <main id="main">
+      <main id="main" className="flex-1">
         {/* ── COMMAND BAR ── */}
         <section className="section-taupe relative overflow-hidden">
           <Aurora variant="rose" spotlight />
@@ -689,7 +691,8 @@ export default function AdminDashboardPage() {
                               : 'border-[rgba(209,199,189,0.85)] bg-[rgba(248,246,242,0.6)] text-foreground/65 hover:border-[rgba(114,56,61,0.3)]'
                           }`}
                         >
-                          All-female teams only {allFemaleFilter && '✓'}
+                          All-female teams only
+                          {allFemaleFilter && <Icon icon={Check} size="xs" className="ml-1.5 inline" />}
                         </button>
                       </Panel>
 
@@ -752,7 +755,7 @@ export default function AdminDashboardPage() {
                                           </span>
                                         </span>
                                         <span className="shrink-0 text-[10px] font-bold text-primary">
-                                          Inspect ↗
+                                          Inspect <Icon icon={ArrowUpRight} size="xs" />
                                         </span>
                                       </button>
                                     </li>
@@ -1198,7 +1201,7 @@ export default function AdminDashboardPage() {
                   rel="noreferrer"
                   className="font-bold text-primary hover:underline"
                 >
-                  GitHub ↗
+                  GitHub <Icon icon={ArrowUpRight} size="xs" />
                 </a>
               )}
               {selectedStudent.linkedinUrl && (
@@ -1208,7 +1211,7 @@ export default function AdminDashboardPage() {
                   rel="noreferrer"
                   className="font-bold text-primary hover:underline"
                 >
-                  LinkedIn ↗
+                  LinkedIn <Icon icon={ArrowUpRight} size="xs" />
                 </a>
               )}
               {selectedStudent.resumeUrl && (
@@ -1218,7 +1221,7 @@ export default function AdminDashboardPage() {
                   rel="noreferrer"
                   className="font-bold text-primary hover:underline"
                 >
-                  Resume ↗
+                  Resume <Icon icon={ArrowUpRight} size="xs" />
                 </a>
               )}
 
@@ -1308,7 +1311,7 @@ export default function AdminDashboardPage() {
                     }}
                     className="shrink-0 text-[10px] font-bold text-primary hover:underline"
                   >
-                    Inspect ↗
+                    Inspect <Icon icon={ArrowUpRight} size="xs" />
                   </button>
                 </li>
               ))}
@@ -1372,9 +1375,9 @@ export default function AdminDashboardPage() {
                 setError('');
                 setSuccessMsg('');
               }}
-              className="shrink-0 text-xs text-muted transition-colors duration-250 hover:text-primary"
+              className="shrink-0 text-muted transition-colors duration-250 hover:text-primary"
             >
-              ✕
+              <Icon icon={X} size="sm" />
             </button>
           </motion.div>
         )}

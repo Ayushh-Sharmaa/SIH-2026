@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { ArrowUpRight } from 'lucide-react';
+import Icon from '@/components/ui/Icon';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import {
@@ -298,7 +300,7 @@ export default function FindMentorsPage() {
                                 transition={SPRING.snappy}
                                 className="text-[11px] font-bold text-foreground/65 transition-colors duration-250 hover:text-primary"
                               >
-                                LinkedIn ↗
+                                LinkedIn <Icon icon={ArrowUpRight} size="xs" />
                               </motion.a>
                             )}
                           </div>

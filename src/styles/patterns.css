@@ -1,0 +1,327 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   PATTERNS & ATMOSPHERES
+
+   "Every page should have its own personality, yet still feel like one system."
+
+   The way that holds together: one small vocabulary of PATTERNS (texture) and
+   one set of ATMOSPHERES (light + gradient composition). A page picks one
+   atmosphere and at most one pattern. Because both are built from the same six
+   brand colours, any combination stays in family — but no two pages need ever
+   repeat the same pairing.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ═══ PATTERNS ══════════════════════════════════════════════════════════════ */
+
+/* ── Film grain ──────────────────────────────────────────────────────────── */
+
+/* Sits above content but below the cursor, so the grain unifies the whole
+   frame the way it does on a printed page. Fixed, so it does not scroll. */
+.pattern-noise::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  opacity: 0.028;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: calc(var(--z-cursor) - 1);
+}
+
+/* Legacy alias — layout.tsx applies this to <body>. */
+.noise-texture::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  opacity: 0.028;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: calc(var(--z-cursor) - 1);
+}
+
+/* ── Dot matrix ──────────────────────────────────────────────────────────── */
+
+.pattern-dots {
+  background-image: radial-gradient(rgb(50 45 41 / 0.055) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+/* ── Engineering grid ────────────────────────────────────────────────────── */
+
+/* Masked to an ellipse so the lines fade out rather than hitting the edges. */
+.grid-lines,
+.pattern-grid {
+  background-image:
+    linear-gradient(rgb(50 45 41 / 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(50 45 41 / 0.035) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 20%, transparent 78%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 20%, transparent 78%);
+}
+
+/* ── Mesh gradient ───────────────────────────────────────────────────────── */
+
+.pattern-mesh {
+  background-image:
+    radial-gradient(ellipse 60% 50% at 18% 22%, rgb(172 156 141 / 0.22), transparent 60%),
+    radial-gradient(ellipse 50% 60% at 82% 30%, rgb(114 56 61 / 0.09), transparent 62%),
+    radial-gradient(ellipse 70% 50% at 45% 88%, rgb(209 199 189 / 0.28), transparent 60%);
+}
+
+/* ── Light rays ──────────────────────────────────────────────────────────── */
+
+.pattern-rays {
+  background-image: repeating-conic-gradient(
+    from 210deg at 50% -20%,
+    rgb(255 255 255 / 0.16) 0deg 3deg,
+    transparent 3deg 11deg
+  );
+  mask-image: radial-gradient(ellipse 80% 70% at 50% 0%, #000, transparent 72%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 0%, #000, transparent 72%);
+}
+
+/* ── Contour lines ───────────────────────────────────────────────────────── */
+
+.pattern-contour {
+  background-image: repeating-linear-gradient(
+    115deg,
+    transparent 0 34px,
+    rgb(172 156 141 / 0.13) 34px 35px
+  );
+  mask-image: linear-gradient(160deg, #000 10%, transparent 85%);
+  -webkit-mask-image: linear-gradient(160deg, #000 10%, transparent 85%);
+}
+
+/* ═══ ATMOSPHERES ═══════════════════════════════════════════════════════════ */
+
+/* Each is a distinct distribution of the same four interface colours. Named so
+   a page reads as a place, and so two adjacent sections can be checked for
+   collision at a glance. */
+
+.atmos-dawn {
+  background:
+    radial-gradient(ellipse 90% 70% at 12% 0%, rgb(255 255 255 / 0.85), transparent 62%),
+    radial-gradient(ellipse 70% 60% at 88% 18%, rgb(172 156 141 / 0.24), transparent 66%),
+    linear-gradient(168deg, var(--color-canvas) 0%, rgb(217 217 217 / 0.5) 100%);
+}
+
+.atmos-mist,
+.section-mist {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 0%, rgb(217 217 217 / 0.7), transparent 70%),
+    var(--color-canvas);
+}
+
+.atmos-dune,
+.section-dune {
+  background: linear-gradient(
+    175deg,
+    rgb(172 156 141 / 0.18) 0%,
+    rgb(239 233 225 / 0.92) 55%,
+    rgb(217 217 217 / 0.55) 100%
+  );
+}
+
+.atmos-linen,
+.section-linen {
+  background:
+    linear-gradient(100deg, rgb(209 199 189 / 0.45) 0%, transparent 46%),
+    var(--color-canvas);
+}
+
+.atmos-quarry {
+  background:
+    radial-gradient(ellipse 60% 80% at 100% 50%, rgb(217 217 217 / 0.85), transparent 65%),
+    linear-gradient(200deg, rgb(239 233 225 / 0.95), rgb(209 199 189 / 0.55));
+}
+
+.atmos-ember {
+  background:
+    radial-gradient(ellipse 70% 60% at 50% 110%, rgb(114 56 61 / 0.13), transparent 64%),
+    radial-gradient(ellipse 50% 50% at 15% 10%, rgb(172 156 141 / 0.28), transparent 62%),
+    var(--color-canvas);
+}
+
+.atmos-vellum {
+  background:
+    radial-gradient(ellipse 100% 60% at 50% 0%, rgb(255 255 255 / 0.7), transparent 58%),
+    linear-gradient(185deg, rgb(239 233 225 / 0.98), rgb(209 199 189 / 0.42));
+}
+
+.atmos-slate {
+  background:
+    radial-gradient(ellipse 75% 55% at 25% 8%, rgb(255 255 255 / 0.62), transparent 60%),
+    linear-gradient(155deg, rgb(217 217 217 / 0.72), rgb(239 233 225 / 0.94));
+}
+
+/* Legacy section aliases retained so existing pages keep rendering. */
+.section-cream {
+  background: var(--color-canvas);
+}
+.section-pearl {
+  background: linear-gradient(180deg, var(--color-pearl) 0%, var(--color-canvas) 100%);
+}
+.section-taupe {
+  background: linear-gradient(180deg, var(--color-sand) 0%, var(--color-pearl) 100%);
+}
+.section-warm {
+  background: linear-gradient(180deg, rgb(172 156 141 / 0.1) 0%, var(--color-canvas) 100%);
+}
+
+/* ═══ AURORA ════════════════════════════════════════════════════════════════ */
+
+/* Three blurred blobs on very slow, non-synchronised loops. Pure transform, so
+   the compositor owns them and the main thread stays free. */
+
+.aurora-field {
+  position: absolute;
+  inset: -25%;
+  filter: blur(72px);
+  opacity: 0.85;
+  /* Isolates the blur so it cannot force repaints on sibling content. */
+  contain: paint;
+}
+
+.aurora-blob {
+  position: absolute;
+  display: block;
+  border-radius: 50%;
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* Clamped so the blobs neither vanish at 320px nor swallow an ultra-wide
+   display. The old 46vw sizing did both. */
+.aurora-blob-1 {
+  width: clamp(18rem, 46vw, 54rem);
+  height: clamp(18rem, 46vw, 54rem);
+  top: 4%;
+  left: 6%;
+  animation: auroraDrift1 26s var(--ease-in-out) infinite;
+}
+.aurora-blob-2 {
+  width: clamp(15rem, 38vw, 46rem);
+  height: clamp(15rem, 38vw, 46rem);
+  top: 28%;
+  right: 4%;
+  animation: auroraDrift2 32s var(--ease-in-out) infinite;
+}
+.aurora-blob-3 {
+  width: clamp(16rem, 42vw, 50rem);
+  height: clamp(16rem, 42vw, 50rem);
+  bottom: 0%;
+  left: 32%;
+  animation: auroraDrift3 38s var(--ease-in-out) infinite;
+}
+
+.aurora-warm .aurora-blob-1 {
+  background: radial-gradient(circle, rgb(172 156 141 / 0.55), transparent 68%);
+}
+.aurora-warm .aurora-blob-2 {
+  background: radial-gradient(circle, rgb(114 56 61 / 0.2), transparent 68%);
+}
+.aurora-warm .aurora-blob-3 {
+  background: radial-gradient(circle, rgb(209 199 189 / 0.6), transparent 68%);
+}
+
+.aurora-cool .aurora-blob-1 {
+  background: radial-gradient(circle, rgb(217 217 217 / 0.75), transparent 68%);
+}
+.aurora-cool .aurora-blob-2 {
+  background: radial-gradient(circle, rgb(172 156 141 / 0.35), transparent 68%);
+}
+.aurora-cool .aurora-blob-3 {
+  background: radial-gradient(circle, rgb(209 199 189 / 0.55), transparent 68%);
+}
+
+.aurora-taupe .aurora-blob-1 {
+  background: radial-gradient(circle, rgb(172 156 141 / 0.7), transparent 66%);
+}
+.aurora-taupe .aurora-blob-2 {
+  background: radial-gradient(circle, rgb(209 199 189 / 0.7), transparent 66%);
+}
+.aurora-taupe .aurora-blob-3 {
+  background: radial-gradient(circle, rgb(239 233 225 / 0.85), transparent 66%);
+}
+
+.aurora-rose .aurora-blob-1 {
+  background: radial-gradient(circle, rgb(114 56 61 / 0.26), transparent 66%);
+}
+.aurora-rose .aurora-blob-2 {
+  background: radial-gradient(circle, rgb(172 156 141 / 0.48), transparent 68%);
+}
+.aurora-rose .aurora-blob-3 {
+  background: radial-gradient(circle, rgb(217 217 217 / 0.62), transparent 68%);
+}
+
+.aurora-static .aurora-blob {
+  animation: none !important;
+}
+
+@keyframes auroraDrift1 {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  33% {
+    transform: translate3d(8%, 6%, 0) scale(1.12);
+  }
+  66% {
+    transform: translate3d(-4%, 10%, 0) scale(0.94);
+  }
+}
+@keyframes auroraDrift2 {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  40% {
+    transform: translate3d(-9%, 8%, 0) scale(1.16);
+  }
+  75% {
+    transform: translate3d(5%, -6%, 0) scale(0.9);
+  }
+}
+@keyframes auroraDrift3 {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1.04);
+  }
+  50% {
+    transform: translate3d(6%, -10%, 0) scale(0.88);
+  }
+}
+
+/* ── Cursor spotlight ────────────────────────────────────────────────────── */
+
+.spotlight {
+  position: fixed;
+  width: 620px;
+  height: 620px;
+  margin: -310px 0 0 -310px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(114 56 61 / 0.09), transparent 62%);
+  pointer-events: none;
+  will-change: transform;
+}
+
+/* ── Ambient reductions ──────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora-blob {
+    animation: none !important;
+  }
+  .spotlight {
+    display: none;
+  }
+}
+
+/* Blur is the single most expensive thing on this page. On coarse pointers —
+   overwhelmingly phones — halve the radius and drop the spotlight entirely. */
+@media (pointer: coarse) {
+  .aurora-field {
+    filter: blur(48px);
+    opacity: 0.7;
+  }
+  .spotlight {
+    display: none;
+  }
+}

@@ -1,0 +1,230 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   BASE — document defaults, typography baseline, focus, and scroll chrome.
+   Everything here reads from tokens.css. No literal values.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Document ────────────────────────────────────────────────────────────── */
+
+html {
+  /* Lenis drives scrolling; native smooth-scroll would fight it. */
+  scroll-behavior: auto;
+  /* Anchor jumps clear the fixed navbar. */
+  scroll-padding-top: 6rem;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+body {
+  background-color: var(--color-canvas);
+  color: var(--color-body);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.65;
+  min-height: 100vh;
+  min-height: 100svh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;
+  /* Prevents iOS rubber-band from revealing a white gutter behind the canvas. */
+  overscroll-behavior-y: none;
+}
+
+/* Headings inherit the ink tone by default; a page may override per element. */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: var(--color-foreground);
+  text-wrap: balance;
+}
+
+/* Short paragraphs read better without a lone trailing word. */
+p {
+  text-wrap: pretty;
+}
+
+/* Numerals in stats and counters must not jitter as they animate. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* ── Selection ───────────────────────────────────────────────────────────── */
+
+::selection {
+  background: rgb(114 56 61 / 0.16);
+  color: var(--color-foreground);
+}
+
+/* ── Focus ───────────────────────────────────────────────────────────────── */
+
+/* A single visible ring for every focusable thing. Never removed, only styled.
+   No border-radius here: `border-radius` on :focus-visible restyles the ELEMENT,
+   not the outline, which silently reshapes pills and cards the moment they take
+   focus. Modern browsers already follow the element's own radius. */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Pointer users do not get the ring; keyboard users always do. */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ── Skip link ───────────────────────────────────────────────────────────── */
+
+.skip-link {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: var(--z-boot);
+  transform: translateY(-180%);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  padding: 10px 18px;
+  border-radius: var(--radius-control);
+  font-size: var(--text-caption);
+  font-weight: 600;
+  box-shadow: var(--shadow-e3);
+  transition: transform var(--duration-control) var(--ease-out-expo);
+}
+.skip-link:focus-visible {
+  transform: translateY(0);
+}
+
+/* ── Scrollbar ───────────────────────────────────────────────────────────── */
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-line-strong);
+  border-radius: var(--radius-pill);
+  /* Inset the thumb so it reads as a slim pill rather than a full-width bar. */
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-faint);
+  background-clip: content-box;
+}
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line-strong) transparent;
+}
+
+/* ── Custom cursor ───────────────────────────────────────────────────────── */
+
+/* Only on true fine-pointer devices, and only while the script is mounted.
+   Users who prefer reduced motion keep their native cursor (CustomCursor.tsx
+   never adds the class for them), which is the required opt-out. */
+@media (hover: hover) and (pointer: fine) {
+  html.has-custom-cursor,
+  html.has-custom-cursor * {
+    cursor: none !important;
+  }
+  /* Text entry keeps a real caret — losing it is a genuine usability failure. */
+  html.has-custom-cursor :is(input, textarea, select, [contenteditable='true']) {
+    cursor: auto !important;
+  }
+}
+
+.cursor-ring {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 34px;
+  height: 34px;
+  margin: -17px 0 0 -17px;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid rgb(114 56 61 / 0.45);
+  background: rgb(114 56 61 / 0.04);
+  pointer-events: none;
+  z-index: var(--z-cursor);
+  display: grid;
+  place-items: center;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: transparent;
+  white-space: nowrap;
+  transition:
+    background-color var(--duration-hover) var(--ease-out-expo),
+    border-color var(--duration-hover) var(--ease-out-expo),
+    border-radius var(--duration-hover) var(--ease-out-expo),
+    color var(--duration-hover) var(--ease-out-expo);
+}
+.cursor-dot {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 5px;
+  height: 5px;
+  margin: -2.5px 0 0 -2.5px;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+  pointer-events: none;
+  z-index: calc(var(--z-cursor) + 1);
+}
+.cursor-ring.is-link {
+  background: rgb(114 56 61 / 0.1);
+  border-color: rgb(114 56 61 / 0.65);
+}
+.cursor-ring.is-text {
+  border-radius: var(--radius-sm);
+  background: rgb(114 56 61 / 0.08);
+}
+.cursor-ring.is-view {
+  background: rgb(114 56 61 / 0.92);
+  border-color: transparent;
+  color: var(--color-on-accent);
+}
+
+/* ── Scroll progress ─────────────────────────────────────────────────────── */
+
+.scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--color-accent), var(--color-clay));
+  transform-origin: left;
+  z-index: var(--z-toast);
+  border-radius: 0 var(--radius-pill) var(--radius-pill) 0;
+}
+
+/* ── Reduced motion ──────────────────────────────────────────────────────── */
+
+/* Global brake. Component-level opt-outs live beside their components; this is
+   the backstop that catches anything not explicitly handled. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

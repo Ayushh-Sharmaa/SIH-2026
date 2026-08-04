@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { ArrowUpRight } from 'lucide-react';
+import Icon from '@/components/ui/Icon';
 import Image from 'next/image';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -450,7 +452,7 @@ export default function FindTeammatesPage() {
                                         rel="noopener noreferrer"
                                         className="rounded-md border border-[rgba(209,199,189,0.75)] bg-[rgba(239,233,225,0.7)] px-2 py-1 text-[10px] font-bold text-foreground transition-colors duration-250 hover:border-[rgba(114,56,61,0.3)] hover:text-primary"
                                       >
-                                        {l.label} ↗
+                                        {l.label} <Icon icon={ArrowUpRight} size="xs" />
                                       </a>
                                     ))}
                                 </div>

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
 import {
   Aurora,
   Counter,

@@ -15,6 +15,9 @@ const isPublicRoute = createRouteMatcher([
   '/signup(.*)',
   '/api/auth(.*)',
   '/tracks',
+  // Clerk lands here mid-OAuth, before any session cookie exists. Gating it
+  // would bounce the user to /login and break Google sign-in entirely.
+  '/sso-callback(.*)',
 ]);
 
 const hasClerkKey = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;

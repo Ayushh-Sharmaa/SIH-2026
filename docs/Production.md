@@ -230,6 +230,134 @@ vendored third-party scripts and drowning out real findings.
 
 ---
 
+## Runtime performance — the reported latency
+
+The site was reported as laggy, with stuttering animation and slow interactions.
+The audit found four distinct causes, all in the root layout, all fixed.
+
+### 1. Four concurrent `requestAnimationFrame` loops — fixed
+
+`SmoothScroll` (Lenis), `CustomCursor`, `ScrollProgress` (framer's `useSpring`)
+and framer's own driver each opened an independent, permanent loop. Every frame
+paid four separate JS entry points and four chances to miss the 16.6ms budget.
+None stopped when idle, so a parked tab with no pointer movement and no
+scrolling still burned a full rAF cycle indefinitely.
+
+Replaced by `src/lib/ticker.ts`: one loop, shared. It starts on the first
+subscriber, stops on the last, suspends entirely when the document is hidden,
+and hands every subscriber the same clamped delta so two animations can never
+disagree about how much time passed. A subscriber that throws is evicted rather
+than taking the loop down. 10 tests in `tests/ticker.test.ts` pin the behaviour.
+
+### 2. Every navigation cost 500ms of dead time — fixed
+
+`PageTransition` used `<AnimatePresence mode="wait">`, which holds the incoming
+page until the outgoing one finishes its 500ms exit. The new page was already
+fetched and ready to paint; it was simply not allowed to. This was the single
+largest source of the "slow interactions".
+
+Two further defects in the same component:
+
+- It animated `y`, `scale` and `filter` on a wrapper containing the navbar. Any
+  of `transform`, `filter` or `perspective` makes an element the containing
+  block for `position: fixed` descendants, so for the length of every transition
+  the fixed navbar silently stopped being viewport-fixed and rode along with the
+  page. Now animates `opacity` alone, which creates a stacking context but not a
+  containing block.
+- Animating `filter: blur()` across a full-viewport subtree forces a re-raster
+  of the entire document every frame — the cause of the stutter on route change.
+
+It also called `window.scrollTo({ top: 0 })` on every pathname change, which
+defeated the App Router's own scroll restoration: the back button always dumped
+the user at the top of the page they returned to. Removed.
+
+The first render deliberately does not animate. Fading in from `opacity: 0` on a
+cold load would push LCP out by the full animation duration.
+
+### 3. The boot curtain gated LCP and caused layout shift — fixed
+
+`LoadingScreen` held for a flat 1500ms and then faded for 700ms. LCP is the last
+contentful paint before first interaction, so hiding the hero until t=1500ms put
+a hard floor of ~2.2s under LCP on its own. The hold is now bounded by actual
+readiness (`load` + `document.fonts.ready`) with a 550ms floor to avoid a flash
+and a 1200ms ceiling so a stalled font can never strand the user.
+
+It also set `overflow: hidden` on the body, which removes the scrollbar, widens
+the layout viewport and reflows the page — a CLS event on load and a second one
+on release. The lock bought nothing: the curtain is `fixed inset-0` and already
+covered everything scrollable. Removed.
+
+Its exit animated `filter: blur(12px)` full-screen; now opacity and scale, which
+composite on the GPU.
+
+### 4. Cursor hit-testing ran on every pointer event — fixed
+
+`CustomCursor` ran three `closest()` ancestor walks inside its `pointermove`
+handler. That event fires once per hardware report — 125Hz on a plain mouse, up
+to 1000Hz on a gaming mouse — so up to a thousand DOM traversals a second, all
+but sixty discarded before anything could paint. Hit-testing now happens once
+per frame, where the result can be used.
+
+Also fixed in the same component: the trail canvas cleared the **whole viewport**
+every frame to paint ten small dots, dirtying every pixel on screen; it now
+clears only the rectangle the trail occupied. And its backing store was sized in
+CSS pixels, so the trail rendered at half resolution on every retina display.
+
+### 5. Scroll progress moved off the main thread — fixed
+
+`ScrollProgress` used framer's `useScroll` + `useSpring` — a spring solver
+stepping every frame to drive one `scaleX`. Where the browser supports
+scroll-driven animations it is now pure CSS (`animation-timeline: scroll(root
+block)`), which runs on the compositor and is correct before React hydrates. The
+component now only exists to cover Safari and Firefox, where it installs a single
+passive listener that coalesces writes into one per painted frame.
+
+### 6. The session refetched on every navigation — fixed
+
+`Navbar` called `/api/auth/me` from an effect keyed on `pathname`, so every
+client-side navigation put a network request on the critical path for data that
+had not changed, and the identity block dropped back to its shimmer skeleton
+each time — the user's own name blinked out on every page they opened.
+
+`src/lib/session.tsx` fetches once per page load and is invalidated explicitly.
+Because the provider survives navigation, every post-authentication redirect must
+invalidate it; `useAuthenticatedRedirect` does that in one place, shared by the
+four form components across the sign-in and sign-up pages.
+
+### 7. Cursor code shipped to devices that could never use it — fixed
+
+`CustomCursor` refused to run on touch and under reduced motion, but only after
+being downloaded, parsed and hydrated. `PointerChrome` moves it behind a lazy
+import gated on `(hover: hover) and (pointer: fine)` and the reduced-motion
+query, both watched rather than sampled once. Phone visitors now fetch nothing.
+
+---
+
+## Logging and observability — added
+
+`src/lib/logger.ts` replaces 44 bare `console.error` calls across API routes and
+client components. Three problems with what was there:
+
+- **They shipped to the browser.** Every `console.error` in a client component
+  runs in the user's devtools, handing over a map of internal failure modes and
+  endpoint names.
+- **They logged whole error objects.** `console.error('Login error:', error)` on
+  a driver failure prints the failing query, and a query can contain an email
+  address or a password hash. Server logs are routinely shipped to third-party
+  aggregators, so that is a real disclosure path.
+- **Nothing was watching.** A production failure was only discovered when a user
+  reported it.
+
+The logger redacts a keyword list (`password`, `token`, `secret`, `session`,
+`hash`, …) from context before writing, drops error messages and stacks entirely
+on the client, emits one structured JSON line per record on the server, and stays
+fully verbose in development. `setErrorReporter` is the single attachment point
+for Sentry, Rollbar, Datadog or OpenTelemetry; records reaching it are already
+redacted, so a reporter can forward them verbatim. A throwing reporter is
+swallowed — a monitoring integration must never fail the request it is observing.
+
+---
+
 ## Open — not addressed
 
 Honest scope boundary. These are substantial bodies of work, not oversights:

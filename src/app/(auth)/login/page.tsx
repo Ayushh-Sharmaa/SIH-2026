@@ -227,32 +227,20 @@ function CustomLoginPage() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
-  const handleGoogleSignIn = async () => {
-    setError('');
-    setGoogleLoading(true);
-    try {
-      const res = await fetch('/api/auth/clerk-sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email || 'tanishk.bansal2025@glbajajgroup.org', role: 'STUDENT' }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Google Sign-In failed');
-
-      const meRes = await fetch('/api/auth/me');
-      const meData = await meRes.json();
-      if (meData.authenticated && meData.user.isOnboarded) {
-        await goAuthenticated('/dashboard');
-      } else {
-        await goAuthenticated('/onboarding');
-      }
-    } catch (err) {
-      logger.error('Google Sign-In error', err);
-      setError(err instanceof Error ? err.message : 'Google Sign-In failed. Please try again.');
-    } finally {
-      setGoogleLoading(false);
-    }
-  };
+  // No Google handler here, deliberately.
+  //
+  // This component renders only when NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY is
+  // absent, and Google OAuth is Clerk's handshake — without it there is nothing
+  // to hand off to. The handler that used to live here POSTed a hardcoded
+  // super-admin address to /api/auth/clerk-sync, which at the time minted a
+  // session for whatever email it received. That hole is closed server-side
+  // (identity now comes from the verified Clerk session, and the endpoint 401s
+  // without one), so the call could no longer succeed — it would only ever
+  // return "No verified Google session found", which is a baffling thing to
+  // tell someone on a deployment that has no Google sign-in at all.
+  //
+  // `LoginTemplate` omits the button entirely when no handler is passed, which
+  // is better than offering an affordance that cannot work.
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -311,7 +299,6 @@ function CustomLoginPage() {
         error={error}
         loading={loading}
         googleLoading={googleLoading}
-        handleGoogleSignIn={handleGoogleSignIn}
         handleSubmit={handleSubmit}
       />
     </>
@@ -326,7 +313,12 @@ interface LoginTemplateProps {
   error: string;
   loading: boolean;
   googleLoading: boolean;
-  handleGoogleSignIn: () => void;
+  /**
+   * Omitted when Google sign-in cannot work — the non-Clerk variant of this
+   * page. The button is then not rendered at all, rather than offered and
+   * guaranteed to fail.
+   */
+  handleGoogleSignIn?: () => void;
   handleSubmit: (e: FormEvent) => void;
 }
 
@@ -433,23 +425,29 @@ function LoginTemplate({
             </p>
           </Reveal>
 
-          <Reveal delay={0.16} className="mt-8">
-            <GoogleButton
-              loading={googleLoading}
-              onClick={handleGoogleSignIn}
-              label="Continue with Google"
-            />
-          </Reveal>
+          {handleGoogleSignIn && (
+            <>
+              <Reveal delay={0.16} className="mt-8">
+                <GoogleButton
+                  loading={googleLoading}
+                  onClick={handleGoogleSignIn}
+                  label="Continue with Google"
+                />
+              </Reveal>
 
-          <Reveal delay={0.24} className="my-7">
-            <div className="flex items-center gap-3">
-              <span className="h-px flex-1 bg-[rgba(209,199,189,0.8)]" />
-              <span className="text-label uppercase text-muted">
-                or with email
-              </span>
-              <span className="h-px flex-1 bg-[rgba(209,199,189,0.8)]" />
-            </div>
-          </Reveal>
+              {/* The "or with email" rule only means anything with a second
+                  option above it, so it is hidden alongside the button. */}
+              <Reveal delay={0.24} className="my-7">
+                <div className="flex items-center gap-3">
+                  <span className="h-px flex-1 bg-[rgba(209,199,189,0.8)]" />
+                  <span className="text-label uppercase text-muted">
+                    or with email
+                  </span>
+                  <span className="h-px flex-1 bg-[rgba(209,199,189,0.8)]" />
+                </div>
+              </Reveal>
+            </>
+          )}
 
           <Reveal delay={0.3}>
             <form onSubmit={handleSubmit} noValidate className="space-y-4">

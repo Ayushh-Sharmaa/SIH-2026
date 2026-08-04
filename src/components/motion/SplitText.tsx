@@ -1,6 +1,6 @@
 'use client';
 
-import { m, type Variants } from 'framer-motion';
+import { motion, type Variants } from 'framer-motion';
 import { DURATION, EASE } from './tokens';
 import { usePrefersReducedMotion } from './useReducedMotion';
 
@@ -47,7 +47,7 @@ export default function SplitText({
   gradientColors,
 }: SplitTextProps) {
   const reduced = usePrefersReducedMotion();
-  const Tag = m[as];
+  const Tag = motion[as];
   const units = mode === 'word' ? text.split(' ') : Array.from(text);
   const step = stagger ?? (mode === 'word' ? 0.055 : 0.018);
 
@@ -139,27 +139,31 @@ export default function SplitText({
             ? interpolateColor(gradientColors[0], gradientColors[1], i / (units.length - 1))
             : undefined;
 
+        if (mode === 'char' && unit === ' ') {
+          return (
+            <span key={`space-${i}`} className="inline-block" aria-hidden>
+              &nbsp;
+            </span>
+          );
+        }
+
         return (
-          <span
-            key={`${unit}-${i}`}
-            aria-hidden
-            className="inline-block overflow-hidden align-bottom"
-            style={{ perspective: 600 }}
-          >
-            <m.span
-              variants={child}
-              className="inline-block will-change-transform"
-              style={charColor ? { color: charColor } : undefined}
+          <span key={`${unit}-${i}`} className="inline-flex" aria-hidden>
+            <span
+              className="inline-block overflow-hidden align-bottom"
+              style={{ perspective: 600 }}
             >
-              {/* Non-breaking space for word gaps; zero-width joiner keeps
-                  the character in the flow without adding visual space */}
-              {mode === 'word'
-                ? unit
-                : unit === ' '
-                  ? '\u00A0'
-                  : unit}
-            </m.span>
-            {mode === 'word' && i < units.length - 1 ? ' ' : null}
+              <motion.span
+                variants={child}
+                className="inline-block will-change-transform"
+                style={charColor ? { color: charColor } : undefined}
+              >
+                {unit}
+              </motion.span>
+            </span>
+            {mode === 'word' && i < units.length - 1 ? (
+              <span className="inline-block">&nbsp;</span>
+            ) : null}
           </span>
         );
       })}

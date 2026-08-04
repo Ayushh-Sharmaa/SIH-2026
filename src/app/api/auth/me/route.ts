@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { verifyToken, signToken, normalizeEmail, isAllowedCollegeEmail } from '@/lib/auth';
 import { currentUser } from '@clerk/nextjs/server';
 import { logger } from '@/lib/logger';
+import { setSessionCookie } from '@/lib/sessionCookie';
 
 export async function GET() {
   try {
@@ -58,13 +59,7 @@ export async function GET() {
             const newToken = signToken({ userId: user.id, email: user.email, role: user.role });
             decoded = { userId: user.id, email: user.email, role: user.role };
 
-            cookieStore.set('token', newToken, {
-              httpOnly: true,
-              secure: process.env.NODE_ENV === 'production',
-              sameSite: 'strict',
-              maxAge: 60 * 60 * 24 * 7,
-              path: '/',
-            });
+            setSessionCookie(cookieStore, newToken);
           }
         }
       } catch (err) {

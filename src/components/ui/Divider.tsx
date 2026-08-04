@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { cn } from '@/lib/cn';
 import { EASE } from '@/components/motion/tokens';
 import { usePrefersReducedMotion } from '@/components/motion/useReducedMotion';
@@ -49,7 +49,7 @@ export default function Divider({
   }
 
   return (
-    <motion.hr
+    <m.hr
       aria-hidden
       className={cn(base, 'border-0', className)}
       initial={{ scaleX: 0, opacity: 0 }}
@@ -96,7 +96,7 @@ function ShapeDivider({
           </linearGradient>
         </defs>
         {animate ? (
-          <motion.path
+          <m.path
             d={d}
             fill={`url(#div-${variant})`}
             initial={{ opacity: 0, y: 12 }}

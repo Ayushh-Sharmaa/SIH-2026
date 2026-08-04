@@ -9,7 +9,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
 import { AlertTriangle, CheckCircle2, Info, X, XCircle } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/cn';
@@ -124,7 +124,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number)
   const tone = TONE[toast.tone];
 
   return (
-    <motion.div
+    <m.div
       layout
       role={toast.tone === 'error' ? 'alert' : 'status'}
       initial={reduced ? { opacity: 0 } : { opacity: 0, y: 20, scale: 0.96, filter: 'blur(6px)' }}
@@ -172,7 +172,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number)
       {/* Time-remaining bar. Purely decorative — the toast is already announced
           and dismissible by keyboard. */}
       {!reduced && (
-        <motion.span
+        <m.span
           aria-hidden
           className="absolute inset-x-0 bottom-0 h-0.5 origin-left bg-accent/30"
           initial={{ scaleX: 1 }}
@@ -182,6 +182,6 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number)
           transition={{ duration: toast.duration / 1000, ease: 'linear' }}
         />
       )}
-    </motion.div>
+    </m.div>
   );
 }

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import Reveal, { RevealGroup, RevealItem } from '@/components/motion/Reveal';
 import { EASE } from '@/components/motion/tokens';
 
@@ -76,7 +76,7 @@ export default function Footer() {
             </p>
             <div className="mt-6 flex gap-2.5">
               {SOCIALS.map((s) => (
-                <motion.a
+                <m.a
                   key={s.label}
                   href={s.href}
                   aria-label={s.label}
@@ -96,7 +96,7 @@ export default function Footer() {
                       strokeLinejoin="round"
                     />
                   </svg>
-                </motion.a>
+                </m.a>
               ))}
             </div>
           </Reveal>

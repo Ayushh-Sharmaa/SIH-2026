@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { Check } from 'lucide-react';
 import Icon from '@/components/ui/Icon';
 import { useToast } from '@/components/ui/Toast';
@@ -147,7 +147,7 @@ export default function CreateTeamPage() {
                   <span>{filled} / 3</span>
                 </div>
                 <div className="h-1 overflow-hidden rounded-full bg-[rgba(209,199,189,0.6)]">
-                  <motion.div
+                  <m.div
                     animate={{ scaleX: filled / 3 }}
                     initial={{ scaleX: 0 }}
                     transition={{ duration: DURATION.card, ease: EASE.outExpo }}

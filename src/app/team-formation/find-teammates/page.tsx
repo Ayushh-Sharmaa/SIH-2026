@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
 import { ArrowUpRight } from 'lucide-react';
 import Icon from '@/components/ui/Icon';
 import { useToast } from '@/components/ui/Toast';
@@ -359,7 +359,7 @@ export default function FindTeammatesPage() {
                   ))}
                 </div>
               ) : students.length > 0 ? (
-                <motion.div
+                <m.div
                   layout
                   className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3"
                 >
@@ -367,7 +367,7 @@ export default function FindTeammatesPage() {
                     {students.map((student, i) => {
                       const state = inviteState[student.userId];
                       return (
-                        <motion.div
+                        <m.div
                           key={student.userId}
                           layout
                           initial={{ opacity: 0, y: 20, filter: 'blur(8px)' }}
@@ -468,11 +468,11 @@ export default function FindTeammatesPage() {
                               </div>
                             </article>
                           </TiltCard>
-                        </motion.div>
+                        </m.div>
                       );
                     })}
                   </AnimatePresence>
-                </motion.div>
+                </m.div>
               ) : (
                 <div className="surface-raised rounded-3xl border-dashed px-6 py-20 text-center">
                   <p className="text-base font-extrabold tracking-tight text-foreground">

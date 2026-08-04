@@ -1,6 +1,6 @@
 'use client';
 
-import { motion, type Variants } from 'framer-motion';
+import { m, type Variants } from 'framer-motion';
 import { DURATION, EASE } from './tokens';
 import { usePrefersReducedMotion } from './useReducedMotion';
 
@@ -47,7 +47,7 @@ export default function SplitText({
   gradientColors,
 }: SplitTextProps) {
   const reduced = usePrefersReducedMotion();
-  const Tag = motion[as];
+  const Tag = m[as];
   const units = mode === 'word' ? text.split(' ') : Array.from(text);
   const step = stagger ?? (mode === 'word' ? 0.055 : 0.018);
 
@@ -146,7 +146,7 @@ export default function SplitText({
             className="inline-block overflow-hidden align-bottom"
             style={{ perspective: 600 }}
           >
-            <motion.span
+            <m.span
               variants={child}
               className="inline-block will-change-transform"
               style={charColor ? { color: charColor } : undefined}
@@ -158,7 +158,7 @@ export default function SplitText({
                 : unit === ' '
                   ? '\u00A0'
                   : unit}
-            </motion.span>
+            </m.span>
             {mode === 'word' && i < units.length - 1 ? ' ' : null}
           </span>
         );

@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import Icon from './Icon';
@@ -38,7 +38,7 @@ export default function EmptyState({
   const compact = size === 'compact';
 
   return (
-    <motion.div
+    <m.div
       initial={reduced ? { opacity: 0 } : { opacity: 0, y: 12 }}
       animate={reduced ? { opacity: 1 } : { opacity: 1, y: 0 }}
       transition={{ duration: DURATION.reveal, ease: EASE.outExpo }}
@@ -48,7 +48,7 @@ export default function EmptyState({
         className,
       )}
     >
-      <motion.span
+      <m.span
         aria-hidden
         // A slow, shallow float keeps the surface from reading as a dead end
         // without demanding attention.
@@ -60,7 +60,7 @@ export default function EmptyState({
         )}
       >
         <Icon icon={icon} size={compact ? 'lg' : 'xl'} />
-      </motion.span>
+      </m.span>
 
       <div className="max-w-prose">
         <p className={cn('text-ink', compact ? 'text-feature' : 'text-subheading')}>{title}</p>
@@ -68,15 +68,15 @@ export default function EmptyState({
       </div>
 
       {action && (
-        <motion.div
+        <m.div
           initial={reduced ? undefined : { opacity: 0, scale: 0.96 }}
           animate={reduced ? undefined : { opacity: 1, scale: 1 }}
           transition={SPRING.overlay}
           className="mt-1"
         >
           {action}
-        </motion.div>
+        </m.div>
       )}
-    </motion.div>
+    </m.div>
   );
 }

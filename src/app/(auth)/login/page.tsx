@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useClerk } from '@clerk/nextjs';
 import { useAuthenticatedRedirect } from '@/lib/session';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
 import {
   Aurora,
   Field,
@@ -28,7 +28,7 @@ const HIGHLIGHTS = [
 /** Full-screen hand-off shown while the session is being minted. */
 function AuthHandoff({ caption }: { caption: string }) {
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -55,7 +55,7 @@ function AuthHandoff({ caption }: { caption: string }) {
       <p className="text-center text-label uppercase text-muted">
         {caption}
       </p>
-    </motion.div>
+    </m.div>
   );
 }
 
@@ -69,7 +69,7 @@ function GoogleButton({
   label: string;
 }) {
   return (
-    <motion.button
+    <m.button
       type="button"
       onClick={onClick}
       disabled={loading}
@@ -97,7 +97,7 @@ function GoogleButton({
         />
       </svg>
       {loading ? 'Connecting to Google…' : label}
-    </motion.button>
+    </m.button>
   );
 }
 

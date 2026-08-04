@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useId, type ReactNode } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import Icon from './Icon';
@@ -69,7 +69,7 @@ export default function Modal({
   return (
     <AnimatePresence>
       {open && (
-        <motion.div
+        <m.div
           className="fixed inset-0 z-modal flex items-center justify-center p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -85,7 +85,7 @@ export default function Modal({
             className="absolute inset-0 bg-[rgb(50_45_41/0.34)] backdrop-blur-md"
           />
 
-          <motion.div
+          <m.div
             ref={panelRef}
             role="dialog"
             aria-modal="true"
@@ -115,7 +115,7 @@ export default function Modal({
               </div>
 
               {!hideClose && (
-                <motion.button
+                <m.button
                   type="button"
                   onClick={onClose}
                   aria-label="Close dialog"
@@ -125,7 +125,7 @@ export default function Modal({
                   className="grid size-9 shrink-0 place-items-center rounded-control border border-line text-muted transition-colors hover:border-line-accent hover:text-accent"
                 >
                   <Icon icon={X} size="sm" />
-                </motion.button>
+                </m.button>
               )}
             </header>
 
@@ -136,8 +136,8 @@ export default function Modal({
                 {footer}
               </footer>
             )}
-          </motion.div>
-        </motion.div>
+          </m.div>
+        </m.div>
       )}
     </AnimatePresence>
   );

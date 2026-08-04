@@ -1,6 +1,6 @@
 'use client';
 
-import { motion, useMotionValue, useSpring } from 'framer-motion';
+import { m, useMotionValue, useSpring } from 'framer-motion';
 import { useEffect } from 'react';
 import { usePrefersReducedMotion, useIsCoarsePointer } from './useReducedMotion';
 
@@ -46,7 +46,7 @@ export default function Aurora({
       </div>
 
       {spotlight && !reduced && !coarse && (
-        <motion.div className="spotlight" style={{ left: sx, top: sy }} />
+        <m.div className="spotlight" style={{ left: sx, top: sy }} />
       )}
     </div>
   );

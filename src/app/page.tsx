@@ -466,7 +466,7 @@ export default function Home() {
 
             <div className="mt-14 grid gap-8 lg:grid-cols-12">
               <Reveal direction="right" className="lg:col-span-5">
-                <div className="flex max-h-[30rem] flex-col gap-1.5 overflow-y-auto pr-2">
+                <div className="flex max-h-[30rem] flex-col gap-1.5 overflow-y-auto pr-2" data-lenis-prevent>
                   {SIH_MILESTONES.map((milestone, i) => {
                     const isActive = i === activePhase;
                     return (

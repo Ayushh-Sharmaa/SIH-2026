@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 import { verifyToken } from '@/lib/auth';
+import { SESSION_COOKIE, clearSessionCookie } from '@/lib/sessionCookie';
 
 /**
  * Request gate.
@@ -20,7 +21,7 @@ const hasClerkKey = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
 /** True only when the cookie's signature, issuer, audience and claims all check out. */
 function hasValidSession(req: NextRequest): boolean {
-  const token = req.cookies.get('token')?.value;
+  const token = req.cookies.get(SESSION_COOKIE)?.value;
   if (!token) return false;
   return verifyToken(token) !== null;
 }
@@ -30,10 +31,22 @@ function redirectToLogin(req: NextRequest) {
   const url = req.nextUrl.clone();
   url.pathname = '/login';
   url.search = '';
+  // A path, never an absolute URL: `next=https://attacker.example` would turn
+  // the post-login redirect into an open redirect.
   url.searchParams.set('next', req.nextUrl.pathname);
 
   const res = NextResponse.redirect(url);
-  if (req.cookies.has('token')) res.cookies.delete('token');
+
+  // Clearing the rejected cookie is what stops a redirect loop: without it the
+  // browser keeps presenting the same unverifiable token on every request and
+  // the gate keeps bouncing it back to /login.
+  //
+  // This previously used `res.cookies.delete('token')`, which emits no Path and
+  // so is scoped by the browser to the directory of the current request —
+  // /dashboard, /onboarding, and so on. The cookie is written at '/', the two
+  // never matched, and the loop this line exists to prevent could still happen.
+  if (req.cookies.has(SESSION_COOKIE)) clearSessionCookie(res.cookies);
+
   return res;
 }
 

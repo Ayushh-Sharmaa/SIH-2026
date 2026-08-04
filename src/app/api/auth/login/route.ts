@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma';
 import { comparePassword, hashPassword, signToken, normalizeEmail } from '@/lib/auth';
 import { isAuthorizedAdminEmail, isUserBanned, stripAdminSuffix } from '@/lib/admin';
 import { ensureSandboxUser, parseSandboxRequest } from '@/lib/sandbox';
+import { clientIp, createRateLimiter, tooManyRequests } from '@/lib/rateLimit';
+import { logger } from '@/lib/logger';
 
 function setTokenCookie(response: NextResponse, token: string) {
   response.cookies.set('token', token, {
@@ -15,6 +17,11 @@ function setTokenCookie(response: NextResponse, token: string) {
   return response;
 }
 
+const byIp = createRateLimiter({ limit: 10, windowMs: 60_000, prefix: 'login:ip' });
+const byAccount = createRateLimiter({ limit: 5, windowMs: 15 * 60_000, prefix: 'login:acct' });
+
+const DUMMY_HASH = '$2b$12$C6UzMDM.H6dfI/f/IKcEeO.Aq6M3xM.qXhLvI1nRJKtvXqM5FZ3Xq';
+
 export async function POST(request: Request) {
   try {
     const { email, password } = await request.json();
@@ -25,7 +32,7 @@ export async function POST(request: Request) {
 
     const rawEmail = String(email).trim();
 
-    // --- Passwordless sandbox access (BanTan@BanTan0607[/student|/mentor]) ---
+    // Passwordless sandbox access
     const sandboxRole = parseSandboxRequest(rawEmail);
     if (sandboxRole) {
       const { user, name, role } = await ensureSandboxUser(sandboxRole);
@@ -49,6 +56,19 @@ export async function POST(request: Request) {
     const isAdminIntent = /\/admin$/i.test(rawEmail);
     const cleanEmail = stripAdminSuffix(rawEmail);
 
+    const ipCheck = await byIp(clientIp(request));
+    if (!ipCheck.ok) {
+      return tooManyRequests(ipCheck, 'Too many sign-in attempts. Please wait a moment and try again.');
+    }
+
+    const accountCheck = await byAccount(cleanEmail);
+    if (!accountCheck.ok) {
+      return tooManyRequests(
+        accountCheck,
+        'This account has had too many failed sign-in attempts. Please try again in a few minutes.'
+      );
+    }
+
     if (await isUserBanned(cleanEmail)) {
       return NextResponse.json(
         { error: 'Account Suspended: Your access has been revoked by the system administrator.' },
@@ -58,8 +78,6 @@ export async function POST(request: Request) {
 
     const isAuthorizedAdmin = await isAuthorizedAdminEmail(cleanEmail);
 
-    // Admin login is ONLY allowed when /admin is explicitly appended to the
-    // email, so the console stays hidden from the public sign-in form.
     if (isAdminIntent) {
       if (!isAuthorizedAdmin) {
         return NextResponse.json(
@@ -77,38 +95,28 @@ export async function POST(request: Request) {
       });
 
       if (!user) {
-        // Automatically provision the Admin account on first sign-in
-        const passHash = await hashPassword(password);
-        const created = await prisma.user.create({
-          data: { email: cleanEmail, passwordHash: passHash, role: 'ADMIN' },
-        });
-        user = await prisma.user.findUnique({
-          where: { id: created.id },
-          include: {
-            studentProfile: { select: { name: true } },
-            mentorProfile: { select: { name: true } },
-          },
-        });
-      } else {
-        const isPasswordCorrect = await comparePassword(password, user.passwordHash);
-        if (!isPasswordCorrect) {
-          return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
-        }
+        await comparePassword(password, DUMMY_HASH);
+        return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
       }
 
-      const token = signToken({ userId: user!.id, email: cleanEmail, role: 'ADMIN' });
+      const isPasswordCorrect = await comparePassword(password, user.passwordHash);
+      if (!isPasswordCorrect) {
+        return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
+      }
+
+      const token = signToken({ userId: user.id, email: cleanEmail, role: 'ADMIN' });
 
       return setTokenCookie(
         NextResponse.json({
           success: true,
           redirectUrl: '/admin',
           user: {
-            id: user!.id,
+            id: user.id,
             email: cleanEmail,
             role: 'ADMIN',
             name:
-              user!.studentProfile?.name ||
-              user!.mentorProfile?.name ||
+              user.studentProfile?.name ||
+              user.mentorProfile?.name ||
               'System Administrator',
           },
         }),
@@ -116,7 +124,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Standard Student or Mentor Login
     const user = await prisma.user.findUnique({
       where: { email: normalizeEmail(cleanEmail) },
       include: {
@@ -126,6 +133,7 @@ export async function POST(request: Request) {
     });
 
     if (!user) {
+      await comparePassword(password, DUMMY_HASH);
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
     }
 
@@ -135,9 +143,6 @@ export async function POST(request: Request) {
     }
 
     const name = user.studentProfile?.name || user.mentorProfile?.name || 'User';
-
-    // An ADMIN signing in without the /admin suffix enters the standard portal,
-    // so their session role is downgraded for this login.
     const userRole = user.role === 'ADMIN' ? 'STUDENT' : user.role;
     const token = signToken({ userId: user.id, email: user.email, role: userRole });
 
@@ -149,7 +154,7 @@ export async function POST(request: Request) {
       token
     );
   } catch (error: any) {
-    console.error('Login error:', error);
+    logger.error('Login error', error);
     return NextResponse.json({ error: 'An error occurred during authentication.' }, { status: 500 });
   }
 }

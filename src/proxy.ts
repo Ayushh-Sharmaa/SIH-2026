@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
+import { verifyToken } from '@/lib/auth';
 
-// Renamed from middleware.ts: Next.js 16 deprecated the `middleware` file
-// convention in favour of `proxy`.
+/**
+ * Request gate.
+ * Next 16 renamed the `middleware` convention to `proxy`.
+ */
 
 const isPublicRoute = createRouteMatcher([
   '/',
@@ -15,40 +18,45 @@ const isPublicRoute = createRouteMatcher([
 
 const hasClerkKey = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
-// Without Clerk keys, clerkMiddleware() throws on every request and takes the
-// whole site down. Fall back to plain cookie auth instead.
+/** True only when the cookie's signature, issuer, audience and claims all check out. */
+function hasValidSession(req: NextRequest): boolean {
+  const token = req.cookies.get('token')?.value;
+  if (!token) return false;
+  return verifyToken(token) !== null;
+}
+
+/** Sends the user to /login, remembering where they were headed. */
+function redirectToLogin(req: NextRequest) {
+  const url = req.nextUrl.clone();
+  url.pathname = '/login';
+  url.search = '';
+  url.searchParams.set('next', req.nextUrl.pathname);
+
+  const res = NextResponse.redirect(url);
+  if (req.cookies.has('token')) res.cookies.delete('token');
+  return res;
+}
+
 function customAuthProxy(req: NextRequest) {
   if (isPublicRoute(req)) {
     return NextResponse.next();
   }
-
-  const token = req.cookies.get('token')?.value;
-  if (token) {
+  if (hasValidSession(req)) {
     return NextResponse.next();
   }
-
-  const url = req.nextUrl.clone();
-  url.pathname = '/login';
-  return NextResponse.redirect(url);
+  return redirectToLogin(req);
 }
 
-// Wrapping in clerkMiddleware is what makes currentUser() and auth() usable in
-// route handlers. Without it every Google sign-in threw inside
-// /api/auth/clerk-sync and silently bounced the user back to /login.
 export const proxy = hasClerkKey
   ? clerkMiddleware(async (auth, req) => {
       if (isPublicRoute(req)) {
         return;
       }
-
-      // Custom JWT session takes precedence: it is what every non-Google
-      // sign-in issues, and what the sandbox and admin flows rely on.
-      const token = req.cookies.get('token')?.value;
-      if (token) {
+      if (hasValidSession(req)) {
         return;
       }
 
-      // Otherwise fall back to a live Clerk session (Google users mid-sync)
+      // Fall back to a live Clerk session (Google users mid-sync)
       try {
         const authObj = await auth();
         if (authObj?.userId) {
@@ -58,11 +66,11 @@ export const proxy = hasClerkKey
         // Clerk unreachable or misconfigured - fall through to the redirect
       }
 
-      const url = req.nextUrl.clone();
-      url.pathname = '/login';
-      return NextResponse.redirect(url);
+      return redirectToLogin(req);
     })
   : (req: NextRequest) => customAuthProxy(req);
+
+export default proxy;
 
 export const config = {
   matcher: [

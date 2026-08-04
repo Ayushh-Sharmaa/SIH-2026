@@ -2,18 +2,64 @@
 
 import { motion, type Variants } from 'framer-motion';
 import type { ElementType, ReactNode } from 'react';
-import { DURATION, EASE } from './tokens';
+import { DURATION, EASE, STAGGER, TRAVEL, REDUCED } from './tokens';
 import { usePrefersReducedMotion } from './useReducedMotion';
+
+/**
+ * Scroll-triggered entrance.
+ *
+ * Note on reduced motion: MotionProvider sets `reducedMotion="user"`, which
+ * suppresses transform and layout animation globally — but NOT `filter`. The
+ * blur-in used here is a filter, so it still has to be handled explicitly.
+ * That is why these components keep their own reduced-motion branch.
+ */
 
 type Direction = 'up' | 'down' | 'left' | 'right' | 'none';
 
 const OFFSET: Record<Direction, { x: number; y: number }> = {
-  up: { x: 0, y: 28 },
-  down: { x: 0, y: -28 },
-  left: { x: 32, y: 0 },
-  right: { x: -32, y: 0 },
+  up: { x: 0, y: TRAVEL.md },
+  down: { x: 0, y: -TRAVEL.md },
+  left: { x: TRAVEL.lg, y: 0 },
+  right: { x: -TRAVEL.lg, y: 0 },
   none: { x: 0, y: 0 },
 };
+
+function buildVariants({
+  direction,
+  blur,
+  scale,
+  duration,
+  delay,
+  reduced,
+}: {
+  direction: Direction;
+  blur: boolean;
+  scale: boolean;
+  duration: number;
+  delay: number;
+  reduced: boolean;
+}): Variants {
+  if (reduced) return REDUCED;
+
+  const offset = OFFSET[direction];
+  return {
+    hidden: {
+      opacity: 0,
+      x: offset.x,
+      y: offset.y,
+      ...(blur ? { filter: 'blur(10px)' } : null),
+      ...(scale ? { scale: 0.95 } : null),
+    },
+    visible: {
+      opacity: 1,
+      x: 0,
+      y: 0,
+      ...(blur ? { filter: 'blur(0px)' } : null),
+      ...(scale ? { scale: 1 } : null),
+      transition: { duration, delay, ease: EASE.outExpo },
+    },
+  };
+}
 
 export interface RevealProps {
   children: ReactNode;
@@ -31,10 +77,6 @@ export interface RevealProps {
   as?: ElementType;
 }
 
-/**
- * Scroll-triggered entrance. Collapses to a plain fade when the user
- * prefers reduced motion.
- */
 export default function Reveal({
   children,
   className,
@@ -49,35 +91,11 @@ export default function Reveal({
 }: RevealProps) {
   const reduced = usePrefersReducedMotion();
   const MotionTag = motion[as as 'div'] ?? motion.div;
-  const offset = OFFSET[direction];
-
-  const variants: Variants = reduced
-    ? {
-        hidden: { opacity: 0 },
-        visible: { opacity: 1, transition: { duration: 0.2 } },
-      }
-    : {
-        hidden: {
-          opacity: 0,
-          x: offset.x,
-          y: offset.y,
-          ...(blur ? { filter: 'blur(10px)' } : null),
-          ...(scale ? { scale: 0.95 } : null),
-        },
-        visible: {
-          opacity: 1,
-          x: 0,
-          y: 0,
-          ...(blur ? { filter: 'blur(0px)' } : null),
-          ...(scale ? { scale: 1 } : null),
-          transition: { duration, delay, ease: EASE.outExpo },
-        },
-      };
 
   return (
     <MotionTag
       className={className}
-      variants={variants}
+      variants={buildVariants({ direction, blur, scale, duration, delay, reduced })}
       initial="hidden"
       whileInView="visible"
       viewport={{ once, amount }}
@@ -88,16 +106,17 @@ export default function Reveal({
 }
 
 /**
- * Wraps a group whose children animate in sequence. Children should be
- * `<RevealItem>` (or any motion element using the `hidden`/`visible` names).
+ * Sequences its children. Children must be `<RevealItem>` (or any motion
+ * element using the same `hidden`/`visible` variant names).
  */
 export function RevealGroup({
   children,
   className,
-  stagger = 0.08,
+  stagger = STAGGER.normal,
   delay = 0,
   amount = 0.15,
   once = true,
+  as = 'div',
 }: {
   children: ReactNode;
   className?: string;
@@ -105,9 +124,12 @@ export function RevealGroup({
   delay?: number;
   amount?: number;
   once?: boolean;
+  as?: ElementType;
 }) {
+  const MotionTag = motion[as as 'div'] ?? motion.div;
+
   return (
-    <motion.div
+    <MotionTag
       className={className}
       initial="hidden"
       whileInView="visible"
@@ -118,7 +140,7 @@ export function RevealGroup({
       }}
     >
       {children}
-    </motion.div>
+    </MotionTag>
   );
 }
 
@@ -135,23 +157,19 @@ export function RevealItem({
 }) {
   const reduced = usePrefersReducedMotion();
   const MotionTag = motion[as as 'div'] ?? motion.div;
-  const offset = OFFSET[direction];
-
-  const variants: Variants = reduced
-    ? { hidden: { opacity: 0 }, visible: { opacity: 1 } }
-    : {
-        hidden: { opacity: 0, x: offset.x, y: offset.y, filter: 'blur(8px)' },
-        visible: {
-          opacity: 1,
-          x: 0,
-          y: 0,
-          filter: 'blur(0px)',
-          transition: { duration: DURATION.reveal, ease: EASE.outExpo },
-        },
-      };
 
   return (
-    <MotionTag className={className} variants={variants}>
+    <MotionTag
+      className={className}
+      variants={buildVariants({
+        direction,
+        blur: true,
+        scale: false,
+        duration: DURATION.reveal,
+        delay: 0,
+        reduced,
+      })}
+    >
       {children}
     </MotionTag>
   );

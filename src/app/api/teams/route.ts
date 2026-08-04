@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { recalculateTeamSkills } from '@/lib/derived';
 import { TeamStatus } from '@prisma/client';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: Request) {
   try {
@@ -80,7 +81,7 @@ export async function POST(request: Request) {
       teamId: newTeam.id,
     });
   } catch (error) {
-    console.error('Create team error:', error);
+    logger.error('Create team error', error);
     return NextResponse.json({ error: 'Failed to create team.' }, { status: 500 });
   }
 }

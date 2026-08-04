@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import { addAdminEmail, isAuthorizedAdminEmail, removeAdminEmail, SUPER_ADMIN_EMAIL } from '@/lib/admin';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: Request) {
   try {
@@ -13,7 +14,6 @@ export async function POST(request: Request) {
     }
 
     const decoded = verifyToken(token);
-    // Always verify against the allowlist, not just the token's role claim
     if (!decoded || !(await isAuthorizedAdminEmail(decoded.email))) {
       return NextResponse.json({ error: 'Forbidden: Admin permissions required.' }, { status: 403 });
     }
@@ -53,7 +53,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
   } catch (error: any) {
-    console.error('Admin access management error:', error);
+    logger.error('Admin access management error', error);
     return NextResponse.json({ error: 'Failed to update admin permissions.' }, { status: 500 });
   }
 }

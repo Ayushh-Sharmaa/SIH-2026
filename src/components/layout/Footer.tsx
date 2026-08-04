@@ -65,7 +65,7 @@ export default function Footer() {
                 <span className="text-gradient-luxe text-lg font-extrabold tracking-tight">
                   SIH@GLBGOI
                 </span>
-                <span className="mt-1.5 text-[9px] font-semibold uppercase tracking-[0.2em] text-muted">
+                <span className="mt-1.5 text-label uppercase text-muted">
                   Powered by NexaSphere
                 </span>
               </span>
@@ -104,9 +104,9 @@ export default function Footer() {
           {LINK_GROUPS.map((group, i) => (
             <RevealGroup key={group.title} delay={0.08 * (i + 1)} stagger={0.05}>
               <RevealItem>
-                <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-foreground/70">
+                <h2 className="text-label uppercase text-body">
                   {group.title}
-                </h3>
+                </h2>
               </RevealItem>
               <ul className="mt-5 space-y-3">
                 {group.links.map((link) => (
@@ -146,7 +146,7 @@ export default function Footer() {
             <p className="text-xs text-muted">
               © {new Date().getFullYear()} GL Bajaj Group of Institutions, Mathura.
             </p>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted/80">
+            <p className="text-label uppercase text-muted">
               Crafted by NexaSphere
             </p>
           </div>

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { currentUser } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
 import { signToken, normalizeEmail, isAllowedCollegeEmail } from '@/lib/auth';
+import { logger } from '@/lib/logger';
 
 async function syncClerkUser(email: string, defaultRole: 'STUDENT' | 'MENTOR' = 'STUDENT') {
   const withProfiles = { studentProfile: true, mentorProfile: true } as const;
@@ -69,7 +70,7 @@ export async function GET(request: Request) {
       const clerkUser = await currentUser();
       email = clerkUser?.emailAddresses?.[0]?.emailAddress;
     } catch (e) {
-      console.error('Clerk currentUser() failed. Is clerkMiddleware() running in src/proxy.ts?', e);
+      logger.error('Clerk currentUser() failed.', e);
     }
 
     if (!email) {
@@ -78,7 +79,6 @@ export async function GET(request: Request) {
 
     email = normalizeEmail(email);
 
-    // Google accounts must also be college accounts, same rule as email signup
     if (!isAllowedCollegeEmail(email)) {
       return NextResponse.redirect(new URL('/login?error=domain_not_allowed', request.url));
     }
@@ -98,7 +98,7 @@ export async function GET(request: Request) {
 
     return response;
   } catch (error: any) {
-    console.error('Clerk GET Sync error:', error);
+    logger.error('Clerk GET Sync error', error);
     return NextResponse.redirect(new URL('/login', request.url));
   }
 }
@@ -113,7 +113,7 @@ export async function POST(request: Request) {
         const clerkUser = await currentUser();
         email = clerkUser?.emailAddresses?.[0]?.emailAddress;
       } catch (e) {
-        console.error('Clerk currentUser() failed. Is clerkMiddleware() running in src/proxy.ts?', e);
+        logger.error('Clerk currentUser() failed.', e);
       }
     }
 
@@ -128,7 +128,6 @@ export async function POST(request: Request) {
 
     email = normalizeEmail(email);
 
-    // Google accounts must also be college accounts, same rule as email signup
     if (!isAllowedCollegeEmail(email)) {
       return NextResponse.json(
         { error: 'Access restricted. Please use your official GL Bajaj email ID.' },
@@ -160,7 +159,7 @@ export async function POST(request: Request) {
 
     return response;
   } catch (error: any) {
-    console.error('Clerk POST Sync error:', error);
+    logger.error('Clerk POST Sync error', error);
     return NextResponse.json({ error: error?.message || 'Failed to synchronize user account' }, { status: 500 });
   }
 }

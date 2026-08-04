@@ -1,10 +1,27 @@
 'use client';
 
-import { useRef, useState, type ReactNode, type MouseEvent } from 'react';
+import { useEffect, useRef, useState, type ReactNode, type MouseEvent } from 'react';
 import Link from 'next/link';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Check } from 'lucide-react';
+import Icon from '@/components/ui/Icon';
 import Magnetic from './Magnetic';
+import { SPRING } from './tokens';
+import { usePrefersReducedMotion } from './useReducedMotion';
 
-type Variant = 'primary' | 'glass' | 'ghost';
+/**
+ * The button.
+ *
+ * One component covers every affordance in the app, so press feedback, focus
+ * treatment, loading and disabled behaviour cannot drift between call sites.
+ *
+ * On `loading` and `success` the button holds its rendered width: the resting
+ * label stays in flow but invisible, and the transient state is overlaid.
+ * Buttons that resize when their label changes make the surrounding layout jump
+ * at exactly the moment the user is watching for confirmation.
+ */
+
+type Variant = 'primary' | 'secondary' | 'glass' | 'outline' | 'ghost' | 'destructive';
 
 interface Ripple {
   id: number;
@@ -13,25 +30,37 @@ interface Ripple {
 }
 
 const BASE =
-  'relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-xl font-bold tracking-tight transition-[background-color,border-color,box-shadow,transform] duration-250 disabled:opacity-60 disabled:pointer-events-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary';
+  'relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-pill font-semibold ' +
+  'transition-[background-color,border-color,box-shadow,transform,opacity] duration-220 ease-out-expo ' +
+  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ' +
+  'disabled:pointer-events-none disabled:opacity-55';
 
 const VARIANTS: Record<Variant, string> = {
   primary:
-    'bg-primary text-[#FBF9F6] shadow-[0_2px_12px_rgba(114,56,61,0.22)] hover:shadow-[0_10px_28px_rgba(114,56,61,0.30)] hover:-translate-y-0.5 active:translate-y-0',
+    'bg-accent text-on-accent shadow-accent hover:-translate-y-0.5 hover:shadow-e4 active:translate-y-0',
+  secondary:
+    'border border-line-strong bg-clay/25 text-ink hover:bg-clay/35 hover:-translate-y-0.5 active:translate-y-0',
   glass:
-    'border border-[rgba(209,199,189,0.55)] bg-[rgba(248,246,242,0.6)] text-foreground backdrop-blur-xl hover:bg-[rgba(248,246,242,0.86)] hover:border-[rgba(114,56,61,0.2)] hover:shadow-[0_8px_24px_rgba(50,45,41,0.10)] hover:-translate-y-0.5 active:translate-y-0',
-  ghost:
-    'text-foreground/80 hover:text-primary hover:bg-[rgba(172,156,141,0.14)]',
+    'surface-glass text-ink hover:border-line-accent hover:-translate-y-0.5 hover:shadow-e3 active:translate-y-0',
+  outline:
+    'border border-line-accent text-accent hover:bg-accent/10 hover:-translate-y-0.5 active:translate-y-0',
+  ghost: 'text-body hover:bg-clay/15 hover:text-accent',
+  // The palette has no red, so destructive reads through a heavier ring rather
+  // than hue. Always pair it with a confirmation step.
+  destructive:
+    'bg-accent text-on-accent shadow-accent ring-2 ring-accent/25 hover:-translate-y-0.5 hover:shadow-e4 active:translate-y-0',
 };
 
 const SIZES = {
-  sm: 'px-3.5 py-2 text-xs',
+  sm: 'px-4 py-2 text-caption',
   md: 'px-5 py-2.5 text-sm',
   lg: 'px-7 py-3.5 text-base',
+  /** Square target for a lone icon. 44px clears the minimum tap size. */
+  icon: 'size-11 p-0',
 } as const;
 
 export interface PremiumButtonProps {
-  children: ReactNode;
+  children?: ReactNode;
   variant?: Variant;
   size?: keyof typeof SIZES;
   href?: string;
@@ -39,16 +68,14 @@ export interface PremiumButtonProps {
   type?: 'button' | 'submit' | 'reset';
   disabled?: boolean;
   loading?: boolean;
+  /** Briefly swaps the label for a tick. Set it; it reverts on its own. */
+  success?: boolean;
   className?: string;
   magnetic?: boolean;
   title?: string;
   'aria-label'?: string;
 }
 
-/**
- * The single button used across the site: magnetic pull, click ripple,
- * sheen sweep on hover, and an inline loading spinner.
- */
 export default function PremiumButton({
   children,
   variant = 'primary',
@@ -58,14 +85,38 @@ export default function PremiumButton({
   type = 'button',
   disabled,
   loading,
+  success,
   className = '',
   magnetic = true,
   ...rest
 }: PremiumButtonProps) {
   const [ripples, setRipples] = useState<Ripple[]>([]);
+  const [elapsed, setElapsed] = useState(false);
+  const [lastSuccess, setLastSuccess] = useState(success);
   const nextId = useRef(0);
+  const reduced = usePrefersReducedMotion();
+
+  // Derived from the prop rather than mirrored into state, so there is no
+  // synchronous setState inside an effect (which triggers a cascading render).
+  // Adjusting state during render is the pattern React sanctions for resetting
+  // when a prop changes.
+  if (success !== lastSuccess) {
+    setLastSuccess(success);
+    setElapsed(false);
+  }
+
+  const showSuccess = Boolean(success) && !elapsed;
+
+  // Hold the confirmation long enough to register, then return to rest. The
+  // setState here runs from a timer, so it is asynchronous and safe.
+  useEffect(() => {
+    if (!success) return;
+    const t = window.setTimeout(() => setElapsed(true), 1600);
+    return () => window.clearTimeout(t);
+  }, [success]);
 
   const spawnRipple = (e: MouseEvent<HTMLElement>) => {
+    if (reduced) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const id = nextId.current++;
     setRipples((r) => [...r, { id, x: e.clientX - rect.left, y: e.clientY - rect.top }]);
@@ -77,36 +128,66 @@ export default function PremiumButton({
     onClick?.(e);
   };
 
+  const busy = Boolean(loading) || showSuccess;
   const classes = `${BASE} ${VARIANTS[variant]} ${SIZES[size]} ${className}`;
 
   const inner = (
     <>
       <span aria-hidden className="btn-sheen" />
       {ripples.map((r) => (
-        <span
-          key={r.id}
-          aria-hidden
-          className="btn-ripple"
-          style={{ left: r.x, top: r.y }}
-        />
+        <span key={r.id} aria-hidden className="btn-ripple" style={{ left: r.x, top: r.y }} />
       ))}
-      {loading && (
-        <svg className="size-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden>
-          <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2.5" opacity="0.25" />
-          <path
-            d="M21 12a9 9 0 0 0-9-9"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-          />
-        </svg>
-      )}
-      <span className="relative z-10">{children}</span>
+
+      <span className={busy ? 'invisible' : 'relative z-10 inline-flex items-center gap-2'}>
+        {children}
+      </span>
+
+      <AnimatePresence>
+        {loading && !showSuccess && (
+          <motion.span
+            key="spinner"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ duration: 0.15 }}
+            className="absolute inset-0 z-10 grid place-items-center"
+          >
+            <svg className="size-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2.5" opacity="0.25" />
+              <path
+                d="M21 12a9 9 0 0 0-9-9"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+              />
+            </svg>
+          </motion.span>
+        )}
+
+        {showSuccess && (
+          <motion.span
+            key="success"
+            initial={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.5 }}
+            animate={reduced ? { opacity: 1 } : { opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={reduced ? { duration: 0.15 } : SPRING.snappy}
+            className="absolute inset-0 z-10 grid place-items-center"
+          >
+            <Icon icon={Check} size="sm" strokeWidth={2.5} />
+          </motion.span>
+        )}
+      </AnimatePresence>
     </>
   );
 
   const el = href ? (
-    <Link href={href} className={classes} onClick={handleClick} {...rest}>
+    <Link
+      href={href}
+      className={classes}
+      onClick={handleClick}
+      aria-disabled={disabled || undefined}
+      {...rest}
+    >
       {inner}
     </Link>
   ) : (
@@ -115,11 +196,20 @@ export default function PremiumButton({
       className={classes}
       onClick={handleClick}
       disabled={disabled || loading}
+      // Announces the pending state rather than leaving it purely visual.
+      aria-busy={loading || undefined}
       {...rest}
     >
       {inner}
     </button>
   );
 
-  return magnetic ? <Magnetic as="span" className="inline-flex">{el}</Magnetic> : el;
+  // Magnetic already no-ops on coarse pointers and for reduced-motion users.
+  return magnetic ? (
+    <Magnetic as="span" className="inline-flex">
+      {el}
+    </Magnetic>
+  ) : (
+    el
+  );
 }

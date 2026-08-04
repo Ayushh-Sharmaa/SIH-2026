@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { isAuthorizedAdminEmail } from '@/lib/admin';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: Request) {
   try {
@@ -14,7 +15,6 @@ export async function POST(request: Request) {
     }
 
     const decoded = verifyToken(token);
-    // Always verify against the allowlist, not just the token's role claim
     if (!decoded || !(await isAuthorizedAdminEmail(decoded.email))) {
       return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
     }
@@ -34,7 +34,6 @@ export async function POST(request: Request) {
     }
 
     if (action === 'delete') {
-      // Disband team and unassign students
       await prisma.studentProfile.updateMany({
         where: { teamId },
         data: { teamId: null, teamStatus: 'OPEN' },
@@ -47,7 +46,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
   } catch (error: any) {
-    console.error('Admin team update error:', error);
+    logger.error('Admin team update error', error);
     return NextResponse.json({ error: 'Failed to update team.' }, { status: 500 });
   }
 }

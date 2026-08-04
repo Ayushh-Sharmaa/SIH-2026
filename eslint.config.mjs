@@ -12,6 +12,14 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Agent tooling. Gitignored but not previously eslint-ignored, so a bare
+    // `eslint` run reported 151 warnings from vendored third-party scripts that
+    // are not ours to fix and drown out real findings.
+    ".gemini/**",
+    ".agents/**",
+    ".claude/**",
+    ".clerk/**",
+    ".vercel/**",
   ]),
 ]);
 

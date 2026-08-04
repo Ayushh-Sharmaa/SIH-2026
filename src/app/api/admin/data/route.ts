@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { getAdminEmails, getBannedEmails, isAuthorizedAdminEmail } from '@/lib/admin';
+import { logger } from '@/lib/logger';
 
 export async function GET() {
   try {
@@ -14,30 +15,25 @@ export async function GET() {
     }
 
     const decoded = verifyToken(token);
-    // Always verify against the allowlist, not just the token's role claim
     if (!decoded || !(await isAuthorizedAdminEmail(decoded.email))) {
       return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
     }
 
-    // Load admin + ban lists once; per-row lookups would be N queries
     const adminEmails = await getAdminEmails();
     const bannedEmails = new Set(await getBannedEmails());
 
-    // Fetch all raw users, teams, students, mentors, tracks
     const allUsers = await prisma.user.findMany();
     const allStudentProfiles = await prisma.studentProfile.findMany();
     const allMentorProfiles = await prisma.mentorProfile.findMany();
     const allTeams = await prisma.team.findMany();
     const allTracks = await prisma.track.findMany();
 
-    // Format Students list with full profile fields and ban status
     const students = allStudentProfiles.map((sp: any) => {
       const user = allUsers.find((u: any) => u.id === sp.userId);
       const team = allTeams.find((t: any) => t.id === sp.teamId);
       const email = user?.email || '';
 
       return {
-        // StudentProfile is keyed by userId; there is no separate id column
         id: sp.userId,
         userId: sp.userId,
         name: sp.name || 'Unnamed Student',
@@ -63,7 +59,6 @@ export async function GET() {
       };
     });
 
-    // Format Teams with member details, gender breakdown, and track info
     const teams = allTeams.map((team: any) => {
       const track = allTracks.find((t: any) => t.id === team.trackId || t.problemStatementCode === team.trackId);
       const members = students.filter((sp: any) => sp.teamId === team.id);
@@ -93,7 +88,6 @@ export async function GET() {
       };
     });
 
-    // Format Problem Statement Stats (Participation across all 18 SIH Themes)
     const problemStatementStats = allTracks.map((track: any) => {
       const trackTeams = teams.filter(
         (t: any) => t.trackId === track.id || t.trackCode === track.problemStatementCode
@@ -117,12 +111,10 @@ export async function GET() {
       };
     });
 
-    // Format Mentors list
     const mentors = allMentorProfiles.map((mp: any) => {
       const user = allUsers.find((u: any) => u.id === mp.userId);
 
       return {
-        // MentorProfile is keyed by userId; there is no separate id column
         id: mp.userId,
         userId: mp.userId,
         name: mp.name || 'Faculty Member',
@@ -138,7 +130,6 @@ export async function GET() {
       };
     });
 
-    // Calculate Platform Stats
     const stats = {
       totalStudents: students.length,
       totalTeams: teams.length,
@@ -160,7 +151,7 @@ export async function GET() {
       problemStatementStats,
     });
   } catch (error: any) {
-    console.error('Admin data fetch error:', error);
+    logger.error('Admin data fetch error', error);
     return NextResponse.json({ error: 'Failed to load admin dashboard data.' }, { status: 500 });
   }
 }

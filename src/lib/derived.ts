@@ -1,4 +1,5 @@
 import { prisma } from './prisma';
+import { logger } from './logger';
 
 export async function recalculateTeamSkills(teamId: string) {
   try {
@@ -47,14 +48,10 @@ export async function recalculateTeamSkills(teamId: string) {
         skillsCovered,
         skillsNeeded,
       },
-    });
-
-    console.log(`Recalculated skills for team ${team.name} (id: ${teamId}):`, {
-      memberCount: team.members.length,
-      skillsCovered,
-      skillsNeeded,
-    });
-  } catch (error) {
-    console.error(`Failed to recalculate team skills for teamId ${teamId}:`, error);
+    });  } catch (error) {
+    // teamId travels as structured context rather than interpolated into the
+    // message, so aggregators can group every occurrence as one issue instead
+    // of one issue per team.
+    logger.error('Failed to recalculate team skills', error, { teamId });
   }
 }

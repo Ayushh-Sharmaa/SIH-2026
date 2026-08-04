@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: Request) {
   try {
@@ -85,7 +86,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, message: 'Mentorship request sent successfully.', requestId: newRequest.id });
   } catch (error) {
-    console.error('Create mentor request error:', error);
+    logger.error('Create mentor request error', error);
     return NextResponse.json({ error: 'Failed to request mentor guidance.' }, { status: 500 });
   }
 }

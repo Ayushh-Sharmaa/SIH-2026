@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 
 export async function POST() {
   try {
@@ -15,7 +16,7 @@ export async function POST() {
 
     return response;
   } catch (error: any) {
-    console.error('Logout error:', error);
+    logger.error('Logout error', error);
     return NextResponse.json({ error: 'An error occurred during logout.' }, { status: 500 });
   }
 }

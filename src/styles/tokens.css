@@ -1,0 +1,219 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   SIH@GLBGOI — DESIGN TOKENS
+   The single source of truth. Nothing in the app may hardcode a value that
+   exists here.
+
+   Palette is fixed by the brand and must not be extended with new hues:
+     Text / accent only   #322D29  #72383D
+     Interface surfaces   #EFE9E1  #D9D9D9  #D1C7BD  #AC9C8D
+
+   Every derived colour below is a mix of those six. Every text colour carries
+   its measured WCAG 2.1 ratio in a comment; run `node scripts/contrast.mjs`
+   to re-verify after any change.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@theme {
+  /* ─────────────────────────────────────────────────────────────────────────
+     1. BRAND — immutable source colours
+     ───────────────────────────────────────────────────────────────────────── */
+  --color-ink: #322d29; /* primary heading    */
+  --color-accent: #72383d; /* secondary heading  */
+  --color-canvas: #efe9e1; /* interface base     */
+  --color-pearl: #d9d9d9;
+  --color-sand: #d1c7bd;
+  --color-clay: #ac9c8d;
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     2. TEXT RAMP — derived by mixing ink toward clay.
+        #AC9C8D measures 2.21:1 on canvas and is therefore BANNED as a text
+        colour. It survives only as decoration (fills, tints, blob gradients).
+     ───────────────────────────────────────────────────────────────────────── */
+  --color-foreground: #322d29; /* 11.29:1 — headings, primary copy          */
+  --color-body: #514840; /*  7.41:1 — sustained reading                */
+  --color-muted: #6f645b; /*  4.77:1 — secondary copy, meta  (was 2.21) */
+  --color-faint: #877b6f; /*  3.42:1 — LARGE TEXT / UI ONLY (>=18.66px) */
+  --color-on-accent: #fbf7f4; /*  6.55:1 on #72383D — text over accent fill */
+
+  /* Aliases kept so existing markup inherits the accessible values untouched */
+  --color-primary: #72383d; /*  7.41:1 */
+  --color-primary-hover: #8a444a;
+  --color-card-border: #d1c7bd;
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     3. SURFACES — the palette veiled with controlled white/clay, which is how
+        depth is built without introducing off-brand hues.
+     ───────────────────────────────────────────────────────────────────────── */
+  --color-surface-canvas: #efe9e1;
+  --color-surface-raised: rgb(255 255 255 / 0.55); /* cards            */
+  --color-surface-overlay: rgb(255 255 255 / 0.82); /* popovers, modals */
+  --color-surface-sunken: rgb(172 156 141 / 0.14); /* wells, inputs    */
+  --color-surface-veil: rgb(239 233 225 / 0.72); /* scrims           */
+
+  /* Opaque fallbacks for contexts where backdrop-filter is unavailable */
+  --color-surface-raised-solid: #f6f2ec;
+  --color-surface-overlay-solid: #fbf8f4;
+  --color-surface-sunken-solid: #e3dcd2;
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     4. BORDERS — four tokens replace ~20 near-identical rgba values
+     ───────────────────────────────────────────────────────────────────────── */
+  --color-line-subtle: rgb(50 45 41 / 0.07);
+  --color-line: rgb(209 199 189 / 0.55);
+  --color-line-strong: rgb(172 156 141 / 0.72);
+  --color-line-accent: rgb(114 56 61 / 0.26);
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     5. TYPE SCALE — fluid between 375px and 1440px viewports.
+        12px is the floor: the old 7/9/10/11px labels are not accessible and
+        do not read as premium.
+     ───────────────────────────────────────────────────────────────────────── */
+  --text-display: clamp(2.75rem, 1.606rem + 4.883vw, 6rem); /* 44 → 96 */
+  --text-title: clamp(2.25rem, 1.634rem + 2.629vw, 4rem); /* 36 → 64 */
+  --text-heading: clamp(1.75rem, 1.31rem + 1.878vw, 3rem); /* 28 → 48 */
+  --text-subheading: clamp(1.375rem, 1.155rem + 0.939vw, 2rem); /* 22 → 32 */
+  --text-feature: clamp(1.125rem, 1.037rem + 0.376vw, 1.375rem); /* 18 → 22 */
+  --text-lead: clamp(1.0625rem, 0.996rem + 0.282vw, 1.25rem); /* 17 → 20 */
+  --text-caption: 0.8125rem; /* 13 */
+  --text-label: 0.75rem; /* 12 — the ONE micro-label size */
+
+  --text-display--line-height: 0.96;
+  --text-title--line-height: 1.04;
+  --text-heading--line-height: 1.1;
+  --text-subheading--line-height: 1.22;
+  --text-feature--line-height: 1.35;
+  --text-lead--line-height: 1.55;
+  --text-caption--line-height: 1.5;
+  --text-label--line-height: 1.2;
+
+  --text-display--letter-spacing: -0.042em;
+  --text-title--letter-spacing: -0.036em;
+  --text-heading--letter-spacing: -0.03em;
+  --text-subheading--letter-spacing: -0.022em;
+  --text-feature--letter-spacing: -0.014em;
+  --text-lead--letter-spacing: -0.008em;
+  --text-label--letter-spacing: 0.09em;
+
+  --text-display--font-weight: 600;
+  --text-title--font-weight: 600;
+  --text-heading--font-weight: 600;
+  --text-subheading--font-weight: 600;
+  --text-feature--font-weight: 600;
+  --text-label--font-weight: 600;
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     6. RADIUS — retargets Tailwind's numeric scale onto the 8/16/20/28/32
+        grid, so every existing rounded-* class lands on-system with no markup
+        change. Semantic aliases below are what new code should use.
+     ───────────────────────────────────────────────────────────────────────── */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 8px; /* was 8  — unchanged */
+  --radius-xl: 16px; /* was 12 */
+  --radius-2xl: 20px; /* was 16 */
+  --radius-3xl: 28px; /* was 24 */
+  --radius-4xl: 32px; /* was 32 — unchanged */
+
+  --radius-control: 8px; /* chips, badges, small buttons */
+  --radius-panel: 16px; /* inputs, list rows            */
+  --radius-card: 20px; /* cards                        */
+  --radius-container: 28px; /* large panels                 */
+  --radius-hero: 32px; /* hero surfaces                */
+  --radius-pill: 999px;
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     7. ELEVATION — layered, warm-neutral. Never pure black.
+        Five steps absorb the ~40 ad-hoc inline shadows found in the audit.
+     ───────────────────────────────────────────────────────────────────────── */
+  --shadow-e1: 0 1px 2px rgb(50 45 41 / 0.04), 0 1px 1px rgb(50 45 41 / 0.03);
+  --shadow-e2: 0 2px 4px rgb(50 45 41 / 0.04), 0 4px 12px rgb(50 45 41 / 0.05);
+  --shadow-e3: 0 4px 8px rgb(50 45 41 / 0.04), 0 12px 28px rgb(50 45 41 / 0.07);
+  --shadow-e4: 0 8px 16px rgb(50 45 41 / 0.05), 0 24px 48px rgb(50 45 41 / 0.09);
+  --shadow-e5: 0 16px 32px rgb(50 45 41 / 0.06), 0 40px 80px rgb(50 45 41 / 0.12);
+  --shadow-accent: 0 8px 24px rgb(114 56 61 / 0.22), 0 2px 6px rgb(114 56 61 / 0.14);
+  --shadow-inset: inset 0 1px 3px rgb(50 45 41 / 0.06);
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     8. MOTION — durations map onto the specified interaction bands
+     ───────────────────────────────────────────────────────────────────────── */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-out-back: cubic-bezier(0.34, 1.35, 0.64, 1);
+  --ease-linear: linear;
+
+  --duration-instant: 100ms; /* micro    100–150 */
+  --duration-micro: 140ms;
+  --duration-hover: 200ms; /* hover    180–250 */
+  --duration-control: 220ms; /* buttons  180–220 */
+  --duration-card: 320ms; /* cards    250–350 */
+  --duration-reveal: 560ms; /* reveals  400–700 */
+  --duration-page: 560ms; /* routes   450–650 */
+  --duration-hero: 900ms; /* hero     800–1200 */
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     9. LAYOUT — containers and section rhythm
+     ───────────────────────────────────────────────────────────────────────── */
+  --container-prose: 68ch;
+  --container-narrow: 48rem; /*  768 */
+  --container-content: 72rem; /* 1152 */
+  --container-wide: 90rem; /* 1440 */
+  --container-full: 120rem; /* 1920 — ultra-wide ceiling */
+
+  --spacing-gutter: clamp(1.25rem, 0.7rem + 2.35vw, 2.5rem); /* 20 → 40 */
+  --spacing-section-compact: clamp(3rem, 2.296rem + 3.005vw, 5rem); /*  48 →  80 */
+  --spacing-section: clamp(4.5rem, 3.268rem + 5.258vw, 8rem); /*  72 → 128 */
+  --spacing-section-spacious: clamp(6rem, 4.24rem + 7.512vw, 11rem); /*  96 → 176 */
+
+  /* ────────────────────────────────────────────────────────────────────────
+     10. BREAKPOINTS — adds the ultra-wide step the site currently lacks
+     ──────────────────────────────────────────────────────────────────────── */
+  --breakpoint-3xl: 120rem; /* 1920 */
+
+  /* ────────────────────────────────────────────────────────────────────────
+     11. Z-LAYERS — a named stacking policy, replacing the ad-hoc
+         z-[100000] / z-99999 / z-99998 values found across the codebase.
+         Generates z-decor, z-content, z-nav, z-modal … utilities.
+     ──────────────────────────────────────────────────────────────────────── */
+  --z-index-decor: 1; /* aurora, grids, texture — beneath content */
+  --z-index-content: 10;
+  --z-index-sticky: 20;
+  --z-index-nav: 50;
+  --z-index-overlay: 100; /* scrims, mobile menu */
+  --z-index-modal: 200;
+  --z-index-toast: 300;
+  --z-index-cursor: 400;
+  --z-index-boot: 500; /* first-paint curtain */
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   NAVBAR HEIGHT — one definition.
+
+   The fixed bar's occupied height had four conflicting definitions: the layout
+   spacer reserved 76/84px, the bar itself measured 76/80px (pt-3/pt-4 + h-16),
+   the CSS scroll-padding assumed 96px, and Lenis used a -96px anchor offset.
+   The 4px discrepancy on tablet+ showed as content tucked under the bar.
+
+   Breakpoint-dependent, so it cannot live in @theme (which has no media
+   queries). Consumers use h-[var(--nav-h)].
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root {
+  --nav-h: 76px; /* pt-3 (12) + h-16 (64) */
+}
+@media (min-width: 40rem) {
+  :root {
+    --nav-h: 80px; /* pt-4 (16) + h-16 (64) */
+  }
+}
+
+/* The CSS files reference these by their short names, so mirror them. */
+:root {
+  --z-decor: 1;
+  --z-content: 10;
+  --z-sticky: 20;
+  --z-nav: 50;
+  --z-overlay: 100;
+  --z-modal: 200;
+  --z-toast: 300;
+  --z-cursor: 400;
+  --z-boot: 500;
+}

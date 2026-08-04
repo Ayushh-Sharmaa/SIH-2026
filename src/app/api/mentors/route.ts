@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { logger } from '@/lib/logger';
 
 
 export async function GET(request: Request) {
@@ -53,7 +54,7 @@ export async function GET(request: Request) {
       })),
     });
   } catch (error) {
-    console.error('Search mentors error:', error);
+    logger.error('Search mentors error', error);
     return NextResponse.json({ error: 'Failed to retrieve mentors.' }, { status: 500 });
   }
 }

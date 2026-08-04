@@ -7,6 +7,8 @@ import { AnimatePresence, motion, useScroll, useTransform } from 'framer-motion'
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import Aurora from '@/components/motion/Aurora';
+import ParticleField from '@/components/motion/ParticleField';
+import SpotlightCard from '@/components/motion/SpotlightCard';
 import Reveal, { RevealGroup, RevealItem } from '@/components/motion/Reveal';
 import SplitText from '@/components/motion/SplitText';
 import PremiumButton from '@/components/motion/PremiumButton';
@@ -15,6 +17,8 @@ import { TiltCard } from '@/components/motion/Magnetic';
 import { EASE, SPRING } from '@/components/motion/tokens';
 import { usePrefersReducedMotion } from '@/components/motion/useReducedMotion';
 import { ALL_18_THEME_SETS, FAQS, SIH_MILESTONES } from '@/lib/content';
+import { FaqStructuredData } from '@/components/seo/StructuredData';
+import { Container, Section } from '@/components/ui';
 import MilestoneIcon from '@/components/MilestoneIcon';
 
 const STATS = [
@@ -58,7 +62,7 @@ function ScrollHint() {
       transition={{ delay: 1.6, duration: 0.8 }}
       className="group absolute inset-x-0 bottom-8 z-20 mx-auto flex w-fit flex-col items-center gap-2"
     >
-      <span className="text-[9px] font-bold uppercase tracking-[0.24em] text-muted transition-colors group-hover:text-primary">
+      <span className="text-label uppercase text-muted transition-colors group-hover:text-primary">
         Scroll
       </span>
       <span className="flex h-9 w-[22px] justify-center rounded-full border border-[rgba(172,156,141,0.6)] pt-2">
@@ -74,31 +78,40 @@ function HeroVisual() {
 
   return (
     <div className="relative mx-auto flex aspect-square w-full max-w-[26rem] items-center justify-center">
+      {/* Ambient glow */}
       <div
         aria-hidden
-        className="absolute inset-6 rounded-full bg-[radial-gradient(circle,rgba(172,156,141,0.4),transparent_66%)] blur-2xl"
+        className="absolute inset-6 rounded-full bg-[radial-gradient(circle,rgba(172,156,141,0.45),transparent_66%)] blur-2xl"
       />
 
-      {/* Orbit rings */}
+      {/* Outer orbit ring — slow clockwise */}
       <motion.div
         aria-hidden
         className="absolute inset-2 rounded-full border border-dashed border-[rgba(172,156,141,0.55)]"
         animate={reduced ? undefined : { rotate: 360 }}
         transition={{ duration: 48, repeat: Infinity, ease: 'linear' }}
       />
+      {/* Middle orbit ring — counter-clockwise */}
       <motion.div
         aria-hidden
         className="absolute inset-[18%] rounded-full border border-[rgba(114,56,61,0.22)]"
         animate={reduced ? undefined : { rotate: -360 }}
         transition={{ duration: 32, repeat: Infinity, ease: 'linear' }}
       />
+      {/* Inner orbit ring — fast clockwise, accent tinted */}
+      <motion.div
+        aria-hidden
+        className="absolute inset-[34%] rounded-full border border-dotted border-[rgba(114,56,61,0.38)]"
+        animate={reduced ? undefined : { rotate: 360 }}
+        transition={{ duration: 18, repeat: Infinity, ease: 'linear' }}
+      />
 
-      {/* Core crest */}
+      {/* Core crest card */}
       <motion.div
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 1, delay: 0.35, ease: EASE.outExpo }}
-        className="relative flex size-40 items-center justify-center rounded-[2rem] border border-[rgba(209,199,189,0.7)] bg-[rgba(255,255,255,0.62)] shadow-[0_20px_60px_rgba(50,45,41,0.14)] backdrop-blur-xl"
+        className="relative flex size-40 items-center justify-center rounded-[2rem] border border-[rgba(209,199,189,0.7)] bg-[rgba(255,255,255,0.68)] shadow-[0_20px_60px_rgba(50,45,41,0.16),inset_0_1px_0_rgba(255,255,255,0.9)] backdrop-blur-xl"
       >
         <motion.div
           animate={reduced ? undefined : { y: [0, -8, 0] }}
@@ -127,7 +140,7 @@ function HeroVisual() {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 0.7, delay: chip.delay, ease: EASE.outExpo }}
           style={{ top: chip.top, left: chip.left }}
-          className="absolute -translate-x-1/2 rounded-full border border-[rgba(209,199,189,0.8)] bg-[rgba(255,255,255,0.8)] px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-primary shadow-[0_6px_20px_rgba(50,45,41,0.1)] backdrop-blur-md"
+          className="absolute -translate-x-1/2 rounded-full border border-[rgba(209,199,189,0.8)] bg-[rgba(255,255,255,0.82)] px-3.5 py-1.5 text-label uppercase text-primary shadow-[0_6px_20px_rgba(50,45,41,0.12),inset_0_1px_0_rgba(255,255,255,0.8)] backdrop-blur-md"
         >
           <motion.span
             className="block"
@@ -138,6 +151,21 @@ function HeroVisual() {
           </motion.span>
         </motion.span>
       ))}
+
+      {/* Live pulse indicator — top-right of the orbit area */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5, delay: 1.2, ease: EASE.outExpo }}
+        aria-hidden
+        className="absolute right-[10%] top-[10%] flex items-center gap-1.5 rounded-full border border-[rgba(114,56,61,0.2)] bg-[rgba(255,255,255,0.75)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-primary shadow-[0_4px_16px_rgba(50,45,41,0.1)] backdrop-blur-md"
+      >
+        <span className="relative flex size-1.5">
+          <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-60" />
+          <span className="relative inline-flex size-1.5 rounded-full bg-primary" />
+        </span>
+        Live
+      </motion.div>
     </div>
   );
 }
@@ -210,23 +238,29 @@ export default function Home() {
 
       <main id="main" className="flex-1">
         {/* ─────────────── HERO ─────────────── */}
+        {/* Stays a raw <section> rather than <Section>: it needs a ref for the
+            scroll-parallax transform, and its own full-viewport sizing.
+            Top padding is derived from --nav-h so it clears the fixed bar by a
+            fixed margin instead of the previous magic pt-28 / pb-24 pair. */}
         <section
           ref={heroRef}
-          className="relative flex min-h-[100svh] items-center overflow-hidden pt-28 pb-24"
+          className="atmos-dawn relative flex min-h-[100svh] items-center overflow-hidden pb-section-compact pt-[calc(var(--nav-h)+2.5rem)]"
         >
           <Aurora variant="warm" spotlight />
-          <div aria-hidden className="absolute inset-0 grid-lines" />
+          {/* GPU particle network — composites at multiply so it blends into the warm canvas */}
+          <ParticleField className="z-decor" />
+          <div aria-hidden className="pointer-events-none absolute inset-0 z-decor grid-lines" />
 
           <motion.div
             style={reduced ? undefined : { y: heroY, opacity: heroFade }}
-            className="relative z-10 mx-auto grid w-full max-w-7xl grid-cols-1 items-center gap-14 px-6 lg:grid-cols-12 lg:gap-8 lg:px-8"
+            className="relative z-content mx-auto grid w-full max-w-wide grid-cols-1 items-center gap-14 px-gutter lg:grid-cols-12 lg:gap-8"
           >
             <div className="lg:col-span-7">
               <motion.span
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.7, ease: EASE.outExpo }}
-                className="inline-flex items-center gap-2 rounded-full border border-[rgba(114,56,61,0.2)] bg-[rgba(255,255,255,0.6)] px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-primary backdrop-blur-md"
+                className="inline-flex items-center gap-2 rounded-full border border-[rgba(114,56,61,0.2)] bg-[rgba(255,255,255,0.6)] px-3.5 py-1.5 text-label uppercase text-primary backdrop-blur-md"
               >
                 <span className="relative flex size-1.5">
                   <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-60" />
@@ -235,12 +269,18 @@ export default function Home() {
                 Internal Hackathon Portal · 2026
               </motion.span>
 
-              <h1 className="mt-7 text-[2.75rem] font-extrabold leading-[1.02] tracking-[-0.03em] text-foreground sm:text-6xl xl:text-7xl">
+              <h1 className="mt-7 text-display text-foreground">
+                {/* Word mode: large confident motion — whole word feel */}
                 <SplitText text="Great teams" as="span" mode="word" delay={0.15} />
                 <br />
-                <span className="text-gradient-luxe">
-                  <SplitText text="start here." as="span" mode="word" delay={0.42} />
-                </span>
+                {/* Char mode: per-character 3D reveal with sweeping color gradient */}
+                <SplitText
+                  text="start here."
+                  as="span"
+                  mode="char"
+                  delay={0.42}
+                  gradientColors={['#72383d', '#ac9c8d']}
+                />
               </h1>
 
               <motion.p
@@ -297,14 +337,20 @@ export default function Home() {
         </section>
 
         {/* ─────────────── MARQUEE ─────────────── */}
-        <section className="relative overflow-hidden border-y border-[rgba(209,199,189,0.6)] bg-[rgba(217,217,217,0.34)] py-5">
+        {/* A deliberate hairline band between two tall sections. Kept as a raw
+            <section> because it is a full-bleed rule, not a content section —
+            giving it Section's rhythm would defeat the purpose. */}
+        <section
+          aria-label="Official SIH theme names"
+          className="relative overflow-hidden border-y border-line bg-pearl/35 py-5"
+        >
           <div className="marquee-root marquee-mask">
             <div className="marquee-track" style={{ ['--marquee-duration' as string]: '52s' }}>
               {[0, 1].map((copy) => (
                 <div key={copy} className="flex shrink-0 items-center" aria-hidden={copy === 1}>
                   {marqueeItems.map((name) => (
                     <span key={`${copy}-${name}`} className="flex items-center whitespace-nowrap">
-                      <span className="px-6 text-xs font-bold uppercase tracking-[0.14em] text-muted">
+                      <span className="px-6 text-label uppercase text-muted">
                         {name}
                       </span>
                       <span className="size-1 rounded-full bg-[rgba(172,156,141,0.7)]" />
@@ -317,13 +363,13 @@ export default function Home() {
         </section>
 
         {/* ─────────────── HIGHLIGHTS ─────────────── */}
-        <section id="highlights" className="section-mist relative py-24 sm:py-32">
-          <div className="mx-auto max-w-7xl px-6 lg:px-8">
+        <Section id="highlights" tone="mist" rhythm="spacious" pattern="dots">
+          <Container width="wide">
             <Reveal className="max-w-2xl">
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
+              <span className="text-label uppercase text-primary">
                 What you get
               </span>
-              <h2 className="mt-4 text-3xl font-extrabold tracking-[-0.02em] text-foreground sm:text-4xl">
+              <h2 className="mt-4 text-heading text-foreground">
                 <SplitText
                   text="Everything the internal round demands, in one place."
                   as="span"
@@ -336,75 +382,80 @@ export default function Home() {
               {HIGHLIGHTS.map((item) => (
                 <RevealItem key={item.title}>
                   <TiltCard className="h-full">
-                    <a
-                      href={item.href}
-                      className="surface-raised group relative flex h-full flex-col gap-4 overflow-hidden rounded-3xl p-7 transition-shadow duration-400 hover:shadow-[0_22px_60px_rgba(50,45,41,0.13)]"
-                    >
-                      <span className="flex size-12 items-center justify-center rounded-2xl border border-[rgba(114,56,61,0.18)] bg-[rgba(114,56,61,0.07)] text-primary transition-transform duration-400 group-hover:scale-105">
-                        <svg viewBox="0 0 24 24" fill="none" className="size-5">
-                          <path
-                            d={item.path}
-                            stroke="currentColor"
-                            strokeWidth="1.7"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                      </span>
-                      <h3 className="text-lg font-extrabold tracking-tight text-foreground">
-                        {item.title}
-                      </h3>
-                      <p className="text-sm leading-relaxed text-muted">{item.desc}</p>
-                      <span className="mt-auto inline-flex items-center gap-1.5 pt-2 text-xs font-bold uppercase tracking-[0.12em] text-primary">
-                        {item.cta}
-                        <svg
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          className="size-3.5 transition-transform duration-300 group-hover:translate-x-1"
-                        >
-                          <path
-                            d="M5 12h14m-6-6 6 6-6 6"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                      </span>
-                    </a>
+                    {/* SpotlightCard adds a cursor-tracked radial highlight over the card surface */}
+                    <SpotlightCard className="h-full rounded-3xl">
+                      <a
+                        href={item.href}
+                        className="surface-raised group relative flex h-full flex-col gap-4 overflow-hidden rounded-3xl p-7 transition-shadow duration-400 hover:shadow-[0_22px_60px_rgba(50,45,41,0.13)]"
+                      >
+                        <span className="flex size-12 items-center justify-center rounded-2xl border border-[rgba(114,56,61,0.18)] bg-[rgba(114,56,61,0.07)] text-primary transition-transform duration-400 group-hover:scale-105">
+                          <svg viewBox="0 0 24 24" fill="none" className="size-5">
+                            <path
+                              d={item.path}
+                              stroke="currentColor"
+                              strokeWidth="1.7"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                        </span>
+                        <h3 className="text-feature text-foreground">
+                          {item.title}
+                        </h3>
+                        <p className="text-sm leading-relaxed text-muted">{item.desc}</p>
+                        <span className="mt-auto inline-flex items-center gap-1.5 pt-2 text-label uppercase text-primary">
+                          {item.cta}
+                          <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            className="size-3.5 transition-transform duration-300 group-hover:translate-x-1"
+                          >
+                            <path
+                              d="M5 12h14m-6-6 6 6-6 6"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                        </span>
+                      </a>
+                    </SpotlightCard>
                   </TiltCard>
                 </RevealItem>
               ))}
             </RevealGroup>
-          </div>
-        </section>
+          </Container>
+        </Section>
 
         {/* ─────────────── STATS ─────────────── */}
-        <section className="section-dune relative overflow-hidden py-20">
-          <div className="mx-auto max-w-7xl px-6 lg:px-8">
+        {/* Compact against the spacious sections either side — the rhythm change
+            is what stops the page reading as one long uniform column. */}
+        <Section tone="dune" rhythm="compact" className="overflow-hidden">
+          <Container width="wide">
             <RevealGroup stagger={0.08} className="grid grid-cols-2 gap-y-12 lg:grid-cols-4">
               {STATS.map((stat) => (
                 <RevealItem key={stat.label} className="text-center">
                   <p className="text-4xl font-extrabold tracking-[-0.03em] text-primary sm:text-5xl">
                     <Counter to={stat.value} suffix={stat.suffix} />
                   </p>
-                  <p className="mt-2.5 text-[10px] font-bold uppercase tracking-[0.18em] text-muted">
+                  <p className="mt-2.5 text-label uppercase text-muted">
                     {stat.label}
                   </p>
                 </RevealItem>
               ))}
             </RevealGroup>
-          </div>
-        </section>
+          </Container>
+        </Section>
 
         {/* ─────────────── TIMELINE ─────────────── */}
-        <section className="section-linen relative py-24 sm:py-32">
-          <div className="mx-auto max-w-7xl px-6 lg:px-8">
+        <Section tone="linen" rhythm="default" pattern="grid">
+          <Container width="wide">
             <Reveal className="max-w-2xl">
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
+              <span className="text-label uppercase text-primary">
                 Milestone roadmap
               </span>
-              <h2 className="mt-4 text-3xl font-extrabold tracking-[-0.02em] text-foreground sm:text-4xl">
+              <h2 className="mt-4 text-heading text-foreground">
                 The road to the Grand Finale
               </h2>
               <p className="mt-4 text-sm leading-relaxed text-muted">
@@ -433,7 +484,7 @@ export default function Home() {
                           />
                         )}
                         <span
-                          className={`relative z-10 flex size-8 shrink-0 items-center justify-center rounded-lg border text-[10px] font-bold transition-colors duration-250 ${
+                          className={`relative z-10 flex size-8 shrink-0 items-center justify-center rounded-lg border text-caption font-bold transition-colors duration-250 ${
                             isActive
                               ? 'border-[rgba(114,56,61,0.3)] bg-[rgba(114,56,61,0.1)] text-primary'
                               : 'border-[rgba(209,199,189,0.7)] bg-white/40 text-muted'
@@ -449,7 +500,7 @@ export default function Home() {
                           >
                             {m.title}
                           </span>
-                          <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted/80">
+                          <span className="text-label uppercase text-muted">
                             {m.period}
                           </span>
                         </span>
@@ -474,10 +525,10 @@ export default function Home() {
                           <MilestoneIcon id={phase.id} className="size-5" />
                         </span>
                         <div>
-                          <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
+                          <span className="text-label uppercase text-primary">
                             {phase.phase}
                           </span>
-                          <h3 className="text-xl font-extrabold tracking-tight text-foreground">
+                          <h3 className="text-feature text-foreground">
                             {phase.title}
                           </h3>
                         </div>
@@ -490,7 +541,7 @@ export default function Home() {
                           Expected&nbsp;
                           <strong className="font-bold text-foreground">{phase.period}</strong>
                         </span>
-                        <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
+                        <span className="text-label uppercase text-primary">
                           Phase {phase.id} / {SIH_MILESTONES.length}
                         </span>
                       </div>
@@ -509,19 +560,19 @@ export default function Home() {
                 </div>
               </Reveal>
             </div>
-          </div>
-        </section>
+          </Container>
+        </Section>
 
         {/* ─────────────── THEMES ─────────────── */}
-        <section className="relative overflow-hidden bg-[rgba(239,233,225,0.9)] py-24 sm:py-32">
+        <Section tone="vellum" rhythm="spacious" className="overflow-hidden">
           <Aurora variant="taupe" spotlight={false} />
 
-          <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
+          <Container width="wide" className="relative">
             <Reveal className="max-w-2xl">
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
+              <span className="text-label uppercase text-primary">
                 Themes &amp; domains
               </span>
-              <h2 className="mt-4 text-3xl font-extrabold tracking-[-0.02em] text-foreground sm:text-4xl">
+              <h2 className="mt-4 text-heading text-foreground">
                 All 18 official SIH tracks
               </h2>
               <p className="mt-4 text-sm leading-relaxed text-muted">
@@ -553,7 +604,7 @@ export default function Home() {
                         {set.title}
                       </span>
                       <span
-                        className={`shrink-0 rounded-full border px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.1em] transition-colors ${
+                        className={`shrink-0 rounded-full border px-2.5 py-1 text-label uppercase transition-colors ${
                           isActive
                             ? 'border-[rgba(114,56,61,0.3)] bg-[rgba(114,56,61,0.1)] text-primary'
                             : 'border-[rgba(209,199,189,0.8)] text-muted'
@@ -590,19 +641,21 @@ export default function Home() {
                         }}
                       >
                         <TiltCard className="h-full" intensity={5}>
-                          <div className="surface-taupe flex h-full min-h-[13rem] flex-col justify-between overflow-hidden rounded-2xl p-6 backdrop-blur-md">
-                            <div>
-                              <span className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
-                                Theme {String(i + 1).padStart(2, '0')}
-                              </span>
-                              <h3 className="mt-2.5 text-sm font-extrabold leading-snug text-foreground">
-                                {theme.name}
-                              </h3>
+                          <SpotlightCard className="h-full rounded-2xl">
+                            <div className="surface-taupe flex h-full min-h-[13rem] flex-col justify-between overflow-hidden rounded-2xl p-6 backdrop-blur-md">
+                              <div>
+                                <span className="font-mono text-label uppercase text-primary">
+                                  Theme {String(i + 1).padStart(2, '0')}
+                                </span>
+                                <h3 className="mt-2.5 text-feature text-foreground">
+                                  {theme.name}
+                                </h3>
+                              </div>
+                              <p className="mt-4 line-clamp-4 text-xs leading-relaxed text-body">
+                                {theme.desc}
+                              </p>
                             </div>
-                            <p className="mt-4 line-clamp-4 text-xs leading-relaxed text-foreground/65">
-                              {theme.desc}
-                            </p>
-                          </div>
+                          </SpotlightCard>
                         </TiltCard>
                       </motion.article>
                     ))}
@@ -610,17 +663,20 @@ export default function Home() {
                 </AnimatePresence>
               </div>
             </div>
-          </div>
-        </section>
+          </Container>
+        </Section>
 
         {/* ─────────────── FAQ ─────────────── */}
-        <section className="relative bg-[rgba(217,217,217,0.38)] py-24 sm:py-32">
-          <div className="mx-auto grid max-w-7xl gap-12 px-6 lg:grid-cols-12 lg:px-8">
+        {/* Generated from the same FAQS constant the section renders below, so
+            the rich result can never drift from the visible content. */}
+        <FaqStructuredData />
+        <Section tone="slate" rhythm="default">
+          <Container width="wide" className="grid gap-12 lg:grid-cols-12">
             <Reveal className="lg:col-span-4">
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
+              <span className="text-label uppercase text-primary">
                 Questions
               </span>
-              <h2 className="mt-4 text-3xl font-extrabold tracking-[-0.02em] text-foreground sm:text-4xl">
+              <h2 className="mt-4 text-heading text-foreground">
                 Before you register
               </h2>
               <p className="mt-4 text-sm leading-relaxed text-muted">
@@ -634,15 +690,15 @@ export default function Home() {
                 <FaqItem key={faq.q} q={faq.q} a={faq.a} index={i} />
               ))}
             </RevealGroup>
-          </div>
-        </section>
+          </Container>
+        </Section>
 
         {/* ─────────────── CTA ─────────────── */}
-        <section className="relative overflow-hidden py-24 sm:py-32">
+        <Section tone="ember" rhythm="spacious" className="overflow-hidden">
           <Aurora variant="rose" spotlight={false} />
-          <div className="relative mx-auto max-w-3xl px-6 text-center">
+          <Container width="narrow" className="relative text-center">
             <Reveal scale>
-              <h2 className="text-3xl font-extrabold tracking-[-0.025em] text-foreground sm:text-5xl">
+              <h2 className="text-heading text-foreground">
                 Ready to build something
                 <span className="text-gradient-luxe"> worth shipping?</span>
               </h2>
@@ -659,8 +715,8 @@ export default function Home() {
                 </PremiumButton>
               </div>
             </Reveal>
-          </div>
-        </section>
+          </Container>
+        </Section>
       </main>
 
       <Footer />

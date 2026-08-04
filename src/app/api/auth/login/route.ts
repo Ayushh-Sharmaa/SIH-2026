@@ -58,8 +58,9 @@ export async function POST(request: Request) {
 
     const isAuthorizedAdmin = await isAuthorizedAdminEmail(cleanEmail);
 
-    // If user attempted admin login via /admin shortcut or authorized admin email
-    if (isAdminIntent || isAuthorizedAdmin) {
+    // Admin login is ONLY allowed when /admin is explicitly appended to the
+    // email, so the console stays hidden from the public sign-in form.
+    if (isAdminIntent) {
       if (!isAuthorizedAdmin) {
         return NextResponse.json(
           { error: 'Access Denied: This email address has not been granted Admin permissions.' },
@@ -134,12 +135,16 @@ export async function POST(request: Request) {
     }
 
     const name = user.studentProfile?.name || user.mentorProfile?.name || 'User';
-    const token = signToken({ userId: user.id, email: user.email, role: user.role });
+
+    // An ADMIN signing in without the /admin suffix enters the standard portal,
+    // so their session role is downgraded for this login.
+    const userRole = user.role === 'ADMIN' ? 'STUDENT' : user.role;
+    const token = signToken({ userId: user.id, email: user.email, role: userRole });
 
     return setTokenCookie(
       NextResponse.json({
         success: true,
-        user: { id: user.id, email: user.email, role: user.role, name },
+        user: { id: user.id, email: user.email, role: userRole, name },
       }),
       token
     );

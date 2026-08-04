@@ -46,3 +46,10 @@ Thumbs.db
 
 # Env backups (never commit - contain secrets)
 *.bak
+
+# clerk configuration (can include secrets)
+/.clerk/
+
+# Animejs local clone/files
+/anime/
+/animejs/

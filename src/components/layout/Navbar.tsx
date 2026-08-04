@@ -2,129 +2,297 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
+import { AnimatePresence, motion, useMotionValueEvent, useScroll } from 'framer-motion';
+import { EASE, SPRING } from '@/components/motion/tokens';
+import Magnetic from '@/components/motion/Magnetic';
 
-export default function Navbar() {
+const NAV_LINKS = [
+  { name: 'Dashboard', path: '/dashboard' },
+  { name: 'Tracks', path: '/tracks' },
+  { name: 'Find Teammates', path: '/team-formation/find-teammates' },
+  { name: 'Find Mentors', path: '/team-formation/find-mentors' },
+];
+
+interface SessionUser {
+  name: string;
+  role: string;
+}
+
+export default function Navbar({ overlay = false }: { overlay?: boolean }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<SessionUser | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [scrolled, setScrolled] = useState(false);
+  const [hidden, setHidden] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const { scrollY } = useScroll();
+
+  useMotionValueEvent(scrollY, 'change', (latest) => {
+    const previous = scrollY.getPrevious() ?? 0;
+    setScrolled(latest > 12);
+    // Hide going down, reveal going up — but never while the mobile menu is open.
+    if (menuOpen) return;
+    setHidden(latest > previous && latest > 140);
+  });
 
   useEffect(() => {
-    async function checkUser() {
-      const res = await fetch('/api/auth/me');
-      const data = await res.json();
-      if (data.authenticated) {
-        setUser(data.user);
-      } else {
-        setUser(null);
+    let active = true;
+    (async () => {
+      try {
+        const res = await fetch('/api/auth/me');
+        const data = await res.json();
+        if (!active) return;
+        setUser(data.authenticated ? data.user : null);
+      } catch {
+        if (active) setUser(null);
+      } finally {
+        if (active) setLoading(false);
       }
-    }
-    checkUser();
+    })();
+    return () => {
+      active = false;
+    };
   }, [pathname]);
+
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    document.body.style.overflow = menuOpen ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [menuOpen]);
 
   const handleLogout = async () => {
     try {
       const res = await fetch('/api/auth/logout', { method: 'POST' });
-      if (res.ok) {
-        router.push('/login');
-      }
+      if (res.ok) router.push('/login');
     } catch (err) {
       console.error('Logout failed:', err);
     }
   };
 
-  const navLinks = [
-    { name: 'Dashboard', path: '/dashboard' },
-    { name: 'Tracks', path: '/tracks' },
-    { name: 'Find Teammates', path: '/team-formation/find-teammates' },
-    { name: 'Find Mentors', path: '/team-formation/find-mentors' },
-  ];
-
   return (
-    <nav className="border-b border-card-border bg-card/60 backdrop-blur-md sticky top-0 z-50">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 justify-between items-center">
-          <div className="flex items-center space-x-3">
-            <Link href="/dashboard" className="flex flex-col">
-              <span className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+    <>
+      {/* Reserves layout space so content is not covered by the fixed bar.
+          Pages with a full-bleed hero pass overlay to sit beneath it. */}
+      {!overlay && <div aria-hidden className="h-[76px] sm:h-[84px]" />}
+      <motion.header
+        initial={{ y: -80, opacity: 0 }}
+        animate={{ y: hidden ? -110 : 0, opacity: 1 }}
+        transition={{ duration: 0.5, ease: EASE.outExpo }}
+        className="fixed inset-x-0 top-0 z-50 px-3 pt-3 sm:px-5 sm:pt-4"
+      >
+        <nav
+          className={`mx-auto flex h-16 max-w-7xl items-center justify-between rounded-2xl border px-3 backdrop-blur-xl transition-[background-color,box-shadow,border-color] duration-500 sm:px-5 ${
+            scrolled
+              ? 'border-[rgba(209,199,189,0.6)] bg-[rgba(248,246,242,0.86)] shadow-[0_8px_32px_rgba(50,45,41,0.10)]'
+              : 'border-[rgba(209,199,189,0.32)] bg-[rgba(248,246,242,0.55)] shadow-[0_2px_18px_rgba(50,45,41,0.05)]'
+          }`}
+        >
+          <Link href="/" className="group flex items-center gap-2 sm:gap-3">
+            <span className="relative flex size-9 items-center justify-center rounded-xl border border-[rgba(209,199,189,0.5)] bg-white/50 p-1 transition-transform duration-300 group-hover:scale-105">
+              <Image
+                src="/Logo/GL-BAJAJ-LOGO-3.png"
+                alt="GL Bajaj"
+                width={28}
+                height={28}
+                className="object-contain"
+                priority
+              />
+            </span>
+            <span className="hidden h-6 w-px bg-[rgba(209,199,189,0.7)] sm:block" />
+            <span className="relative hidden size-9 items-center justify-center rounded-xl border border-[rgba(209,199,189,0.5)] bg-white/50 p-1 transition-transform duration-300 group-hover:scale-105 sm:flex">
+              <Image
+                src="/Logo/NexaSphere Icon without Background.png"
+                alt="NexaSphere"
+                width={28}
+                height={28}
+                className="object-contain"
+              />
+            </span>
+            <span className="flex flex-col leading-none">
+              <span className="text-gradient-luxe text-sm font-extrabold tracking-tight">
                 SIH@GLBGOI
               </span>
-              <span className="text-[9px] text-muted -mt-1">
+              <span className="mt-1 text-[7px] font-semibold uppercase tracking-[0.18em] text-muted">
                 by NexaSphere
               </span>
-            </Link>
-          </div>
+            </span>
+          </Link>
 
-          <div className="hidden md:flex space-x-6">
-            {navLinks.map((link) => {
+          <div className="hidden items-center gap-1 md:flex">
+            {NAV_LINKS.map((link) => {
               const isActive = pathname === link.path;
               return (
                 <Link
                   key={link.path}
                   href={link.path}
-                  className={`text-sm font-semibold transition-colors ${
-                    isActive ? 'text-primary border-b-2 border-primary pb-1' : 'text-muted hover:text-foreground'
+                  aria-current={isActive ? 'page' : undefined}
+                  className={`relative rounded-lg px-3 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition-colors duration-250 ${
+                    isActive ? 'text-primary' : 'text-muted hover:text-foreground'
                   }`}
                 >
-                  {link.name}
+                  {isActive && (
+                    <motion.span
+                      layoutId="navPill"
+                      className="absolute inset-0 rounded-lg bg-[rgba(172,156,141,0.22)]"
+                      transition={SPRING.snappy}
+                    />
+                  )}
+                  <span className="relative z-10">{link.name}</span>
                 </Link>
               );
             })}
           </div>
 
-          <div className="flex items-center space-x-3">
-            {user?.role === 'ADMIN' && (
-              <div className="flex items-center gap-1.5 bg-primary/10 border border-primary/30 p-1 rounded-xl">
-                <Link
-                  href="/admin"
-                  className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${
-                    pathname === '/admin' ? 'bg-primary text-white' : 'text-primary hover:bg-primary/20'
-                  }`}
-                >
-                  🛡️ Admin Console
-                </Link>
-                <Link
-                  href="/dashboard?role=STUDENT"
-                  className="px-2.5 py-1 text-xs font-semibold text-muted hover:text-foreground transition-all"
-                  title="Preview Student View"
-                >
-                  🎓 Student
-                </Link>
-                <Link
-                  href="/dashboard?role=MENTOR"
-                  className="px-2.5 py-1 text-xs font-semibold text-muted hover:text-foreground transition-all"
-                  title="Preview Mentor View"
-                >
-                  👨‍🏫 Mentor
-                </Link>
-              </div>
-            )}
-
-            {user && user.role !== 'ADMIN' && (
-              <div className="hidden sm:flex items-center gap-3">
-                <div className="flex flex-col text-right">
-                  <span className="text-sm font-bold text-foreground">{user.name}</span>
-                  <span className="text-[10px] text-muted capitalize">{user.role.toLowerCase()}</span>
+          <div className="flex items-center gap-2">
+            {loading ? (
+              <div className="flex items-center gap-2.5">
+                <div className="hidden flex-col items-end gap-1.5 sm:flex">
+                  <span className="skeleton-shimmer block h-2.5 w-20" />
+                  <span className="skeleton-shimmer block h-2 w-12" />
                 </div>
-                <Link
-                  href="/onboarding?edit=true"
-                  className="rounded-lg bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-semibold text-primary hover:bg-primary/20 transition-all"
-                  title="Edit Profile"
-                >
-                  ✏️ Edit
-                </Link>
+                <span className="skeleton-shimmer block size-8 rounded-full" />
+              </div>
+            ) : user ? (
+              <div className="flex items-center gap-2.5">
+                <span className="hidden flex-col text-right leading-none sm:flex">
+                  <span className="text-xs font-bold text-foreground">{user.name}</span>
+                  <span className="mt-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-muted">
+                    {user.role.toLowerCase()}
+                  </span>
+                </span>
+                <Magnetic strength={6} as="span" className="hidden sm:inline-flex">
+                  <Link
+                    href="/onboarding?edit=true"
+                    className="rounded-lg border border-[rgba(114,56,61,0.22)] bg-[rgba(114,56,61,0.08)] px-3 py-2 text-[10px] font-bold uppercase tracking-[0.1em] text-primary transition-colors duration-250 hover:bg-[rgba(114,56,61,0.16)]"
+                  >
+                    Profile
+                  </Link>
+                </Magnetic>
+                <Magnetic strength={6} as="span" className="inline-flex">
+                  <button
+                    onClick={handleLogout}
+                    className="rounded-lg border border-[rgba(209,199,189,0.7)] bg-white/40 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.1em] text-foreground transition-colors duration-250 hover:bg-white/80"
+                  >
+                    Sign Out
+                  </button>
+                </Magnetic>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Magnetic strength={6} as="span" className="hidden sm:inline-flex">
+                  <Link
+                    href="/login"
+                    className="rounded-lg border border-[rgba(209,199,189,0.7)] bg-white/40 px-4 py-2 text-xs font-bold text-foreground transition-colors duration-250 hover:bg-white/80"
+                  >
+                    Sign In
+                  </Link>
+                </Magnetic>
+                <Magnetic strength={6} as="span" className="inline-flex">
+                  <Link
+                    href="/signup"
+                    className="rounded-lg bg-primary px-4 py-2 text-xs font-bold text-[#FBF9F6] shadow-[0_2px_12px_rgba(114,56,61,0.22)] transition-shadow duration-250 hover:shadow-[0_8px_22px_rgba(114,56,61,0.3)]"
+                  >
+                    Get Started
+                  </Link>
+                </Magnetic>
               </div>
             )}
 
             <button
-              onClick={handleLogout}
-              className="rounded-lg bg-card-border border border-card-border px-3.5 py-1.5 text-xs font-bold text-foreground hover:bg-background transition-all cursor-pointer"
+              onClick={() => setMenuOpen((v) => !v)}
+              aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={menuOpen}
+              className="ml-1 flex size-9 flex-col items-center justify-center gap-[5px] rounded-lg border border-[rgba(209,199,189,0.6)] bg-white/40 md:hidden"
             >
-              Sign Out
+              <motion.span
+                animate={menuOpen ? { rotate: 45, y: 3.5 } : { rotate: 0, y: 0 }}
+                transition={{ duration: 0.3, ease: EASE.outExpo }}
+                className="block h-[1.5px] w-4 rounded-full bg-foreground"
+              />
+              <motion.span
+                animate={menuOpen ? { rotate: -45, y: -3.5 } : { rotate: 0, y: 0 }}
+                transition={{ duration: 0.3, ease: EASE.outExpo }}
+                className="block h-[1.5px] w-4 rounded-full bg-foreground"
+              />
             </button>
           </div>
-        </div>
-      </div>
-    </nav>
+        </nav>
+      </motion.header>
+
+      <AnimatePresence>
+        {menuOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 z-40 bg-[rgba(239,233,225,0.92)] backdrop-blur-2xl md:hidden"
+          >
+            <motion.ul
+              initial="hidden"
+              animate="visible"
+              variants={{ visible: { transition: { staggerChildren: 0.06, delayChildren: 0.12 } } }}
+              className="flex h-full flex-col items-start justify-center gap-2 px-8"
+            >
+              {NAV_LINKS.map((link) => (
+                <motion.li
+                  key={link.path}
+                  variants={{
+                    hidden: { opacity: 0, y: 24, filter: 'blur(6px)' },
+                    visible: {
+                      opacity: 1,
+                      y: 0,
+                      filter: 'blur(0px)',
+                      transition: { duration: 0.5, ease: EASE.outExpo },
+                    },
+                  }}
+                  className="w-full"
+                >
+                  <Link
+                    href={link.path}
+                    className={`block border-b border-[rgba(209,199,189,0.5)] py-4 text-2xl font-extrabold tracking-tight transition-colors ${
+                      pathname === link.path ? 'text-primary' : 'text-foreground'
+                    }`}
+                  >
+                    {link.name}
+                  </Link>
+                </motion.li>
+              ))}
+              {!user && (
+                <motion.li
+                  variants={{
+                    hidden: { opacity: 0, y: 24 },
+                    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: EASE.outExpo } },
+                  }}
+                  className="mt-6 flex w-full gap-3"
+                >
+                  <Link
+                    href="/login"
+                    className="flex-1 rounded-xl border border-[rgba(209,199,189,0.8)] bg-white/60 py-3 text-center text-sm font-bold"
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    href="/signup"
+                    className="flex-1 rounded-xl bg-primary py-3 text-center text-sm font-bold text-[#FBF9F6]"
+                  >
+                    Get Started
+                  </Link>
+                </motion.li>
+              )}
+            </motion.ul>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }

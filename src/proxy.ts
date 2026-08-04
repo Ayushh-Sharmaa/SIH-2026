@@ -1,45 +1,68 @@
-import { clerkMiddleware } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 
-const PUBLIC_ROUTES = [
+// Renamed from middleware.ts: Next.js 16 deprecated the `middleware` file
+// convention in favour of `proxy`.
+
+const isPublicRoute = createRouteMatcher([
   '/',
-  '/login',
-  '/signup',
+  '/login(.*)',
+  '/signup(.*)',
+  '/api/auth(.*)',
   '/tracks',
-  '/api/auth',
-];
+]);
 
-// Wrapped in clerkMiddleware so currentUser() and auth() work inside route
-// handlers. Without this wrapper Clerk throws on every server call, which is
-// what silently broke Google sign-in via /api/auth/clerk-sync.
-export const proxy = clerkMiddleware(async (auth, req) => {
-  const { pathname } = req.nextUrl;
+const hasClerkKey = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
-  // 1. Always allow public routes and authentication APIs
-  const isPublic = PUBLIC_ROUTES.some(
-    (route) => pathname === route || (route !== '/' && pathname.startsWith(route + '/'))
-  );
-
-  if (isPublic) {
+// Without Clerk keys, clerkMiddleware() throws on every request and takes the
+// whole site down. Fall back to plain cookie auth instead.
+function customAuthProxy(req: NextRequest) {
+  if (isPublicRoute(req)) {
     return NextResponse.next();
   }
 
-  // 2. Check for custom authentication token cookie ('token')
   const token = req.cookies.get('token')?.value;
   if (token) {
     return NextResponse.next();
   }
 
-  // 3. Fall back to a live Clerk session (Google users mid-sync)
-  const { userId } = await auth();
-  if (userId) {
-    return NextResponse.next();
-  }
+  const url = req.nextUrl.clone();
+  url.pathname = '/login';
+  return NextResponse.redirect(url);
+}
 
-  // 4. Redirect unauthenticated access to login
-  const loginUrl = new URL('/login', req.url);
-  return NextResponse.redirect(loginUrl);
-});
+// Wrapping in clerkMiddleware is what makes currentUser() and auth() usable in
+// route handlers. Without it every Google sign-in threw inside
+// /api/auth/clerk-sync and silently bounced the user back to /login.
+export const proxy = hasClerkKey
+  ? clerkMiddleware(async (auth, req) => {
+      if (isPublicRoute(req)) {
+        return;
+      }
+
+      // Custom JWT session takes precedence: it is what every non-Google
+      // sign-in issues, and what the sandbox and admin flows rely on.
+      const token = req.cookies.get('token')?.value;
+      if (token) {
+        return;
+      }
+
+      // Otherwise fall back to a live Clerk session (Google users mid-sync)
+      try {
+        const authObj = await auth();
+        if (authObj?.userId) {
+          return;
+        }
+      } catch {
+        // Clerk unreachable or misconfigured - fall through to the redirect
+      }
+
+      const url = req.nextUrl.clone();
+      url.pathname = '/login';
+      return NextResponse.redirect(url);
+    })
+  : (req: NextRequest) => customAuthProxy(req);
 
 export const config = {
   matcher: [

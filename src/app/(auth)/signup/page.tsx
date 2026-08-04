@@ -19,6 +19,7 @@ import {
   SPRING,
 } from '@/components/motion';
 import { logger } from '@/lib/logger';
+import { errorMessageIncludes, userFacingMessage } from '@/lib/errors';
 
 const hasClerkKey = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
@@ -151,7 +152,7 @@ function ClerkSignupPage() {
         if (!res.ok) throw new Error(data.error || 'Google Sign-Up failed');
         await goAuthenticated('/onboarding');
       }
-    } catch (err: any) {
+    } catch (err) {
       logger.error('Google Sign-Up error', err);
       try {
         const res = await fetch('/api/auth/clerk-sync', {
@@ -166,7 +167,7 @@ function ClerkSignupPage() {
       } catch {
         // fall through to the surfaced error
       }
-      setError(err.message || 'Google Sign-Up failed. Please try again.');
+      setError(userFacingMessage(err, 'Google Sign-Up failed. Please try again.'));
     } finally {
       setGoogleLoading(false);
     }
@@ -197,12 +198,12 @@ function ClerkSignupPage() {
       }
 
       await goAuthenticated('/onboarding');
-    } catch (err: any) {
+    } catch (err) {
       setLoading(false);
-      if (err.message?.includes('already exists')) {
+      if (errorMessageIncludes(err, 'already exists')) {
         setError('This email is already registered — sign in instead.');
       } else {
-        setError(err.message || 'Something went wrong');
+        setError(userFacingMessage(err, 'Something went wrong'));
       }
     }
   };
@@ -254,9 +255,9 @@ function CustomSignupPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Google Sign-Up failed');
       await goAuthenticated('/onboarding');
-    } catch (err: any) {
+    } catch (err) {
       logger.error('Google Sign-Up error', err);
-      setError(err.message || 'Google Sign-Up failed. Please try again.');
+      setError(userFacingMessage(err, 'Google Sign-Up failed. Please try again.'));
     } finally {
       setGoogleLoading(false);
     }
@@ -287,12 +288,12 @@ function CustomSignupPage() {
       }
 
       await goAuthenticated('/onboarding');
-    } catch (err: any) {
+    } catch (err) {
       setLoading(false);
-      if (err.message?.includes('already exists')) {
+      if (errorMessageIncludes(err, 'already exists')) {
         setError('This email is already registered — sign in instead.');
       } else {
-        setError(err.message || 'Something went wrong');
+        setError(userFacingMessage(err, 'Something went wrong'));
       }
     }
   };

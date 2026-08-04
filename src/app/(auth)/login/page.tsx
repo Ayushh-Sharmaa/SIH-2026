@@ -16,6 +16,7 @@ import {
   EASE,
 } from '@/components/motion';
 import { logger } from '@/lib/logger';
+import { userFacingMessage } from '@/lib/errors';
 
 const hasClerkKey = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
@@ -156,7 +157,7 @@ function ClerkLoginPage() {
           await goAuthenticated('/onboarding');
         }
       }
-    } catch (err: any) {
+    } catch (err) {
       logger.error('Google Sign-In error', err);
       try {
         const res = await fetch('/api/auth/clerk-sync', {
@@ -178,7 +179,7 @@ function ClerkLoginPage() {
       } catch {
         // fall through to the surfaced error
       }
-      setError(err.message || 'Google Sign-In failed. Please try again.');
+      setError(userFacingMessage(err, 'Google Sign-In failed. Please try again.'));
     } finally {
       setGoogleLoading(false);
     }
@@ -222,9 +223,9 @@ function ClerkLoginPage() {
       } else {
         await goAuthenticated('/onboarding');
       }
-    } catch (err: any) {
+    } catch (err) {
       setLoading(false);
-      setError(err.message || 'Something went wrong');
+      setError(userFacingMessage(err, 'Something went wrong'));
     }
   };
 
@@ -275,9 +276,9 @@ function CustomLoginPage() {
       } else {
         await goAuthenticated('/onboarding');
       }
-    } catch (err: any) {
+    } catch (err) {
       logger.error('Google Sign-In error', err);
-      setError(err.message || 'Google Sign-In failed. Please try again.');
+      setError(userFacingMessage(err, 'Google Sign-In failed. Please try again.'));
     } finally {
       setGoogleLoading(false);
     }
@@ -321,9 +322,9 @@ function CustomLoginPage() {
       } else {
         await goAuthenticated('/onboarding');
       }
-    } catch (err: any) {
+    } catch (err) {
       setLoading(false);
-      setError(err.message || 'Something went wrong');
+      setError(userFacingMessage(err, 'Something went wrong'));
     }
   };
 

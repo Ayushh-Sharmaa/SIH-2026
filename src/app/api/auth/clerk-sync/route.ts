@@ -92,7 +92,7 @@ export async function GET(request: Request) {
     setSessionCookie(response.cookies, token);
 
     return response;
-  } catch (error: any) {
+  } catch (error) {
     logger.error('Clerk GET Sync error', error);
     return NextResponse.redirect(new URL('/login', request.url));
   }
@@ -147,8 +147,16 @@ export async function POST(request: Request) {
     setSessionCookie(response.cookies, token);
 
     return response;
-  } catch (error: any) {
-    logger.error('Clerk POST Sync error', error);
-    return NextResponse.json({ error: error?.message || 'Failed to synchronize user account' }, { status: 500 });
+  } catch (error) {
+    logger.error('Clerk POST sync failed', error);
+    // The raw message used to be returned to the caller. That is an information
+    // disclosure: a driver failure here carries the failing query, which can
+    // include an email address, and a connection failure carries the database
+    // host and port. The detail belongs in the log, where operators can reach
+    // it; the client gets a fixed string.
+    return NextResponse.json(
+      { error: 'Failed to synchronize user account' },
+      { status: 500 },
+    );
   }
 }

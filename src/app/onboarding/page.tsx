@@ -17,6 +17,7 @@ import {
   SPRING,
 } from '@/components/motion';
 import { logger } from '@/lib/logger';
+import { userFacingMessage } from '@/lib/errors';
 
 interface Track {
   id: string;
@@ -521,8 +522,8 @@ export default function OnboardingPage() {
       if (!res.ok) throw new Error(data.error || 'Failed to save profile');
 
       router.push('/dashboard');
-    } catch (err: any) {
-      setError(err.message || 'An error occurred while saving profile.');
+    } catch (err) {
+      setError(userFacingMessage(err, 'An error occurred while saving profile.'));
       setSubmitting(false);
     }
   };
@@ -557,8 +558,8 @@ export default function OnboardingPage() {
       if (!res.ok) throw new Error(data.error || 'Failed to save profile');
 
       router.push('/dashboard');
-    } catch (err: any) {
-      setError(err.message || 'An error occurred while saving profile.');
+    } catch (err) {
+      setError(userFacingMessage(err, 'An error occurred while saving profile.'));
       setSubmitting(false);
     }
   };

@@ -22,7 +22,12 @@ const CSP = [
   // next/font self-hosts the Google fonts at build time, so no external origin.
   "font-src 'self' data:",
   "img-src 'self' data: blob: https://*.clerk.com https://img.clerk.com",
-  "connect-src 'self' https://*.clerk.accounts.dev https://*.clerk.com https://*.supabase.co",
+  // Supabase is deliberately absent. It hosts the Postgres database, but that
+  // is reached server-side by Prisma over the Postgres wire protocol — the
+  // browser never opens a connection to it. The `@supabase/supabase-js` client
+  // that would have needed this allowance is no longer a dependency, so keeping
+  // the origin here would only widen the policy for no one.
+  "connect-src 'self' https://*.clerk.accounts.dev https://*.clerk.com",
   "frame-src 'self' https://*.clerk.accounts.dev https://*.clerk.com",
   "worker-src 'self' blob:",
   "object-src 'none'",

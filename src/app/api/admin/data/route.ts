@@ -150,7 +150,7 @@ export async function GET() {
       mentors,
       problemStatementStats,
     });
-  } catch (error: any) {
+  } catch (error) {
     logger.error('Admin data fetch error', error);
     return NextResponse.json({ error: 'Failed to load admin dashboard data.' }, { status: 500 });
   }

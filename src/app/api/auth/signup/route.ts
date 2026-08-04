@@ -148,7 +148,7 @@ export async function POST(request: Request) {
     setSessionCookie(response.cookies, token);
 
     return response;
-  } catch (error: any) {
+  } catch (error) {
     logger.error('Signup error', error);
     return NextResponse.json({ error: 'An error occurred during registration.' }, { status: 500 });
   }

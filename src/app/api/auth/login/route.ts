@@ -148,7 +148,7 @@ export async function POST(request: Request) {
       }),
       token
     );
-  } catch (error: any) {
+  } catch (error) {
     logger.error('Login error', error);
     return NextResponse.json({ error: 'An error occurred during authentication.' }, { status: 500 });
   }

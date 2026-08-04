@@ -24,6 +24,7 @@ import {
   SPRING,
 } from '@/components/motion';
 import { logger } from '@/lib/logger';
+import { userFacingMessage } from '@/lib/errors';
 
 type TabKey = 'access' | 'teams' | 'students' | 'ps_tracks' | 'mentors';
 
@@ -200,9 +201,9 @@ export default function AdminDashboardPage() {
       setStudents(data.students || []);
       setMentors(data.mentors || []);
       setProblemStatementStats(data.problemStatementStats || []);
-    } catch (err: any) {
+    } catch (err) {
       logger.error('Admin fetch error', err);
-      toast(err.message || 'Error loading admin dashboard.', 'error');
+      toast(userFacingMessage(err, 'Error loading admin dashboard.'), 'error');
     } finally {
       setLoading(false);
     }
@@ -232,8 +233,8 @@ export default function AdminDashboardPage() {
       setNewAdminEmail('');
       toast(data.message, 'success');
       fetchAdminData();
-    } catch (err: any) {
-      toast(err.message, 'error');
+    } catch (err) {
+      toast(userFacingMessage(err, 'Could not grant admin access. Please try again.'), 'error');
     } finally {
       setGranting(false);
     }
@@ -253,8 +254,8 @@ export default function AdminDashboardPage() {
       setAdminEmails(data.adminEmails);
       toast(`Revoked admin access from ${emailToRevoke}`, 'success');
       fetchAdminData();
-    } catch (err: any) {
-      toast(err.message, 'error');
+    } catch (err) {
+      toast(userFacingMessage(err, 'Could not revoke access. Please try again.'), 'error');
     }
   };
 
@@ -272,8 +273,8 @@ export default function AdminDashboardPage() {
       toast(data.message, 'success');
       setSelectedStudent(null);
       fetchAdminData();
-    } catch (err: any) {
-      toast(err.message, 'error');
+    } catch (err) {
+      toast(userFacingMessage(err, 'Could not update student access. Please try again.'), 'error');
     }
   };
 
@@ -287,8 +288,8 @@ export default function AdminDashboardPage() {
       if (!res.ok) throw new Error('Failed to update team status');
       toast(`Team status set to ${status}.`, 'success');
       fetchAdminData();
-    } catch (err: any) {
-      toast(err.message, 'error');
+    } catch (err) {
+      toast(userFacingMessage(err, 'Could not update team status. Please try again.'), 'error');
     }
   };
 
@@ -303,8 +304,8 @@ export default function AdminDashboardPage() {
       setSelectedTeam(null);
       toast('Team disbanded. Members returned to looking-for-team.', 'success');
       fetchAdminData();
-    } catch (err: any) {
-      toast(err.message, 'error');
+    } catch (err) {
+      toast(userFacingMessage(err, 'Could not disband the team. Please try again.'), 'error');
     }
   };
 
@@ -323,8 +324,8 @@ export default function AdminDashboardPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to switch dashboard');
       router.push(data.redirectUrl || '/dashboard');
-    } catch (err: any) {
-      toast(err.message, 'error');
+    } catch (err) {
+      toast(userFacingMessage(err, 'Could not switch dashboard view. Please try again.'), 'error');
     }
   };
 

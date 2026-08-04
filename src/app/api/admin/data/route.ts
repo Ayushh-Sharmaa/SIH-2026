@@ -28,9 +28,9 @@ export async function GET() {
     const allTeams = await prisma.team.findMany();
     const allTracks = await prisma.track.findMany();
 
-    const students = allStudentProfiles.map((sp: any) => {
-      const user = allUsers.find((u: any) => u.id === sp.userId);
-      const team = allTeams.find((t: any) => t.id === sp.teamId);
+    const students = allStudentProfiles.map((sp) => {
+      const user = allUsers.find((u) => u.id === sp.userId);
+      const team = allTeams.find((t) => t.id === sp.teamId);
       const email = user?.email || '';
 
       return {
@@ -59,13 +59,13 @@ export async function GET() {
       };
     });
 
-    const teams = allTeams.map((team: any) => {
-      const track = allTracks.find((t: any) => t.id === team.trackId || t.problemStatementCode === team.trackId);
-      const members = students.filter((sp: any) => sp.teamId === team.id);
-      const leader = students.find((sp: any) => sp.userId === team.leaderId);
+    const teams = allTeams.map((team) => {
+      const track = allTracks.find((t) => t.id === team.trackId || t.problemStatementCode === team.trackId);
+      const members = students.filter((sp) => sp.teamId === team.id);
+      const leader = students.find((sp) => sp.userId === team.leaderId);
 
-      const femaleCount = members.filter((m: any) => String(m.gender).toLowerCase() === 'female').length;
-      const maleCount = members.filter((m: any) => String(m.gender).toLowerCase() === 'male').length;
+      const femaleCount = members.filter((m) => String(m.gender).toLowerCase() === 'female').length;
+      const maleCount = members.filter((m) => String(m.gender).toLowerCase() === 'male').length;
       const isAllFemale = members.length > 0 && femaleCount === members.length;
 
       return {
@@ -88,19 +88,19 @@ export async function GET() {
       };
     });
 
-    const problemStatementStats = allTracks.map((track: any) => {
+    const problemStatementStats = allTracks.map((track) => {
       const trackTeams = teams.filter(
-        (t: any) => t.trackId === track.id || t.trackCode === track.problemStatementCode
+        (t) => t.trackId === track.id || t.trackCode === track.problemStatementCode
       );
       return {
         id: track.id,
         code: track.problemStatementCode,
         name: track.name,
         category: track.category,
-        organization: track.organization || 'Government / Industrial',
+        organization: 'Government / Industrial',
         description: track.description,
         teamCount: trackTeams.length,
-        teams: trackTeams.map((t: any) => ({
+        teams: trackTeams.map((t) => ({
           id: t.id,
           name: t.name,
           leaderName: t.leaderName,
@@ -111,8 +111,8 @@ export async function GET() {
       };
     });
 
-    const mentors = allMentorProfiles.map((mp: any) => {
-      const user = allUsers.find((u: any) => u.id === mp.userId);
+    const mentors = allMentorProfiles.map((mp) => {
+      const user = allUsers.find((u) => u.id === mp.userId);
 
       return {
         id: mp.userId,
@@ -133,11 +133,11 @@ export async function GET() {
     const stats = {
       totalStudents: students.length,
       totalTeams: teams.length,
-      fullTeams: teams.filter((t: any) => t.memberCount >= 6 || t.status === 'locked' || t.status === 'approved').length,
-      formingTeams: teams.filter((t: any) => t.status === 'forming').length,
-      allFemaleTeams: teams.filter((t: any) => t.isAllFemale).length,
+      fullTeams: teams.filter((t) => t.memberCount >= 6 || t.status === 'locked' || t.status === 'approved').length,
+      formingTeams: teams.filter((t) => t.status === 'forming').length,
+      allFemaleTeams: teams.filter((t) => t.isAllFemale).length,
       totalMentors: mentors.length,
-      verifiedMentors: mentors.filter((m: any) => m.verified).length,
+      verifiedMentors: mentors.filter((m) => m.verified).length,
       totalAuthorizedAdmins: adminEmails.length,
     };
 
@@ -150,7 +150,7 @@ export async function GET() {
       mentors,
       problemStatementStats,
     });
-  } catch (error: any) {
+  } catch (error) {
     logger.error('Admin data fetch error', error);
     return NextResponse.json({ error: 'Failed to load admin dashboard data.' }, { status: 500 });
   }

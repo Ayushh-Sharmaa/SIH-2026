@@ -33,14 +33,14 @@ export async function GET(request: Request) {
     });
 
     if (expertiseQuery) {
-      mentors = mentors.filter((m: any) =>
-        m.expertise.some((e: any) => e.toLowerCase().includes(expertiseQuery))
+      mentors = mentors.filter((m) =>
+        m.expertise.some((e) => e.toLowerCase().includes(expertiseQuery))
       );
     }
 
     return NextResponse.json({
       success: true,
-      mentors: mentors.map((m: any) => ({
+      mentors: mentors.map((m) => ({
         userId: m.userId,
         name: m.name,
         designation: m.designation,

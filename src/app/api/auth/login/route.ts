@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { comparePassword, hashPassword, signToken, normalizeEmail } from '@/lib/auth';
+import { comparePassword, signToken, normalizeEmail } from '@/lib/auth';
 import { isAuthorizedAdminEmail, isUserBanned, stripAdminSuffix } from '@/lib/admin';
 import { ensureSandboxUser, parseSandboxRequest } from '@/lib/sandbox';
 import { clientIp, createRateLimiter, tooManyRequests } from '@/lib/rateLimit';
@@ -81,7 +81,7 @@ export async function POST(request: Request) {
         );
       }
 
-      let user = await prisma.user.findUnique({
+      const user = await prisma.user.findUnique({
         where: { email: cleanEmail },
         include: {
           studentProfile: { select: { name: true } },
@@ -148,7 +148,7 @@ export async function POST(request: Request) {
       }),
       token
     );
-  } catch (error: any) {
+  } catch (error) {
     logger.error('Login error', error);
     return NextResponse.json({ error: 'An error occurred during authentication.' }, { status: 500 });
   }

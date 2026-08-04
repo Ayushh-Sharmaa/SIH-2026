@@ -4,6 +4,16 @@ import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 
+interface Notification {
+  id: string;
+  type: 'mentor_request' | 'team_invite' | 'join_request';
+  title: string;
+  message: string;
+  messageText?: string | null;
+  teamName?: string;
+  createdAt: Date;
+}
+
 export async function GET() {
   try {
     const cookieStore = await cookies();
@@ -33,9 +43,9 @@ export async function GET() {
 
       return NextResponse.json({
         success: true,
-        notifications: requests.map((r: any) => ({
+        notifications: requests.map((r) => ({
           id: r.id,
-          type: 'mentor_request',
+          type: 'mentor_request' as const,
           title: 'New Mentorship Request',
           message: `${r.team.name} has requested you as a guide for track ${r.team.track.problemStatementCode}.`,
           messageText: r.message,
@@ -59,9 +69,9 @@ export async function GET() {
       },
     });
 
-    const notifications: any[] = invites.map((inv: any) => ({
+    const notifications: Notification[] = invites.map((inv) => ({
       id: inv.id,
-      type: 'team_invite',
+      type: 'team_invite' as const,
       title: 'New Team Invitation',
       message: `You have been invited to join team "${inv.team.name}" for track ${inv.team.track.problemStatementCode}.`,
       createdAt: inv.createdAt,
@@ -84,9 +94,9 @@ export async function GET() {
         },
       });
 
-      const reqNotifications = joinRequests.map((req: any) => ({
+      const reqNotifications: Notification[] = joinRequests.map((req) => ({
         id: req.id,
-        type: 'join_request',
+        type: 'join_request' as const,
         title: 'New Join Request',
         message: `${req.student.name} (${req.student.branch}, ${req.student.year}) has requested to join your team.`,
         messageText: req.message,
@@ -98,7 +108,7 @@ export async function GET() {
 
     return NextResponse.json({
       success: true,
-      notifications: notifications.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+      notifications: notifications.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
     });
   } catch (error) {
     logger.error('Fetch notifications error', error);

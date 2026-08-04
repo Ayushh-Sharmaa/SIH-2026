@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { recalculateTeamSkills } from '@/lib/derived';
-import { TeamStatus } from '@prisma/client';
+import { TeamStatus, Prisma } from '@prisma/client';
 import { logger } from '@/lib/logger';
 
 export async function POST(request: Request) {
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
     if (action === 'leave') {
       const isLeader = team.leaderId === decoded.userId;
 
-      await prisma.$transaction(async (tx: any) => {
+      await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         if (isLeader) {
           // If they are the only member, delete the team
           if (team.members.length <= 1) {
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
             await tx.team.delete({ where: { id: teamId } });
           } else {
             // Transfer leadership to the next member
-            const nextLeader = team.members.find((m: any) => m.userId !== decoded.userId);
+            const nextLeader = team.members.find((m) => m.userId !== decoded.userId);
             if (nextLeader) {
               await tx.team.update({
                 where: { id: teamId },
@@ -102,7 +102,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'You cannot kick yourself. Please leave the team instead.' }, { status: 400 });
     }
 
-    const targetMember = team.members.find((m: any) => m.userId === targetUserId);
+    const targetMember = team.members.find((m) => m.userId === targetUserId);
     if (!targetMember) {
       return NextResponse.json({ error: 'Target user is not a member of your team.' }, { status: 400 });
     }

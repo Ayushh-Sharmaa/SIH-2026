@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { recalculateTeamSkills } from '@/lib/derived';
-import { TeamStatus } from '@prisma/client';
+import { TeamStatus, Prisma } from '@prisma/client';
 import { logger } from '@/lib/logger';
 
 export async function POST(request: Request) {
@@ -125,7 +125,7 @@ export async function PUT(request: Request) {
     }
 
     // Process accept inside transaction
-    await prisma.$transaction(async (tx: any) => {
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // 1. Accept request
       await tx.joinRequest.update({
         where: { id: requestId },

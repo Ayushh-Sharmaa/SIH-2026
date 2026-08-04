@@ -128,8 +128,15 @@ function ClerkSignupPage() {
         pubKey.startsWith('pk_test_') && !pubKey.includes('glbgoi') && !pubKey.includes('placeholder');
 
       if (isRealKey && clerk) {
-        if ((clerk as any).authenticateWithRedirect) {
-          await (clerk as any).authenticateWithRedirect({
+        const clerkRedirect = clerk as unknown as {
+          authenticateWithRedirect?: (args: {
+            strategy: string;
+            redirectUrl: string;
+            redirectUrlComplete: string;
+          }) => Promise<void>;
+        };
+        if (clerkRedirect.authenticateWithRedirect) {
+          await clerkRedirect.authenticateWithRedirect({
             strategy: 'oauth_google',
             redirectUrl: '/api/auth/clerk-sync',
             redirectUrlComplete: '/onboarding',
@@ -151,7 +158,7 @@ function ClerkSignupPage() {
         if (!res.ok) throw new Error(data.error || 'Google Sign-Up failed');
         await goAuthenticated('/onboarding');
       }
-    } catch (err: any) {
+    } catch (err) {
       logger.error('Google Sign-Up error', err);
       try {
         const res = await fetch('/api/auth/clerk-sync', {
@@ -166,7 +173,7 @@ function ClerkSignupPage() {
       } catch {
         // fall through to the surfaced error
       }
-      setError(err.message || 'Google Sign-Up failed. Please try again.');
+      setError(err instanceof Error ? err.message : 'Google Sign-Up failed. Please try again.');
     } finally {
       setGoogleLoading(false);
     }
@@ -197,12 +204,13 @@ function ClerkSignupPage() {
       }
 
       await goAuthenticated('/onboarding');
-    } catch (err: any) {
+    } catch (err) {
       setLoading(false);
-      if (err.message?.includes('already exists')) {
+      const errMsg = err instanceof Error ? err.message : '';
+      if (errMsg.includes('already exists')) {
         setError('This email is already registered — sign in instead.');
       } else {
-        setError(err.message || 'Something went wrong');
+        setError(errMsg || 'Something went wrong');
       }
     }
   };
@@ -254,9 +262,9 @@ function CustomSignupPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Google Sign-Up failed');
       await goAuthenticated('/onboarding');
-    } catch (err: any) {
+    } catch (err) {
       logger.error('Google Sign-Up error', err);
-      setError(err.message || 'Google Sign-Up failed. Please try again.');
+      setError(err instanceof Error ? err.message : 'Google Sign-Up failed. Please try again.');
     } finally {
       setGoogleLoading(false);
     }
@@ -287,12 +295,13 @@ function CustomSignupPage() {
       }
 
       await goAuthenticated('/onboarding');
-    } catch (err: any) {
+    } catch (err) {
       setLoading(false);
-      if (err.message?.includes('already exists')) {
+      const errMsg = err instanceof Error ? err.message : '';
+      if (errMsg.includes('already exists')) {
         setError('This email is already registered — sign in instead.');
       } else {
-        setError(err.message || 'Something went wrong');
+        setError(errMsg || 'Something went wrong');
       }
     }
   };
@@ -412,7 +421,7 @@ function SignupTemplate({
                 <span className="h-px flex-1 bg-[rgba(209,199,189,0.8)]" />
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} noValidate className="space-y-4">
                 {/* role segmented control */}
                 <div>
                   <p className="mb-2 pl-1 text-label uppercase text-muted">
@@ -473,7 +482,7 @@ function SignupTemplate({
 
                 <Field
                   label="College email"
-                  type="email"
+                  type="text"
                   autoComplete="email"
                   required
                   value={email}

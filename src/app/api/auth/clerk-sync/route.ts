@@ -92,7 +92,7 @@ export async function GET(request: Request) {
     setSessionCookie(response.cookies, token);
 
     return response;
-  } catch (error: any) {
+  } catch (error) {
     logger.error('Clerk GET Sync error', error);
     return NextResponse.redirect(new URL('/login', request.url));
   }
@@ -147,8 +147,9 @@ export async function POST(request: Request) {
     setSessionCookie(response.cookies, token);
 
     return response;
-  } catch (error: any) {
+  } catch (error) {
     logger.error('Clerk POST Sync error', error);
-    return NextResponse.json({ error: error?.message || 'Failed to synchronize user account' }, { status: 500 });
+    const errMsg = error instanceof Error ? error.message : 'Failed to synchronize user account';
+    return NextResponse.json({ error: errMsg }, { status: 500 });
   }
 }

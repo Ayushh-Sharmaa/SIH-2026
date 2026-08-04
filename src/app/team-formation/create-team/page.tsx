@@ -75,8 +75,8 @@ export default function CreateTeamPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to create team');
       router.push('/dashboard');
-    } catch (err: any) {
-      setError(err.message || 'An error occurred.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred.');
     } finally {
       setLoading(false);
     }

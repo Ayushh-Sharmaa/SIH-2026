@@ -41,8 +41,8 @@ export default function ViewingAsBanner() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Could not return to admin');
       router.push(data.redirectUrl || '/admin');
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'An error occurred');
       setReturning(false);
     }
   };

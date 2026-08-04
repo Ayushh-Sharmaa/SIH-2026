@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { logger } from '@/lib/logger';
 
 export async function POST(
   request: Request,
@@ -98,7 +99,7 @@ export async function POST(
 
     return NextResponse.json({ success: true, message: 'Request accepted successfully.' });
   } catch (error) {
-    console.error('Respond mentor request error:', error);
+    logger.error('Respond mentor request error', error);
     return NextResponse.json({ error: 'Failed to process request.' }, { status: 500 });
   }
 }

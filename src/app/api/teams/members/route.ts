@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { recalculateTeamSkills } from '@/lib/derived';
 import { TeamStatus } from '@prisma/client';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: Request) {
   try {
@@ -124,7 +125,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, message: 'Member kicked successfully.' });
   } catch (error) {
-    console.error('Roster membership action error:', error);
+    logger.error('Roster membership action error', error);
     return NextResponse.json({ error: 'Failed to process membership action.' }, { status: 500 });
   }
 }

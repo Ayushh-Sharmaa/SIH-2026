@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { recalculateTeamSkills } from '@/lib/derived';
 import { TeamStatus } from '@prisma/client';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: Request) {
   try {
@@ -82,7 +83,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, message: 'Invitation sent successfully.', inviteId: invite.id });
   } catch (error) {
-    console.error('Create team invite error:', error);
+    logger.error('Create team invite error', error);
     return NextResponse.json({ error: 'Failed to send invitation.' }, { status: 500 });
   }
 }
@@ -190,7 +191,7 @@ export async function PUT(request: Request) {
 
     return NextResponse.json({ success: true, message: 'Joined team successfully.' });
   } catch (error) {
-    console.error('Respond team invite error:', error);
+    logger.error('Respond team invite error', error);
     return NextResponse.json({ error: 'Failed to process invitation.' }, { status: 500 });
   }
 }

@@ -23,6 +23,7 @@ import {
   EASE,
   SPRING,
 } from '@/components/motion';
+import { logger } from '@/lib/logger';
 
 type TabKey = 'access' | 'teams' | 'students' | 'ps_tracks' | 'mentors';
 
@@ -212,7 +213,7 @@ export default function AdminDashboardPage() {
       setMentors(data.mentors || []);
       setProblemStatementStats(data.problemStatementStats || []);
     } catch (err: any) {
-      console.error('Admin fetch error:', err);
+      logger.error('Admin fetch error', err);
       toast(err.message || 'Error loading admin dashboard.', 'error');
     } finally {
       setLoading(false);

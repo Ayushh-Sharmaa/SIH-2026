@@ -4,11 +4,12 @@ import { ClerkProvider } from '@clerk/nextjs';
 import './globals.css';
 
 import SmoothScroll from '@/components/SmoothScroll';
-import CustomCursor from '@/components/CustomCursor';
+import PointerChrome from '@/components/PointerChrome';
 import ScrollProgress from '@/components/ScrollProgress';
 import PageTransition from '@/components/PageTransition';
 import LoadingScreen from '@/components/LoadingScreen';
 import MotionProvider from '@/components/motion/MotionProvider';
+import { SessionProvider } from '@/lib/session';
 import { ToastProvider } from '@/components/ui/Toast';
 import { SiteStructuredData } from '@/components/seo/StructuredData';
 
@@ -116,14 +117,20 @@ export default function RootLayout({
             policy, and so components that omit a transition inherit the house
             curve rather than Framer's default spring. */}
         <MotionProvider>
-          <ToastProvider>
-            <LoadingScreen />
-            <ScrollProgress />
-            <CustomCursor />
-            <SmoothScroll>
-              <PageTransition>{children}</PageTransition>
-            </SmoothScroll>
-          </ToastProvider>
+          {/* Above the route tree so the session survives navigation and is
+              fetched once per page load rather than once per route change. */}
+          <SessionProvider>
+            <ToastProvider>
+              <LoadingScreen />
+              <ScrollProgress />
+              {/* Loads the custom cursor only on hovering, fine-pointer devices
+                  whose user has not asked for reduced motion. */}
+              <PointerChrome />
+              <SmoothScroll>
+                <PageTransition>{children}</PageTransition>
+              </SmoothScroll>
+            </ToastProvider>
+          </SessionProvider>
         </MotionProvider>
       </body>
     </html>

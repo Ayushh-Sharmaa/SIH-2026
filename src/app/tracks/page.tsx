@@ -18,6 +18,7 @@ import {
   EASE,
   SPRING,
 } from '@/components/motion';
+import { logger } from '@/lib/logger';
 
 interface Track {
   id: string;
@@ -70,7 +71,7 @@ export default function TracksPage() {
       } catch (err) {
         // Logging alone left the user staring at an empty list with no idea the
         // request had failed.
-        console.error('Fetch tracks failed:', err);
+        logger.error('Fetch tracks failed', err);
         toast('Could not load tracks. Check your connection and try again.', 'error');
       } finally {
         setLoading(false);

@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
+import { logger } from '@/lib/logger';
 
 /**
  * Route-level error boundary.
@@ -19,7 +20,7 @@ export default function Error({
 }) {
   useEffect(() => {
     // Wire this to real error reporting when it exists.
-    console.error('Route error:', error);
+    logger.error('Route error', error);
   }, [error]);
 
   return (

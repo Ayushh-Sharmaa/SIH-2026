@@ -29,7 +29,7 @@ import { DURATION, EASE } from './tokens';
  */
 
 const SHELL =
-  'peer w-full rounded-panel border bg-surface-raised px-4 pb-2 pt-6 text-sm text-foreground backdrop-blur-sm outline-none transition-[border-color,box-shadow,background-color] duration-220 placeholder-transparent disabled:cursor-not-allowed disabled:opacity-60';
+  'peer w-full rounded-panel border bg-surface-raised px-4 pb-2 pt-6 text-sm text-foreground outline-none transition-[border-color,box-shadow,background-color] duration-220 placeholder-transparent disabled:cursor-not-allowed disabled:opacity-60';
 
 const STATE = {
   idle: 'border-line hover:border-line-strong',
@@ -246,7 +246,7 @@ export function SelectField({
           onBlur={() => setFocused(false)}
           aria-invalid={!!error}
           aria-describedby={describedBy(error, hint, errorId, hintId)}
-          className={`w-full appearance-none rounded-panel border bg-surface-raised px-4 pb-2 pt-6 pr-11 text-sm text-foreground outline-none backdrop-blur-sm transition-[border-color,box-shadow,background-color] duration-220 disabled:cursor-not-allowed disabled:opacity-60 ${
+          className={`w-full appearance-none rounded-panel border bg-surface-raised px-4 pb-2 pt-6 pr-11 text-sm text-foreground outline-none transition-[border-color,box-shadow,background-color] duration-220 disabled:cursor-not-allowed disabled:opacity-60 ${
             error ? STATE.error : STATE.idle
           } ${STATE.focus}`}
           {...props}

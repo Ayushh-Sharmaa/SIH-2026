@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { isAuthorizedAdminEmail } from '@/lib/mockDb';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: Request) {
   try {
@@ -46,7 +47,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
   } catch (error: any) {
-    console.error('Admin team update error:', error);
+    logger.error('Admin team update error', error);
     return NextResponse.json({ error: 'Failed to update team.' }, { status: 500 });
   }
 }

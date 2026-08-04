@@ -34,6 +34,7 @@ import {
   EASE,
   SPRING,
 } from '@/components/motion';
+import { logger } from '@/lib/logger';
 
 const AVATAR_PRESETS: Record<string, { icon: LucideIcon; wash: string }> = {
   hacker: { icon: Terminal, wash: 'from-[#AC9C8D] to-[#D1C7BD]' },
@@ -205,7 +206,7 @@ export default function DashboardPage() {
       if (!res.ok) throw new Error('Failed to fetch dashboard data');
       setData(await res.json());
     } catch (err) {
-      console.error(err);
+      logger.error('Dashboard fetch failed', err);
       router.push('/login');
     } finally {
       setLoading(false);
@@ -232,7 +233,7 @@ export default function DashboardPage() {
         await fetchDashboard();
       }
     } catch (err) {
-      console.error(err);
+      logger.error('Mentor request response failed', err, { requestId, action });
       toast('Something went wrong. Please try again.', 'error');
     } finally {
       setActionLoading(null);

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { currentUser } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
 import { signToken } from '@/lib/auth';
+import { logger } from '@/lib/logger';
 
 async function syncClerkUser(email: string, defaultRole: 'STUDENT' | 'MENTOR' = 'STUDENT') {
   let user = await prisma.user.findUnique({
@@ -86,7 +87,7 @@ export async function GET(request: Request) {
 
     return response;
   } catch (error: any) {
-    console.error('Clerk GET Sync error:', error);
+    logger.error('Clerk GET Sync error', error);
     return NextResponse.redirect(new URL('/login', request.url));
   }
 }
@@ -125,7 +126,7 @@ export async function POST(request: Request) {
 
     return response;
   } catch (error: any) {
-    console.error('Clerk POST Sync error:', error);
+    logger.error('Clerk POST Sync error', error);
     return NextResponse.json({ error: 'Failed to synchronize user account' }, { status: 500 });
   }
 }

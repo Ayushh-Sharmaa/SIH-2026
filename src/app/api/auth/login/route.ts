@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { comparePassword, signToken } from '@/lib/auth';
 import { isAuthorizedAdminEmail, isUserBanned } from '@/lib/mockDb';
 import { clientIp, createRateLimiter, tooManyRequests } from '@/lib/rateLimit';
+import { logger } from '@/lib/logger';
 
 /**
  * Keyed on IP *and* email. IP alone is spoofable behind an untrusted proxy; email
@@ -165,7 +166,7 @@ export async function POST(request: Request) {
 
     return response;
   } catch (error: any) {
-    console.error('Login error:', error);
+    logger.error('Login error', error);
     return NextResponse.json({ error: 'An error occurred during authentication.' }, { status: 500 });
   }
 }

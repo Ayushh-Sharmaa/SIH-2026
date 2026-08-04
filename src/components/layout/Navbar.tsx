@@ -7,6 +7,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { AnimatePresence, motion, useMotionValueEvent, useScroll } from 'framer-motion';
 import { EASE, SPRING } from '@/components/motion/tokens';
 import Magnetic from '@/components/motion/Magnetic';
+import { useSession } from '@/lib/session';
 
 const NAV_LINKS = [
   { name: 'Dashboard', path: '/dashboard' },
@@ -15,16 +16,17 @@ const NAV_LINKS = [
   { name: 'Find Mentors', path: '/team-formation/find-mentors' },
 ];
 
-interface SessionUser {
-  name: string;
-  role: string;
-}
-
 export default function Navbar({ overlay = false }: { overlay?: boolean }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [user, setUser] = useState<SessionUser | null>(null);
-  const [loading, setLoading] = useState(true);
+
+  // Read from the shared session rather than refetching `/api/auth/me` on every
+  // pathname change. That effect put a network request on the critical path of
+  // every navigation and flashed the identity block back to a skeleton each
+  // time, so the user's own name blinked out on every page they opened.
+  const { user, status, clear } = useSession();
+  const loading = status === 'loading';
+
   const [scrolled, setScrolled] = useState(false);
   const [hidden, setHidden] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -40,25 +42,6 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
   });
 
   useEffect(() => {
-    let active = true;
-    (async () => {
-      try {
-        const res = await fetch('/api/auth/me');
-        const data = await res.json();
-        if (!active) return;
-        setUser(data.authenticated ? data.user : null);
-      } catch {
-        if (active) setUser(null);
-      } finally {
-        if (active) setLoading(false);
-      }
-    })();
-    return () => {
-      active = false;
-    };
-  }, [pathname]);
-
-  useEffect(() => {
     setMenuOpen(false);
   }, [pathname]);
 
@@ -69,12 +52,29 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
     };
   }, [menuOpen]);
 
+  const [signingOut, setSigningOut] = useState(false);
+
   const handleLogout = async () => {
+    if (signingOut) return; // Double-submit guard: the button stays focusable.
+    setSigningOut(true);
     try {
-      const res = await fetch('/api/auth/logout', { method: 'POST' });
-      if (res.ok) router.push('/login');
-    } catch (err) {
-      console.error('Logout failed:', err);
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'same-origin',
+      });
+      if (!response.ok) {
+        setSigningOut(false);
+        return;
+      }
+      // Drop the cached identity before navigating, so the sign-in view never
+      // renders for a frame with the outgoing user's name still in the bar.
+      clear();
+      router.push('/login');
+    } catch {
+      // A failed sign-out leaves the user signed in, which the unchanged
+      // interface already communicates. Logging the error to the console would
+      // only put diagnostic noise in a production build.
+      setSigningOut(false);
     }
   };
 
@@ -182,9 +182,13 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
                 <Magnetic strength={6} as="span" className="inline-flex">
                   <button
                     onClick={handleLogout}
-                    className="rounded-lg border border-[rgba(209,199,189,0.7)] bg-white/40 px-3 py-2 text-label uppercase text-foreground transition-colors duration-250 hover:bg-white/80"
+                    disabled={signingOut}
+                    // aria-busy tells a screen reader the control is working,
+                    // which the visual label change alone does not convey.
+                    aria-busy={signingOut}
+                    className="rounded-lg border border-[rgba(209,199,189,0.7)] bg-white/40 px-3 py-2 text-label uppercase text-foreground transition-colors duration-250 hover:bg-white/80 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    Sign Out
+                    {signingOut ? 'Signing out' : 'Sign Out'}
                   </button>
                 </Magnetic>
               </div>

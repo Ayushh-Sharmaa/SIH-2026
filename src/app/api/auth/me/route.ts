@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken, signToken } from '@/lib/auth';
 import { currentUser } from '@clerk/nextjs/server';
+import { logger } from '@/lib/logger';
 
 export async function GET() {
   try {
@@ -67,7 +68,7 @@ export async function GET() {
           }
         }
       } catch (err) {
-        console.error('Clerk session auto-sync check failed in me API:', err);
+        logger.error('Clerk session auto-sync check failed in me API', err);
       }
     }
 
@@ -125,7 +126,7 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error('Session check error:', error);
+    logger.error('Session check error', error);
     return NextResponse.json({ error: 'Failed to verify session' }, { status: 500 });
   }
 }

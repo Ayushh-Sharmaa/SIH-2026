@@ -18,6 +18,7 @@ import {
   DURATION,
   EASE,
 } from '@/components/motion';
+import { logger } from '@/lib/logger';
 
 interface Student {
   userId: string;
@@ -125,7 +126,7 @@ export default function FindTeammatesPage() {
         const data = await res.json();
         if (data.success) setStudents(data.students);
       } catch (err) {
-        console.error('Fetch teammates error:', err);
+        logger.error('Fetch teammates error', err);
         toast('Could not load students. Check your connection and try again.', 'error');
       } finally {
         setRefreshing(false);
@@ -142,7 +143,7 @@ export default function FindTeammatesPage() {
         const data = await res.json();
         if (data.success) setTracks(data.tracks);
       } catch (err) {
-        console.error('Fetch tracks failed:', err);
+        logger.error('Fetch tracks failed', err);
         toast('Could not load track filters. Please refresh.', 'error');
       }
       await fetchTeammates({ skill: '', softSkill: '', language: '', trackId: '' });

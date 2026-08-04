@@ -17,6 +17,7 @@ import {
   EASE,
   SPRING,
 } from '@/components/motion';
+import { logger } from '@/lib/logger';
 
 interface Mentor {
   userId: string;
@@ -91,7 +92,7 @@ export default function FindMentorsPage() {
     } catch (err) {
       // Logging alone left the user staring at an empty list with no idea the
       // request had failed.
-      console.error('Fetch mentors failed:', err);
+      logger.error('Fetch mentors failed', err);
       toast('Could not load mentors. Check your connection and try again.', 'error');
     } finally {
       setSearching(false);
@@ -154,7 +155,7 @@ export default function FindMentorsPage() {
             <Reveal delay={0.42} className="mt-8">
               <form
                 onSubmit={handleSearch}
-                className="mx-auto flex max-w-xl flex-col gap-2.5 sm:flex-row"
+                className="mx-auto flex max-w-md flex-col gap-2 sm:flex-row"
               >
                 <div className="relative flex-1">
                   <input
@@ -163,7 +164,7 @@ export default function FindMentorsPage() {
                     onChange={(e) => setExpertise(e.target.value)}
                     placeholder="Search expertise — e.g. Machine Learning, Cloud"
                     aria-label="Search mentor expertise"
-                    className="w-full rounded-full border border-[rgba(209,199,189,0.85)] bg-[rgba(248,246,242,0.75)] py-3 pl-11 pr-4 text-sm text-foreground outline-none backdrop-blur-md transition-[border-color,box-shadow,background-color] duration-250 focus:border-primary focus:bg-[rgba(248,246,242,0.96)] focus:shadow-[0_0_0_4px_rgba(114,56,61,0.10)]"
+                    className="w-full rounded-full border border-[rgba(209,199,189,0.85)] bg-[rgba(248,246,242,0.75)] py-3 pl-11 pr-4 text-sm text-foreground outline-none transition-[border-color,box-shadow,background-color] duration-250 focus:border-primary focus:bg-[rgba(248,246,242,0.96)] focus:shadow-[0_0_0_4px_rgba(114,56,61,0.10)]"
                   />
                   <svg
                     aria-hidden

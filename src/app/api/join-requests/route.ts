@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { recalculateTeamSkills } from '@/lib/derived';
 import { TeamStatus } from '@prisma/client';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: Request) {
   try {
@@ -69,7 +70,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, message: 'Join request sent successfully.', requestId: newRequest.id });
   } catch (error) {
-    console.error('Create join request error:', error);
+    logger.error('Create join request error', error);
     return NextResponse.json({ error: 'Failed to submit join request.' }, { status: 500 });
   }
 }
@@ -169,7 +170,7 @@ export async function PUT(request: Request) {
 
     return NextResponse.json({ success: true, message: 'Student successfully added to your team.' });
   } catch (error) {
-    console.error('Respond join request error:', error);
+    logger.error('Respond join request error', error);
     return NextResponse.json({ error: 'Failed to process request response.' }, { status: 500 });
   }
 }

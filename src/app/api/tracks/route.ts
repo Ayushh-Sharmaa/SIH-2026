@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 
 const SIH_OFFICIAL_18_THEMES = [
   {
@@ -174,7 +175,7 @@ export async function GET() {
       tracks: SIH_OFFICIAL_18_THEMES,
     });
   } catch (error) {
-    console.error('Fetch tracks error:', error);
+    logger.error('Fetch tracks error', error);
     return NextResponse.json({ error: 'Failed to retrieve tracks.' }, { status: 500 });
   }
 }

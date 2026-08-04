@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { hashPassword, signToken } from '@/lib/auth';
 import { clientIp, createRateLimiter, tooManyRequests } from '@/lib/rateLimit';
+import { logger } from '@/lib/logger';
 
 const ALLOWED_DOMAINS = ['glbajaj.org', 'glbajajgroup.org'];
 
@@ -145,7 +146,7 @@ export async function POST(request: Request) {
 
     return response;
   } catch (error: any) {
-    console.error('Signup error:', error);
+    logger.error('Signup error', error);
     return NextResponse.json({ error: 'An error occurred during registration.' }, { status: 500 });
   }
 }

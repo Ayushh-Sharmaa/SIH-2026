@@ -17,6 +17,7 @@ import {
   EASE,
   SPRING,
 } from '@/components/motion';
+import { logger } from '@/lib/logger';
 
 const hasClerkKey = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
@@ -150,7 +151,7 @@ function ClerkSignupPage() {
         router.push('/onboarding');
       }
     } catch (err: any) {
-      console.error('Google Sign-Up error:', err);
+      logger.error('Google Sign-Up error', err);
       try {
         const res = await fetch('/api/auth/clerk-sync', {
           method: 'POST',
@@ -253,7 +254,7 @@ function CustomSignupPage() {
       if (!res.ok) throw new Error(data.error || 'Google Sign-Up failed');
       router.push('/onboarding');
     } catch (err: any) {
-      console.error('Google Sign-Up error:', err);
+      logger.error('Google Sign-Up error', err);
       setError(err.message || 'Google Sign-Up failed. Please try again.');
     } finally {
       setGoogleLoading(false);

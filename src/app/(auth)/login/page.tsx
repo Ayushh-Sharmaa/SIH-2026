@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useCallback, useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useClerk } from '@clerk/nextjs';
+import { useSession } from '@/lib/session';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Aurora,
@@ -14,6 +15,7 @@ import {
   DURATION,
   EASE,
 } from '@/components/motion';
+import { logger } from '@/lib/logger';
 
 const hasClerkKey = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
@@ -99,6 +101,32 @@ function GoogleButton({
   );
 }
 
+/**
+ * Navigates after a successful sign-in, re-reading the session first.
+ *
+ * The session is cached once per page load by `SessionProvider`, which lives in
+ * the root layout and therefore survives client-side navigation. Signing in
+ * changes the session behind that cache, so without an explicit invalidation
+ * here the user would land on the dashboard with the navbar still offering them
+ * a "Sign In" button until the next full page load.
+ *
+ * `refresh` is awaited rather than fired and forgotten: resolving it before the
+ * push means the destination renders with the correct identity on its first
+ * frame instead of correcting itself a moment later.
+ */
+function useAuthenticatedRedirect() {
+  const router = useRouter();
+  const { refresh } = useSession();
+
+  return useCallback(
+    async (destination: string) => {
+      await refresh();
+      router.push(destination);
+    },
+    [refresh, router],
+  );
+}
+
 export default function LoginPage() {
   if (hasClerkKey) {
     return <ClerkLoginPage />;
@@ -108,6 +136,7 @@ export default function LoginPage() {
 
 function ClerkLoginPage() {
   const router = useRouter();
+  const goAuthenticated = useAuthenticatedRedirect();
   const clerk = useClerk();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -149,13 +178,13 @@ function ClerkLoginPage() {
         const meRes = await fetch('/api/auth/me');
         const meData = await meRes.json();
         if (meData.authenticated && meData.user.isOnboarded) {
-          router.push('/dashboard');
+          await goAuthenticated('/dashboard');
         } else {
-          router.push('/onboarding');
+          await goAuthenticated('/onboarding');
         }
       }
     } catch (err: any) {
-      console.error('Google Sign-In error:', err);
+      logger.error('Google Sign-In error', err);
       try {
         const res = await fetch('/api/auth/clerk-sync', {
           method: 'POST',
@@ -167,9 +196,9 @@ function ClerkLoginPage() {
           const meRes = await fetch('/api/auth/me');
           const meData = await meRes.json();
           if (meData.authenticated && meData.user.isOnboarded) {
-            router.push('/dashboard');
+            await goAuthenticated('/dashboard');
           } else {
-            router.push('/onboarding');
+            await goAuthenticated('/onboarding');
           }
           return;
         }
@@ -201,12 +230,12 @@ function ClerkLoginPage() {
       }
 
       if (data.redirectUrl) {
-        router.push(data.redirectUrl);
+        await goAuthenticated(data.redirectUrl);
         return;
       }
 
       if (data.user?.role === 'ADMIN') {
-        router.push('/admin');
+        await goAuthenticated('/admin');
         return;
       }
 
@@ -214,11 +243,11 @@ function ClerkLoginPage() {
       const meData = await meRes.json();
 
       if (meData.authenticated && meData.user?.role === 'ADMIN') {
-        router.push('/admin');
+        await goAuthenticated('/admin');
       } else if (meData.authenticated && meData.user?.isOnboarded) {
-        router.push('/dashboard');
+        await goAuthenticated('/dashboard');
       } else {
-        router.push('/onboarding');
+        await goAuthenticated('/onboarding');
       }
     } catch (err: any) {
       setLoading(false);
@@ -248,6 +277,7 @@ function ClerkLoginPage() {
 
 function CustomLoginPage() {
   const router = useRouter();
+  const goAuthenticated = useAuthenticatedRedirect();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -269,12 +299,12 @@ function CustomLoginPage() {
       const meRes = await fetch('/api/auth/me');
       const meData = await meRes.json();
       if (meData.authenticated && meData.user.isOnboarded) {
-        router.push('/dashboard');
+        await goAuthenticated('/dashboard');
       } else {
-        router.push('/onboarding');
+        await goAuthenticated('/onboarding');
       }
     } catch (err: any) {
-      console.error('Google Sign-In error:', err);
+      logger.error('Google Sign-In error', err);
       setError(err.message || 'Google Sign-In failed. Please try again.');
     } finally {
       setGoogleLoading(false);
@@ -300,12 +330,12 @@ function CustomLoginPage() {
       }
 
       if (data.redirectUrl) {
-        router.push(data.redirectUrl);
+        await goAuthenticated(data.redirectUrl);
         return;
       }
 
       if (data.user?.role === 'ADMIN') {
-        router.push('/admin');
+        await goAuthenticated('/admin');
         return;
       }
 
@@ -313,11 +343,11 @@ function CustomLoginPage() {
       const meData = await meRes.json();
 
       if (meData.authenticated && meData.user?.role === 'ADMIN') {
-        router.push('/admin');
+        await goAuthenticated('/admin');
       } else if (meData.authenticated && meData.user?.isOnboarded) {
-        router.push('/dashboard');
+        await goAuthenticated('/dashboard');
       } else {
-        router.push('/onboarding');
+        await goAuthenticated('/onboarding');
       }
     } catch (err: any) {
       setLoading(false);

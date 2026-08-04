@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { logger } from '@/lib/logger';
 
 
 export async function GET() {
@@ -171,7 +172,7 @@ export async function GET() {
       });
     }
   } catch (error) {
-    console.error('Fetch dashboard error:', error);
+    logger.error('Fetch dashboard error', error);
     return NextResponse.json({ error: 'Failed to retrieve dashboard details.' }, { status: 500 });
   }
 }

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import { addAdminEmail, getAdminEmails, isAuthorizedAdminEmail, removeAdminEmail } from '@/lib/mockDb';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: Request) {
   try {
@@ -52,7 +53,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
   } catch (error: any) {
-    console.error('Admin access management error:', error);
+    logger.error('Admin access management error', error);
     return NextResponse.json({ error: 'Failed to update admin permissions.' }, { status: 500 });
   }
 }

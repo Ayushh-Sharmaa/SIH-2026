@@ -18,6 +18,7 @@ import {
   DURATION,
   EASE,
 } from '@/components/motion';
+import { logger } from '@/lib/logger';
 
 interface Track {
   id: string;
@@ -53,7 +54,7 @@ export default function CreateTeamPage() {
       } catch (err) {
         // Without this the track dropdown just renders empty and the user
         // cannot tell whether there are no tracks or the request failed.
-        console.error('Fetch tracks failed:', err);
+        logger.error('Fetch tracks failed', err);
         toast('Could not load problem statement tracks. Please refresh.', 'error');
       }
     }

@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { getAdminEmails, isAuthorizedAdminEmail, isUserBanned } from '@/lib/mockDb';
+import { logger } from '@/lib/logger';
 
 export async function GET() {
   try {
@@ -153,7 +154,7 @@ export async function GET() {
       problemStatementStats,
     });
   } catch (error: any) {
-    console.error('Admin data fetch error:', error);
+    logger.error('Admin data fetch error', error);
     return NextResponse.json({ error: 'Failed to load admin dashboard data.' }, { status: 500 });
   }
 }

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { logger } from '@/lib/logger';
 
 export async function GET() {
   try {
@@ -100,7 +101,7 @@ export async function GET() {
       notifications: notifications.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
     });
   } catch (error) {
-    console.error('Fetch notifications error:', error);
+    logger.error('Fetch notifications error', error);
     return NextResponse.json({ error: 'Failed to retrieve notifications.' }, { status: 500 });
   }
 }

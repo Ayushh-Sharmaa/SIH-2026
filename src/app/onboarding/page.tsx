@@ -16,6 +16,7 @@ import {
   EASE,
   SPRING,
 } from '@/components/motion';
+import { logger } from '@/lib/logger';
 
 interface Track {
   id: string;
@@ -352,7 +353,7 @@ export default function OnboardingPage() {
       } catch (err) {
         // Silently failing here left the wizard with no tracks to choose from
         // and no explanation, which reads as the form being broken.
-        console.error('Onboarding init failed:', err);
+        logger.error('Onboarding init failed', err);
         setError('Could not load your profile options. Please refresh and try again.');
       } finally {
         setLoading(false);

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { logger } from '@/lib/logger';
 
 export async function PUT(request: Request) {
   try {
@@ -77,7 +78,7 @@ export async function PUT(request: Request) {
 
     return NextResponse.json({ success: true, profile: updatedProfile });
   } catch (error) {
-    console.error('Update student profile error:', error);
+    logger.error('Update student profile error', error);
     return NextResponse.json({ error: 'Failed to update student profile.' }, { status: 500 });
   }
 }

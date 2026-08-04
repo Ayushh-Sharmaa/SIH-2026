@@ -484,10 +484,10 @@ function LoginTemplate({
           </Reveal>
 
           <Reveal delay={0.3}>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} noValidate className="space-y-4">
               <Field
                 label="College email"
-                type="email"
+                type="text"
                 autoComplete="email"
                 required
                 value={email}

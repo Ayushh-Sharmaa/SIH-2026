@@ -415,7 +415,7 @@ function SignupTemplate({
                 <span className="h-px flex-1 bg-[rgba(209,199,189,0.8)]" />
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} noValidate className="space-y-4">
                 {/* role segmented control */}
                 <div>
                   <p className="mb-2 pl-1 text-label uppercase text-muted">
@@ -476,7 +476,7 @@ function SignupTemplate({
 
                 <Field
                   label="College email"
-                  type="email"
+                  type="text"
                   autoComplete="email"
                   required
                   value={email}

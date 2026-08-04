@@ -58,10 +58,12 @@ export default function ViewingAsBanner() {
       className="surface-overlay sticky top-0 z-overlay flex flex-wrap items-center justify-center gap-3 border-b border-line-accent px-gutter py-2.5"
     >
       <span className="flex items-center gap-2 text-caption font-semibold text-accent">
-        {/* The adjacent text carries the meaning, so the glyph stays decorative
-            and is not announced twice. Replaces a 🛠️ emoji, which rendered in
-            whatever face the OS supplied and matched nothing else on the site. */}
-        <Icon icon={Wrench} size="sm" aria-hidden />
+        {/* No `label`, so the icon stays decorative and aria-hidden per the
+            Icon contract — the adjacent text already carries the meaning, and
+            naming it here would have a screen reader announce it twice.
+            Replaces a 🛠️ emoji, which rendered in whatever face the OS supplied
+            and matched nothing else on the site. */}
+        <Icon icon={Wrench} size="sm" />
         Admin view — exploring the {viewingLabel} dashboard as the sandbox account
       </span>
       <button

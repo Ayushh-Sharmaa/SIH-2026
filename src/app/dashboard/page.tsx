@@ -69,7 +69,7 @@ function Avatar({
     <span
       role="img"
       aria-label={`${name}'s profile`}
-      className={`flex items-center justify-center bg-gradient-to-br text-ink/70 ${preset.wash} ${className}`}
+      className={`flex items-center justify-center bg-gradient-to-br text-body ${preset.wash} ${className}`}
     >
       {/* The wrapper already carries the accessible name, so the glyph itself
           stays decorative — otherwise it is announced twice. */}
@@ -80,14 +80,14 @@ function Avatar({
 
 function Label({ children }: { children: ReactNode }) {
   return (
-    <span className="block text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
+    <span className="block text-label uppercase text-muted">
       {children}
     </span>
   );
 }
 
 const CHIP_TONES = {
-  neutral: 'border-[rgba(209,199,189,0.7)] bg-[rgba(239,233,225,0.8)] text-foreground/75',
+  neutral: 'border-[rgba(209,199,189,0.7)] bg-[rgba(239,233,225,0.8)] text-body',
   accent: 'border-[rgba(172,156,141,0.55)] bg-[rgba(172,156,141,0.18)] text-foreground',
   primary: 'border-[rgba(114,56,61,0.22)] bg-[rgba(114,56,61,0.08)] text-primary',
 } as const;
@@ -124,7 +124,7 @@ function DeckStat({
           <div className="truncate text-2xl font-extrabold capitalize tracking-tight text-foreground sm:text-[1.7rem]">
             {text ?? <Counter to={value ?? 0} duration={1.4} />}
           </div>
-          <div className="mt-1 truncate text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
+          <div className="mt-1 truncate text-label uppercase text-muted">
             {label}
           </div>
         </div>
@@ -147,9 +147,7 @@ function Panel({
   return (
     <div className={`surface-raised rounded-3xl p-6 sm:p-7 ${className}`}>
       <div className="mb-5 flex items-center justify-between gap-4">
-        <h3 className="text-sm font-extrabold uppercase tracking-[0.14em] text-foreground">
-          {title}
-        </h3>
+        <h2 className="text-feature text-foreground">{title}</h2>
         {action}
       </div>
       <div className="mb-5 h-px bg-gradient-to-r from-[rgba(172,156,141,0.55)] via-[rgba(209,199,189,0.35)] to-transparent" />
@@ -272,7 +270,7 @@ export default function DashboardPage() {
                     className="size-full rounded-xl text-3xl"
                   />
                 </div>
-                <span className="absolute -bottom-1 -right-1 grid size-6 place-items-center rounded-full border border-[rgba(239,233,225,0.9)] bg-primary text-[10px] font-black text-[#FBF9F6]">
+                <span className="absolute -bottom-1 -right-1 grid size-6 place-items-center rounded-full border border-[rgba(239,233,225,0.9)] bg-primary text-caption font-black text-on-accent">
                   {isStudent ? 'S' : 'M'}
                 </span>
               </motion.div>
@@ -295,7 +293,7 @@ export default function DashboardPage() {
                 <SplitText
                   as="h1"
                   text={`Welcome back, ${profile?.name || 'User'}`}
-                  className="text-3xl font-extrabold leading-[1.1] tracking-tight text-foreground sm:text-4xl"
+                  className="text-title text-foreground"
                   delay={0.1}
                 />
 
@@ -303,7 +301,7 @@ export default function DashboardPage() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.45, duration: 0.5 }}
-                  className="mt-2 max-w-xl text-sm leading-relaxed text-foreground/65"
+                  className="mt-2 max-w-xl text-sm leading-relaxed text-body"
                 >
                   {isStudent
                     ? 'Track your team formation status, review your profile, and explore matches.'
@@ -465,7 +463,7 @@ export default function DashboardPage() {
 
                           <div>
                             <Label>Biography</Label>
-                            <p className="mt-1.5 rounded-xl border border-[rgba(209,199,189,0.6)] bg-[rgba(239,233,225,0.6)] p-3 text-xs leading-relaxed text-foreground/75">
+                            <p className="mt-1.5 rounded-xl border border-[rgba(209,199,189,0.6)] bg-[rgba(239,233,225,0.6)] p-3 text-xs leading-relaxed text-body">
                               {profile?.bio || 'No bio provided.'}
                             </p>
                           </div>
@@ -506,10 +504,8 @@ export default function DashboardPage() {
                           action={<Chip tone="primary">{String(team.status).toLowerCase()}</Chip>}
                         >
                           <div className="mb-6">
-                            <h4 className="text-2xl font-extrabold tracking-tight text-foreground">
-                              {team.name}
-                            </h4>
-                            <p className="mt-1 text-xs text-foreground/60">
+                            <h3 className="text-subheading text-foreground">{team.name}</h3>
+                            <p className="mt-1 text-xs text-muted">
                               Track{' '}
                               <span className="font-bold text-primary">
                                 {team.track.problemStatementCode}
@@ -521,7 +517,7 @@ export default function DashboardPage() {
                           <div className="mb-6">
                             <div className="mb-3 flex items-center justify-between gap-4">
                               <Label>Team roster</Label>
-                              <span className="text-[11px] font-semibold text-foreground/60">
+                              <span className="text-caption font-semibold text-muted">
                                 {filledSeats} of 6 seats filled
                               </span>
                             </div>
@@ -557,11 +553,11 @@ export default function DashboardPage() {
                                       name={member.name}
                                       className="aspect-square w-full rounded-xl border border-[rgba(209,199,189,0.7)] text-xl shadow-[0_4px_16px_rgba(50,45,41,0.08)]"
                                     />
-                                    <p className="mt-1.5 truncate text-center text-[10px] font-semibold text-foreground">
+                                    <p className="mt-1.5 truncate text-center text-caption font-semibold text-foreground">
                                       {member.name}
                                     </p>
                                     {member.userId === team.leaderId && (
-                                      <p className="text-center text-[9px] font-bold uppercase tracking-wider text-primary">
+                                      <p className="text-center text-label uppercase text-primary">
                                         Leader
                                       </p>
                                     )}
@@ -626,7 +622,7 @@ export default function DashboardPage() {
                                         setCopied(true);
                                         window.setTimeout(() => setCopied(false), 1600);
                                       }}
-                                      className="shrink-0 rounded-md border border-[rgba(114,56,61,0.2)] bg-[rgba(114,56,61,0.08)] px-2 py-1 text-[10px] font-bold text-primary transition-colors hover:bg-[rgba(114,56,61,0.16)]"
+                                      className="shrink-0 rounded-md border border-[rgba(114,56,61,0.2)] bg-[rgba(114,56,61,0.08)] px-2 py-1 text-caption font-bold text-primary transition-colors hover:bg-[rgba(114,56,61,0.16)]"
                                     >
                                       {copied ? 'Copied' : 'Copy'}
                                     </button>
@@ -667,12 +663,12 @@ export default function DashboardPage() {
                             {team.mentor ? (
                               <p className="mt-1 text-sm font-bold text-foreground">
                                 {team.mentor.name}{' '}
-                                <span className="font-medium text-foreground/55">
+                                <span className="font-medium text-muted">
                                   ({team.mentor.designation})
                                 </span>
                               </p>
                             ) : (
-                              <p className="mt-1 text-sm font-semibold text-foreground/70">
+                              <p className="mt-1 text-sm font-semibold text-body">
                                 No mentor assigned yet.
                               </p>
                             )}
@@ -701,10 +697,10 @@ export default function DashboardPage() {
                               />
                             </svg>
                           </div>
-                          <h3 className="mt-5 text-xl font-extrabold tracking-tight text-foreground">
+                          <h2 className="mt-5 text-feature text-foreground">
                             You don&apos;t have a team yet
-                          </h3>
-                          <p className="mx-auto mt-2.5 max-w-sm text-sm leading-relaxed text-foreground/65">
+                          </h2>
+                          <p className="mx-auto mt-2.5 max-w-sm text-sm leading-relaxed text-body">
                             To participate in SIH@GLBGOI you must either join an existing forming
                             team or start a new one as a leader.
                           </p>
@@ -732,7 +728,7 @@ export default function DashboardPage() {
                               / {profile?.capacity ?? 0}
                             </span>
                           </span>
-                          <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted">
+                          <span className="text-label uppercase text-muted">
                             teams
                           </span>
                         </div>
@@ -746,7 +742,7 @@ export default function DashboardPage() {
                             }}
                             transition={{ duration: 1, ease: EASE.outExpo, delay: 0.25 }}
                             style={{ transformOrigin: 'left' }}
-                            className="h-full rounded-full bg-gradient-to-r from-[#AC9C8D] via-[#8F464C] to-primary"
+                            className="h-full rounded-full bg-gradient-to-r from-[#AC9C8D] via-[#8A444A] to-primary"
                           />
                         </div>
                       </Panel>
@@ -767,7 +763,7 @@ export default function DashboardPage() {
                                     <span className="block truncate text-sm font-bold text-foreground">
                                       {t.name}
                                     </span>
-                                    <span className="mt-0.5 block truncate text-xs text-foreground/60">
+                                    <span className="mt-0.5 block truncate text-xs text-muted">
                                       Track: {t.track.name}
                                     </span>
                                   </div>
@@ -777,7 +773,7 @@ export default function DashboardPage() {
                             ))}
                           </RevealGroup>
                         ) : (
-                          <p className="py-8 text-center text-sm text-foreground/55">
+                          <p className="py-8 text-center text-sm text-muted">
                             You are not mentoring any teams yet.
                           </p>
                         )}
@@ -810,11 +806,11 @@ export default function DashboardPage() {
                                     <span className="text-sm font-bold text-foreground">
                                       {req.team.name}
                                     </span>
-                                    <span className="mt-0.5 block text-xs text-foreground/60">
+                                    <span className="mt-0.5 block text-xs text-muted">
                                       Track: {req.team.track.name}
                                     </span>
                                     {req.message && (
-                                      <p className="mt-2.5 rounded-xl border-l-2 border-[rgba(114,56,61,0.35)] bg-[rgba(239,233,225,0.7)] px-3 py-2 text-xs italic leading-relaxed text-foreground/75">
+                                      <p className="mt-2.5 rounded-xl border-l-2 border-[rgba(114,56,61,0.35)] bg-[rgba(239,233,225,0.7)] px-3 py-2 text-xs italic leading-relaxed text-body">
                                         {req.message}
                                       </p>
                                     )}
@@ -843,7 +839,7 @@ export default function DashboardPage() {
                             </AnimatePresence>
                           </div>
                         ) : (
-                          <p className="py-8 text-center text-sm text-foreground/55">
+                          <p className="py-8 text-center text-sm text-muted">
                             No incoming team requests.
                           </p>
                         )}

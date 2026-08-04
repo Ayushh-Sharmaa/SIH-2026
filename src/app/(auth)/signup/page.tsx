@@ -57,7 +57,7 @@ function OnboardingHandoff() {
           <div className="h-11 w-full rounded-xl skeleton-shimmer" />
         </div>
       </div>
-      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
+      <p className="text-label uppercase text-muted">
         Preparing your onboarding
       </p>
     </motion.div>
@@ -381,12 +381,12 @@ function SignupTemplate({
           <SplitText
             as="h1"
             text="Create your account."
-            className="mt-8 text-4xl font-extrabold leading-[1.05] tracking-tight text-foreground sm:text-5xl"
+            className="mt-8 text-title text-foreground"
             delay={0.1}
           />
 
           <Reveal delay={0.32} className="mt-4">
-            <p className="mx-auto max-w-md text-sm leading-relaxed text-foreground/60">
+            <p className="mx-auto max-w-md text-sm leading-relaxed text-muted">
               One workspace account gets you team formation, the mentor directory, and the full
               problem-statement index.
             </p>
@@ -403,7 +403,7 @@ function SignupTemplate({
 
               <div className="my-7 flex items-center gap-3">
                 <span className="h-px flex-1 bg-[rgba(209,199,189,0.8)]" />
-                <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted">
+                <span className="text-label uppercase text-muted">
                   or with email
                 </span>
                 <span className="h-px flex-1 bg-[rgba(209,199,189,0.8)]" />
@@ -412,7 +412,7 @@ function SignupTemplate({
               <form onSubmit={handleSubmit} className="space-y-4">
                 {/* role segmented control */}
                 <div>
-                  <p className="mb-2 pl-1 text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
+                  <p className="mb-2 pl-1 text-label uppercase text-muted">
                     I am registering as
                   </p>
                   <div
@@ -430,7 +430,7 @@ function SignupTemplate({
                           aria-checked={active}
                           onClick={() => setRole(r.value)}
                           className={`relative rounded-xl px-4 py-2.5 text-xs font-bold uppercase tracking-[0.1em] transition-colors duration-250 ${
-                            active ? 'text-[#FBF9F6]' : 'text-foreground/60 hover:text-primary'
+                            active ? 'text-on-accent' : 'text-muted hover:text-primary'
                           }`}
                         >
                           {active && (
@@ -452,7 +452,7 @@ function SignupTemplate({
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 4 }}
                       transition={{ duration: DURATION.hover, ease: EASE.outExpo }}
-                      className="mt-2 pl-1 text-[11px] text-foreground/55"
+                      className="mt-2 pl-1 text-caption text-muted"
                     >
                       {activeRole.blurb}
                     </motion.p>
@@ -539,7 +539,7 @@ function SignupTemplate({
                 </div>
               </form>
 
-              <p className="mt-7 text-center text-xs text-foreground/55">
+              <p className="mt-7 text-center text-xs text-muted">
                 Already have a workspace account?{' '}
                 <Link
                   href="/login"

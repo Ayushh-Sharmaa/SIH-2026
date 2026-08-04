@@ -90,7 +90,7 @@ export default function CreateTeamPage() {
           {/* narrative rail */}
           <div className="lg:pt-6">
             <Reveal direction="none" blur={false}>
-              <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary">
+              <span className="text-label uppercase text-primary">
                 Step one of the journey
               </span>
             </Reveal>
@@ -98,12 +98,12 @@ export default function CreateTeamPage() {
             <SplitText
               as="h1"
               text="Form your team."
-              className="mt-3 text-4xl font-extrabold leading-[1.05] tracking-tight text-foreground sm:text-5xl"
+              className="mt-3 text-title text-foreground"
               delay={0.08}
             />
 
             <Reveal delay={0.28} className="mt-4">
-              <p className="max-w-md text-sm leading-relaxed text-foreground/65">
+              <p className="max-w-md text-sm leading-relaxed text-body">
                 Establish your team profile, choose a problem statement track, and leave a way for
                 teammates to reach you. You become the team leader.
               </p>
@@ -114,9 +114,9 @@ export default function CreateTeamPage() {
                 <Reveal key={s.label} delay={0.4 + i * 0.09} direction="right">
                   <li className="flex gap-4">
                     <span
-                      className={`grid size-7 shrink-0 place-items-center rounded-full border text-[11px] font-black transition-colors duration-300 ${
+                      className={`grid size-7 shrink-0 place-items-center rounded-full border text-caption font-black transition-colors duration-300 ${
                         i < filled
-                          ? 'border-transparent bg-primary text-[#FBF9F6]'
+                          ? 'border-transparent bg-primary text-on-accent'
                           : 'border-[rgba(172,156,141,0.6)] bg-[rgba(239,233,225,0.7)] text-muted'
                       }`}
                     >
@@ -124,7 +124,7 @@ export default function CreateTeamPage() {
                     </span>
                     <span className="min-w-0">
                       <span className="block text-sm font-bold text-foreground">{s.label}</span>
-                      <span className="mt-0.5 block text-xs text-foreground/55">{s.hint}</span>
+                      <span className="mt-0.5 block text-xs text-muted">{s.hint}</span>
                     </span>
                   </li>
                 </Reveal>
@@ -136,7 +136,7 @@ export default function CreateTeamPage() {
           <Reveal direction="left" scale delay={0.12}>
             <div className="surface-raised rounded-3xl p-7 sm:p-9">
               <div className="mb-7">
-                <div className="mb-2 flex items-center justify-between text-[11px] font-bold uppercase tracking-[0.14em] text-muted">
+                <div className="mb-2 flex items-center justify-between text-label uppercase text-muted">
                   <span>Team details</span>
                   <span>{filled} / 3</span>
                 </div>
@@ -194,7 +194,7 @@ export default function CreateTeamPage() {
                   </PremiumButton>
                 </div>
 
-                <p className="text-center text-[11px] text-foreground/50">
+                <p className="text-center text-caption text-muted">
                   Already have a team? Head back to your{' '}
                   <a href="/dashboard" className="font-bold text-primary hover:underline">
                     dashboard

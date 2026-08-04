@@ -58,33 +58,33 @@ const OFFICIAL_LANGUAGES = [
 const CATEGORY_STYLES = {
   'Frontend Web': {
     swatch: '#72383D',
-    active: 'border-transparent bg-primary text-[#FBF9F6]',
+    active: 'border-transparent bg-primary text-on-accent',
     inactive:
       'border-[rgba(114,56,61,0.3)] bg-[rgba(114,56,61,0.06)] text-primary hover:bg-[rgba(114,56,61,0.12)]',
   },
   'Backend & DB': {
     swatch: '#AC9C8D',
-    active: 'border-transparent bg-[#AC9C8D] text-[#FBF9F6]',
+    active: 'border-transparent bg-clay text-ink',
     inactive:
       'border-[rgba(172,156,141,0.7)] bg-[rgba(172,156,141,0.14)] text-foreground hover:bg-[rgba(172,156,141,0.28)]',
   },
   'AI & Cloud & Tools': {
     swatch: '#322D29',
-    active: 'border-transparent bg-foreground text-[#FBF9F6]',
+    active: 'border-transparent bg-foreground text-on-accent',
     inactive:
       'border-[rgba(50,45,41,0.28)] bg-[rgba(50,45,41,0.05)] text-foreground hover:bg-[rgba(50,45,41,0.1)]',
   },
   'Design & Prototyping': {
-    swatch: '#8F464C',
+    swatch: '#8A444A',
     active: 'border-[rgba(114,56,61,0.85)] bg-[rgba(114,56,61,0.16)] text-primary',
     inactive:
-      'border-dashed border-[rgba(114,56,61,0.35)] bg-transparent text-foreground/70 hover:border-[rgba(114,56,61,0.6)]',
+      'border-dashed border-[rgba(114,56,61,0.35)] bg-transparent text-body hover:border-[rgba(114,56,61,0.6)]',
   },
   'General & Soft Skills': {
     swatch: '#D1C7BD',
     active: 'border-[rgba(172,156,141,0.9)] bg-[rgba(209,199,189,0.75)] text-foreground',
     inactive:
-      'border-[rgba(209,199,189,0.85)] bg-[rgba(248,246,242,0.6)] text-foreground/65 hover:border-[rgba(172,156,141,0.9)]',
+      'border-[rgba(209,199,189,0.85)] bg-[rgba(248,246,242,0.6)] text-body hover:border-[rgba(172,156,141,0.9)]',
   },
 } as const;
 
@@ -159,8 +159,8 @@ const SELECT = `${CONTROL} cursor-pointer appearance-none`;
 function SectionHeading({ eyebrow, title }: { eyebrow: string; title: string }) {
   return (
     <div className="border-b border-[rgba(209,199,189,0.7)] pb-4">
-      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">{eyebrow}</p>
-      <h2 className="mt-1 text-xl font-extrabold tracking-tight text-foreground">{title}</h2>
+      <p className="text-label uppercase text-primary">{eyebrow}</p>
+      <h2 className="mt-1 text-heading text-foreground">{title}</h2>
     </div>
   );
 }
@@ -178,12 +178,12 @@ function Labelled({
 }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
+      <span className="mb-1.5 block text-label uppercase text-muted">
         {label}
         {required && <span className="ml-1 text-primary">*</span>}
       </span>
       {children}
-      {hint && <span className="mt-1.5 block text-[11px] text-foreground/50">{hint}</span>}
+      {hint && <span className="mt-1.5 block text-caption text-muted">{hint}</span>}
     </label>
   );
 }
@@ -760,7 +760,7 @@ export default function OnboardingPage() {
               SIH@GLBGOI
             </span>
           </Link>
-          <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted">
+          <span className="text-label uppercase text-muted">
             {isStudent ? 'Student' : 'Mentor'} onboarding
           </span>
         </div>
@@ -769,11 +769,11 @@ export default function OnboardingPage() {
           <SplitText
             as="h1"
             text="Complete your profile."
-            className="text-4xl font-extrabold leading-[1.05] tracking-tight text-foreground sm:text-5xl"
+            className="text-title text-foreground"
             delay={0.08}
           />
           <Reveal delay={0.3} className="mt-3">
-            <p className="max-w-xl text-sm leading-relaxed text-foreground/60">
+            <p className="max-w-xl text-sm leading-relaxed text-muted">
               Everything here feeds team matching, mentor routing and the roster views. Every field
               is required unless marked optional.
             </p>
@@ -797,10 +797,10 @@ export default function OnboardingPage() {
                     aria-current={active ? 'step' : undefined}
                     className={`relative flex items-center gap-2.5 rounded-full px-4 py-2 transition-colors duration-250 ${
                       active
-                        ? 'text-[#FBF9F6]'
+                        ? 'text-on-accent'
                         : done
                           ? 'text-primary hover:text-[var(--primary-hover)]'
-                          : 'cursor-default text-foreground/40'
+                          : 'cursor-default text-muted'
                     }`}
                   >
                     {active && (
@@ -811,12 +811,12 @@ export default function OnboardingPage() {
                       />
                     )}
                     <span
-                      className={`relative z-10 grid size-5 place-items-center rounded-full text-[10px] font-black ${
+                      className={`relative z-10 grid size-5 place-items-center rounded-full text-caption font-black ${
                         active
-                          ? 'bg-[rgba(251,249,246,0.22)] text-[#FBF9F6]'
+                          ? 'bg-white/20 text-on-accent'
                           : done
                             ? 'bg-[rgba(114,56,61,0.14)] text-primary'
-                            : 'bg-[rgba(209,199,189,0.7)] text-foreground/45'
+                            : 'bg-[rgba(209,199,189,0.7)] text-muted'
                       }`}
                     >
                       {done ? <Icon icon={Check} size="xs" /> : s.n}
@@ -880,7 +880,7 @@ export default function OnboardingPage() {
 
                   {/* profile photo */}
                   <div>
-                    <span className="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
+                    <span className="mb-2 block text-label uppercase text-muted">
                       Profile photo <span className="text-primary">*</span>
                     </span>
 
@@ -894,14 +894,14 @@ export default function OnboardingPage() {
                           />
                         </div>
                         <div className="flex-1 space-y-2 text-center sm:text-left">
-                          <span className="inline-flex items-center rounded-full border border-[rgba(172,156,141,0.7)] bg-[rgba(172,156,141,0.2)] px-2.5 py-0.5 text-[10px] font-bold text-foreground">
+                          <span className="inline-flex items-center rounded-full border border-[rgba(172,156,141,0.7)] bg-[rgba(172,156,141,0.2)] px-2.5 py-0.5 text-caption font-bold text-foreground">
                             Photo active
                           </span>
-                          <p className="text-xs leading-relaxed text-foreground/60">
+                          <p className="text-xs leading-relaxed text-muted">
                             This photo appears on your card across team search and roster views.
                           </p>
                           <div className="flex flex-wrap justify-center gap-2 pt-1 sm:justify-start">
-                            <label className="cursor-pointer rounded-lg border border-[rgba(114,56,61,0.3)] bg-[rgba(114,56,61,0.08)] px-3 py-1.5 text-[11px] font-bold text-primary transition-colors duration-250 hover:bg-[rgba(114,56,61,0.15)]">
+                            <label className="cursor-pointer rounded-lg border border-[rgba(114,56,61,0.3)] bg-[rgba(114,56,61,0.08)] px-3 py-1.5 text-caption font-bold text-primary transition-colors duration-250 hover:bg-[rgba(114,56,61,0.15)]">
                               Change photo
                               <input
                                 type="file"
@@ -913,7 +913,7 @@ export default function OnboardingPage() {
                             <button
                               type="button"
                               onClick={() => setStudentForm({ ...studentForm, avatarUrl: '' })}
-                              className="rounded-lg border border-[rgba(209,199,189,0.85)] bg-[rgba(248,246,242,0.7)] px-3 py-1.5 text-[11px] font-bold text-foreground/65 transition-colors duration-250 hover:text-primary"
+                              className="rounded-lg border border-[rgba(209,199,189,0.85)] bg-[rgba(248,246,242,0.7)] px-3 py-1.5 text-caption font-bold text-body transition-colors duration-250 hover:text-primary"
                             >
                               Remove
                             </button>
@@ -940,7 +940,7 @@ export default function OnboardingPage() {
                         <span className="text-sm font-bold text-foreground">
                           Upload your profile photo
                         </span>
-                        <span className="mt-1 text-[11px] text-foreground/50">
+                        <span className="mt-1 text-caption text-muted">
                           JPEG, PNG or WEBP up to 1.5 MB
                         </span>
                         <input
@@ -1078,7 +1078,7 @@ export default function OnboardingPage() {
                           exit={{ opacity: 0, scale: 0.9 }}
                           transition={{ duration: DURATION.micro, ease: EASE.outExpo }}
                           onClick={() => handleAddCustomSkill(skillSearch)}
-                          className="absolute right-1.5 top-1.5 rounded-lg bg-primary px-3 py-1.5 text-[11px] font-bold text-[#FBF9F6] shadow-[0_4px_14px_rgba(114,56,61,0.25)]"
+                          className="absolute right-1.5 top-1.5 rounded-lg bg-primary px-3 py-1.5 text-caption font-bold text-on-accent shadow-[0_4px_14px_rgba(114,56,61,0.25)]"
                         >
                           Add “{skillSearch.trim()}”
                         </motion.button>
@@ -1089,7 +1089,7 @@ export default function OnboardingPage() {
                   {/* selected skills */}
                   {lockedSkills.length > 0 && (
                     <div className="rounded-2xl border border-[rgba(209,199,189,0.75)] bg-[rgba(239,233,225,0.5)] p-3.5">
-                      <span className="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
+                      <span className="mb-2 block text-label uppercase text-muted">
                         Selected ({lockedSkills.length}) — click to remove
                       </span>
                       <motion.div layout className="flex max-h-32 flex-wrap gap-1.5 overflow-y-auto">
@@ -1104,7 +1104,7 @@ export default function OnboardingPage() {
                               exit={{ opacity: 0, scale: 0.85 }}
                               transition={SPRING.snappy}
                               onClick={() => toggleSkillTile(skill)}
-                              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1 text-[11px] font-bold ${
+                              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1 text-caption font-bold ${
                                 CATEGORY_STYLES[getSkillCategory(skill)].active
                               }`}
                             >
@@ -1121,7 +1121,7 @@ export default function OnboardingPage() {
 
                   {/* pool */}
                   <div>
-                    <span className="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
+                    <span className="mb-2 block text-label uppercase text-muted">
                       Skill pool — click to toggle
                     </span>
                     <div className="flex max-h-52 flex-wrap gap-2 overflow-y-auto rounded-2xl border border-[rgba(209,199,189,0.75)] bg-[rgba(239,233,225,0.4)] p-3.5">
@@ -1147,7 +1147,7 @@ export default function OnboardingPage() {
                         })
                       ) : (
                         <div className="w-full py-5 text-center">
-                          <p className="mb-3 text-xs text-foreground/55">
+                          <p className="mb-3 text-xs text-muted">
                             Nothing in the pool matches “{skillSearch}”.
                           </p>
                           <PremiumButton
@@ -1173,7 +1173,7 @@ export default function OnboardingPage() {
                         className="overflow-hidden"
                       >
                         <div className="rounded-2xl border border-[rgba(172,156,141,0.6)] bg-[rgba(172,156,141,0.14)] p-3.5">
-                          <span className="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
+                          <span className="mb-2 block text-label uppercase text-primary">
                             Pairs well with your stack
                           </span>
                           <div className="flex flex-wrap gap-1.5">
@@ -1184,7 +1184,7 @@ export default function OnboardingPage() {
                                 whileHover={{ y: -2 }}
                                 transition={SPRING.snappy}
                                 onClick={() => toggleSkillTile(rec)}
-                                className="rounded-lg border border-[rgba(209,199,189,0.85)] bg-[rgba(248,246,242,0.75)] px-2.5 py-1 text-[11px] font-semibold text-foreground transition-colors duration-250 hover:border-[rgba(114,56,61,0.35)] hover:text-primary"
+                                className="rounded-lg border border-[rgba(209,199,189,0.85)] bg-[rgba(248,246,242,0.75)] px-2.5 py-1 text-caption font-semibold text-foreground transition-colors duration-250 hover:border-[rgba(114,56,61,0.35)] hover:text-primary"
                               >
                                 + {rec}
                               </motion.button>
@@ -1197,7 +1197,7 @@ export default function OnboardingPage() {
 
                   {/* custom skills */}
                   <div>
-                    <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
+                    <span className="mb-1.5 block text-label uppercase text-muted">
                       Add several at once — comma separated
                     </span>
                     <div className="flex gap-2">
@@ -1274,7 +1274,7 @@ export default function OnboardingPage() {
                           <span className="block text-2xl font-extrabold leading-none tracking-tight text-foreground">
                             {overallBalance.total}
                           </span>
-                          <span className="mt-0.5 block text-[9px] font-bold uppercase tracking-[0.14em] text-muted">
+                          <span className="mt-0.5 block text-label uppercase text-muted">
                             signals
                           </span>
                         </div>
@@ -1285,7 +1285,7 @@ export default function OnboardingPage() {
                           <span className="text-xs font-bold text-foreground">
                             Overall domain split
                           </span>
-                          <span className="text-[10px] text-foreground/45">
+                          <span className="text-caption text-muted">
                             Hover a row to drill in
                           </span>
                         </div>
@@ -1312,7 +1312,7 @@ export default function OnboardingPage() {
                               }`}
                             >
                               <div className="mb-1.5 flex items-center justify-between">
-                                <span className="flex items-center gap-1.5 text-[11px] font-bold text-foreground">
+                                <span className="flex items-center gap-1.5 text-caption font-bold text-foreground">
                                   <span
                                     aria-hidden
                                     className="size-2.5 rounded-full"
@@ -1320,7 +1320,7 @@ export default function OnboardingPage() {
                                   />
                                   {label}
                                 </span>
-                                <span className="text-[11px] font-bold text-primary">
+                                <span className="text-caption font-bold text-primary">
                                   {value.count} ({value.pct}%)
                                 </span>
                               </div>
@@ -1340,7 +1340,7 @@ export default function OnboardingPage() {
                         </div>
 
                         <div className="min-h-[104px] rounded-xl border border-[rgba(209,199,189,0.8)] bg-[rgba(248,246,242,0.85)] p-3.5">
-                          <span className="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
+                          <span className="mb-2 block text-label uppercase text-primary">
                             {hoveredDomain} breakdown
                           </span>
                           <AnimatePresence mode="wait" initial={false}>
@@ -1355,7 +1355,7 @@ export default function OnboardingPage() {
                               {getSubBreakdown(hoveredDomain).map((sub) => (
                                 <div
                                   key={sub.name}
-                                  className="flex items-center justify-between text-[11px]"
+                                  className="flex items-center justify-between text-caption"
                                 >
                                   <span className="flex items-center gap-1.5 font-semibold text-foreground">
                                     <span
@@ -1365,7 +1365,7 @@ export default function OnboardingPage() {
                                     />
                                     {sub.name}
                                   </span>
-                                  <span className="font-bold text-foreground/60">
+                                  <span className="font-bold text-muted">
                                     {sub.count} · {sub.pct}%
                                   </span>
                                 </div>
@@ -1380,7 +1380,7 @@ export default function OnboardingPage() {
                   {/* languages */}
                   <div>
                     <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                      <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
+                      <span className="text-label uppercase text-muted">
                         Language fluency <span className="text-primary">*</span>
                       </span>
                       <select
@@ -1392,7 +1392,7 @@ export default function OnboardingPage() {
                           }
                           e.target.value = '';
                         }}
-                        className="cursor-pointer rounded-lg border border-[rgba(209,199,189,0.85)] bg-[rgba(248,246,242,0.7)] px-3 py-1.5 text-[11px] font-semibold text-foreground outline-none transition-colors duration-250 hover:border-[rgba(114,56,61,0.35)]"
+                        className="cursor-pointer rounded-lg border border-[rgba(209,199,189,0.85)] bg-[rgba(248,246,242,0.7)] px-3 py-1.5 text-caption font-semibold text-foreground outline-none transition-colors duration-250 hover:border-[rgba(114,56,61,0.35)]"
                       >
                         <option value="">+ Add language</option>
                         {OFFICIAL_LANGUAGES.filter((lang) => !languages[lang]).map((lang) => (
@@ -1437,7 +1437,7 @@ export default function OnboardingPage() {
                             <div className="mb-2.5 flex items-center justify-between pr-5">
                               <span className="text-sm font-bold text-foreground">{lang}</span>
                               {level && (
-                                <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-primary">
+                                <span className="text-label uppercase text-primary">
                                   {level}
                                 </span>
                               )}
@@ -1449,10 +1449,10 @@ export default function OnboardingPage() {
                                   key={lvl}
                                   type="button"
                                   onClick={() => setLanguages({ ...languages, [lang]: lvl })}
-                                  className={`relative rounded-lg py-1.5 text-[10px] font-bold transition-colors duration-250 ${
+                                  className={`relative rounded-lg py-1.5 text-caption font-bold transition-colors duration-250 ${
                                     level === lvl
-                                      ? 'text-[#FBF9F6]'
-                                      : 'text-foreground/55 hover:text-primary'
+                                      ? 'text-on-accent'
+                                      : 'text-muted hover:text-primary'
                                   }`}
                                 >
                                   {level === lvl && (
@@ -1483,7 +1483,7 @@ export default function OnboardingPage() {
 
                   {/* soft skills */}
                   <div>
-                    <span className="mb-2.5 block text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
+                    <span className="mb-2.5 block text-label uppercase text-muted">
                       Presenting &amp; soft skills <span className="text-primary">*</span>
                     </span>
                     <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
@@ -1500,8 +1500,8 @@ export default function OnboardingPage() {
                             aria-pressed={isSelected}
                             className={`rounded-xl border px-3 py-2.5 text-center text-xs font-semibold transition-colors duration-250 ${
                               isSelected
-                                ? 'border-transparent bg-foreground text-[#FBF9F6]'
-                                : 'border-[rgba(209,199,189,0.85)] bg-[rgba(248,246,242,0.6)] text-foreground/65 hover:border-[rgba(50,45,41,0.35)] hover:text-foreground'
+                                ? 'border-transparent bg-foreground text-on-accent'
+                                : 'border-[rgba(209,199,189,0.85)] bg-[rgba(248,246,242,0.6)] text-body hover:border-[rgba(50,45,41,0.35)] hover:text-foreground'
                             }`}
                           >
                             {opt}
@@ -1541,16 +1541,16 @@ export default function OnboardingPage() {
 
                   <div>
                     <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
-                      <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
+                      <span className="text-label uppercase text-muted">
                         Preferred problem statements <span className="text-primary">*</span>
                       </span>
-                      <span className="rounded-full border border-[rgba(114,56,61,0.24)] bg-[rgba(114,56,61,0.08)] px-2.5 py-0.5 text-[10px] font-bold text-primary">
+                      <span className="rounded-full border border-[rgba(114,56,61,0.24)] bg-[rgba(114,56,61,0.08)] px-2.5 py-0.5 text-caption font-bold text-primary">
                         {studentForm.trackInterest.length} / 2 selected
                       </span>
                     </div>
 
                     <div className="mb-3 flex flex-col gap-2 rounded-2xl border border-[rgba(172,156,141,0.65)] bg-[rgba(172,156,141,0.16)] p-3.5 sm:flex-row sm:items-center sm:justify-between">
-                      <p className="text-[11px] font-semibold leading-relaxed text-foreground/70">
+                      <p className="text-caption font-semibold leading-relaxed text-body">
                         Official SIH 2026 statements are not published yet — these are reference
                         tracks built from the official themes.
                       </p>
@@ -1558,7 +1558,7 @@ export default function OnboardingPage() {
                         href="https://sih.gov.in/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="shrink-0 rounded-lg border border-[rgba(114,56,61,0.3)] bg-[rgba(248,246,242,0.7)] px-2.5 py-1 text-[10px] font-bold text-primary transition-colors duration-250 hover:bg-[rgba(248,246,242,0.95)]"
+                        className="shrink-0 rounded-lg border border-[rgba(114,56,61,0.3)] bg-[rgba(248,246,242,0.7)] px-2.5 py-1 text-caption font-bold text-primary transition-colors duration-250 hover:bg-[rgba(248,246,242,0.95)]"
                       >
                         SIH portal <Icon icon={ArrowUpRight} size="xs" />
                       </a>
@@ -1613,7 +1613,7 @@ export default function OnboardingPage() {
                                 aria-hidden
                                 className={`mt-0.5 grid size-4 shrink-0 place-items-center rounded border transition-colors duration-250 ${
                                   isSelected
-                                    ? 'border-transparent bg-primary text-[#FBF9F6]'
+                                    ? 'border-transparent bg-primary text-on-accent'
                                     : 'border-[rgba(172,156,141,0.9)] bg-transparent text-transparent'
                                 }`}
                               >
@@ -1621,7 +1621,7 @@ export default function OnboardingPage() {
                               </span>
                               <div className="min-w-0">
                                 <div className="flex flex-wrap items-center gap-2">
-                                  <span className="rounded border border-[rgba(114,56,61,0.28)] bg-[rgba(114,56,61,0.08)] px-1.5 py-0.5 font-mono text-[10px] font-bold text-primary">
+                                  <span className="rounded border border-[rgba(114,56,61,0.28)] bg-[rgba(114,56,61,0.08)] px-1.5 py-0.5 font-mono text-caption font-bold text-primary">
                                     {track.problemStatementCode}
                                   </span>
                                   <span className="text-xs font-bold text-foreground">
@@ -1629,7 +1629,7 @@ export default function OnboardingPage() {
                                   </span>
                                 </div>
                                 {track.organization && (
-                                  <p className="mt-0.5 text-[11px] text-foreground/50">
+                                  <p className="mt-0.5 text-caption text-muted">
                                     {track.organization} · {track.category}
                                   </p>
                                 )}
@@ -1642,7 +1642,7 @@ export default function OnboardingPage() {
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 onClick={(e) => e.stopPropagation()}
-                                className="shrink-0 self-end text-[10px] font-bold text-primary transition-colors duration-250 hover:text-[var(--primary-hover)] sm:self-center"
+                                className="shrink-0 self-end text-caption font-bold text-primary transition-colors duration-250 hover:text-[var(--primary-hover)] sm:self-center"
                               >
                                 Official <Icon icon={ArrowUpRight} size="xs" />
                               </a>
@@ -1663,19 +1663,19 @@ export default function OnboardingPage() {
                           className="mt-3 space-y-2 rounded-2xl border border-[rgba(209,199,189,0.85)] bg-[rgba(248,246,242,0.85)] p-4"
                         >
                           <div className="flex items-center justify-between gap-3 border-b border-[rgba(209,199,189,0.75)] pb-2">
-                            <span className="font-mono text-[10px] font-bold text-primary">
+                            <span className="font-mono text-caption font-bold text-primary">
                               {hoveredTrack.problemStatementCode}
                             </span>
-                            <span className="rounded-full border border-[rgba(172,156,141,0.65)] bg-[rgba(172,156,141,0.2)] px-2 py-0.5 text-[10px] font-bold text-foreground">
+                            <span className="rounded-full border border-[rgba(172,156,141,0.65)] bg-[rgba(172,156,141,0.2)] px-2 py-0.5 text-caption font-bold text-foreground">
                               {hoveredTrack.category}
                             </span>
                           </div>
                           <p className="text-xs font-bold text-foreground">{hoveredTrack.name}</p>
-                          <p className="text-xs leading-relaxed text-foreground/60">
+                          <p className="text-xs leading-relaxed text-muted">
                             {hoveredTrack.description}
                           </p>
-                          <div className="flex items-center justify-between pt-1 text-[11px]">
-                            <span className="text-foreground/50">
+                          <div className="flex items-center justify-between pt-1 text-caption">
+                            <span className="text-muted">
                               Ministry ·{' '}
                               <strong className="font-bold text-foreground">
                                 {hoveredTrack.organization}

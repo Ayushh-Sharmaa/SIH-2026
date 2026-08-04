@@ -104,18 +104,18 @@ export default function TracksPage() {
           <div className="relative mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 lg:grid-cols-[1.4fr_1fr] lg:items-end lg:px-8">
             <div>
               <Reveal direction="none" blur={false}>
-                <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary">
+                <span className="text-label uppercase text-primary">
                   Reference index
                 </span>
               </Reveal>
               <SplitText
                 as="h1"
                 text="Official SIH 2026 themes"
-                className="mt-3 text-4xl font-extrabold leading-[1.05] tracking-tight text-foreground sm:text-5xl"
+                className="mt-3 text-title text-foreground"
                 delay={0.08}
               />
               <Reveal delay={0.3} className="mt-4 max-w-lg">
-                <p className="text-sm leading-relaxed text-foreground/65">
+                <p className="text-sm leading-relaxed text-body">
                   Explore official Smart India Hackathon problem domains and reference themes.
                   Pick a direction early — the ministries release exact statements closer to the
                   event.
@@ -134,7 +134,7 @@ export default function TracksPage() {
                   </span>
                 </div>
                 <div className="my-5 h-px bg-gradient-to-r from-[rgba(172,156,141,0.6)] to-transparent" />
-                <p className="text-xs leading-relaxed text-foreground/65">
+                <p className="text-xs leading-relaxed text-body">
                   Official problem statements are not released yet. Tracks below follow the
                   official SIH theme taxonomy.
                 </p>
@@ -160,7 +160,7 @@ export default function TracksPage() {
                     type="button"
                     onClick={() => setCategory(c)}
                     className={`relative shrink-0 rounded-full px-3.5 py-1.5 text-xs font-bold transition-colors duration-250 ${
-                      active ? 'text-[#FBF9F6]' : 'text-foreground/65 hover:text-primary'
+                      active ? 'text-on-accent' : 'text-body hover:text-primary'
                     }`}
                   >
                     {active && (
@@ -205,7 +205,7 @@ export default function TracksPage() {
         {/* ── INDEX ROWS ── */}
         <section className="section-mist">
           <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
-            <p className="mb-5 text-[11px] font-bold uppercase tracking-[0.16em] text-muted">
+            <p className="mb-5 text-label uppercase text-muted">
               Showing {visible.length} of {tracks.length}
             </p>
 
@@ -241,12 +241,12 @@ export default function TracksPage() {
                           <span className="block truncate text-sm font-bold text-foreground transition-colors duration-250 group-hover:text-primary">
                             {track.name}
                           </span>
-                          <span className="mt-0.5 block text-[11px] font-semibold uppercase tracking-[0.1em] text-muted">
+                          <span className="mt-0.5 block text-label uppercase text-muted">
                             {track.category}
                           </span>
                         </span>
 
-                        <span className="hidden shrink-0 rounded-md border border-[rgba(172,156,141,0.5)] bg-[rgba(172,156,141,0.16)] px-2 py-0.5 font-mono text-[11px] font-bold text-foreground sm:block">
+                        <span className="hidden shrink-0 rounded-md border border-[rgba(172,156,141,0.5)] bg-[rgba(172,156,141,0.16)] px-2 py-0.5 font-mono text-caption font-bold text-foreground sm:block">
                           {track.problemStatementCode}
                         </span>
 
@@ -278,11 +278,11 @@ export default function TracksPage() {
                             className="overflow-hidden"
                           >
                             <div className="border-t border-[rgba(209,199,189,0.6)] px-5 py-4 sm:pl-19">
-                              <p className="max-w-3xl text-xs leading-relaxed text-foreground/70">
+                              <p className="max-w-3xl text-xs leading-relaxed text-body">
                                 {track.description}
                               </p>
                               {(track.organization || track.sihUrl) && (
-                                <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px]">
+                                <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-caption">
                                   {track.organization && (
                                     <span className="text-muted">
                                       Ministry / Org:{' '}
@@ -320,7 +320,7 @@ export default function TracksPage() {
                 className="surface-sunken rounded-3xl px-6 py-16 text-center"
               >
                 <p className="text-sm font-semibold text-foreground">No themes match that.</p>
-                <p className="mt-1.5 text-xs text-foreground/60">
+                <p className="mt-1.5 text-xs text-muted">
                   Try a different category or clear your search.
                 </p>
                 <div className="mt-5 flex justify-center">

@@ -37,7 +37,7 @@ const CONTROL =
   'w-full rounded-xl border border-[rgba(209,199,189,0.8)] bg-[rgba(248,246,242,0.65)] px-3.5 py-2 text-xs text-foreground outline-none transition-[border-color,box-shadow,background-color] duration-250 focus:border-primary focus:bg-[rgba(248,246,242,0.95)] focus:shadow-[0_0_0_4px_rgba(114,56,61,0.10)]';
 
 const TONES = {
-  neutral: 'border-[rgba(209,199,189,0.75)] bg-[rgba(239,233,225,0.75)] text-foreground/70',
+  neutral: 'border-[rgba(209,199,189,0.75)] bg-[rgba(239,233,225,0.75)] text-body',
   accent: 'border-[rgba(172,156,141,0.6)] bg-[rgba(172,156,141,0.2)] text-foreground',
   primary: 'border-[rgba(114,56,61,0.24)] bg-[rgba(114,56,61,0.09)] text-primary',
 } as const;
@@ -51,7 +51,7 @@ function Chip({
 }) {
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${TONES[tone]}`}
+      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-caption font-bold ${TONES[tone]}`}
     >
       {children}
     </span>
@@ -73,11 +73,11 @@ function Panel({
     <section className="surface-raised rounded-3xl p-5 sm:p-6">
       <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-sm font-extrabold uppercase tracking-[0.14em] text-foreground">
+          <h2 className="text-label uppercase text-foreground">
             {title}
           </h2>
           {description && (
-            <p className="mt-1 max-w-xl text-xs leading-relaxed text-foreground/55">
+            <p className="mt-1 max-w-xl text-xs leading-relaxed text-muted">
               {description}
             </p>
           )}
@@ -434,12 +434,12 @@ export default function AdminDashboardPage() {
                 <SplitText
                   as="h1"
                   text="Administration"
-                  className="mt-4 text-4xl font-extrabold leading-[1.05] tracking-tight text-foreground sm:text-5xl"
+                  className="mt-4 text-title text-foreground"
                   delay={0.08}
                 />
 
                 <Reveal delay={0.3} className="mt-3">
-                  <p className="max-w-xl text-sm leading-relaxed text-foreground/60">
+                  <p className="max-w-xl text-sm leading-relaxed text-muted">
                     Student verification, team management, problem-statement participation and
                     console permissions — all in one place.
                   </p>
@@ -475,13 +475,13 @@ export default function AdminDashboardPage() {
                           : 'border-[rgba(209,199,189,0.8)] bg-[rgba(248,246,242,0.62)] hover:border-[rgba(114,56,61,0.28)]'
                       }`}
                     >
-                      <span className="block text-[10px] font-bold uppercase tracking-[0.16em] text-muted">
+                      <span className="block text-label uppercase text-muted">
                         {m.label}
                       </span>
                       <span className="mt-1 block text-3xl font-extrabold tracking-tight text-foreground">
                         <Counter to={m.value} duration={1.3} />
                       </span>
-                      <span className="mt-1.5 block text-[10px] leading-relaxed text-foreground/50">
+                      <span className="mt-1.5 block text-caption leading-relaxed text-muted">
                         {m.foot}
                       </span>
                     </button>
@@ -507,7 +507,7 @@ export default function AdminDashboardPage() {
                         onClick={() => setActiveTab(t.key)}
                         aria-current={active ? 'page' : undefined}
                         className={`relative w-full rounded-xl px-3.5 py-2.5 text-left transition-colors duration-250 ${
-                          active ? 'text-[#FBF9F6]' : 'text-foreground/65 hover:text-primary'
+                          active ? 'text-on-accent' : 'text-body hover:text-primary'
                         }`}
                       >
                         {active && (
@@ -521,8 +521,8 @@ export default function AdminDashboardPage() {
                           {t.label}
                         </span>
                         <span
-                          className={`relative z-10 mt-0.5 hidden text-[10px] leading-snug lg:block ${
-                            active ? 'text-[#FBF9F6]/70' : 'text-foreground/45'
+                          className={`relative z-10 mt-0.5 hidden text-caption leading-snug lg:block ${
+                            active ? 'text-on-accent' : 'text-muted'
                           }`}
                         >
                           {t.blurb}
@@ -534,10 +534,10 @@ export default function AdminDashboardPage() {
               </ul>
 
               <div className="mt-5 hidden rounded-2xl border border-[rgba(172,156,141,0.55)] bg-[rgba(172,156,141,0.14)] p-4 lg:block">
-                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
+                <p className="text-label uppercase text-primary">
                   Console shortcut
                 </p>
-                <p className="mt-1.5 text-[11px] leading-relaxed text-foreground/60">
+                <p className="mt-1.5 text-caption leading-relaxed text-muted">
                   Append{' '}
                   <code className="rounded bg-[rgba(114,56,61,0.12)] px-1 font-mono font-bold text-primary">
                     /admin
@@ -602,7 +602,7 @@ export default function AdminDashboardPage() {
                                   <span className="block truncate text-sm font-bold text-foreground">
                                     {email}
                                   </span>
-                                  <span className="mt-0.5 block text-[10px] text-muted">
+                                  <span className="mt-0.5 block text-caption text-muted">
                                     {isSuper
                                       ? 'Primary super admin — cannot be revoked'
                                       : 'Granted console permissions'}
@@ -641,7 +641,7 @@ export default function AdminDashboardPage() {
                       <Panel
                         title="Team filters"
                         action={
-                          <span className="text-[11px] font-bold text-muted">
+                          <span className="text-caption font-bold text-muted">
                             {filteredTeams.length} of {teams.length}
                           </span>
                         }
@@ -685,10 +685,10 @@ export default function AdminDashboardPage() {
                           type="button"
                           onClick={() => setAllFemaleFilter(!allFemaleFilter)}
                           aria-pressed={allFemaleFilter}
-                          className={`mt-3 rounded-full border px-3.5 py-1.5 text-[11px] font-bold transition-colors duration-250 ${
+                          className={`mt-3 rounded-full border px-3.5 py-1.5 text-caption font-bold transition-colors duration-250 ${
                             allFemaleFilter
-                              ? 'border-transparent bg-primary text-[#FBF9F6]'
-                              : 'border-[rgba(209,199,189,0.85)] bg-[rgba(248,246,242,0.6)] text-foreground/65 hover:border-[rgba(114,56,61,0.3)]'
+                              ? 'border-transparent bg-primary text-on-accent'
+                              : 'border-[rgba(209,199,189,0.85)] bg-[rgba(248,246,242,0.6)] text-body hover:border-[rgba(114,56,61,0.3)]'
                           }`}
                         >
                           All-female teams only
@@ -715,7 +715,7 @@ export default function AdminDashboardPage() {
                               <div className="flex flex-wrap items-start justify-between gap-3">
                                 <div className="min-w-0">
                                   <div className="flex flex-wrap items-center gap-2">
-                                    <h3 className="text-base font-extrabold tracking-tight text-foreground">
+                                    <h3 className="text-feature text-foreground">
                                       {team.name}
                                     </h3>
                                     {team.isAllFemale && <Chip tone="accent">All-female</Chip>}
@@ -723,7 +723,7 @@ export default function AdminDashboardPage() {
                                   <p className="mt-1 text-xs font-bold text-primary">
                                     {team.trackName}
                                   </p>
-                                  <p className="mt-0.5 text-[11px] text-foreground/55">
+                                  <p className="mt-0.5 text-caption text-muted">
                                     Leader: {team.leaderName} ({team.leaderEmail})
                                   </p>
                                 </div>
@@ -733,7 +733,7 @@ export default function AdminDashboardPage() {
                               </div>
 
                               <div className="border-t border-[rgba(209,199,189,0.65)] pt-3">
-                                <div className="mb-2 flex justify-between text-[10px] font-bold uppercase tracking-[0.12em] text-muted">
+                                <div className="mb-2 flex justify-between text-label uppercase text-muted">
                                   <span>Roster ({team.memberCount})</span>
                                   <span>
                                     {team.femaleCount}F / {team.maleCount}M
@@ -749,12 +749,12 @@ export default function AdminDashboardPage() {
                                       >
                                         <span className="min-w-0 truncate text-xs font-semibold text-foreground">
                                           {m.name}
-                                          <span className="ml-1.5 text-[10px] font-normal text-foreground/50">
+                                          <span className="ml-1.5 text-caption font-normal text-muted">
                                             {m.branch || 'CSE'} · Yr {m.year || 'N/A'} · Sec{' '}
                                             {m.section || 'N/A'}
                                           </span>
                                         </span>
-                                        <span className="shrink-0 text-[10px] font-bold text-primary">
+                                        <span className="shrink-0 text-caption font-bold text-primary">
                                           Inspect <Icon icon={ArrowUpRight} size="xs" />
                                         </span>
                                       </button>
@@ -819,7 +819,7 @@ export default function AdminDashboardPage() {
                           <button
                             type="button"
                             onClick={resetStudentFilters}
-                            className="text-[11px] font-bold text-primary transition-colors duration-250 hover:text-[var(--primary-hover)]"
+                            className="text-caption font-bold text-primary transition-colors duration-250 hover:text-[var(--primary-hover)]"
                           >
                             Reset filters
                           </button>
@@ -892,7 +892,7 @@ export default function AdminDashboardPage() {
                             <option value="BANNED">Suspended</option>
                           </select>
                         </div>
-                        <p className="mt-3 text-[11px] font-bold text-muted">
+                        <p className="mt-3 text-caption font-bold text-muted">
                           Showing {filteredStudents.length} of {students.length}
                         </p>
                       </Panel>
@@ -930,7 +930,7 @@ export default function AdminDashboardPage() {
                                   <Chip>Sec {student.section}</Chip>
                                   <Chip>{student.gender}</Chip>
                                 </div>
-                                <p className="text-[11px] text-foreground/55">
+                                <p className="text-caption text-muted">
                                   {student.email} · Roll {student.rollNo}
                                   {student.teamName && (
                                     <span className="font-semibold text-primary">
@@ -989,7 +989,7 @@ export default function AdminDashboardPage() {
                       <Panel
                         title="Participation by theme"
                         action={
-                          <span className="text-[11px] font-bold text-muted">
+                          <span className="text-caption font-bold text-muted">
                             {filteredPSTracks.length} of {problemStatementStats.length}
                           </span>
                         }
@@ -1022,27 +1022,27 @@ export default function AdminDashboardPage() {
                             >
                               <div className="flex flex-wrap items-start justify-between gap-3">
                                 <div className="min-w-0">
-                                  <span className="font-mono text-[10px] font-bold text-primary">
+                                  <span className="font-mono text-caption font-bold text-primary">
                                     {track.code}
                                   </span>
-                                  <h3 className="mt-1 text-base font-extrabold tracking-tight text-foreground">
+                                  <h3 className="mt-1 text-feature text-foreground">
                                     {track.name}
                                   </h3>
-                                  <p className="mt-0.5 text-[11px] text-foreground/55">
+                                  <p className="mt-0.5 text-caption text-muted">
                                     {track.category} · {track.organization}
                                   </p>
                                 </div>
                                 <Chip tone="accent">{track.teamCount} teams</Chip>
                               </div>
 
-                              <p className="line-clamp-2 text-xs leading-relaxed text-foreground/60">
+                              <p className="line-clamp-2 text-xs leading-relaxed text-muted">
                                 {track.description}
                               </p>
 
                               <div className="border-t border-[rgba(209,199,189,0.65)] pt-3">
                                 {track.teams.length > 0 ? (
                                   <>
-                                    <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.12em] text-muted">
+                                    <p className="mb-2 text-label uppercase text-muted">
                                       Participating teams ({track.teams.length})
                                     </p>
                                     <ul className="space-y-1.5">
@@ -1053,11 +1053,11 @@ export default function AdminDashboardPage() {
                                         >
                                           <span className="min-w-0 truncate text-xs font-bold text-foreground">
                                             {t.name}
-                                            <span className="ml-1.5 text-[10px] font-normal text-foreground/50">
+                                            <span className="ml-1.5 text-caption font-normal text-muted">
                                               led by {t.leaderName}
                                             </span>
                                           </span>
-                                          <span className="shrink-0 text-[10px] font-bold text-primary">
+                                          <span className="shrink-0 text-caption font-bold text-primary">
                                             {t.memberCount}/6
                                           </span>
                                         </li>
@@ -1065,7 +1065,7 @@ export default function AdminDashboardPage() {
                                     </ul>
                                   </>
                                 ) : (
-                                  <p className="text-xs italic text-foreground/45">
+                                  <p className="text-xs italic text-muted">
                                     No teams registered under this theme yet.
                                   </p>
                                 )}
@@ -1085,13 +1085,13 @@ export default function AdminDashboardPage() {
                             <div className="surface-raised h-full space-y-3 rounded-3xl p-5">
                               <div className="flex items-start justify-between gap-3">
                                 <div className="min-w-0">
-                                  <h3 className="text-base font-extrabold tracking-tight text-foreground">
+                                  <h2 className="text-feature text-foreground">
                                     {mentor.name}
-                                  </h3>
+                                  </h2>
                                   <p className="mt-0.5 text-xs font-semibold text-primary">
                                     {mentor.designation}
                                   </p>
-                                  <p className="mt-0.5 truncate text-[11px] text-foreground/55">
+                                  <p className="mt-0.5 truncate text-caption text-muted">
                                     {mentor.email}
                                   </p>
                                 </div>
@@ -1099,7 +1099,7 @@ export default function AdminDashboardPage() {
                               </div>
 
                               <div>
-                                <div className="mb-1.5 flex justify-between text-[10px] font-bold uppercase tracking-[0.12em] text-muted">
+                                <div className="mb-1.5 flex justify-between text-label uppercase text-muted">
                                   <span>Capacity</span>
                                   <span>
                                     {mentor.currentLoad} / {mentor.capacity}
@@ -1142,7 +1142,7 @@ export default function AdminDashboardPage() {
           <Overlay onClose={() => setSelectedStudent(null)}>
             <div className="flex items-start justify-between gap-4 border-b border-[rgba(209,199,189,0.7)] pb-4">
               <div className="min-w-0">
-                <h2 className="text-xl font-extrabold tracking-tight text-foreground">
+                <h2 className="text-feature text-foreground">
                   {selectedStudent.name}
                 </h2>
                 <p className="mt-0.5 truncate text-xs font-semibold text-primary">
@@ -1170,7 +1170,7 @@ export default function AdminDashboardPage() {
                   key={k as string}
                   className="rounded-xl border border-[rgba(209,199,189,0.7)] bg-[rgba(239,233,225,0.6)] p-3"
                 >
-                  <dt className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted">
+                  <dt className="text-label uppercase text-muted">
                     {k}
                   </dt>
                   <dd className="mt-1 text-xs font-bold text-foreground">{v}</dd>
@@ -1180,7 +1180,7 @@ export default function AdminDashboardPage() {
 
             {selectedStudent.skills?.length > 0 && (
               <div className="mt-5 border-t border-[rgba(209,199,189,0.7)] pt-4">
-                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted">
+                <p className="text-label uppercase text-muted">
                   Skills
                 </p>
                 <div className="mt-2 flex flex-wrap gap-1.5">
@@ -1262,13 +1262,13 @@ export default function AdminDashboardPage() {
           <Overlay onClose={() => setSelectedTeam(null)}>
             <div className="flex items-start justify-between gap-4 border-b border-[rgba(209,199,189,0.7)] pb-4">
               <div className="min-w-0">
-                <h2 className="text-xl font-extrabold tracking-tight text-foreground">
+                <h2 className="text-feature text-foreground">
                   {selectedTeam.name}
                 </h2>
                 <p className="mt-0.5 text-xs font-semibold text-primary">
                   {selectedTeam.trackName}
                 </p>
-                <p className="mt-0.5 text-[11px] text-foreground/55">
+                <p className="mt-0.5 text-caption text-muted">
                   Leader: {selectedTeam.leaderName} ({selectedTeam.leaderEmail})
                 </p>
               </div>
@@ -1299,7 +1299,7 @@ export default function AdminDashboardPage() {
                 >
                   <span className="min-w-0 truncate text-xs font-semibold text-foreground">
                     {m.name}
-                    <span className="ml-1.5 text-[10px] font-normal text-foreground/50">
+                    <span className="ml-1.5 text-caption font-normal text-muted">
                       {m.branch || 'CSE'} · Yr {m.year || 'N/A'} · Sec {m.section || 'N/A'}
                     </span>
                   </span>
@@ -1309,7 +1309,7 @@ export default function AdminDashboardPage() {
                       setSelectedTeam(null);
                       setSelectedStudent(m);
                     }}
-                    className="shrink-0 text-[10px] font-bold text-primary hover:underline"
+                    className="shrink-0 text-caption font-bold text-primary hover:underline"
                   >
                     Inspect <Icon icon={ArrowUpRight} size="xs" />
                   </button>
@@ -1324,10 +1324,10 @@ export default function AdminDashboardPage() {
       <AnimatePresence>
         {confirmState && (
           <Overlay onClose={() => setConfirmState(null)}>
-            <h2 className="text-lg font-extrabold tracking-tight text-foreground">
+            <h2 className="text-feature text-foreground">
               {confirmState.title}
             </h2>
-            <p className="mt-2 text-sm leading-relaxed text-foreground/60">{confirmState.body}</p>
+            <p className="mt-2 text-sm leading-relaxed text-muted">{confirmState.body}</p>
             <div className="mt-6 flex justify-end gap-2.5">
               <PremiumButton
                 variant="ghost"

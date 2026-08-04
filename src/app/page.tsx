@@ -58,7 +58,7 @@ function ScrollHint() {
       transition={{ delay: 1.6, duration: 0.8 }}
       className="group absolute inset-x-0 bottom-8 z-20 mx-auto flex w-fit flex-col items-center gap-2"
     >
-      <span className="text-[9px] font-bold uppercase tracking-[0.24em] text-muted transition-colors group-hover:text-primary">
+      <span className="text-label uppercase text-muted transition-colors group-hover:text-primary">
         Scroll
       </span>
       <span className="flex h-9 w-[22px] justify-center rounded-full border border-[rgba(172,156,141,0.6)] pt-2">
@@ -127,7 +127,7 @@ function HeroVisual() {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 0.7, delay: chip.delay, ease: EASE.outExpo }}
           style={{ top: chip.top, left: chip.left }}
-          className="absolute -translate-x-1/2 rounded-full border border-[rgba(209,199,189,0.8)] bg-[rgba(255,255,255,0.8)] px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-primary shadow-[0_6px_20px_rgba(50,45,41,0.1)] backdrop-blur-md"
+          className="absolute -translate-x-1/2 rounded-full border border-[rgba(209,199,189,0.8)] bg-[rgba(255,255,255,0.8)] px-3.5 py-1.5 text-label uppercase text-primary shadow-[0_6px_20px_rgba(50,45,41,0.1)] backdrop-blur-md"
         >
           <motion.span
             className="block"
@@ -226,7 +226,7 @@ export default function Home() {
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.7, ease: EASE.outExpo }}
-                className="inline-flex items-center gap-2 rounded-full border border-[rgba(114,56,61,0.2)] bg-[rgba(255,255,255,0.6)] px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-primary backdrop-blur-md"
+                className="inline-flex items-center gap-2 rounded-full border border-[rgba(114,56,61,0.2)] bg-[rgba(255,255,255,0.6)] px-3.5 py-1.5 text-label uppercase text-primary backdrop-blur-md"
               >
                 <span className="relative flex size-1.5">
                   <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-60" />
@@ -235,7 +235,7 @@ export default function Home() {
                 Internal Hackathon Portal · 2026
               </motion.span>
 
-              <h1 className="mt-7 text-[2.75rem] font-extrabold leading-[1.02] tracking-[-0.03em] text-foreground sm:text-6xl xl:text-7xl">
+              <h1 className="mt-7 text-display text-foreground">
                 <SplitText text="Great teams" as="span" mode="word" delay={0.15} />
                 <br />
                 <span className="text-gradient-luxe">
@@ -304,7 +304,7 @@ export default function Home() {
                 <div key={copy} className="flex shrink-0 items-center" aria-hidden={copy === 1}>
                   {marqueeItems.map((name) => (
                     <span key={`${copy}-${name}`} className="flex items-center whitespace-nowrap">
-                      <span className="px-6 text-xs font-bold uppercase tracking-[0.14em] text-muted">
+                      <span className="px-6 text-label uppercase text-muted">
                         {name}
                       </span>
                       <span className="size-1 rounded-full bg-[rgba(172,156,141,0.7)]" />
@@ -320,10 +320,10 @@ export default function Home() {
         <section id="highlights" className="section-mist relative py-24 sm:py-32">
           <div className="mx-auto max-w-7xl px-6 lg:px-8">
             <Reveal className="max-w-2xl">
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
+              <span className="text-label uppercase text-primary">
                 What you get
               </span>
-              <h2 className="mt-4 text-3xl font-extrabold tracking-[-0.02em] text-foreground sm:text-4xl">
+              <h2 className="mt-4 text-heading text-foreground">
                 <SplitText
                   text="Everything the internal round demands, in one place."
                   as="span"
@@ -351,11 +351,11 @@ export default function Home() {
                           />
                         </svg>
                       </span>
-                      <h3 className="text-lg font-extrabold tracking-tight text-foreground">
+                      <h3 className="text-feature text-foreground">
                         {item.title}
                       </h3>
                       <p className="text-sm leading-relaxed text-muted">{item.desc}</p>
-                      <span className="mt-auto inline-flex items-center gap-1.5 pt-2 text-xs font-bold uppercase tracking-[0.12em] text-primary">
+                      <span className="mt-auto inline-flex items-center gap-1.5 pt-2 text-label uppercase text-primary">
                         {item.cta}
                         <svg
                           viewBox="0 0 24 24"
@@ -388,7 +388,7 @@ export default function Home() {
                   <p className="text-4xl font-extrabold tracking-[-0.03em] text-primary sm:text-5xl">
                     <Counter to={stat.value} suffix={stat.suffix} />
                   </p>
-                  <p className="mt-2.5 text-[10px] font-bold uppercase tracking-[0.18em] text-muted">
+                  <p className="mt-2.5 text-label uppercase text-muted">
                     {stat.label}
                   </p>
                 </RevealItem>
@@ -401,10 +401,10 @@ export default function Home() {
         <section className="section-linen relative py-24 sm:py-32">
           <div className="mx-auto max-w-7xl px-6 lg:px-8">
             <Reveal className="max-w-2xl">
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
+              <span className="text-label uppercase text-primary">
                 Milestone roadmap
               </span>
-              <h2 className="mt-4 text-3xl font-extrabold tracking-[-0.02em] text-foreground sm:text-4xl">
+              <h2 className="mt-4 text-heading text-foreground">
                 The road to the Grand Finale
               </h2>
               <p className="mt-4 text-sm leading-relaxed text-muted">
@@ -433,7 +433,7 @@ export default function Home() {
                           />
                         )}
                         <span
-                          className={`relative z-10 flex size-8 shrink-0 items-center justify-center rounded-lg border text-[10px] font-bold transition-colors duration-250 ${
+                          className={`relative z-10 flex size-8 shrink-0 items-center justify-center rounded-lg border text-caption font-bold transition-colors duration-250 ${
                             isActive
                               ? 'border-[rgba(114,56,61,0.3)] bg-[rgba(114,56,61,0.1)] text-primary'
                               : 'border-[rgba(209,199,189,0.7)] bg-white/40 text-muted'
@@ -449,7 +449,7 @@ export default function Home() {
                           >
                             {m.title}
                           </span>
-                          <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted/80">
+                          <span className="text-label uppercase text-muted">
                             {m.period}
                           </span>
                         </span>
@@ -474,10 +474,10 @@ export default function Home() {
                           <MilestoneIcon id={phase.id} className="size-5" />
                         </span>
                         <div>
-                          <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
+                          <span className="text-label uppercase text-primary">
                             {phase.phase}
                           </span>
-                          <h3 className="text-xl font-extrabold tracking-tight text-foreground">
+                          <h3 className="text-feature text-foreground">
                             {phase.title}
                           </h3>
                         </div>
@@ -490,7 +490,7 @@ export default function Home() {
                           Expected&nbsp;
                           <strong className="font-bold text-foreground">{phase.period}</strong>
                         </span>
-                        <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
+                        <span className="text-label uppercase text-primary">
                           Phase {phase.id} / {SIH_MILESTONES.length}
                         </span>
                       </div>
@@ -518,10 +518,10 @@ export default function Home() {
 
           <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
             <Reveal className="max-w-2xl">
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
+              <span className="text-label uppercase text-primary">
                 Themes &amp; domains
               </span>
-              <h2 className="mt-4 text-3xl font-extrabold tracking-[-0.02em] text-foreground sm:text-4xl">
+              <h2 className="mt-4 text-heading text-foreground">
                 All 18 official SIH tracks
               </h2>
               <p className="mt-4 text-sm leading-relaxed text-muted">
@@ -553,7 +553,7 @@ export default function Home() {
                         {set.title}
                       </span>
                       <span
-                        className={`shrink-0 rounded-full border px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.1em] transition-colors ${
+                        className={`shrink-0 rounded-full border px-2.5 py-1 text-label uppercase transition-colors ${
                           isActive
                             ? 'border-[rgba(114,56,61,0.3)] bg-[rgba(114,56,61,0.1)] text-primary'
                             : 'border-[rgba(209,199,189,0.8)] text-muted'
@@ -592,14 +592,14 @@ export default function Home() {
                         <TiltCard className="h-full" intensity={5}>
                           <div className="surface-taupe flex h-full min-h-[13rem] flex-col justify-between overflow-hidden rounded-2xl p-6 backdrop-blur-md">
                             <div>
-                              <span className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
+                              <span className="font-mono text-label uppercase text-primary">
                                 Theme {String(i + 1).padStart(2, '0')}
                               </span>
-                              <h3 className="mt-2.5 text-sm font-extrabold leading-snug text-foreground">
+                              <h3 className="mt-2.5 text-feature text-foreground">
                                 {theme.name}
                               </h3>
                             </div>
-                            <p className="mt-4 line-clamp-4 text-xs leading-relaxed text-foreground/65">
+                            <p className="mt-4 line-clamp-4 text-xs leading-relaxed text-body">
                               {theme.desc}
                             </p>
                           </div>
@@ -617,10 +617,10 @@ export default function Home() {
         <section className="relative bg-[rgba(217,217,217,0.38)] py-24 sm:py-32">
           <div className="mx-auto grid max-w-7xl gap-12 px-6 lg:grid-cols-12 lg:px-8">
             <Reveal className="lg:col-span-4">
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
+              <span className="text-label uppercase text-primary">
                 Questions
               </span>
-              <h2 className="mt-4 text-3xl font-extrabold tracking-[-0.02em] text-foreground sm:text-4xl">
+              <h2 className="mt-4 text-heading text-foreground">
                 Before you register
               </h2>
               <p className="mt-4 text-sm leading-relaxed text-muted">
@@ -642,7 +642,7 @@ export default function Home() {
           <Aurora variant="rose" spotlight={false} />
           <div className="relative mx-auto max-w-3xl px-6 text-center">
             <Reveal scale>
-              <h2 className="text-3xl font-extrabold tracking-[-0.025em] text-foreground sm:text-5xl">
+              <h2 className="text-heading text-foreground">
                 Ready to build something
                 <span className="text-gradient-luxe"> worth shipping?</span>
               </h2>

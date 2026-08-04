@@ -80,9 +80,9 @@ export default function LoadingScreen() {
               />
             </motion.svg>
 
-            <div className="h-px w-40 overflow-hidden rounded-full bg-[rgba(172,156,141,0.3)]">
+            <div className="h-px w-40 overflow-hidden rounded-pill bg-clay/30">
               <motion.div
-                className="h-full bg-gradient-to-r from-[#72383d] to-[#ac9c8d]"
+                className="h-full bg-gradient-to-r from-accent to-clay"
                 initial={{ scaleX: 0 }}
                 animate={{ scaleX: 1 }}
                 transition={{ duration: 1.35, ease: EASE.outExpo }}
@@ -94,7 +94,10 @@ export default function LoadingScreen() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3, duration: 0.5 }}
-              className="text-[10px] font-bold uppercase tracking-[0.32em] text-[#ac9c8d]"
+              // Was #AC9C8D on the cream curtain — 2.21:1, effectively invisible.
+              // tracking is widened past the token here because the wordmark is
+              // set alone and reads as a monogram rather than a label.
+              className="text-label uppercase tracking-[0.32em] text-muted"
             >
               SIH@GLBGOI
             </motion.p>

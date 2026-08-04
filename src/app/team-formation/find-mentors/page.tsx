@@ -62,7 +62,7 @@ function CapacityDial({ load, capacity }: { load: number; capacity: number }) {
           transition={{ duration: 1, ease: EASE.outExpo, delay: 0.15 }}
         />
       </svg>
-      <span className="absolute text-[11px] font-black tracking-tight text-foreground">
+      <span className="absolute text-caption font-black tracking-tight text-foreground">
         {load}/{capacity}
       </span>
     </div>
@@ -131,7 +131,7 @@ export default function FindMentorsPage() {
 
           <div className="relative mx-auto max-w-3xl px-4 py-16 text-center sm:px-6 lg:px-8">
             <Reveal direction="none" blur={false}>
-              <span className="inline-flex items-center gap-2 rounded-full border border-[rgba(172,156,141,0.6)] bg-[rgba(248,246,242,0.7)] px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-primary backdrop-blur-md">
+              <span className="inline-flex items-center gap-2 rounded-full border border-[rgba(172,156,141,0.6)] bg-[rgba(248,246,242,0.7)] px-3.5 py-1.5 text-label uppercase text-primary backdrop-blur-md">
                 Mentor directory
               </span>
             </Reveal>
@@ -139,12 +139,12 @@ export default function FindMentorsPage() {
             <SplitText
               as="h1"
               text="Find your mentor."
-              className="mt-5 text-4xl font-extrabold leading-[1.05] tracking-tight text-foreground sm:text-5xl"
+              className="mt-5 text-title text-foreground"
               delay={0.1}
             />
 
             <Reveal delay={0.32} className="mt-4">
-              <p className="mx-auto max-w-xl text-sm leading-relaxed text-foreground/65">
+              <p className="mx-auto max-w-xl text-sm leading-relaxed text-body">
                 Verified GL Bajaj faculty and industry leaders who guide problem selection, review
                 your architecture, and prepare you for jury evaluation.
               </p>
@@ -198,7 +198,7 @@ export default function FindMentorsPage() {
                   <div className="text-2xl font-extrabold tracking-tight text-foreground">
                     <Counter to={mentors.length} duration={1.2} />
                   </div>
-                  <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
+                  <div className="text-label uppercase text-muted">
                     mentors
                   </div>
                 </div>
@@ -207,7 +207,7 @@ export default function FindMentorsPage() {
                   <div className="text-2xl font-extrabold tracking-tight text-foreground">
                     <Counter to={openSlots} duration={1.2} />
                   </div>
-                  <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
+                  <div className="text-label uppercase text-muted">
                     open slots
                   </div>
                 </div>
@@ -251,15 +251,15 @@ export default function FindMentorsPage() {
 
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                              <h3 className="text-lg font-extrabold tracking-tight text-foreground">
+                              <h2 className="text-feature text-foreground">
                                 {mentor.name}
-                              </h3>
-                              <span className="text-xs text-foreground/60">
+                              </h2>
+                              <span className="text-xs text-muted">
                                 {mentor.designation} at {mentor.organization}
                               </span>
                             </div>
 
-                            <p className="mt-2 max-w-2xl text-xs leading-relaxed text-foreground/65">
+                            <p className="mt-2 max-w-2xl text-xs leading-relaxed text-body">
                               {mentor.bio || 'No biography details provided.'}
                             </p>
 
@@ -267,7 +267,7 @@ export default function FindMentorsPage() {
                               {mentor.expertise.map((exp) => (
                                 <span
                                   key={exp}
-                                  className="rounded-md border border-[rgba(172,156,141,0.55)] bg-[rgba(172,156,141,0.18)] px-2 py-0.5 text-[10px] font-semibold text-foreground"
+                                  className="rounded-md border border-[rgba(172,156,141,0.55)] bg-[rgba(172,156,141,0.18)] px-2 py-0.5 text-caption font-semibold text-foreground"
                                 >
                                   {exp}
                                 </span>
@@ -298,7 +298,7 @@ export default function FindMentorsPage() {
                                 rel="noopener noreferrer"
                                 whileHover={{ y: -2 }}
                                 transition={SPRING.snappy}
-                                className="text-[11px] font-bold text-foreground/65 transition-colors duration-250 hover:text-primary"
+                                className="text-caption font-bold text-body transition-colors duration-250 hover:text-primary"
                               >
                                 LinkedIn <Icon icon={ArrowUpRight} size="xs" />
                               </motion.a>
@@ -320,7 +320,7 @@ export default function FindMentorsPage() {
                 <p className="text-base font-extrabold tracking-tight text-foreground">
                   No verified mentors match these criteria.
                 </p>
-                <p className="mt-1.5 text-sm text-foreground/60">
+                <p className="mt-1.5 text-sm text-muted">
                   Try a broader expertise term, or clear the search to see everyone.
                 </p>
                 <div className="mt-6 flex justify-center">

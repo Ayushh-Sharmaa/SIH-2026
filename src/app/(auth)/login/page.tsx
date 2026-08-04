@@ -50,7 +50,7 @@ function AuthHandoff({ caption }: { caption: string }) {
         <div className="rounded-3xl skeleton-shimmer lg:col-span-2" />
       </div>
 
-      <p className="text-center text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
+      <p className="text-center text-label uppercase text-muted">
         {caption}
       </p>
     </motion.div>
@@ -392,9 +392,9 @@ function LoginTemplate({
 
         <div className="relative">
           <SplitText
-            as="h2"
+            as="p"
             text="Build the team that ships."
-            className="max-w-md text-4xl font-extrabold leading-[1.08] tracking-tight text-foreground xl:text-5xl"
+            className="max-w-md text-heading text-foreground"
             delay={0.12}
           />
 
@@ -408,7 +408,7 @@ function LoginTemplate({
                   />
                   <span className="min-w-0">
                     <span className="block text-sm font-bold text-foreground">{h.title}</span>
-                    <span className="mt-0.5 block text-xs leading-relaxed text-foreground/55">
+                    <span className="mt-0.5 block text-xs leading-relaxed text-muted">
                       {h.copy}
                     </span>
                   </span>
@@ -419,7 +419,7 @@ function LoginTemplate({
         </div>
 
         <Reveal delay={0.75}>
-          <p className="relative text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
+          <p className="relative text-label uppercase text-muted">
             Team formation &amp; mentorship platform
           </p>
         </Reveal>
@@ -448,13 +448,13 @@ function LoginTemplate({
           </Reveal>
 
           <Reveal delay={0.06}>
-            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary">
+            <p className="text-label uppercase text-primary">
               Welcome back
             </p>
-            <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-foreground">
+            <h1 className="mt-2 text-title text-foreground">
               Sign in
             </h1>
-            <p className="mt-2 text-sm text-foreground/60">
+            <p className="mt-2 text-sm text-muted">
               Use the workspace account issued by the college.
             </p>
           </Reveal>
@@ -470,7 +470,7 @@ function LoginTemplate({
           <Reveal delay={0.24} className="my-7">
             <div className="flex items-center gap-3">
               <span className="h-px flex-1 bg-[rgba(209,199,189,0.8)]" />
-              <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted">
+              <span className="text-label uppercase text-muted">
                 or with email
               </span>
               <span className="h-px flex-1 bg-[rgba(209,199,189,0.8)]" />
@@ -502,7 +502,7 @@ function LoginTemplate({
                   type="button"
                   onClick={() => setShowPassword((s) => !s)}
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  className="absolute right-4 top-6 text-[10px] font-bold uppercase tracking-[0.12em] text-muted transition-colors duration-250 hover:text-primary"
+                  className="absolute right-4 top-6 text-label uppercase text-muted transition-colors duration-250 hover:text-primary"
                 >
                   {showPassword ? 'Hide' : 'Show'}
                 </button>
@@ -523,7 +523,7 @@ function LoginTemplate({
           </Reveal>
 
           <Reveal delay={0.4} className="mt-7">
-            <p className="text-center text-xs text-foreground/55">
+            <p className="text-center text-xs text-muted">
               No workspace account yet?{' '}
               <Link
                 href="/signup"

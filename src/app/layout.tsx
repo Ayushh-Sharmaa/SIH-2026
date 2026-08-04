@@ -9,6 +9,7 @@ import ScrollProgress from '@/components/ScrollProgress';
 import PageTransition from '@/components/PageTransition';
 import LoadingScreen from '@/components/LoadingScreen';
 import MotionProvider from '@/components/motion/MotionProvider';
+import { ToastProvider } from '@/components/ui/Toast';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -111,12 +112,14 @@ export default function RootLayout({
             policy, and so components that omit a transition inherit the house
             curve rather than Framer's default spring. */}
         <MotionProvider>
-          <LoadingScreen />
-          <ScrollProgress />
-          <CustomCursor />
-          <SmoothScroll>
-            <PageTransition>{children}</PageTransition>
-          </SmoothScroll>
+          <ToastProvider>
+            <LoadingScreen />
+            <ScrollProgress />
+            <CustomCursor />
+            <SmoothScroll>
+              <PageTransition>{children}</PageTransition>
+            </SmoothScroll>
+          </ToastProvider>
         </MotionProvider>
       </body>
     </html>

@@ -87,7 +87,7 @@ function ProfileAvatar({ avatarUrl, name }: { avatarUrl?: string | null; name: s
 
 function FilterLabel({ children }: { children: string }) {
   return (
-    <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
+    <span className="mb-1.5 block text-label uppercase text-muted">
       {children}
     </span>
   );
@@ -212,18 +212,18 @@ export default function FindTeammatesPage() {
           <div className="relative mx-auto flex max-w-7xl flex-col gap-6 px-4 py-12 sm:px-6 lg:flex-row lg:items-end lg:justify-between lg:px-8">
             <div>
               <Reveal direction="none" blur={false}>
-                <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary">
+                <span className="text-label uppercase text-primary">
                   Talent directory
                 </span>
               </Reveal>
               <SplitText
                 as="h1"
                 text="Find teammates"
-                className="mt-3 text-4xl font-extrabold leading-[1.05] tracking-tight text-foreground sm:text-5xl"
+                className="mt-3 text-title text-foreground"
                 delay={0.08}
               />
               <Reveal delay={0.28} className="mt-3">
-                <p className="max-w-xl text-sm leading-relaxed text-foreground/65">
+                <p className="max-w-xl text-sm leading-relaxed text-body">
                   Browse students looking for SIH teams and filter by technical skill, soft skill,
                   language fluency, and track interest.
                 </p>
@@ -236,7 +236,7 @@ export default function FindTeammatesPage() {
                   <div className="text-3xl font-extrabold tracking-tight text-foreground">
                     <Counter to={students.length} duration={1.2} />
                   </div>
-                  <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
+                  <div className="text-label uppercase text-muted">
                     profiles shown
                   </div>
                 </div>
@@ -245,7 +245,7 @@ export default function FindTeammatesPage() {
                   <div className="text-3xl font-extrabold tracking-tight text-foreground">
                     {activeFilters}
                   </div>
-                  <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
+                  <div className="text-label uppercase text-muted">
                     filters active
                   </div>
                 </div>
@@ -263,7 +263,7 @@ export default function FindTeammatesPage() {
                 onSubmit={handleSearch}
                 className="surface-raised rounded-3xl p-6 lg:sticky lg:top-28"
               >
-                <h2 className="text-sm font-extrabold uppercase tracking-[0.14em] text-foreground">
+                <h2 className="text-label uppercase text-foreground">
                   Refine
                 </h2>
                 <div className="my-5 h-px bg-gradient-to-r from-[rgba(172,156,141,0.55)] to-transparent" />
@@ -390,10 +390,10 @@ export default function FindTeammatesPage() {
                                     name={student.name}
                                   />
                                   <div className="min-w-0">
-                                    <h3 className="truncate text-base font-extrabold tracking-tight text-foreground">
+                                    <h3 className="truncate text-feature text-foreground">
                                       {student.name}
                                     </h3>
-                                    <span className="mt-0.5 block truncate text-xs text-foreground/60">
+                                    <span className="mt-0.5 block truncate text-caption text-muted">
                                       {student.branch} · {student.year}
                                     </span>
                                   </div>
@@ -405,7 +405,7 @@ export default function FindTeammatesPage() {
                                     {student.skills.map((sk) => (
                                       <span
                                         key={sk}
-                                        className="rounded-md border border-[rgba(114,56,61,0.22)] bg-[rgba(114,56,61,0.08)] px-2 py-0.5 text-[10px] font-semibold text-primary"
+                                        className="rounded-md border border-[rgba(114,56,61,0.22)] bg-[rgba(114,56,61,0.08)] px-2 py-0.5 text-caption font-semibold text-primary"
                                       >
                                         {sk}
                                       </span>
@@ -419,7 +419,7 @@ export default function FindTeammatesPage() {
                                     {student.softSkills.map((sk) => (
                                       <span
                                         key={sk}
-                                        className="rounded-md border border-[rgba(172,156,141,0.55)] bg-[rgba(172,156,141,0.18)] px-2 py-0.5 text-[10px] font-semibold text-foreground"
+                                        className="rounded-md border border-[rgba(172,156,141,0.55)] bg-[rgba(172,156,141,0.18)] px-2 py-0.5 text-caption font-semibold text-foreground"
                                       >
                                         {sk}
                                       </span>
@@ -427,7 +427,7 @@ export default function FindTeammatesPage() {
                                     {student.languages.map((ln) => (
                                       <span
                                         key={ln}
-                                        className="rounded-md border border-[rgba(209,199,189,0.7)] bg-[rgba(239,233,225,0.8)] px-2 py-0.5 text-[10px] font-semibold text-foreground/75"
+                                        className="rounded-md border border-[rgba(209,199,189,0.7)] bg-[rgba(239,233,225,0.8)] px-2 py-0.5 text-caption font-semibold text-body"
                                       >
                                         {ln}
                                       </span>
@@ -450,7 +450,7 @@ export default function FindTeammatesPage() {
                                         href={l.url}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="rounded-md border border-[rgba(209,199,189,0.75)] bg-[rgba(239,233,225,0.7)] px-2 py-1 text-[10px] font-bold text-foreground transition-colors duration-250 hover:border-[rgba(114,56,61,0.3)] hover:text-primary"
+                                        className="rounded-md border border-[rgba(209,199,189,0.75)] bg-[rgba(239,233,225,0.7)] px-2 py-1 text-caption font-bold text-foreground transition-colors duration-250 hover:border-[rgba(114,56,61,0.3)] hover:text-primary"
                                       >
                                         {l.label} <Icon icon={ArrowUpRight} size="xs" />
                                       </a>
@@ -480,7 +480,7 @@ export default function FindTeammatesPage() {
                   <p className="text-base font-extrabold tracking-tight text-foreground">
                     No teammate profiles match these filters.
                   </p>
-                  <p className="mt-1.5 text-sm text-foreground/60">
+                  <p className="mt-1.5 text-sm text-muted">
                     Clear a filter or widen your skill search to discover more collaborators.
                   </p>
                   <div className="mt-6 flex justify-center">

@@ -121,7 +121,7 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
               <span className="text-gradient-luxe text-sm font-extrabold tracking-tight">
                 SIH@GLBGOI
               </span>
-              <span className="mt-1 text-[7px] font-semibold uppercase tracking-[0.18em] text-muted">
+              <span className="mt-1 text-label uppercase text-muted">
                 by NexaSphere
               </span>
             </span>
@@ -135,7 +135,7 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
                   key={link.path}
                   href={link.path}
                   aria-current={isActive ? 'page' : undefined}
-                  className={`relative rounded-lg px-3 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition-colors duration-250 ${
+                  className={`relative rounded-lg px-3 py-2 text-label uppercase transition-colors duration-250 ${
                     isActive ? 'text-primary' : 'text-muted hover:text-foreground'
                   }`}
                 >
@@ -165,14 +165,14 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
               <div className="flex items-center gap-2.5">
                 <span className="hidden flex-col text-right leading-none sm:flex">
                   <span className="text-xs font-bold text-foreground">{user.name}</span>
-                  <span className="mt-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-muted">
+                  <span className="mt-1 text-label uppercase text-muted">
                     {user.role.toLowerCase()}
                   </span>
                 </span>
                 <Magnetic strength={6} as="span" className="hidden sm:inline-flex">
                   <Link
                     href="/onboarding?edit=true"
-                    className="rounded-lg border border-[rgba(114,56,61,0.22)] bg-[rgba(114,56,61,0.08)] px-3 py-2 text-[10px] font-bold uppercase tracking-[0.1em] text-primary transition-colors duration-250 hover:bg-[rgba(114,56,61,0.16)]"
+                    className="rounded-lg border border-[rgba(114,56,61,0.22)] bg-[rgba(114,56,61,0.08)] px-3 py-2 text-label uppercase text-primary transition-colors duration-250 hover:bg-[rgba(114,56,61,0.16)]"
                   >
                     Profile
                   </Link>
@@ -180,7 +180,7 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
                 <Magnetic strength={6} as="span" className="inline-flex">
                   <button
                     onClick={handleLogout}
-                    className="rounded-lg border border-[rgba(209,199,189,0.7)] bg-white/40 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.1em] text-foreground transition-colors duration-250 hover:bg-white/80"
+                    className="rounded-lg border border-[rgba(209,199,189,0.7)] bg-white/40 px-3 py-2 text-label uppercase text-foreground transition-colors duration-250 hover:bg-white/80"
                   >
                     Sign Out
                   </button>
@@ -199,7 +199,7 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
                 <Magnetic strength={6} as="span" className="inline-flex">
                   <Link
                     href="/signup"
-                    className="rounded-lg bg-primary px-4 py-2 text-xs font-bold text-[#FBF9F6] shadow-[0_2px_12px_rgba(114,56,61,0.22)] transition-shadow duration-250 hover:shadow-[0_8px_22px_rgba(114,56,61,0.3)]"
+                    className="rounded-lg bg-primary px-4 py-2 text-xs font-bold text-on-accent shadow-[0_2px_12px_rgba(114,56,61,0.22)] transition-shadow duration-250 hover:shadow-[0_8px_22px_rgba(114,56,61,0.3)]"
                   >
                     Get Started
                   </Link>
@@ -283,7 +283,7 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
                   </Link>
                   <Link
                     href="/signup"
-                    className="flex-1 rounded-xl bg-primary py-3 text-center text-sm font-bold text-[#FBF9F6]"
+                    className="flex-1 rounded-xl bg-primary py-3 text-center text-sm font-bold text-on-accent"
                   >
                     Get Started
                   </Link>

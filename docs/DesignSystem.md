@@ -199,6 +199,13 @@ was single-layer, which is why cards read flat. Base is warm neutral
 `src/components/motion/tokens.ts` mirrors the CSS tokens one-for-one. CSS owns
 ambient and looping motion; Framer Motion owns stateful and interruptible motion.
 
+> **Gotcha:** Tailwind v4 has **no `--duration-*` theme namespace.** `duration-hover`
+> generates nothing. The tokens work via `var(--duration-hover)` in plain CSS, but in
+> markup you must use the numeric form — `duration-200`, `duration-220`,
+> `duration-320`. Bare numeric values *do* compile (verified: `duration-250` and
+> `duration-400` both emit CSS). `--ease-*` **does** have a namespace, so
+> `ease-out-expo` works.
+
 | Token | Value | Band |
 | --- | --- | --- |
 | `instant` | 100ms | micro 100–150 |
@@ -333,26 +340,63 @@ npx next build              # clean
 
 ## Status
 
-**Done** — token foundation; layered CSS architecture; accessible text ramp;
-type scale; 8pt spacing + containers + `3xl` breakpoint; retargeted radius;
-layered elevation; motion tokens + variant library; `MotionProvider`; surface,
-pattern and atmosphere system; `Container` / `Section` / `SectionHeader` /
-`Eyebrow` / `Divider` / `Icon` primitives; icon system; zero emoji; production
-metadata; ~45% dead CSS removed.
+### Foundation — done
 
-**Next — applying the system page by page.** The foundation is in place and the
-build is green, but most pages still carry their original markup:
+Token layer; layered CSS architecture; accessible text ramp; fluid type scale;
+8pt spacing + containers + `3xl` breakpoint; retargeted radius; layered
+elevation; motion tokens + variant library; `MotionProvider`; surface, pattern
+and atmosphere system; production metadata; ~45% dead CSS removed;
+`motion` package removed (duplicate of `framer-motion`, same version, unused).
 
-- 61 alpha-modified text usages to replace
-- Heading-order violations on nearly every page (`login` renders `h2` before its
-  `h1`; `dashboard` has zero `h2`; `tracks` has one heading total)
-- The only modal (`admin`) has no focus trap, no Escape, no scroll lock, no
-  focus return
-- Four duplicate toast implementations (`dashboard`, `admin`, `find-mentors`,
-  `find-teammates`)
-- Empty states missing on five admin surfaces; four pages swallow fetch errors
-  into `console.error` with no user-facing surface
-- Navbar height has four conflicting definitions
-- `onboarding` (1855 lines) and `admin` (1384 lines) need component extraction
-- No `loading.tsx` / `error.tsx` / `not-found.tsx` anywhere
-- `framer-motion` and `motion` are both installed — the same library twice
+### Components — done
+
+`Container` · `Section` · `SectionHeader` · `Eyebrow` · `Divider` · `Card` ·
+`Badge` · `EmptyState` · `Modal` · `Toast` · `Icon`, plus `useFocusTrap` /
+`useScrollLock` / `useEscapeKey`, the rebuilt `Field` / `SelectField` /
+`TextAreaField`, and the six-variant `PremiumButton` with loading and success
+states. Route boundaries: `loading.tsx`, `error.tsx`, `not-found.tsx`,
+`global-error.tsx`.
+
+### Migration pass — done
+
+| Violation | Before | After |
+| --- | --- | --- |
+| Alpha-modified text (fails contrast) | 79 | **0** |
+| Text below the 12px floor | 138 | **0** |
+| Off-palette colours (`#F8F6F2`, `#FBF9F6`, `#8F464C`, `#F5F1EC`) | 20+ | **0** |
+| Type-token / `font-extrabold` weight conflicts | — | **0** |
+| Emoji in UI | 13 | **0** |
+| Decorative unicode arrows as UI | 15 | **0** |
+
+Heading order is now valid on all ten pages — exactly one `h1`, no skipped
+levels. Verified against **DOM** order, not file order: helper components like
+`Panel` and `SectionHeading` are *declared* above the main export but *render*
+below the `h1` (dashboard `h1` L294 / `Panel` L367; onboarding L770 / L879;
+admin L435 / L563).
+
+One genuine contrast bug fixed in passing: `bg-[#AC9C8D] text-[#FBF9F6]` in
+onboarding measured **2.53:1**. Now `bg-clay text-ink` at **5.12:1**.
+
+`tsc` clean · `next build` clean · `scripts/contrast.mjs` passing.
+
+### Still outstanding
+
+- **Structural pass not started.** Pages have correct type and colour but still
+  hand-roll their own containers and section rhythm; they have not been moved
+  onto `Container` / `Section` / `SectionHeader`, and atmospheres are not yet
+  assigned per page. Five of the eight home-page sections still share
+  `py-24 sm:py-32`.
+- The three inline overlays in `admin` and the four duplicate toast
+  implementations still need to be swapped for `Modal` and `useToast` — both
+  components exist and are wired, but the call sites are untouched.
+- Five admin list surfaces still render blank when filtered to zero rows;
+  `EmptyState` exists but is not yet used.
+- Four pages still swallow fetch errors into `console.error` with no user-facing
+  surface.
+- Navbar height still has four conflicting definitions.
+- `onboarding` (1855 lines) and `admin` (1384 lines) still need component
+  extraction.
+- 223 pre-existing `no-explicit-any` lint errors (`mockDb.ts` alone has 107).
+  Untouched by this work.
+- `npm audit`: 3 pre-existing high-severity advisories in `postcss` and `sharp`,
+  both transitive dependencies of `next`.

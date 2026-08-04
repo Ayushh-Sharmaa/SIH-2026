@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowUpRight } from 'lucide-react';
 import Icon from '@/components/ui/Icon';
+import { useToast } from '@/components/ui/Toast';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import {
@@ -52,6 +53,7 @@ function TracksSkeleton() {
 }
 
 export default function TracksPage() {
+  const { toast } = useToast();
   const [tracks, setTracks] = useState<Track[]>([]);
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState(ALL);
@@ -65,13 +67,16 @@ export default function TracksPage() {
         const data = await res.json();
         if (data.success) setTracks(data.tracks);
       } catch (err) {
+        // Logging alone left the user staring at an empty list with no idea the
+        // request had failed.
         console.error('Fetch tracks failed:', err);
+        toast('Could not load tracks. Check your connection and try again.', 'error');
       } finally {
         setLoading(false);
       }
     }
     fetchTracks();
-  }, []);
+  }, [toast]);
 
   const categories = useMemo(
     () => [ALL, ...Array.from(new Set(tracks.map((t) => t.category))).sort()],

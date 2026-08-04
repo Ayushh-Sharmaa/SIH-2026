@@ -81,8 +81,10 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
   return (
     <>
       {/* Reserves layout space so content is not covered by the fixed bar.
-          Pages with a full-bleed hero pass overlay to sit beneath it. */}
-      {!overlay && <div aria-hidden className="h-[76px] sm:h-[84px]" />}
+          Height comes from --nav-h (see tokens.css) so the spacer, the bar and
+          the anchor scroll-padding can never disagree again. Pages with a
+          full-bleed hero pass `overlay` to sit beneath it instead. */}
+      {!overlay && <div aria-hidden className="h-[var(--nav-h)]" />}
       <motion.header
         initial={{ y: -80, opacity: 0 }}
         animate={{ y: hidden ? -110 : 0, opacity: 1 }}

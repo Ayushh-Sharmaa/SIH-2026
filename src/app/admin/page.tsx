@@ -3,8 +3,11 @@
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowUpRight, Check, X } from 'lucide-react';
+import { ArrowUpRight, Check, GraduationCap, Layers, UserCheck, Users } from 'lucide-react';
 import Icon from '@/components/ui/Icon';
+import EmptyState from '@/components/ui/EmptyState';
+import { useToast } from '@/components/ui/Toast';
+import { useEscapeKey, useFocusTrap, useScrollLock } from '@/hooks/useFocusTrap';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import {
@@ -73,7 +76,7 @@ function Panel({
     <section className="surface-raised rounded-3xl p-5 sm:p-6">
       <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-label uppercase text-foreground">
+          <h2 className="text-feature text-foreground">
             {title}
           </h2>
           {description && (
@@ -89,25 +92,55 @@ function Panel({
   );
 }
 
-function Overlay({ onClose, children }: { onClose: () => void; children: ReactNode }) {
+/**
+ * Dialog shell for the three admin overlays.
+ *
+ * Previously this had no focus trap, no Escape handler, no scroll lock and no
+ * focus return — a keyboard user could Tab straight out of the dialog into the
+ * page behind it, which is obscured and unreachable by pointer. The three
+ * behaviours now come from the shared hooks, so all three call sites are fixed
+ * without touching their markup.
+ */
+function Overlay({
+  onClose,
+  labelledBy,
+  children,
+}: {
+  onClose: () => void;
+  /** id of the heading that names this dialog. */
+  labelledBy: string;
+  children: ReactNode;
+}) {
+  const panelRef = useFocusTrap<HTMLDivElement>(true);
+  useScrollLock(true);
+  useEscapeKey(true, onClose);
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: DURATION.hover, ease: EASE.outExpo }}
-      onClick={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(50,45,41,0.32)] p-4 backdrop-blur-md"
+      className="fixed inset-0 z-modal flex items-center justify-center p-4"
     >
+      {/* The backdrop owns the dismiss click. Putting it on the parent meant a
+          drag that began inside the panel and ended outside would close it. */}
+      <div
+        aria-hidden
+        onClick={onClose}
+        className="absolute inset-0 bg-[rgb(50_45_41/0.34)] backdrop-blur-md"
+      />
       <motion.div
+        ref={panelRef}
         role="dialog"
         aria-modal="true"
-        onClick={(e) => e.stopPropagation()}
+        aria-labelledby={labelledBy}
+        tabIndex={-1}
         initial={{ opacity: 0, y: 28, scale: 0.97, filter: 'blur(8px)' }}
         animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
         exit={{ opacity: 0, y: 16, scale: 0.98, filter: 'blur(6px)' }}
         transition={{ duration: DURATION.card, ease: EASE.outExpo }}
-        className="max-h-[88vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-[rgba(209,199,189,0.9)] bg-[rgba(248,246,242,0.97)] p-6 shadow-[0_32px_90px_rgba(50,45,41,0.24)]"
+        className="surface-overlay relative max-h-[88vh] w-full max-w-2xl overflow-y-auto rounded-container p-6"
       >
         {children}
       </motion.div>
@@ -124,6 +157,7 @@ interface ConfirmState {
 
 export default function AdminDashboardPage() {
   const router = useRouter();
+  const { toast } = useToast();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -192,11 +226,21 @@ export default function AdminDashboardPage() {
     fetchAdminData();
   }, [fetchAdminData]);
 
+  // Both messages route through the shared toast system, which owns stacking,
+  // dismissal, timing and the announcement role (assertive for errors, polite
+  // for confirmations). The local state stays as the trigger so every existing
+  // setSuccessMsg / setError call site keeps working unchanged.
   useEffect(() => {
     if (!successMsg) return;
-    const t = window.setTimeout(() => setSuccessMsg(''), 4000);
-    return () => window.clearTimeout(t);
-  }, [successMsg]);
+    toast(successMsg, 'success');
+    setSuccessMsg('');
+  }, [successMsg, toast]);
+
+  useEffect(() => {
+    if (!error) return;
+    toast(error, 'error');
+    setError('');
+  }, [error, toast]);
 
   const handleGrantAdminAccess = async (e: FormEvent) => {
     e.preventDefault();
@@ -696,6 +740,19 @@ export default function AdminDashboardPage() {
                         </button>
                       </Panel>
 
+                      {filteredTeams.length === 0 && (
+                        <EmptyState
+                          icon={Users}
+                          size="compact"
+                          title="No teams match these filters"
+                          description={
+                            teams.length === 0
+                              ? 'No teams have been formed yet. They will appear here as students register.'
+                              : 'Try widening the search, or clearing the track and status filters.'
+                          }
+                        />
+                      )}
+
                       <motion.div layout className="grid gap-4 xl:grid-cols-2">
                         <AnimatePresence mode="popLayout" initial={false}>
                           {filteredTeams.map((team, i) => (
@@ -897,9 +954,22 @@ export default function AdminDashboardPage() {
                         </p>
                       </Panel>
 
+                      {filteredStudents.length === 0 && (
+                        <EmptyState
+                          icon={GraduationCap}
+                          size="compact"
+                          title="No students match these filters"
+                          description={
+                            students.length === 0
+                              ? 'No students have registered yet.'
+                              : 'Try clearing the year, branch, section, gender or access filters.'
+                          }
+                        />
+                      )}
+
                       <motion.ul
                         layout
-                        className="surface-raised divide-y divide-[rgba(209,199,189,0.7)] overflow-hidden rounded-3xl"
+                        className="surface-raised divide-y divide-[rgba(209,199,189,0.7)] overflow-hidden rounded-3xl empty:hidden"
                       >
                         <AnimatePresence mode="popLayout" initial={false}>
                           {filteredStudents.map((student, i) => (
@@ -1004,6 +1074,15 @@ export default function AdminDashboardPage() {
                         />
                       </Panel>
 
+                      {filteredPSTracks.length === 0 && (
+                        <EmptyState
+                          icon={Layers}
+                          size="compact"
+                          title="No problem statements match this search"
+                          description="Try a different keyword, or clear the search to see all 18 themes."
+                        />
+                      )}
+
                       <motion.div layout className="grid gap-4 xl:grid-cols-2">
                         <AnimatePresence mode="popLayout" initial={false}>
                           {filteredPSTracks.map((track, i) => (
@@ -1077,6 +1156,14 @@ export default function AdminDashboardPage() {
                     </>
                   )}
 
+                  {activeTab === 'mentors' && mentors.length === 0 && (
+                    <EmptyState
+                      icon={UserCheck}
+                      title="No mentors registered yet"
+                      description="Faculty mentors will appear here once they complete onboarding."
+                    />
+                  )}
+
                   {activeTab === 'mentors' && (
                     <RevealGroup className="grid gap-4 sm:grid-cols-2" stagger={0.06}>
                       {mentors.map((mentor) => (
@@ -1139,10 +1226,10 @@ export default function AdminDashboardPage() {
       {/* ── STUDENT DETAIL ── */}
       <AnimatePresence>
         {selectedStudent && (
-          <Overlay onClose={() => setSelectedStudent(null)}>
+          <Overlay onClose={() => setSelectedStudent(null)} labelledBy="admin-student-dialog">
             <div className="flex items-start justify-between gap-4 border-b border-[rgba(209,199,189,0.7)] pb-4">
               <div className="min-w-0">
-                <h2 className="text-feature text-foreground">
+                <h2 id="admin-student-dialog" className="text-feature text-foreground">
                   {selectedStudent.name}
                 </h2>
                 <p className="mt-0.5 truncate text-xs font-semibold text-primary">
@@ -1259,10 +1346,10 @@ export default function AdminDashboardPage() {
       {/* ── TEAM DETAIL ── */}
       <AnimatePresence>
         {selectedTeam && (
-          <Overlay onClose={() => setSelectedTeam(null)}>
+          <Overlay onClose={() => setSelectedTeam(null)} labelledBy="admin-team-dialog">
             <div className="flex items-start justify-between gap-4 border-b border-[rgba(209,199,189,0.7)] pb-4">
               <div className="min-w-0">
-                <h2 className="text-feature text-foreground">
+                <h2 id="admin-team-dialog" className="text-feature text-foreground">
                   {selectedTeam.name}
                 </h2>
                 <p className="mt-0.5 text-xs font-semibold text-primary">
@@ -1323,8 +1410,8 @@ export default function AdminDashboardPage() {
       {/* ── CONFIRM ── */}
       <AnimatePresence>
         {confirmState && (
-          <Overlay onClose={() => setConfirmState(null)}>
-            <h2 className="text-feature text-foreground">
+          <Overlay onClose={() => setConfirmState(null)} labelledBy="admin-confirm-dialog">
+            <h2 id="admin-confirm-dialog" className="text-feature text-foreground">
               {confirmState.title}
             </h2>
             <p className="mt-2 text-sm leading-relaxed text-muted">{confirmState.body}</p>
@@ -1352,36 +1439,6 @@ export default function AdminDashboardPage() {
         )}
       </AnimatePresence>
 
-      {/* ── TOASTS ── */}
-      <AnimatePresence>
-        {(successMsg || error) && (
-          <motion.div
-            role="status"
-            initial={{ opacity: 0, y: 24, filter: 'blur(8px)' }}
-            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-            exit={{ opacity: 0, y: 16, filter: 'blur(8px)' }}
-            transition={{ duration: DURATION.card, ease: EASE.outExpo }}
-            className={`fixed bottom-6 left-1/2 z-[60] flex max-w-md -translate-x-1/2 items-center gap-4 rounded-2xl border bg-[rgba(248,246,242,0.95)] px-5 py-3 text-sm font-semibold shadow-[0_16px_48px_rgba(50,45,41,0.16)] backdrop-blur-xl ${
-              error
-                ? 'border-[rgba(114,56,61,0.38)] text-primary'
-                : 'border-[rgba(172,156,141,0.65)] text-foreground'
-            }`}
-          >
-            <span className="min-w-0">{error || successMsg}</span>
-            <button
-              type="button"
-              aria-label="Dismiss"
-              onClick={() => {
-                setError('');
-                setSuccessMsg('');
-              }}
-              className="shrink-0 text-muted transition-colors duration-250 hover:text-primary"
-            >
-              <Icon icon={X} size="sm" />
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

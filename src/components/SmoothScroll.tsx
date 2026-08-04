@@ -33,7 +33,13 @@ export default function SmoothScroll({ children }: { children: React.ReactNode }
       const el = document.querySelector(id);
       if (!el) return;
       e.preventDefault();
-      lenis.scrollTo(el as HTMLElement, { offset: -96 });
+      // Derived from the navbar's single height definition rather than a
+      // hardcoded -96, which overshot by 16-20px depending on breakpoint.
+      const navH =
+        parseFloat(
+          getComputedStyle(document.documentElement).getPropertyValue('--nav-h'),
+        ) || 76;
+      lenis.scrollTo(el as HTMLElement, { offset: -(navH + 20) });
     };
     document.addEventListener('click', onClick);
 

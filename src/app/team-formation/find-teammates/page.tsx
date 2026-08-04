@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowUpRight } from 'lucide-react';
 import Icon from '@/components/ui/Icon';
+import { useToast } from '@/components/ui/Toast';
 import Image from 'next/image';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -97,6 +98,7 @@ const CONTROL =
   'w-full rounded-xl border border-[rgba(209,199,189,0.8)] bg-[rgba(248,246,242,0.65)] px-3.5 py-2 text-sm text-foreground outline-none transition-[border-color,box-shadow,background-color] duration-250 focus:border-primary focus:bg-[rgba(248,246,242,0.95)] focus:shadow-[0_0_0_4px_rgba(114,56,61,0.10)]';
 
 export default function FindTeammatesPage() {
+  const { toast } = useToast();
   const [students, setStudents] = useState<Student[]>([]);
   const [tracks, setTracks] = useState<Track[]>([]);
   const [loading, setLoading] = useState(true);
@@ -125,6 +127,10 @@ export default function FindTeammatesPage() {
         if (data.success) setStudents(data.students);
       } catch (err) {
         console.error('Fetch teammates error:', err);
+        setNotice({
+          type: 'error',
+          message: 'Could not load students. Check your connection and try again.',
+        });
       } finally {
         setRefreshing(false);
       }
@@ -140,6 +146,7 @@ export default function FindTeammatesPage() {
         if (data.success) setTracks(data.tracks);
       } catch (err) {
         console.error('Fetch tracks failed:', err);
+        setNotice({ type: 'error', message: 'Could not load track filters. Please refresh.' });
       }
       await fetchTeammates({ skill: '', softSkill: '', language: '', trackId: '' });
       setLoading(false);
@@ -149,11 +156,14 @@ export default function FindTeammatesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Routed through the shared toast system, which already distinguishes success
+  // from error. The local `notice` state stays as the trigger so existing
+  // setNotice call sites keep working unchanged.
   useEffect(() => {
     if (!notice) return;
-    const t = window.setTimeout(() => setNotice(null), 5000);
-    return () => window.clearTimeout(t);
-  }, [notice]);
+    toast(notice.message, notice.type);
+    setNotice(null);
+  }, [notice, toast]);
 
   const handleSearch = (e: FormEvent) => {
     e.preventDefault();
@@ -263,7 +273,7 @@ export default function FindTeammatesPage() {
                 onSubmit={handleSearch}
                 className="surface-raised rounded-3xl p-6 lg:sticky lg:top-28"
               >
-                <h2 className="text-label uppercase text-foreground">
+                <h2 className="text-feature text-foreground">
                   Refine
                 </h2>
                 <div className="my-5 h-px bg-gradient-to-r from-[rgba(172,156,141,0.55)] to-transparent" />
@@ -496,25 +506,6 @@ export default function FindTeammatesPage() {
       </main>
 
       <Footer />
-
-      <AnimatePresence>
-        {notice && (
-          <motion.div
-            role="status"
-            initial={{ opacity: 0, y: 24, filter: 'blur(8px)' }}
-            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-            exit={{ opacity: 0, y: 16, filter: 'blur(8px)' }}
-            transition={{ duration: DURATION.card, ease: EASE.outExpo }}
-            className={`fixed bottom-6 left-1/2 z-50 max-w-md -translate-x-1/2 rounded-2xl border bg-[rgba(248,246,242,0.94)] px-5 py-3 text-sm font-semibold shadow-[0_16px_48px_rgba(50,45,41,0.16)] backdrop-blur-xl ${
-              notice.type === 'success'
-                ? 'border-[rgba(172,156,141,0.65)] text-foreground'
-                : 'border-[rgba(114,56,61,0.35)] text-primary'
-            }`}
-          >
-            {notice.message}
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

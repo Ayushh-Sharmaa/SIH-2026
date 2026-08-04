@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Check } from 'lucide-react';
 import Icon from '@/components/ui/Icon';
+import { useToast } from '@/components/ui/Toast';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import {
@@ -32,6 +33,7 @@ const STEPS = [
 
 export default function CreateTeamPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [tracks, setTracks] = useState<Track[]>([]);
   const [name, setName] = useState('');
   const [trackId, setTrackId] = useState('');
@@ -49,11 +51,14 @@ export default function CreateTeamPage() {
           if (data.tracks.length > 0) setTrackId(data.tracks[0].id);
         }
       } catch (err) {
-        console.error(err);
+        // Without this the track dropdown just renders empty and the user
+        // cannot tell whether there are no tracks or the request failed.
+        console.error('Fetch tracks failed:', err);
+        toast('Could not load problem statement tracks. Please refresh.', 'error');
       }
     }
     fetchTracks();
-  }, []);
+  }, [toast]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();

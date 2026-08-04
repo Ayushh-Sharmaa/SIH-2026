@@ -8,8 +8,9 @@
 html {
   /* Lenis drives scrolling; native smooth-scroll would fight it. */
   scroll-behavior: auto;
-  /* Anchor jumps clear the fixed navbar. */
-  scroll-padding-top: 6rem;
+  /* Anchor jumps clear the fixed navbar, derived from its single definition
+     rather than a hardcoded guess. */
+  scroll-padding-top: calc(var(--nav-h) + 1.25rem);
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }

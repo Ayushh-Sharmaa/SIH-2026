@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowUpRight } from 'lucide-react';
 import Icon from '@/components/ui/Icon';
+import { useToast } from '@/components/ui/Toast';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import {
@@ -70,6 +71,7 @@ function CapacityDial({ load, capacity }: { load: number; capacity: number }) {
 }
 
 export default function FindMentorsPage() {
+  const { toast } = useToast();
   const [mentors, setMentors] = useState<Mentor[]>([]);
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
@@ -88,7 +90,10 @@ export default function FindMentorsPage() {
       const data = await res.json();
       if (data.success) setMentors(data.mentors);
     } catch (err) {
+      // Logging alone left the user staring at an empty list with no idea the
+      // request had failed.
       console.error('Fetch mentors failed:', err);
+      setNotice('Could not load mentors. Check your connection and try again.');
     } finally {
       setSearching(false);
     }
@@ -98,11 +103,13 @@ export default function FindMentorsPage() {
     fetchMentors().finally(() => setLoading(false));
   }, [fetchMentors]);
 
+  // Routed through the shared toast system. The local `notice` state stays as
+  // the trigger so existing setNotice call sites keep working unchanged.
   useEffect(() => {
     if (!notice) return;
-    const t = window.setTimeout(() => setNotice(null), 5000);
-    return () => window.clearTimeout(t);
-  }, [notice]);
+    toast(notice, 'info');
+    setNotice(null);
+  }, [notice, toast]);
 
   const handleSearch = (e: FormEvent) => {
     e.preventDefault();
@@ -336,20 +343,6 @@ export default function FindMentorsPage() {
 
       <Footer />
 
-      <AnimatePresence>
-        {notice && (
-          <motion.div
-            role="status"
-            initial={{ opacity: 0, y: 24, filter: 'blur(8px)' }}
-            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-            exit={{ opacity: 0, y: 16, filter: 'blur(8px)' }}
-            transition={{ duration: DURATION.card, ease: EASE.outExpo }}
-            className="fixed bottom-6 left-1/2 z-50 max-w-md -translate-x-1/2 rounded-2xl border border-[rgba(172,156,141,0.65)] bg-[rgba(248,246,242,0.94)] px-5 py-3 text-sm font-semibold text-foreground shadow-[0_16px_48px_rgba(50,45,41,0.16)] backdrop-blur-xl"
-          >
-            {notice}
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

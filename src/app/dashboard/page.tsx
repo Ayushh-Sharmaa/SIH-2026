@@ -17,6 +17,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import Icon from '@/components/ui/Icon';
+import { useToast } from '@/components/ui/Toast';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import {
@@ -187,6 +188,7 @@ function DashboardSkeleton() {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -210,11 +212,14 @@ export default function DashboardPage() {
     fetchDashboard();
   }, [fetchDashboard]);
 
+  // Routed through the shared toast system, which owns stacking, dismissal and
+  // the announcement role. The local `notice` state is kept as the trigger so
+  // every existing setNotice call site keeps working unchanged.
   useEffect(() => {
     if (!notice) return;
-    const t = window.setTimeout(() => setNotice(null), 4000);
-    return () => window.clearTimeout(t);
-  }, [notice]);
+    toast(notice, 'error');
+    setNotice(null);
+  }, [notice, toast]);
 
   const handleRequestResponse = async (requestId: string, action: 'accept' | 'decline') => {
     setActionLoading(requestId);
@@ -504,7 +509,7 @@ export default function DashboardPage() {
                           action={<Chip tone="primary">{String(team.status).toLowerCase()}</Chip>}
                         >
                           <div className="mb-6">
-                            <h3 className="text-subheading text-foreground">{team.name}</h3>
+                            <h3 className="text-feature text-foreground">{team.name}</h3>
                             <p className="mt-1 text-xs text-muted">
                               Track{' '}
                               <span className="font-bold text-primary">
@@ -854,21 +859,6 @@ export default function DashboardPage() {
       </main>
 
       <Footer />
-
-      <AnimatePresence>
-        {notice && (
-          <motion.div
-            role="status"
-            initial={{ opacity: 0, y: 24, filter: 'blur(8px)' }}
-            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-            exit={{ opacity: 0, y: 16, filter: 'blur(8px)' }}
-            transition={{ duration: DURATION.card, ease: EASE.outExpo }}
-            className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-2xl border border-[rgba(114,56,61,0.25)] bg-[rgba(248,246,242,0.92)] px-5 py-3 text-sm font-semibold text-foreground shadow-[0_16px_48px_rgba(50,45,41,0.16)] backdrop-blur-xl"
-          >
-            {notice}
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

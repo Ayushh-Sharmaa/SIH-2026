@@ -185,6 +185,26 @@
   --z-index-boot: 500; /* first-paint curtain */
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   NAVBAR HEIGHT — one definition.
+
+   The fixed bar's occupied height had four conflicting definitions: the layout
+   spacer reserved 76/84px, the bar itself measured 76/80px (pt-3/pt-4 + h-16),
+   the CSS scroll-padding assumed 96px, and Lenis used a -96px anchor offset.
+   The 4px discrepancy on tablet+ showed as content tucked under the bar.
+
+   Breakpoint-dependent, so it cannot live in @theme (which has no media
+   queries). Consumers use h-[var(--nav-h)].
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root {
+  --nav-h: 76px; /* pt-3 (12) + h-16 (64) */
+}
+@media (min-width: 40rem) {
+  :root {
+    --nav-h: 80px; /* pt-4 (16) + h-16 (64) */
+  }
+}
+
 /* The CSS files reference these by their short names, so mirror them. */
 :root {
   --z-decor: 1;

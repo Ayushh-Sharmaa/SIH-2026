@@ -1,10 +1,10 @@
 'use client';
 
-import { useCallback, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useClerk } from '@clerk/nextjs';
-import { useSession } from '@/lib/session';
+import { useAuthenticatedRedirect } from '@/lib/session';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Aurora,
@@ -98,32 +98,6 @@ function GoogleButton({
       </svg>
       {loading ? 'Connecting to Google…' : label}
     </motion.button>
-  );
-}
-
-/**
- * Navigates after a successful sign-in, re-reading the session first.
- *
- * The session is cached once per page load by `SessionProvider`, which lives in
- * the root layout and therefore survives client-side navigation. Signing in
- * changes the session behind that cache, so without an explicit invalidation
- * here the user would land on the dashboard with the navbar still offering them
- * a "Sign In" button until the next full page load.
- *
- * `refresh` is awaited rather than fired and forgotten: resolving it before the
- * push means the destination renders with the correct identity on its first
- * frame instead of correcting itself a moment later.
- */
-function useAuthenticatedRedirect() {
-  const router = useRouter();
-  const { refresh } = useSession();
-
-  return useCallback(
-    async (destination: string) => {
-      await refresh();
-      router.push(destination);
-    },
-    [refresh, router],
   );
 }
 

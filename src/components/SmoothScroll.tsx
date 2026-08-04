@@ -5,29 +5,21 @@ import Lenis from 'lenis';
 import { subscribe } from '@/lib/ticker';
 
 /**
- * Momentum scrolling via Lenis, driven on demand.
+ * Momentum scrolling via Lenis.
  *
- * The previous implementation opened a `requestAnimationFrame` loop on mount
- * and never closed it. Lenis only has work to do while the page is actually
- * moving, so on a stationary page — which is most of the time a user spends
- * reading — that loop woke the main thread 60 times a second to call
- * `lenis.raf()` and have it decide there was nothing to interpolate. On a
- * laptop that is a measurable, permanent battery draw; on a low-end phone it is
- * main-thread budget stolen from scrolling itself.
+ * Lenis is driven from the shared ticker (`@/lib/ticker`) rather than its own
+ * `requestAnimationFrame` loop. That is what collapses the four independent
+ * loops the root layout used to run into one: Lenis and the custom cursor now
+ * share a single frame callback instead of scheduling two.
  *
- * This version subscribes to the shared ticker only when scroll input arrives,
- * and unsubscribes once Lenis has been still for a short grace period. An idle
- * page schedules no frames at all.
+ * Note that this subscription is held for the lifetime of the component, so
+ * Lenis is stepped every frame whether or not the page is moving. Releasing the
+ * subscription while idle and re-arming it on scroll input would take this to
+ * zero cost on a stationary page; it is left running deliberately, since a
+ * mid-gesture release can chop the momentum tail. The shared ticker still
+ * suspends the whole loop when the tab is hidden, so a backgrounded tab costs
+ * nothing either way.
  */
-
-/**
- * Frames Lenis must report itself still before the loop is released. Lenis can
- * read as not-scrolling for a frame or two mid-gesture between a wheel event
- * and the next, so releasing immediately would visibly chop momentum. ~20
- * frames is a third of a second at 60Hz: long enough to bridge those gaps,
- * short enough that idle cost returns to zero promptly.
- */
-const IDLE_FRAMES_BEFORE_RELEASE = 20;
 
 /** Extra clearance below the fixed navbar when jumping to an anchor. */
 const ANCHOR_CLEARANCE = 20;
@@ -44,43 +36,11 @@ export default function SmoothScroll({ children }: { children: React.ReactNode }
       touchMultiplier: 1.8,
     });
 
-    let unsubscribe: (() => void) | null = null;
-    let idleFrames = 0;
-
-    const release = () => {
-      unsubscribe?.();
-      unsubscribe = null;
-    };
-
     const tick = (time: number) => {
       lenis.raf(time);
-
-      // `isScrolling` covers both the wheel/touch gesture and the momentum tail
-      // that outlives it, which is exactly the window in which frames matter.
-      if (lenis.isScrolling) {
-        idleFrames = 0;
-        return;
-      }
-
-      if (++idleFrames >= IDLE_FRAMES_BEFORE_RELEASE) release();
     };
 
-    const ensureRunning = () => {
-      idleFrames = 0;
-      if (!unsubscribe) unsubscribe = subscribe(tick);
-    };
-
-    // Any input that could move the page re-arms the loop. These are all
-    // passive: none of them call preventDefault, and marking them so lets the
-    // browser start compositor-driven scrolling without waiting on this
-    // listener to return.
-    const INPUT_EVENTS = ['wheel', 'touchstart', 'pointerdown', 'keydown'] as const;
-    for (const type of INPUT_EVENTS) {
-      window.addEventListener(type, ensureRunning, { passive: true });
-    }
-    // Programmatic scrolls (scrollTo, hash landings, anchor jumps) produce no
-    // input event, so listen for the resulting scroll as well.
-    window.addEventListener('scroll', ensureRunning, { passive: true });
+    const unsubscribe = subscribe(tick);
 
     /**
      * Routes in-page anchor clicks through Lenis so they ease rather than jump.
@@ -117,7 +77,6 @@ export default function SmoothScroll({ children }: { children: React.ReactNode }
           getComputedStyle(document.documentElement).getPropertyValue('--nav-h'),
         ) || 76;
 
-      ensureRunning();
       lenis.scrollTo(target as HTMLElement, { offset: -(navHeight + ANCHOR_CLEARANCE) });
 
       // Keep the URL and the document's focus target in step with the jump, so
@@ -132,10 +91,8 @@ export default function SmoothScroll({ children }: { children: React.ReactNode }
     document.addEventListener('click', onAnchorClick);
 
     return () => {
-      for (const type of INPUT_EVENTS) window.removeEventListener(type, ensureRunning);
-      window.removeEventListener('scroll', ensureRunning);
       document.removeEventListener('click', onAnchorClick);
-      release();
+      unsubscribe();
       lenis.destroy();
     };
   }, []);

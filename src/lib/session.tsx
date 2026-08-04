@@ -10,6 +10,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { useRouter } from 'next/navigation';
 
 /**
  * Client-side session state, fetched once per page load.
@@ -164,4 +165,35 @@ export function useSession(): SessionValue {
     throw new Error('useSession must be used within a <SessionProvider>.');
   }
   return value;
+}
+
+/**
+ * Returns a navigate-after-authentication function.
+ *
+ * `SessionProvider` lives in the root layout, so its cache survives client-side
+ * navigation. Signing in or up changes the session behind that cache, which
+ * means every post-authentication redirect has to invalidate it first —
+ * otherwise the user lands on the dashboard with the navbar still offering them
+ * a "Sign In" button until the next full page load.
+ *
+ * `refresh` is awaited rather than fired and forgotten, so the destination
+ * renders with the correct identity on its first frame instead of visibly
+ * correcting itself a moment later.
+ *
+ * Lives here rather than in a page because the sign-in and sign-up flows both
+ * need it, and each of those files already contains two near-identical form
+ * components — four copies of the same three lines is exactly the duplication
+ * worth pulling out.
+ */
+export function useAuthenticatedRedirect() {
+  const router = useRouter();
+  const { refresh } = useSession();
+
+  return useCallback(
+    async (destination: string) => {
+      await refresh();
+      router.push(destination);
+    },
+    [refresh, router],
+  );
 }

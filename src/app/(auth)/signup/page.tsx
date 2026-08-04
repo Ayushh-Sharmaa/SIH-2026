@@ -4,6 +4,7 @@ import { useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useClerk } from '@clerk/nextjs';
+import { useAuthenticatedRedirect } from '@/lib/session';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import Icon from '@/components/ui/Icon';
@@ -108,6 +109,7 @@ export default function SignupPage() {
 
 function ClerkSignupPage() {
   const router = useRouter();
+  const goAuthenticated = useAuthenticatedRedirect();
   const clerk = useClerk();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -148,7 +150,7 @@ function ClerkSignupPage() {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Google Sign-Up failed');
-        router.push('/onboarding');
+        await goAuthenticated('/onboarding');
       }
     } catch (err: any) {
       logger.error('Google Sign-Up error', err);
@@ -159,7 +161,7 @@ function ClerkSignupPage() {
           body: JSON.stringify({ email: email || 'student.google@glbajajgroup.org', role }),
         });
         if (res.ok) {
-          router.push('/onboarding');
+          await goAuthenticated('/onboarding');
           return;
         }
       } catch {
@@ -195,7 +197,7 @@ function ClerkSignupPage() {
         throw new Error(data.error || 'Registration failed');
       }
 
-      router.push('/onboarding');
+      await goAuthenticated('/onboarding');
     } catch (err: any) {
       setLoading(false);
       if (err.message?.includes('already exists')) {
@@ -232,6 +234,7 @@ function ClerkSignupPage() {
 
 function CustomSignupPage() {
   const router = useRouter();
+  const goAuthenticated = useAuthenticatedRedirect();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -252,7 +255,7 @@ function CustomSignupPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Google Sign-Up failed');
-      router.push('/onboarding');
+      await goAuthenticated('/onboarding');
     } catch (err: any) {
       logger.error('Google Sign-Up error', err);
       setError(err.message || 'Google Sign-Up failed. Please try again.');
@@ -285,7 +288,7 @@ function CustomSignupPage() {
         throw new Error(data.error || 'Registration failed');
       }
 
-      router.push('/onboarding');
+      await goAuthenticated('/onboarding');
     } catch (err: any) {
       setLoading(false);
       if (err.message?.includes('already exists')) {

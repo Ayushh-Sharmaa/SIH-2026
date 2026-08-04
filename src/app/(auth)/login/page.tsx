@@ -117,76 +117,27 @@ function ClerkLoginPage() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
+  // Hands off to Clerk, which redirects to /sso-callback to complete the
+  // handshake. There is deliberately no fallback that posts an email to
+  // /api/auth/clerk-sync: doing so signed the caller in as whatever address
+  // was sent, with no password, which is an authentication bypass rather than
+  // a recovery path. A failed Google sign-in must surface as an error.
   const handleGoogleSignIn = async () => {
     setError('');
     setGoogleLoading(true);
     try {
-      const pubKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || '';
-      const isRealKey =
-        pubKey.startsWith('pk_test_') && !pubKey.includes('glbgoi') && !pubKey.includes('placeholder');
-
-      if (isRealKey && clerk) {
-        const clerkRedirect = clerk as unknown as {
-          authenticateWithRedirect?: (args: {
-            strategy: string;
-            redirectUrl: string;
-            redirectUrlComplete: string;
-          }) => Promise<void>;
-        };
-        if (clerkRedirect.authenticateWithRedirect) {
-          await clerkRedirect.authenticateWithRedirect({
-            strategy: 'oauth_google',
-            redirectUrl: '/api/auth/clerk-sync',
-            redirectUrlComplete: '/dashboard',
-          });
-        } else if (clerk?.client?.signIn) {
-          await clerk.client.signIn.authenticateWithRedirect({
-            strategy: 'oauth_google',
-            redirectUrl: '/api/auth/clerk-sync',
-            redirectUrlComplete: '/dashboard',
-          });
-        }
-      } else {
-        const res = await fetch('/api/auth/clerk-sync', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: email || 'tanishk.bansal2025@glbajajgroup.org', role: 'STUDENT' }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Google Sign-In failed');
-
-        const meRes = await fetch('/api/auth/me');
-        const meData = await meRes.json();
-        if (meData.authenticated && meData.user.isOnboarded) {
-          await goAuthenticated('/dashboard');
-        } else {
-          await goAuthenticated('/onboarding');
-        }
+      if (!clerk?.client?.signIn) {
+        throw new Error('Google Sign-In is unavailable right now. Please use your email and password.');
       }
+
+      await clerk.client.signIn.authenticateWithRedirect({
+        strategy: 'oauth_google',
+        redirectUrl: '/sso-callback',
+        redirectUrlComplete: '/api/auth/clerk-sync',
+      });
     } catch (err) {
       logger.error('Google Sign-In error', err);
-      try {
-        const res = await fetch('/api/auth/clerk-sync', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: email || 'tanishk.bansal2025@glbajajgroup.org', role: 'STUDENT' }),
-        });
-        const data = await res.json();
-        if (res.ok) {
-          const meRes = await fetch('/api/auth/me');
-          const meData = await meRes.json();
-          if (meData.authenticated && meData.user.isOnboarded) {
-            await goAuthenticated('/dashboard');
-          } else {
-            await goAuthenticated('/onboarding');
-          }
-          return;
-        }
-      } catch {
-        // fall through to the surfaced error
-      }
       setError(err instanceof Error ? err.message : 'Google Sign-In failed. Please try again.');
-    } finally {
       setGoogleLoading(false);
     }
   };

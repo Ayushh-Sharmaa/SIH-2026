@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
-import { addAdminEmail, getAdminEmails, isAuthorizedAdminEmail, removeAdminEmail } from '@/lib/mockDb';
+import { addAdminEmail, isAuthorizedAdminEmail, removeAdminEmail, SUPER_ADMIN_EMAIL } from '@/lib/admin';
 
 export async function POST(request: Request) {
   try {
@@ -13,7 +13,8 @@ export async function POST(request: Request) {
     }
 
     const decoded = verifyToken(token);
-    if (!decoded || (decoded.role !== 'ADMIN' && !isAuthorizedAdminEmail(decoded.email))) {
+    // Always verify against the allowlist, not just the token's role claim
+    if (!decoded || !(await isAuthorizedAdminEmail(decoded.email))) {
       return NextResponse.json({ error: 'Forbidden: Admin permissions required.' }, { status: 403 });
     }
 
@@ -27,7 +28,7 @@ export async function POST(request: Request) {
     const targetEmail = email.trim().toLowerCase();
 
     if (action === 'add') {
-      const updatedList = addAdminEmail(targetEmail);
+      const updatedList = await addAdminEmail(targetEmail, decoded.email);
       return NextResponse.json({
         success: true,
         message: `Granted Admin Access to ${targetEmail}`,
@@ -36,13 +37,13 @@ export async function POST(request: Request) {
     }
 
     if (action === 'remove') {
-      if (targetEmail === 'tanishk.bansal2025@glbajajgroup.org') {
+      if (targetEmail === SUPER_ADMIN_EMAIL) {
         return NextResponse.json(
           { error: 'Cannot revoke permissions from Primary Super Admin account.' },
           { status: 400 }
         );
       }
-      const updatedList = removeAdminEmail(targetEmail);
+      const updatedList = await removeAdminEmail(targetEmail);
       return NextResponse.json({
         success: true,
         message: `Revoked Admin Access from ${targetEmail}`,

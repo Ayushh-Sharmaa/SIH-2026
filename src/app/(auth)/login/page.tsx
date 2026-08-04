@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useClerk } from '@clerk/nextjs';
+import { looksLikeSandboxEmail } from '@/lib/sandboxShared';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -45,9 +46,18 @@ export default function LoginPage() {
     }
   };
 
+  const isSandbox = looksLikeSandboxEmail(email);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    // The sandbox account is passwordless; everyone else still needs one
+    if (!isSandbox && !password) {
+      setError('Password is required.');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -173,20 +183,29 @@ export default function LoginPage() {
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-foreground">
-                Password
+                Password {isSandbox && <span className="text-xs text-muted">(not required)</span>}
               </label>
               <input
                 id="password"
                 name="password"
                 type="password"
                 autoComplete="current-password"
-                required
+                disabled={isSandbox}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="mt-1 block w-full rounded-lg bg-background/50 border border-card-border px-4 py-2 text-foreground placeholder-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary text-sm transition-all"
+                placeholder={isSandbox ? 'Sandbox access - no password needed' : '••••••••'}
+                className="mt-1 block w-full rounded-lg bg-background/50 border border-card-border px-4 py-2 text-foreground placeholder-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary text-sm transition-all disabled:opacity-50"
               />
             </div>
+
+            {isSandbox && (
+              <div className="rounded-lg bg-primary/10 border border-primary/20 p-3 text-xs text-muted">
+                <span className="font-semibold text-primary">Sandbox mode.</span> Signing in as the
+                troubleshooting account. Add <code className="text-primary">/mentor</code> to the
+                address for the mentor dashboard, or <code className="text-primary">/student</code>{' '}
+                for the student one.
+              </div>
+            )}
 
             <div>
               <button

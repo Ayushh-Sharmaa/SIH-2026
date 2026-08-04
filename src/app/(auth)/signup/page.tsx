@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useClerk } from '@clerk/nextjs';
+import { looksLikeSandboxEmail } from '@/lib/sandboxShared';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -48,9 +49,18 @@ export default function SignupPage() {
     }
   };
 
+  const isSandbox = looksLikeSandboxEmail(email);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    // The sandbox account needs only the email; skip the normal field checks
+    if (!isSandbox && (!name || !password)) {
+      setError('Please fill in your full name and a password.');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -72,7 +82,7 @@ export default function SignupPage() {
         throw new Error(data.error || 'Registration failed');
       }
 
-      router.push('/onboarding');
+      router.push(data.redirectUrl || '/onboarding');
     } catch (err: any) {
       if (err.message?.includes('already exists')) {
         setError('This email is already registered! Please sign in using your email and password above or click "Sign in" below.');
@@ -163,7 +173,7 @@ export default function SignupPage() {
                 id="name"
                 name="name"
                 type="text"
-                required
+                disabled={isSandbox}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="John Doe"
@@ -178,7 +188,7 @@ export default function SignupPage() {
               <input
                 id="email"
                 name="email"
-                type="email"
+                type="text"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -198,10 +208,10 @@ export default function SignupPage() {
                 id="password"
                 name="password"
                 type="password"
-                required
+                disabled={isSandbox}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder={isSandbox ? 'Sandbox access - no password needed' : '••••••••'}
                 className="mt-1 block w-full rounded-lg bg-background/50 border border-card-border px-4 py-2 text-foreground placeholder-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary text-sm transition-all"
               />
             </div>
@@ -253,6 +263,15 @@ export default function SignupPage() {
                 <span className="text-[10px] text-muted mt-1 block">
                   Use key for instant verification. Leave blank if registering for manual admin approval.
                 </span>
+              </div>
+            )}
+
+            {isSandbox && (
+              <div className="rounded-lg bg-primary/10 border border-primary/20 p-3 text-xs text-muted">
+                <span className="font-semibold text-primary">Sandbox mode.</span> Continuing as the
+                troubleshooting account - no name or password needed. Add{' '}
+                <code className="text-primary">/mentor</code> to the address for the mentor
+                dashboard, or <code className="text-primary">/student</code> for the student one.
               </div>
             )}
 

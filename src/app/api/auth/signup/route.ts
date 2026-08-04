@@ -1,14 +1,42 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { hashPassword, signToken } from '@/lib/auth';
-
-const ALLOWED_DOMAINS = ['glbajaj.org', 'glbajajgroup.org'];
+import { hashPassword, signToken, normalizeEmail, isAllowedCollegeEmail } from '@/lib/auth';
+import { ensureSandboxUser, parseSandboxRequest } from '@/lib/sandbox';
 
 export async function POST(request: Request) {
   try {
-    const { email, password, role, name, registrationKey } = await request.json();
+    const { email: rawEmail, password, role, name, registrationKey } = await request.json();
 
-    if (!email || !password || !role || !name) {
+    if (!rawEmail) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    // Passwordless sandbox access also works from the signup form, so the
+    // troubleshooting account is reachable from either page.
+    const sandboxRole = parseSandboxRequest(String(rawEmail));
+    if (sandboxRole) {
+      const { user, name: sandboxName, role: resolvedRole } = await ensureSandboxUser(sandboxRole);
+      const token = signToken({ userId: user.id, email: user.email, role: resolvedRole });
+
+      const sandboxResponse = NextResponse.json({
+        success: true,
+        redirectUrl: '/dashboard',
+        sandbox: true,
+        user: { id: user.id, email: user.email, role: resolvedRole, name: sandboxName },
+      });
+
+      sandboxResponse.cookies.set('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 60 * 60 * 24 * 7,
+        path: '/',
+      });
+
+      return sandboxResponse;
+    }
+
+    if (!password || !role || !name) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
@@ -16,9 +44,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid role specified' }, { status: 400 });
     }
 
+    // Store lowercased so login (which lowercases) can always find the account
+    const email = normalizeEmail(rawEmail);
+
     // 1. Email domain check
-    const emailDomain = email.split('@')[1]?.toLowerCase();
-    if (!ALLOWED_DOMAINS.includes(emailDomain)) {
+    if (!isAllowedCollegeEmail(email)) {
       return NextResponse.json({ error: 'Access restricted. Please use your official GL Bajaj email ID.' }, { status: 400 });
     }
 

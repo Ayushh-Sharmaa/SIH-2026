@@ -193,6 +193,24 @@ export default function AdminDashboardPage() {
     router.push('/login');
   };
 
+  // Switch into the sandbox student/mentor account so the dashboards are
+  // actually usable, not just a static preview. The admin session is parked
+  // server-side and restored via the "Return to Admin" banner.
+  const handleViewAs = async (role: 'STUDENT' | 'MENTOR') => {
+    try {
+      const res = await fetch('/api/admin/view-as', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to switch dashboard');
+      router.push(data.redirectUrl || '/dashboard');
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
   // Filtered Students List
   const filteredStudents = students.filter((s) => {
     const matchesSearch =
@@ -270,14 +288,14 @@ export default function AdminDashboardPage() {
         <div className="flex flex-wrap items-center gap-2.5">
           <button
             type="button"
-            onClick={() => router.push('/dashboard?role=STUDENT')}
+            onClick={() => handleViewAs('STUDENT')}
             className="px-3.5 py-2 text-xs font-bold rounded-xl bg-primary/20 text-primary border border-primary/30 hover:bg-primary/30 transition-all cursor-pointer flex items-center gap-1.5"
           >
             🎓 View Student Dashboard
           </button>
           <button
             type="button"
-            onClick={() => router.push('/dashboard?role=MENTOR')}
+            onClick={() => handleViewAs('MENTOR')}
             className="px-3.5 py-2 text-xs font-bold rounded-xl bg-accent/20 text-accent border border-accent/30 hover:bg-accent/30 transition-all cursor-pointer flex items-center gap-1.5"
           >
             👨‍🏫 View Mentor Dashboard

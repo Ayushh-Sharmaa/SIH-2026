@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Navbar from '@/components/layout/Navbar';
+import ViewingAsBanner from '@/components/layout/ViewingAsBanner';
 
 const AVATAR_PRESETS: Record<string, { emoji: string; color: string }> = {
   hacker: { emoji: '🥷', color: 'from-cyan-500 to-blue-500' },
@@ -108,6 +109,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <ViewingAsBanner />
       <Navbar />
 
       <motion.main

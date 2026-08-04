@@ -135,6 +135,7 @@ export async function GET(request: Request) {
       const student = await prisma.studentProfile.findUnique({
         where: { userId: decoded.userId },
         include: {
+          user: { select: { email: true } },
           team: {
             include: {
               track: true,

@@ -1,19 +1,18 @@
 import { NextResponse } from 'next/server';
 import { currentUser } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
-import { signToken } from '@/lib/auth';
+import { signToken, normalizeEmail, isAllowedCollegeEmail } from '@/lib/auth';
 
 async function syncClerkUser(email: string, defaultRole: 'STUDENT' | 'MENTOR' = 'STUDENT') {
+  const withProfiles = { studentProfile: true, mentorProfile: true } as const;
+
   let user = await prisma.user.findUnique({
     where: { email },
-    include: {
-      studentProfile: true,
-      mentorProfile: true,
-    },
+    include: withProfiles,
   });
 
   if (!user) {
-    user = await prisma.user.create({
+    const created = await prisma.user.create({
       data: {
         email,
         passwordHash: 'clerk_oauth_google_user',
@@ -24,7 +23,7 @@ async function syncClerkUser(email: string, defaultRole: 'STUDENT' | 'MENTOR' = 
     if (defaultRole === 'STUDENT') {
       await prisma.studentProfile.create({
         data: {
-          userId: user.id,
+          userId: created.id,
           name: email.split('@')[0] || 'Student User',
           year: '',
           branch: '',
@@ -33,7 +32,7 @@ async function syncClerkUser(email: string, defaultRole: 'STUDENT' | 'MENTOR' = 
     } else {
       await prisma.mentorProfile.create({
         data: {
-          userId: user.id,
+          userId: created.id,
           name: email.split('@')[0] || 'Mentor User',
           designation: '',
           organization: 'GL Bajaj Group of Institutions',
@@ -42,24 +41,25 @@ async function syncClerkUser(email: string, defaultRole: 'STUDENT' | 'MENTOR' = 
     }
 
     user = await prisma.user.findUnique({
-      where: { id: user.id },
-      include: {
-        studentProfile: true,
-        mentorProfile: true,
-      },
+      where: { id: created.id },
+      include: withProfiles,
     });
   }
 
-  const token = signToken({ userId: user!.id, email: user!.email, role: user!.role });
+  if (!user) {
+    throw new Error('Failed to load the synchronized Clerk user.');
+  }
+
+  const token = signToken({ userId: user.id, email: user.email, role: user.role });
 
   let isOnboarded = false;
-  if (user!.role === 'STUDENT' && user!.studentProfile?.branch) {
+  if (user.role === 'STUDENT' && user.studentProfile?.branch) {
     isOnboarded = true;
-  } else if (user!.role === 'MENTOR' && user!.mentorProfile?.designation) {
+  } else if (user.role === 'MENTOR' && user.mentorProfile?.designation) {
     isOnboarded = true;
   }
 
-  return { user: user!, token, isOnboarded };
+  return { user, token, isOnboarded };
 }
 
 export async function GET(request: Request) {
@@ -69,11 +69,18 @@ export async function GET(request: Request) {
       const clerkUser = await currentUser();
       email = clerkUser?.emailAddresses?.[0]?.emailAddress;
     } catch (e) {
-      console.warn('Clerk currentUser check bypassed (keys missing or environment disabled).');
+      console.error('Clerk currentUser() failed. Is clerkMiddleware() running in src/proxy.ts?', e);
     }
 
     if (!email) {
-      return NextResponse.redirect(new URL('/login', request.url));
+      return NextResponse.redirect(new URL('/login?error=oauth_failed', request.url));
+    }
+
+    email = normalizeEmail(email);
+
+    // Google accounts must also be college accounts, same rule as email signup
+    if (!isAllowedCollegeEmail(email)) {
+      return NextResponse.redirect(new URL('/login?error=domain_not_allowed', request.url));
     }
 
     const { token, isOnboarded } = await syncClerkUser(email);
@@ -106,7 +113,7 @@ export async function POST(request: Request) {
         const clerkUser = await currentUser();
         email = clerkUser?.emailAddresses?.[0]?.emailAddress;
       } catch (e) {
-        // Ignore Clerk error if Clerk keys are missing
+        console.error('Clerk currentUser() failed. Is clerkMiddleware() running in src/proxy.ts?', e);
       }
     }
 
@@ -116,6 +123,16 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: 'Please enter your college email address in the input box below to sign up.' },
         { status: 400 }
+      );
+    }
+
+    email = normalizeEmail(email);
+
+    // Google accounts must also be college accounts, same rule as email signup
+    if (!isAllowedCollegeEmail(email)) {
+      return NextResponse.json(
+        { error: 'Access restricted. Please use your official GL Bajaj email ID.' },
+        { status: 403 }
       );
     }
 

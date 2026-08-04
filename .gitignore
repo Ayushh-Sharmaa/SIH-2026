@@ -43,3 +43,6 @@ skills-lock.json
 .idea/
 .DS_Store
 Thumbs.db
+
+# Env backups (never commit - contain secrets)
+*.bak

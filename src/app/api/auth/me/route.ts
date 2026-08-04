@@ -7,6 +7,8 @@ export async function GET() {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;
+    // Set by /api/admin/view-as while an admin is exploring another dashboard
+    const isViewingAs = !!cookieStore.get('admin_token')?.value;
 
     if (!token) {
       return NextResponse.json({ authenticated: false }, { status: 200 });
@@ -57,6 +59,7 @@ export async function GET() {
 
     return NextResponse.json({
       authenticated: true,
+      isViewingAs,
       user: {
         id: user.id,
         email: user.email,

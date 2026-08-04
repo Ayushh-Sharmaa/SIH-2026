@@ -40,6 +40,10 @@ model StudentProfile {
   name        String
   year        String
   branch      String
+  gender      String?    // Collected during onboarding
+  rollNo      String?    // College roll number
+  section     String?    // Class section (A-I)
+  isDemo      Boolean    @default(false) // Sandbox/troubleshooting account
   skills      String[]   // Technical skills
   languages   String[]   // Languages spoken (e.g. Hindi, English)
   softSkills  String[]   // Soft skills (e.g. PPT making, Presenting)
@@ -62,6 +66,7 @@ model MentorProfile {
   name            String
   designation     String
   organization    String
+  isDemo          Boolean         @default(false) // Sandbox/troubleshooting account
   expertise       String[]        // Expertise tags
   capacity        Int             @default(2) // Max teams they can mentor
   currentLoad     Int             @default(0) // Auto-counted current load
@@ -135,6 +140,22 @@ model MentorRequest {
   status    String        @default("pending") // pending, accepted, declined
   message   String?
   createdAt DateTime      @default(now())
+}
+
+// Admin allowlist. Only emails here (plus the immutable super admin defined in
+// src/lib/admin.ts) can reach /admin. Stored lowercased.
+model AdminEmail {
+  email     String   @id
+  addedBy   String?
+  createdAt DateTime @default(now())
+}
+
+// Revoked accounts. Blocks login regardless of valid credentials. Stored lowercased.
+model BannedEmail {
+  email     String   @id
+  reason    String?
+  bannedBy  String?
+  createdAt DateTime @default(now())
 }
 
 model MentorRegistrationKey {

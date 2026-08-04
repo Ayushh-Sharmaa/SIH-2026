@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
-import { getAdminEmails, isAuthorizedAdminEmail, isUserBanned } from '@/lib/mockDb';
+import { getAdminEmails, getBannedEmails, isAuthorizedAdminEmail } from '@/lib/admin';
 
 export async function GET() {
   try {
@@ -14,12 +14,14 @@ export async function GET() {
     }
 
     const decoded = verifyToken(token);
-    if (!decoded || (decoded.role !== 'ADMIN' && !isAuthorizedAdminEmail(decoded.email))) {
+    // Always verify against the allowlist, not just the token's role claim
+    if (!decoded || !(await isAuthorizedAdminEmail(decoded.email))) {
       return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
     }
 
-    // Load admin emails list
-    const adminEmails = getAdminEmails();
+    // Load admin + ban lists once; per-row lookups would be N queries
+    const adminEmails = await getAdminEmails();
+    const bannedEmails = new Set(await getBannedEmails());
 
     // Fetch all raw users, teams, students, mentors, tracks
     const allUsers = await prisma.user.findMany();
@@ -35,7 +37,8 @@ export async function GET() {
       const email = user?.email || '';
 
       return {
-        id: sp.id,
+        // StudentProfile is keyed by userId; there is no separate id column
+        id: sp.userId,
         userId: sp.userId,
         name: sp.name || 'Unnamed Student',
         email,
@@ -44,9 +47,10 @@ export async function GET() {
         branch: sp.branch || 'N/A',
         year: sp.year || 'N/A',
         gender: sp.gender || 'Not Specified',
+        isDemo: sp.isDemo ?? false,
         teamName: team?.name || null,
         teamId: sp.teamId || null,
-        teamStatus: sp.teamStatus || 'LOOKING_FOR_TEAM',
+        teamStatus: sp.teamStatus || 'OPEN',
         skills: sp.skills || [],
         softSkills: sp.softSkills || [],
         languages: sp.languages || [],
@@ -54,7 +58,7 @@ export async function GET() {
         githubUrl: sp.githubUrl || null,
         linkedinUrl: sp.linkedinUrl || null,
         avatarUrl: sp.avatarUrl || null,
-        isBanned: isUserBanned(email),
+        isBanned: bannedEmails.has(email.toLowerCase()),
         verified: true,
       };
     });
@@ -118,7 +122,8 @@ export async function GET() {
       const user = allUsers.find((u: any) => u.id === mp.userId);
 
       return {
-        id: mp.id,
+        // MentorProfile is keyed by userId; there is no separate id column
+        id: mp.userId,
         userId: mp.userId,
         name: mp.name || 'Faculty Member',
         email: user?.email || '',
@@ -127,6 +132,8 @@ export async function GET() {
         capacity: mp.capacity || 2,
         currentLoad: mp.currentLoad || 0,
         verified: mp.verified ?? true,
+        isDemo: mp.isDemo ?? false,
+        isBanned: bannedEmails.has((user?.email || '').toLowerCase()),
         expertise: mp.expertise || [],
       };
     });

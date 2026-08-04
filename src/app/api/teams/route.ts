@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { recalculateTeamSkills } from '@/lib/derived';
-import { TeamStatus } from '@prisma/client';
+import { TeamStatus, Prisma } from '@prisma/client';
 import { logger } from '@/lib/logger';
 
 export async function POST(request: Request) {
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
     }
 
     // Create the team and associate the leader inside a transaction
-    const newTeam = await prisma.$transaction(async (tx: any) => {
+    const newTeam = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // 1. Create the team
       const team = await tx.team.create({
         data: {

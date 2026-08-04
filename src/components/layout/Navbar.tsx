@@ -42,7 +42,10 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
   });
 
   useEffect(() => {
-    setMenuOpen(false);
+    const handle = requestAnimationFrame(() => {
+      setMenuOpen(false);
+    });
+    return () => cancelAnimationFrame(handle);
   }, [pathname]);
 
   useEffect(() => {

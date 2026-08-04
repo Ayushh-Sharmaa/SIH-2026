@@ -15,7 +15,7 @@ export async function POST() {
     });
 
     return response;
-  } catch (error: any) {
+  } catch (error) {
     logger.error('Logout error', error);
     return NextResponse.json({ error: 'An error occurred during logout.' }, { status: 500 });
   }

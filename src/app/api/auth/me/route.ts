@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
-import { verifyToken, signToken, normalizeEmail, isAllowedCollegeEmail } from '@/lib/auth';
+import { verifyToken, signToken, normalizeEmail, isAllowedCollegeEmail, type SessionClaims } from '@/lib/auth';
 import { currentUser } from '@clerk/nextjs/server';
 import { logger } from '@/lib/logger';
 
@@ -12,7 +12,7 @@ export async function GET() {
     // Set by /api/admin/view-as while an admin is exploring another dashboard
     const isViewingAs = !!cookieStore.get('admin_token')?.value;
 
-    let decoded: any = null;
+    let decoded: SessionClaims | null = null;
     if (token) {
       decoded = verifyToken(token);
     }

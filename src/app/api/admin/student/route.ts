@@ -46,7 +46,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
-  } catch (error: any) {
+  } catch (error) {
     logger.error('Admin student update error', error);
     return NextResponse.json({ error: 'Failed to update student access.' }, { status: 500 });
   }

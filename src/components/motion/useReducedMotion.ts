@@ -11,10 +11,15 @@ export function usePrefersReducedMotion() {
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-    setReduced(mq.matches);
+    const handle = requestAnimationFrame(() => {
+      setReduced(mq.matches);
+    });
     const onChange = (e: MediaQueryListEvent) => setReduced(e.matches);
     mq.addEventListener('change', onChange);
-    return () => mq.removeEventListener('change', onChange);
+    return () => {
+      cancelAnimationFrame(handle);
+      mq.removeEventListener('change', onChange);
+    };
   }, []);
 
   return reduced;
@@ -26,10 +31,15 @@ export function useIsCoarsePointer() {
 
   useEffect(() => {
     const mq = window.matchMedia('(pointer: coarse)');
-    setCoarse(mq.matches);
+    const handle = requestAnimationFrame(() => {
+      setCoarse(mq.matches);
+    });
     const onChange = (e: MediaQueryListEvent) => setCoarse(e.matches);
     mq.addEventListener('change', onChange);
-    return () => mq.removeEventListener('change', onChange);
+    return () => {
+      cancelAnimationFrame(handle);
+      mq.removeEventListener('change', onChange);
+    };
   }, []);
 
   return coarse;

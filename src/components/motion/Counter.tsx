@@ -31,7 +31,10 @@ export default function Counter({
 
   useEffect(() => {
     if (!inView || done) return;
-    setDone(true);
+
+    const frameHandle = requestAnimationFrame(() => {
+      setDone(true);
+    });
 
     const format = (v: number) =>
       `${prefix}${v.toLocaleString('en-IN', {
@@ -41,7 +44,7 @@ export default function Counter({
 
     if (reduced) {
       if (ref.current) ref.current.textContent = format(to);
-      return;
+      return () => cancelAnimationFrame(frameHandle);
     }
 
     const controls = animate(from, to, {
@@ -52,7 +55,10 @@ export default function Counter({
       },
     });
 
-    return () => controls.stop();
+    return () => {
+      cancelAnimationFrame(frameHandle);
+      controls.stop();
+    };
   }, [inView, done, from, to, duration, prefix, suffix, decimals, reduced]);
 
   return (

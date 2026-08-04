@@ -128,8 +128,15 @@ function ClerkLoginPage() {
         pubKey.startsWith('pk_test_') && !pubKey.includes('glbgoi') && !pubKey.includes('placeholder');
 
       if (isRealKey && clerk) {
-        if ((clerk as any).authenticateWithRedirect) {
-          await (clerk as any).authenticateWithRedirect({
+        const clerkRedirect = clerk as unknown as {
+          authenticateWithRedirect?: (args: {
+            strategy: string;
+            redirectUrl: string;
+            redirectUrlComplete: string;
+          }) => Promise<void>;
+        };
+        if (clerkRedirect.authenticateWithRedirect) {
+          await clerkRedirect.authenticateWithRedirect({
             strategy: 'oauth_google',
             redirectUrl: '/api/auth/clerk-sync',
             redirectUrlComplete: '/dashboard',
@@ -158,7 +165,7 @@ function ClerkLoginPage() {
           await goAuthenticated('/onboarding');
         }
       }
-    } catch (err: any) {
+    } catch (err) {
       logger.error('Google Sign-In error', err);
       try {
         const res = await fetch('/api/auth/clerk-sync', {
@@ -180,7 +187,7 @@ function ClerkLoginPage() {
       } catch {
         // fall through to the surfaced error
       }
-      setError(err.message || 'Google Sign-In failed. Please try again.');
+      setError(err instanceof Error ? err.message : 'Google Sign-In failed. Please try again.');
     } finally {
       setGoogleLoading(false);
     }
@@ -224,9 +231,9 @@ function ClerkLoginPage() {
       } else {
         await goAuthenticated('/onboarding');
       }
-    } catch (err: any) {
+    } catch (err) {
       setLoading(false);
-      setError(err.message || 'Something went wrong');
+      setError(err instanceof Error ? err.message : 'Something went wrong');
     }
   };
 
@@ -278,9 +285,9 @@ function CustomLoginPage() {
       } else {
         await goAuthenticated('/onboarding');
       }
-    } catch (err: any) {
+    } catch (err) {
       logger.error('Google Sign-In error', err);
-      setError(err.message || 'Google Sign-In failed. Please try again.');
+      setError(err instanceof Error ? err.message : 'Google Sign-In failed. Please try again.');
     } finally {
       setGoogleLoading(false);
     }
@@ -324,9 +331,9 @@ function CustomLoginPage() {
       } else {
         await goAuthenticated('/onboarding');
       }
-    } catch (err: any) {
+    } catch (err) {
       setLoading(false);
-      setError(err.message || 'Something went wrong');
+      setError(err instanceof Error ? err.message : 'Something went wrong');
     }
   };
 

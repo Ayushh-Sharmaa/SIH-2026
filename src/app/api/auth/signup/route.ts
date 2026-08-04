@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { hashPassword, signToken, normalizeEmail, isAllowedCollegeEmail } from '@/lib/auth';
 import { ensureSandboxUser, parseSandboxRequest } from '@/lib/sandbox';
 import { clientIp, createRateLimiter, tooManyRequests } from '@/lib/rateLimit';
@@ -90,7 +91,7 @@ export async function POST(request: Request) {
 
     const passwordHash = await hashPassword(password);
 
-    const newUser = await prisma.$transaction(async (tx: any) => {
+    const newUser = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const user = await tx.user.create({
         data: {
           email,
@@ -159,7 +160,7 @@ export async function POST(request: Request) {
     });
 
     return response;
-  } catch (error: any) {
+  } catch (error) {
     logger.error('Signup error', error);
     return NextResponse.json({ error: 'An error occurred during registration.' }, { status: 500 });
   }

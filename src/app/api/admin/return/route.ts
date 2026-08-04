@@ -35,7 +35,7 @@ export async function POST() {
     response.cookies.delete('admin_token');
 
     return response;
-  } catch (error: any) {
+  } catch (error) {
     console.error('Admin return error:', error);
     return NextResponse.json({ error: 'Failed to restore admin session.' }, { status: 500 });
   }

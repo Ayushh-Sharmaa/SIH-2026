@@ -55,7 +55,7 @@ export async function POST(request: Request) {
     response.cookies.set('token', sandboxToken, cookieOptions());
 
     return response;
-  } catch (error: any) {
+  } catch (error) {
     console.error('Admin view-as error:', error);
     return NextResponse.json({ error: 'Failed to switch dashboard view.' }, { status: 500 });
   }

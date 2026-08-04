@@ -137,6 +137,94 @@ function Overlay({
   );
 }
 
+interface AdminStats {
+  totalStudents: number;
+  totalTeams: number;
+  fullTeams: number;
+  formingTeams: number;
+  allFemaleTeams: number;
+  totalMentors: number;
+  verifiedMentors: number;
+  totalAuthorizedAdmins: number;
+}
+
+interface StudentData {
+  id: string;
+  userId: string;
+  name: string;
+  email: string;
+  rollNo: string;
+  section: string;
+  branch: string;
+  year: string;
+  gender: string;
+  isDemo: boolean;
+  teamName: string | null;
+  teamId: string | null;
+  teamStatus: string;
+  skills: string[];
+  softSkills: string[];
+  languages: string[];
+  resumeUrl: string | null;
+  githubUrl: string | null;
+  linkedinUrl: string | null;
+  avatarUrl: string | null;
+  isBanned: boolean;
+  verified: boolean;
+}
+
+interface TeamData {
+  id: string;
+  name: string;
+  status: string;
+  memberCount: number;
+  maxCapacity: number;
+  trackId: string;
+  trackCode: string;
+  trackName: string;
+  leaderName: string;
+  leaderEmail: string;
+  members: StudentData[];
+  femaleCount: number;
+  maleCount: number;
+  isAllFemale: boolean;
+  skillsCovered: string[];
+  skillsNeeded: string[];
+}
+
+interface PSStat {
+  id: string;
+  code: string;
+  name: string;
+  category: string;
+  organization: string;
+  description: string;
+  teamCount: number;
+  teams: {
+    id: string;
+    name: string;
+    leaderName: string;
+    memberCount: number;
+    status: string;
+    isAllFemale: boolean;
+  }[];
+}
+
+interface MentorData {
+  id: string;
+  userId: string;
+  name: string;
+  email: string;
+  designation: string;
+  organization: string;
+  capacity: number;
+  currentLoad: number;
+  verified: boolean;
+  isDemo: boolean;
+  isBanned: boolean;
+  expertise: string[];
+}
+
 interface ConfirmState {
   title: string;
   body: string;
@@ -152,15 +240,15 @@ export default function AdminDashboardPage() {
   const [activeTab, setActiveTab] = useState<TabKey>('access');
   const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
 
-  const [stats, setStats] = useState<any>(null);
+  const [stats, setStats] = useState<AdminStats | null>(null);
   const [adminEmails, setAdminEmails] = useState<string[]>([]);
-  const [teams, setTeams] = useState<any[]>([]);
-  const [students, setStudents] = useState<any[]>([]);
-  const [mentors, setMentors] = useState<any[]>([]);
-  const [problemStatementStats, setProblemStatementStats] = useState<any[]>([]);
+  const [teams, setTeams] = useState<TeamData[]>([]);
+  const [students, setStudents] = useState<StudentData[]>([]);
+  const [mentors, setMentors] = useState<MentorData[]>([]);
+  const [problemStatementStats, setProblemStatementStats] = useState<PSStat[]>([]);
 
-  const [selectedStudent, setSelectedStudent] = useState<any>(null);
-  const [selectedTeam, setSelectedTeam] = useState<any>(null);
+  const [selectedStudent, setSelectedStudent] = useState<StudentData | null>(null);
+  const [selectedTeam, setSelectedTeam] = useState<TeamData | null>(null);
 
   const [newAdminEmail, setNewAdminEmail] = useState('');
   const [granting, setGranting] = useState(false);
@@ -200,16 +288,20 @@ export default function AdminDashboardPage() {
       setStudents(data.students || []);
       setMentors(data.mentors || []);
       setProblemStatementStats(data.problemStatementStats || []);
-    } catch (err: any) {
+    } catch (err) {
       logger.error('Admin fetch error', err);
-      toast(err.message || 'Error loading admin dashboard.', 'error');
+      const errMsg = err instanceof Error ? err.message : 'Error loading admin dashboard.';
+      toast(errMsg, 'error');
     } finally {
       setLoading(false);
     }
   }, [router, toast]);
 
   useEffect(() => {
-    fetchAdminData();
+    const handle = requestAnimationFrame(() => {
+      fetchAdminData();
+    });
+    return () => cancelAnimationFrame(handle);
   }, [fetchAdminData]);
 
   const handleGrantAdminAccess = async (e: FormEvent) => {
@@ -232,8 +324,8 @@ export default function AdminDashboardPage() {
       setNewAdminEmail('');
       toast(data.message, 'success');
       fetchAdminData();
-    } catch (err: any) {
-      toast(err.message, 'error');
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'An error occurred', 'error');
     } finally {
       setGranting(false);
     }
@@ -253,8 +345,8 @@ export default function AdminDashboardPage() {
       setAdminEmails(data.adminEmails);
       toast(`Revoked admin access from ${emailToRevoke}`, 'success');
       fetchAdminData();
-    } catch (err: any) {
-      toast(err.message, 'error');
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'An error occurred', 'error');
     }
   };
 
@@ -272,8 +364,8 @@ export default function AdminDashboardPage() {
       toast(data.message, 'success');
       setSelectedStudent(null);
       fetchAdminData();
-    } catch (err: any) {
-      toast(err.message, 'error');
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'An error occurred', 'error');
     }
   };
 
@@ -287,8 +379,8 @@ export default function AdminDashboardPage() {
       if (!res.ok) throw new Error('Failed to update team status');
       toast(`Team status set to ${status}.`, 'success');
       fetchAdminData();
-    } catch (err: any) {
-      toast(err.message, 'error');
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'An error occurred', 'error');
     }
   };
 
@@ -303,8 +395,8 @@ export default function AdminDashboardPage() {
       setSelectedTeam(null);
       toast('Team disbanded. Members returned to looking-for-team.', 'success');
       fetchAdminData();
-    } catch (err: any) {
-      toast(err.message, 'error');
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'An error occurred', 'error');
     }
   };
 
@@ -323,8 +415,8 @@ export default function AdminDashboardPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to switch dashboard');
       router.push(data.redirectUrl || '/dashboard');
-    } catch (err: any) {
-      toast(err.message, 'error');
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'An error occurred', 'error');
     }
   };
 
@@ -357,7 +449,7 @@ export default function AdminDashboardPage() {
       t.name.toLowerCase().includes(q) ||
       t.trackName.toLowerCase().includes(q) ||
       t.leaderName.toLowerCase().includes(q) ||
-      t.members.some((m: any) => m.name.toLowerCase().includes(q));
+      t.members.some((m) => m.name.toLowerCase().includes(q));
 
     const matchesStatus = teamStatusFilter === 'ALL' || t.status === teamStatusFilter;
     const matchesTrack =
@@ -790,7 +882,7 @@ export default function AdminDashboardPage() {
                                   </span>
                                 </div>
                                 <ul className="space-y-1.5">
-                                  {team.members.map((m: any) => (
+                                  {team.members.map((m) => (
                                     <li key={m.id}>
                                       <button
                                         type="button"
@@ -1118,7 +1210,7 @@ export default function AdminDashboardPage() {
                                       Participating teams ({track.teams.length})
                                     </p>
                                     <ul className="space-y-1.5">
-                                      {track.teams.map((t: any) => (
+                                      {track.teams.map((t) => (
                                         <li
                                           key={t.id}
                                           className="flex items-center justify-between gap-3 rounded-xl border border-[rgba(209,199,189,0.7)] bg-[rgba(239,233,225,0.55)] px-3 py-2"
@@ -1372,7 +1464,7 @@ export default function AdminDashboardPage() {
             </div>
 
             <ul className="mt-5 space-y-1.5">
-              {selectedTeam.members.map((m: any) => (
+              {selectedTeam.members.map((m) => (
                 <li
                   key={m.id}
                   className="flex items-center justify-between gap-3 rounded-xl border border-[rgba(209,199,189,0.7)] bg-[rgba(239,233,225,0.55)] px-3.5 py-2.5"

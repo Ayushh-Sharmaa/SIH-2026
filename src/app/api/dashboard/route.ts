@@ -52,7 +52,7 @@ export async function GET(request: Request) {
             bio: mentor.bio,
             linkedinUrl: mentor.linkedinUrl || 'https://linkedin.com',
           },
-          teams: allTeams.slice(0, 2).map((t: any) => ({
+          teams: allTeams.slice(0, 2).map((t) => ({
             id: t.id,
             name: t.name,
             status: t.status,
@@ -137,6 +137,7 @@ export async function GET(request: Request) {
         where: { userId: decoded.userId },
         include: {
           user: { select: { email: true } },
+          trackInterest: true,
           team: {
             include: {
               track: true,
@@ -175,9 +176,9 @@ export async function GET(request: Request) {
           email: student.user.email,
           branch: student.branch,
           year: student.year,
-          gender: (student as any).gender || null,
-          rollNo: (student as any).rollNo || null,
-          section: (student as any).section || null,
+          gender: student.gender,
+          rollNo: student.rollNo,
+          section: student.section,
           skills: student.skills,
           languages: student.languages,
           softSkills: student.softSkills,
@@ -185,13 +186,11 @@ export async function GET(request: Request) {
           linkedinUrl: student.linkedinUrl,
           resumeUrl: student.resumeUrl,
           avatarUrl: student.avatarUrl,
-          trackInterest: Array.isArray((student as any).trackInterest)
-            ? (student as any).trackInterest
-            : ((student as any).trackInterest?.map((t: any) => t.id) || []),
+          trackInterest: student.trackInterest.map((t) => t.id),
         },
         team: student.team
           ? (() => {
-              const members = student.team.members.map((member: any) => ({
+              const members = student.team.members.map((member) => ({
                 userId: member.userId,
                 name: member.name,
                 branch: member.branch,
@@ -199,7 +198,7 @@ export async function GET(request: Request) {
                 skills: member.skills,
                 avatarUrl: member.avatarUrl,
               }));
-              const leader = student.team.members.find((member: any) => member.userId === student.team!.leaderId);
+              const leader = student.team.members.find((member) => member.userId === student.team!.leaderId);
 
               return {
                 id: student.team.id,
@@ -264,14 +263,14 @@ export async function GET(request: Request) {
           bio: mentor.bio,
           linkedinUrl: mentor.linkedinUrl,
         },
-        teams: mentor.teams.map((t: any) => ({
+        teams: mentor.teams.map((t) => ({
           id: t.id,
           name: t.name,
           status: t.status,
           track: t.track,
           memberCount: t.memberCount,
         })),
-        pendingRequests: mentor.mentorRequests.map((r: any) => ({
+        pendingRequests: mentor.mentorRequests.map((r) => ({
           id: r.id,
           message: r.message,
           createdAt: r.createdAt,

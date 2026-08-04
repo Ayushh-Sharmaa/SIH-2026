@@ -101,7 +101,10 @@ export default function FindMentorsPage() {
   }, [toast]);
 
   useEffect(() => {
-    fetchMentors().finally(() => setLoading(false));
+    const handle = requestAnimationFrame(() => {
+      fetchMentors().finally(() => setLoading(false));
+    });
+    return () => cancelAnimationFrame(handle);
   }, [fetchMentors]);
 
 

@@ -132,7 +132,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    void load();
+    const handle = requestAnimationFrame(() => {
+      void load();
+    });
+    return () => cancelAnimationFrame(handle);
   }, [load]);
 
   const clear = useCallback(() => {
@@ -146,7 +149,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   // because the context object identity changed.
   const value = useMemo<SessionValue>(
     () => ({ user, status, refresh: load, clear }),
-    [user, status, load],
+    [user, status, load, clear],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

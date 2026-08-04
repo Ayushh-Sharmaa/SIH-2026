@@ -4,8 +4,9 @@ import { useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useClerk } from '@clerk/nextjs';
-import { useAuthenticatedRedirect } from '@/lib/session';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useAuthenticatedRedirect } from '@/lib/session';
+import { looksLikeSandboxEmail } from '@/lib/sandboxShared';
 import {
   Aurora,
   Field,
@@ -372,6 +373,7 @@ function LoginTemplate({
   handleGoogleSignIn,
   handleSubmit,
 }: LoginTemplateProps) {
+  const isSandbox = looksLikeSandboxEmail(email);
   const [showPassword, setShowPassword] = useState(false);
 
   return (
@@ -497,20 +499,31 @@ function LoginTemplate({
                   label="Password"
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
-                  required
+                  required={!isSandbox}
+                  disabled={isSandbox}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   error={error || undefined}
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((s) => !s)}
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  className="absolute right-4 top-6 text-label uppercase text-muted transition-colors duration-250 hover:text-primary"
-                >
-                  {showPassword ? 'Hide' : 'Show'}
-                </button>
+                {!isSandbox && (
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((s) => !s)}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    className="absolute right-4 top-6 text-label uppercase text-muted transition-colors duration-250 hover:text-primary"
+                  >
+                    {showPassword ? 'Hide' : 'Show'}
+                  </button>
+                )}
               </div>
+
+              {isSandbox && (
+                <div className="rounded-xl bg-primary/10 border border-primary/25 p-3 text-[11px] leading-relaxed text-muted">
+                  <span className="font-bold text-primary">Sandbox mode.</span> Signing in as the
+                  troubleshooting account. Append <code className="text-primary">/mentor</code> for the
+                  mentor dashboard or <code className="text-primary">/student</code> for the student one.
+                </div>
+              )}
 
               <div className="pt-1.5">
                 <PremiumButton

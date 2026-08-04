@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
-import { getAdminEmails, isAuthorizedAdminEmail, isUserBanned } from '@/lib/mockDb';
+import { getAdminEmails, getBannedEmails, isAuthorizedAdminEmail } from '@/lib/admin';
 import { logger } from '@/lib/logger';
 
 export async function GET() {
@@ -15,28 +15,26 @@ export async function GET() {
     }
 
     const decoded = verifyToken(token);
-    if (!decoded || (decoded.role !== 'ADMIN' && !isAuthorizedAdminEmail(decoded.email))) {
+    if (!decoded || !(await isAuthorizedAdminEmail(decoded.email))) {
       return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
     }
 
-    // Load admin emails list
-    const adminEmails = getAdminEmails();
+    const adminEmails = await getAdminEmails();
+    const bannedEmails = new Set(await getBannedEmails());
 
-    // Fetch all raw users, teams, students, mentors, tracks
     const allUsers = await prisma.user.findMany();
     const allStudentProfiles = await prisma.studentProfile.findMany();
     const allMentorProfiles = await prisma.mentorProfile.findMany();
     const allTeams = await prisma.team.findMany();
     const allTracks = await prisma.track.findMany();
 
-    // Format Students list with full profile fields and ban status
     const students = allStudentProfiles.map((sp: any) => {
       const user = allUsers.find((u: any) => u.id === sp.userId);
       const team = allTeams.find((t: any) => t.id === sp.teamId);
       const email = user?.email || '';
 
       return {
-        id: sp.id,
+        id: sp.userId,
         userId: sp.userId,
         name: sp.name || 'Unnamed Student',
         email,
@@ -45,9 +43,10 @@ export async function GET() {
         branch: sp.branch || 'N/A',
         year: sp.year || 'N/A',
         gender: sp.gender || 'Not Specified',
+        isDemo: sp.isDemo ?? false,
         teamName: team?.name || null,
         teamId: sp.teamId || null,
-        teamStatus: sp.teamStatus || 'LOOKING_FOR_TEAM',
+        teamStatus: sp.teamStatus || 'OPEN',
         skills: sp.skills || [],
         softSkills: sp.softSkills || [],
         languages: sp.languages || [],
@@ -55,12 +54,11 @@ export async function GET() {
         githubUrl: sp.githubUrl || null,
         linkedinUrl: sp.linkedinUrl || null,
         avatarUrl: sp.avatarUrl || null,
-        isBanned: isUserBanned(email),
+        isBanned: bannedEmails.has(email.toLowerCase()),
         verified: true,
       };
     });
 
-    // Format Teams with member details, gender breakdown, and track info
     const teams = allTeams.map((team: any) => {
       const track = allTracks.find((t: any) => t.id === team.trackId || t.problemStatementCode === team.trackId);
       const members = students.filter((sp: any) => sp.teamId === team.id);
@@ -90,7 +88,6 @@ export async function GET() {
       };
     });
 
-    // Format Problem Statement Stats (Participation across all 18 SIH Themes)
     const problemStatementStats = allTracks.map((track: any) => {
       const trackTeams = teams.filter(
         (t: any) => t.trackId === track.id || t.trackCode === track.problemStatementCode
@@ -114,12 +111,11 @@ export async function GET() {
       };
     });
 
-    // Format Mentors list
     const mentors = allMentorProfiles.map((mp: any) => {
       const user = allUsers.find((u: any) => u.id === mp.userId);
 
       return {
-        id: mp.id,
+        id: mp.userId,
         userId: mp.userId,
         name: mp.name || 'Faculty Member',
         email: user?.email || '',
@@ -128,11 +124,12 @@ export async function GET() {
         capacity: mp.capacity || 2,
         currentLoad: mp.currentLoad || 0,
         verified: mp.verified ?? true,
+        isDemo: mp.isDemo ?? false,
+        isBanned: bannedEmails.has((user?.email || '').toLowerCase()),
         expertise: mp.expertise || [],
       };
     });
 
-    // Calculate Platform Stats
     const stats = {
       totalStudents: students.length,
       totalTeams: teams.length,

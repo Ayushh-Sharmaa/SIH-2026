@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
-import { verifyToken, signToken } from '@/lib/auth';
+import { verifyToken, signToken, normalizeEmail, isAllowedCollegeEmail } from '@/lib/auth';
 import { currentUser } from '@clerk/nextjs/server';
 import { logger } from '@/lib/logger';
 
@@ -9,6 +9,8 @@ export async function GET() {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;
+    // Set by /api/admin/view-as while an admin is exploring another dashboard
+    const isViewingAs = !!cookieStore.get('admin_token')?.value;
 
     let decoded: any = null;
     if (token) {
@@ -19,18 +21,19 @@ export async function GET() {
     if (!decoded && !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
       try {
         const clerkUser = await currentUser();
-        const email = clerkUser?.emailAddresses?.[0]?.emailAddress;
-        if (email) {
+        const email = normalizeEmail(clerkUser?.emailAddresses?.[0]?.emailAddress ?? '');
+        // Same college-only restriction as email signup, so this recovery path
+        // cannot be used to provision an outside Google account.
+        if (email && isAllowedCollegeEmail(email)) {
+          const withProfiles = { studentProfile: true, mentorProfile: true } as const;
+
           let user = await prisma.user.findUnique({
             where: { email },
-            include: {
-              studentProfile: true,
-              mentorProfile: true,
-            },
+            include: withProfiles,
           });
 
           if (!user) {
-            user = await prisma.user.create({
+            const created = await prisma.user.create({
               data: {
                 email,
                 passwordHash: 'clerk_oauth_google_user',
@@ -39,18 +42,15 @@ export async function GET() {
             });
             await prisma.studentProfile.create({
               data: {
-                userId: user.id,
+                userId: created.id,
                 name: email.split('@')[0] || 'Student User',
                 year: '',
                 branch: '',
               },
             });
             user = await prisma.user.findUnique({
-              where: { id: user.id },
-              include: {
-                studentProfile: true,
-                mentorProfile: true,
-              },
+              where: { id: created.id },
+              include: withProfiles,
             });
           }
 
@@ -116,6 +116,7 @@ export async function GET() {
 
     return NextResponse.json({
       authenticated: true,
+      isViewingAs,
       user: {
         id: user.id,
         email: user.email,

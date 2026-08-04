@@ -93,22 +93,12 @@ function Panel({
   );
 }
 
-/**
- * Dialog shell for the three admin overlays.
- *
- * Previously this had no focus trap, no Escape handler, no scroll lock and no
- * focus return — a keyboard user could Tab straight out of the dialog into the
- * page behind it, which is obscured and unreachable by pointer. The three
- * behaviours now come from the shared hooks, so all three call sites are fixed
- * without touching their markup.
- */
 function Overlay({
   onClose,
   labelledBy,
   children,
 }: {
   onClose: () => void;
-  /** id of the heading that names this dialog. */
   labelledBy: string;
   children: ReactNode;
 }) {
@@ -124,8 +114,6 @@ function Overlay({
       transition={{ duration: DURATION.hover, ease: EASE.outExpo }}
       className="fixed inset-0 z-modal flex items-center justify-center p-4"
     >
-      {/* The backdrop owns the dismiss click. Putting it on the parent meant a
-          drag that began inside the panel and ended outside would close it. */}
       <div
         aria-hidden
         onClick={onClose}
@@ -218,8 +206,6 @@ export default function AdminDashboardPage() {
     } finally {
       setLoading(false);
     }
-    // `toast` is memoised in ToastProvider, so its identity is stable and this
-    // callback is not recreated on every render.
   }, [router, toast]);
 
   useEffect(() => {
@@ -325,6 +311,21 @@ export default function AdminDashboardPage() {
   const handleSignOut = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
     router.push('/login');
+  };
+
+  const handleViewAs = async (role: 'STUDENT' | 'MENTOR') => {
+    try {
+      const res = await fetch('/api/admin/view-as', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to switch dashboard');
+      router.push(data.redirectUrl || '/dashboard');
+    } catch (err: any) {
+      toast(err.message, 'error');
+    }
   };
 
   const filteredStudents = students.filter((s) => {
@@ -469,7 +470,21 @@ export default function AdminDashboardPage() {
               </div>
 
               <Reveal direction="left" delay={0.18}>
-                <div className="flex gap-2.5">
+                <div className="flex flex-wrap gap-2.5">
+                  <PremiumButton
+                    variant="glass"
+                    size="sm"
+                    onClick={() => handleViewAs('STUDENT')}
+                  >
+                    View Student Dashboard
+                  </PremiumButton>
+                  <PremiumButton
+                    variant="glass"
+                    size="sm"
+                    onClick={() => handleViewAs('MENTOR')}
+                  >
+                    View Mentor Dashboard
+                  </PremiumButton>
                   <PremiumButton variant="glass" size="sm" onClick={fetchAdminData}>
                     Refresh
                   </PremiumButton>
@@ -1416,7 +1431,6 @@ export default function AdminDashboardPage() {
           </Overlay>
         )}
       </AnimatePresence>
-
     </div>
   );
 }

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
-import { isAuthorizedAdminEmail } from '@/lib/mockDb';
+import { isAuthorizedAdminEmail } from '@/lib/admin';
 import { logger } from '@/lib/logger';
 
 export async function POST(request: Request) {
@@ -15,7 +15,7 @@ export async function POST(request: Request) {
     }
 
     const decoded = verifyToken(token);
-    if (!decoded || (decoded.role !== 'ADMIN' && !isAuthorizedAdminEmail(decoded.email))) {
+    if (!decoded || !(await isAuthorizedAdminEmail(decoded.email))) {
       return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
     }
 
@@ -34,10 +34,9 @@ export async function POST(request: Request) {
     }
 
     if (action === 'delete') {
-      // Disband team and unassign students
       await prisma.studentProfile.updateMany({
         where: { teamId },
-        data: { teamId: null, teamStatus: 'LOOKING_FOR_TEAM' },
+        data: { teamId: null, teamStatus: 'OPEN' },
       });
       await prisma.team.delete({
         where: { id: teamId },

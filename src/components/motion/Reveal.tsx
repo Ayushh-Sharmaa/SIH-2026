@@ -1,6 +1,6 @@
 'use client';
 
-import { motion, type Variants } from 'framer-motion';
+import { m, type Variants } from 'framer-motion';
 import type { ElementType, ReactNode } from 'react';
 import { DURATION, EASE, STAGGER, TRAVEL, REDUCED } from './tokens';
 import { usePrefersReducedMotion } from './useReducedMotion';
@@ -90,7 +90,7 @@ export default function Reveal({
   as = 'div',
 }: RevealProps) {
   const reduced = usePrefersReducedMotion();
-  const MotionTag = motion[as as 'div'] ?? motion.div;
+  const MotionTag = m[as as 'div'] ?? m.div;
 
   return (
     <MotionTag
@@ -126,7 +126,7 @@ export function RevealGroup({
   once?: boolean;
   as?: ElementType;
 }) {
-  const MotionTag = motion[as as 'div'] ?? motion.div;
+  const MotionTag = m[as as 'div'] ?? m.div;
 
   return (
     <MotionTag
@@ -156,7 +156,7 @@ export function RevealItem({
   as?: ElementType;
 }) {
   const reduced = usePrefersReducedMotion();
-  const MotionTag = motion[as as 'div'] ?? motion.div;
+  const MotionTag = m[as as 'div'] ?? m.div;
 
   return (
     <MotionTag

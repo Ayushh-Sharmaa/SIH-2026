@@ -3,6 +3,7 @@ import { currentUser } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
 import { signToken, normalizeEmail, isAllowedCollegeEmail } from '@/lib/auth';
 import { logger } from '@/lib/logger';
+import { setSessionCookie } from '@/lib/sessionCookie';
 
 async function syncClerkUser(email: string, defaultRole: 'STUDENT' | 'MENTOR' = 'STUDENT') {
   const withProfiles = { studentProfile: true, mentorProfile: true } as const;
@@ -88,13 +89,7 @@ export async function GET(request: Request) {
     const redirectPath = isOnboarded ? '/dashboard' : '/onboarding';
     const response = NextResponse.redirect(new URL(redirectPath, request.url));
 
-    response.cookies.set('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 60 * 60 * 24 * 7,
-      path: '/',
-    });
+    setSessionCookie(response.cookies, token);
 
     return response;
   } catch (error) {
@@ -149,13 +144,7 @@ export async function POST(request: Request) {
       },
     });
 
-    response.cookies.set('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 60 * 60 * 24 * 7,
-      path: '/',
-    });
+    setSessionCookie(response.cookies, token);
 
     return response;
   } catch (error) {

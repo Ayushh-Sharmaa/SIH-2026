@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode, type MouseEvent } from 'react';
 import Link from 'next/link';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
 import { Check } from 'lucide-react';
 import Icon from '@/components/ui/Icon';
 import Magnetic from './Magnetic';
@@ -144,7 +144,7 @@ export default function PremiumButton({
 
       <AnimatePresence>
         {loading && !showSuccess && (
-          <motion.span
+          <m.span
             key="spinner"
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -161,11 +161,11 @@ export default function PremiumButton({
                 strokeLinecap="round"
               />
             </svg>
-          </motion.span>
+          </m.span>
         )}
 
         {showSuccess && (
-          <motion.span
+          <m.span
             key="success"
             initial={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.5 }}
             animate={reduced ? { opacity: 1 } : { opacity: 1, scale: 1 }}
@@ -174,7 +174,7 @@ export default function PremiumButton({
             className="absolute inset-0 z-10 grid place-items-center"
           >
             <Icon icon={Check} size="sm" strokeWidth={2.5} />
-          </motion.span>
+          </m.span>
         )}
       </AnimatePresence>
     </>

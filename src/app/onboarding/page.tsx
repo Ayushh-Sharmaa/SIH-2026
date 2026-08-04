@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
 import { ArrowUpRight, Check } from 'lucide-react';
 import Icon from '@/components/ui/Icon';
 import {
@@ -811,7 +811,7 @@ export default function OnboardingPage() {
                     }`}
                   >
                     {active && (
-                      <motion.span
+                      <m.span
                         layoutId="onboardingStepPill"
                         transition={SPRING.snappy}
                         className="absolute inset-0 rounded-full bg-primary shadow-[0_6px_20px_rgba(114,56,61,0.26)]"
@@ -841,7 +841,7 @@ export default function OnboardingPage() {
             aria-hidden
             className="h-0.5 overflow-hidden rounded-full bg-[rgba(209,199,189,0.8)]"
           >
-            <motion.div
+            <m.div
               className="h-full rounded-full bg-gradient-to-r from-[#AC9C8D] to-primary"
               animate={{ scaleX: step / lastStep }}
               initial={{ scaleX: 1 / lastStep }}
@@ -856,7 +856,7 @@ export default function OnboardingPage() {
         <div className="mx-auto max-w-4xl px-5 py-10 sm:px-6">
           <AnimatePresence initial={false}>
             {error && (
-              <motion.div
+              <m.div
                 role="alert"
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
@@ -867,7 +867,7 @@ export default function OnboardingPage() {
                 <div className="mb-5 rounded-2xl border border-[rgba(114,56,61,0.3)] bg-[rgba(114,56,61,0.07)] px-5 py-3.5 text-sm font-semibold text-primary">
                   {error}
                 </div>
-              </motion.div>
+              </m.div>
             )}
           </AnimatePresence>
 
@@ -875,7 +875,7 @@ export default function OnboardingPage() {
             <AnimatePresence mode="wait" initial={false}>
               {/* ═══ STUDENT · STEP 1 ═══ */}
               {isStudent && step === 1 && (
-                <motion.div
+                <m.div
                   key="s1"
                   initial={{ opacity: 0, y: 18, filter: 'blur(6px)' }}
                   animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
@@ -928,7 +928,7 @@ export default function OnboardingPage() {
                         </div>
                       </div>
                     ) : (
-                      <motion.label
+                      <m.label
                         whileHover={{ y: -3 }}
                         transition={SPRING.snappy}
                         className="group flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[rgba(172,156,141,0.75)] bg-[rgba(239,233,225,0.45)] p-8 text-center transition-colors duration-250 hover:border-[rgba(114,56,61,0.5)] hover:bg-[rgba(248,246,242,0.75)]"
@@ -956,7 +956,7 @@ export default function OnboardingPage() {
                           className="sr-only"
                           onChange={(e) => handleAvatarUpload(e.target.files?.[0])}
                         />
-                      </motion.label>
+                      </m.label>
                     )}
                   </div>
 
@@ -1045,12 +1045,12 @@ export default function OnboardingPage() {
                       Continue
                     </PremiumButton>
                   </div>
-                </motion.div>
+                </m.div>
               )}
 
               {/* ═══ STUDENT · STEP 2 ═══ */}
               {isStudent && step === 2 && (
-                <motion.div
+                <m.div
                   key="s2"
                   initial={{ opacity: 0, y: 18, filter: 'blur(6px)' }}
                   animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
@@ -1078,7 +1078,7 @@ export default function OnboardingPage() {
                     />
                     <AnimatePresence>
                       {skillSearch.trim() && (
-                        <motion.button
+                        <m.button
                           type="button"
                           initial={{ opacity: 0, scale: 0.9 }}
                           animate={{ opacity: 1, scale: 1 }}
@@ -1088,7 +1088,7 @@ export default function OnboardingPage() {
                           className="absolute right-1.5 top-1.5 rounded-lg bg-primary px-3 py-1.5 text-caption font-bold text-on-accent shadow-[0_4px_14px_rgba(114,56,61,0.25)]"
                         >
                           Add “{skillSearch.trim()}”
-                        </motion.button>
+                        </m.button>
                       )}
                     </AnimatePresence>
                   </div>
@@ -1099,10 +1099,10 @@ export default function OnboardingPage() {
                       <span className="mb-2 block text-label uppercase text-muted">
                         Selected ({lockedSkills.length}) — click to remove
                       </span>
-                      <motion.div layout className="flex max-h-32 flex-wrap gap-1.5 overflow-y-auto">
+                      <m.div layout className="flex max-h-32 flex-wrap gap-1.5 overflow-y-auto">
                         <AnimatePresence mode="popLayout" initial={false}>
                           {lockedSkills.map((skill) => (
-                            <motion.button
+                            <m.button
                               key={skill}
                               type="button"
                               layout
@@ -1119,10 +1119,10 @@ export default function OnboardingPage() {
                               <span aria-hidden className="opacity-70">
                                 ×
                               </span>
-                            </motion.button>
+                            </m.button>
                           ))}
                         </AnimatePresence>
-                      </motion.div>
+                      </m.div>
                     </div>
                   )}
 
@@ -1137,7 +1137,7 @@ export default function OnboardingPage() {
                           const isSelected = lockedSkills.includes(skill);
                           const style = CATEGORY_STYLES[getSkillCategory(skill)];
                           return (
-                            <motion.button
+                            <m.button
                               key={skill}
                               type="button"
                               onClick={() => toggleSkillTile(skill)}
@@ -1149,7 +1149,7 @@ export default function OnboardingPage() {
                               }`}
                             >
                               {skill}
-                            </motion.button>
+                            </m.button>
                           );
                         })
                       ) : (
@@ -1172,7 +1172,7 @@ export default function OnboardingPage() {
                   {/* recommendations */}
                   <AnimatePresence initial={false}>
                     {getRecommendations().length > 0 && (
-                      <motion.div
+                      <m.div
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
@@ -1185,7 +1185,7 @@ export default function OnboardingPage() {
                           </span>
                           <div className="flex flex-wrap gap-1.5">
                             {getRecommendations().map((rec) => (
-                              <motion.button
+                              <m.button
                                 key={rec}
                                 type="button"
                                 whileHover={{ y: -2 }}
@@ -1194,11 +1194,11 @@ export default function OnboardingPage() {
                                 className="rounded-lg border border-[rgba(209,199,189,0.85)] bg-[rgba(248,246,242,0.75)] px-2.5 py-1 text-caption font-semibold text-foreground transition-colors duration-250 hover:border-[rgba(114,56,61,0.35)] hover:text-primary"
                               >
                                 + {rec}
-                              </motion.button>
+                              </m.button>
                             ))}
                           </div>
                         </div>
-                      </motion.div>
+                      </m.div>
                     )}
                   </AnimatePresence>
 
@@ -1260,7 +1260,7 @@ export default function OnboardingPage() {
                           ).map(
                             ([domain, pct, offset]) =>
                               pct > 0 && (
-                                <motion.circle
+                                <m.circle
                                   key={domain}
                                   cx="18"
                                   cy="18"
@@ -1332,7 +1332,7 @@ export default function OnboardingPage() {
                                 </span>
                               </div>
                               <div className="h-1.5 overflow-hidden rounded-full bg-[rgba(209,199,189,0.85)]">
-                                <motion.div
+                                <m.div
                                   className="h-full rounded-full"
                                   style={{
                                     backgroundColor: DOMAIN_SWATCH[key],
@@ -1351,7 +1351,7 @@ export default function OnboardingPage() {
                             {hoveredDomain} breakdown
                           </span>
                           <AnimatePresence mode="wait" initial={false}>
-                            <motion.div
+                            <m.div
                               key={hoveredDomain}
                               initial={{ opacity: 0, y: -4 }}
                               animate={{ opacity: 1, y: 0 }}
@@ -1377,7 +1377,7 @@ export default function OnboardingPage() {
                                   </span>
                                 </div>
                               ))}
-                            </motion.div>
+                            </m.div>
                           </AnimatePresence>
                         </div>
                       </div>
@@ -1410,10 +1410,10 @@ export default function OnboardingPage() {
                       </select>
                     </div>
 
-                    <motion.div layout className="grid gap-3 sm:grid-cols-2">
+                    <m.div layout className="grid gap-3 sm:grid-cols-2">
                       <AnimatePresence mode="popLayout" initial={false}>
                         {Object.entries(languages).map(([lang, level]) => (
-                          <motion.div
+                          <m.div
                             key={lang}
                             layout
                             initial={{ opacity: 0, y: 12 }}
@@ -1463,7 +1463,7 @@ export default function OnboardingPage() {
                                   }`}
                                 >
                                   {level === lvl && (
-                                    <motion.span
+                                    <m.span
                                       layoutId={`fluency-${lang}`}
                                       transition={SPRING.snappy}
                                       className="absolute inset-0 rounded-lg bg-primary"
@@ -1475,17 +1475,17 @@ export default function OnboardingPage() {
                             </div>
 
                             <div className="h-2 overflow-hidden rounded-full bg-[rgba(209,199,189,0.85)]">
-                              <motion.div
+                              <m.div
                                 initial={{ width: 0 }}
                                 animate={{ width: level ? fluencyMap[level] : 0 }}
                                 transition={SPRING.soft}
                                 className="h-full rounded-full bg-gradient-to-r from-[#AC9C8D] to-primary"
                               />
                             </div>
-                          </motion.div>
+                          </m.div>
                         ))}
                       </AnimatePresence>
-                    </motion.div>
+                    </m.div>
                   </div>
 
                   {/* soft skills */}
@@ -1497,7 +1497,7 @@ export default function OnboardingPage() {
                       {softSkillsOptions.map((opt) => {
                         const isSelected = selectedSoftSkills.includes(opt);
                         return (
-                          <motion.button
+                          <m.button
                             key={opt}
                             type="button"
                             onClick={() => toggleSoftSkill(opt)}
@@ -1512,7 +1512,7 @@ export default function OnboardingPage() {
                             }`}
                           >
                             {opt}
-                          </motion.button>
+                          </m.button>
                         );
                       })}
                     </div>
@@ -1531,12 +1531,12 @@ export default function OnboardingPage() {
                       Continue
                     </PremiumButton>
                   </div>
-                </motion.div>
+                </m.div>
               )}
 
               {/* ═══ STUDENT · STEP 3 ═══ */}
               {isStudent && step === 3 && (
-                <motion.div
+                <m.div
                   key="s3"
                   initial={{ opacity: 0, y: 18, filter: 'blur(6px)' }}
                   animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
@@ -1661,7 +1661,7 @@ export default function OnboardingPage() {
 
                     <AnimatePresence mode="wait" initial={false}>
                       {hoveredTrack && (
-                        <motion.div
+                        <m.div
                           key={hoveredTrack.id}
                           initial={{ opacity: 0, y: 8 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -1699,7 +1699,7 @@ export default function OnboardingPage() {
                               </a>
                             )}
                           </div>
-                        </motion.div>
+                        </m.div>
                       )}
                     </AnimatePresence>
                   </div>
@@ -1745,12 +1745,12 @@ export default function OnboardingPage() {
                       Complete onboarding
                     </PremiumButton>
                   </div>
-                </motion.div>
+                </m.div>
               )}
 
               {/* ═══ MENTOR · STEP 1 ═══ */}
               {!isStudent && step === 1 && (
-                <motion.div
+                <m.div
                   key="m1"
                   initial={{ opacity: 0, y: 18, filter: 'blur(6px)' }}
                   animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
@@ -1788,12 +1788,12 @@ export default function OnboardingPage() {
                       Continue
                     </PremiumButton>
                   </div>
-                </motion.div>
+                </m.div>
               )}
 
               {/* ═══ MENTOR · STEP 2 ═══ */}
               {!isStudent && step === 2 && (
-                <motion.div
+                <m.div
                   key="m2"
                   initial={{ opacity: 0, y: 18, filter: 'blur(6px)' }}
                   animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
@@ -1853,7 +1853,7 @@ export default function OnboardingPage() {
                       Complete onboarding
                     </PremiumButton>
                   </div>
-                </motion.div>
+                </m.div>
               )}
             </AnimatePresence>
           </div>

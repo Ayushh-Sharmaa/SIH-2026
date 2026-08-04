@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react';
 import Image from 'next/image';
-import { AnimatePresence, motion, useScroll, useTransform } from 'framer-motion';
+import { AnimatePresence, m, useScroll, useTransform } from 'framer-motion';
 
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -54,7 +54,7 @@ const HIGHLIGHTS = [
 
 function ScrollHint() {
   return (
-    <motion.a
+    <m.a
       href="#highlights"
       aria-label="Scroll to content"
       initial={{ opacity: 0 }}
@@ -68,7 +68,7 @@ function ScrollHint() {
       <span className="flex h-9 w-[22px] justify-center rounded-full border border-[rgba(172,156,141,0.6)] pt-2">
         <span className="scroll-hint-dot block size-1 rounded-full bg-primary" />
       </span>
-    </motion.a>
+    </m.a>
   );
 }
 
@@ -85,21 +85,21 @@ function HeroVisual() {
       />
 
       {/* Outer orbit ring — slow clockwise */}
-      <motion.div
+      <m.div
         aria-hidden
         className="absolute inset-2 rounded-full border border-dashed border-[rgba(172,156,141,0.55)]"
         animate={reduced ? undefined : { rotate: 360 }}
         transition={{ duration: 48, repeat: Infinity, ease: 'linear' }}
       />
       {/* Middle orbit ring — counter-clockwise */}
-      <motion.div
+      <m.div
         aria-hidden
         className="absolute inset-[18%] rounded-full border border-[rgba(114,56,61,0.22)]"
         animate={reduced ? undefined : { rotate: -360 }}
         transition={{ duration: 32, repeat: Infinity, ease: 'linear' }}
       />
       {/* Inner orbit ring — fast clockwise, accent tinted */}
-      <motion.div
+      <m.div
         aria-hidden
         className="absolute inset-[34%] rounded-full border border-dotted border-[rgba(114,56,61,0.38)]"
         animate={reduced ? undefined : { rotate: 360 }}
@@ -107,13 +107,13 @@ function HeroVisual() {
       />
 
       {/* Core crest card */}
-      <motion.div
+      <m.div
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 1, delay: 0.35, ease: EASE.outExpo }}
         className="relative flex size-40 items-center justify-center rounded-[2rem] border border-[rgba(209,199,189,0.7)] bg-[rgba(255,255,255,0.68)] shadow-[0_20px_60px_rgba(50,45,41,0.16),inset_0_1px_0_rgba(255,255,255,0.9)] backdrop-blur-xl"
       >
-        <motion.div
+        <m.div
           animate={reduced ? undefined : { y: [0, -8, 0] }}
           transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
         >
@@ -125,8 +125,8 @@ function HeroVisual() {
             className="object-contain"
             priority
           />
-        </motion.div>
-      </motion.div>
+        </m.div>
+      </m.div>
 
       {/* Orbiting satellite chips */}
       {[
@@ -134,7 +134,7 @@ function HeroVisual() {
         { label: 'Mentors', top: '48%', left: '-2%', delay: 0.85 },
         { label: 'Tracks', top: '78%', left: '76%', delay: 1 },
       ].map((chip) => (
-        <motion.span
+        <m.span
           key={chip.label}
           initial={{ opacity: 0, scale: 0.6, y: 12 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -142,18 +142,18 @@ function HeroVisual() {
           style={{ top: chip.top, left: chip.left }}
           className="absolute -translate-x-1/2 rounded-full border border-[rgba(209,199,189,0.8)] bg-[rgba(255,255,255,0.82)] px-3.5 py-1.5 text-label uppercase text-primary shadow-[0_6px_20px_rgba(50,45,41,0.12),inset_0_1px_0_rgba(255,255,255,0.8)] backdrop-blur-md"
         >
-          <motion.span
+          <m.span
             className="block"
             animate={reduced ? undefined : { y: [0, -5, 0] }}
             transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: chip.delay }}
           >
             {chip.label}
-          </motion.span>
-        </motion.span>
+          </m.span>
+        </m.span>
       ))}
 
       {/* Live pulse indicator — top-right of the orbit area */}
-      <motion.div
+      <m.div
         initial={{ opacity: 0, scale: 0 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5, delay: 1.2, ease: EASE.outExpo }}
@@ -165,7 +165,7 @@ function HeroVisual() {
           <span className="relative inline-flex size-1.5 rounded-full bg-primary" />
         </span>
         Live
-      </motion.div>
+      </m.div>
     </div>
   );
 }
@@ -188,7 +188,7 @@ function FaqItem({ q, a, index }: { q: string; a: string; index: number }) {
           className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left sm:px-6 sm:py-5"
         >
           <span className="text-sm font-bold text-foreground sm:text-base">{q}</span>
-          <motion.span
+          <m.span
             animate={{ rotate: open ? 45 : 0 }}
             transition={{ duration: 0.3, ease: EASE.outExpo }}
             className="flex size-7 shrink-0 items-center justify-center rounded-full border border-[rgba(172,156,141,0.6)] text-primary"
@@ -196,11 +196,11 @@ function FaqItem({ q, a, index }: { q: string; a: string; index: number }) {
             <svg viewBox="0 0 24 24" fill="none" className="size-3.5">
               <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
             </svg>
-          </motion.span>
+          </m.span>
         </button>
         <AnimatePresence initial={false}>
           {open && (
-            <motion.div
+            <m.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
@@ -208,7 +208,7 @@ function FaqItem({ q, a, index }: { q: string; a: string; index: number }) {
               className="overflow-hidden"
             >
               <p className="px-5 pb-5 text-sm leading-relaxed text-muted sm:px-6 sm:pb-6">{a}</p>
-            </motion.div>
+            </m.div>
           )}
         </AnimatePresence>
       </div>
@@ -251,12 +251,12 @@ export default function Home() {
           <ParticleField className="z-decor" />
           <div aria-hidden className="pointer-events-none absolute inset-0 z-decor grid-lines" />
 
-          <motion.div
+          <m.div
             style={reduced ? undefined : { y: heroY, opacity: heroFade }}
             className="relative z-content mx-auto grid w-full max-w-wide grid-cols-1 items-center gap-14 px-gutter lg:grid-cols-12 lg:gap-8"
           >
             <div className="lg:col-span-7">
-              <motion.span
+              <m.span
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.7, ease: EASE.outExpo }}
@@ -267,7 +267,7 @@ export default function Home() {
                   <span className="relative inline-flex size-1.5 rounded-full bg-primary" />
                 </span>
                 Internal Hackathon Portal · 2026
-              </motion.span>
+              </m.span>
 
               <h1 className="mt-7 text-display text-foreground">
                 {/* Word mode: large confident motion — whole word feel */}
@@ -283,7 +283,7 @@ export default function Home() {
                 />
               </h1>
 
-              <motion.p
+              <m.p
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.75, ease: EASE.outExpo }}
@@ -292,9 +292,9 @@ export default function Home() {
                 Form balanced teams, close your skill gaps, and match with verified faculty
                 mentors — the official Smart India Hackathon portal of GL Bajaj Group of
                 Institutions, Mathura.
-              </motion.p>
+              </m.p>
 
-              <motion.div
+              <m.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.92, ease: EASE.outExpo }}
@@ -315,9 +315,9 @@ export default function Home() {
                 <PremiumButton href="/login" variant="glass" size="lg">
                   Enter portal
                 </PremiumButton>
-              </motion.div>
+              </m.div>
 
-              <motion.p
+              <m.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.8, delay: 1.15 }}
@@ -325,13 +325,13 @@ export default function Home() {
               >
                 Official problem statements are released closer to the event. All 18 themes are
                 already configured here.
-              </motion.p>
+              </m.p>
             </div>
 
             <div className="lg:col-span-5">
               <HeroVisual />
             </div>
-          </motion.div>
+          </m.div>
 
           <ScrollHint />
         </section>
@@ -466,18 +466,18 @@ export default function Home() {
 
             <div className="mt-14 grid gap-8 lg:grid-cols-12">
               <Reveal direction="right" className="lg:col-span-5">
-                <div className="flex max-h-[30rem] flex-col gap-1.5 overflow-y-auto pr-2">
-                  {SIH_MILESTONES.map((m, i) => {
+                <div className="flex max-h-[30rem] flex-col gap-1.5 overflow-y-auto pr-2" data-lenis-prevent>
+                  {SIH_MILESTONES.map((milestone, i) => {
                     const isActive = i === activePhase;
                     return (
                       <button
-                        key={m.id}
+                        key={milestone.id}
                         onClick={() => setActivePhase(i)}
                         aria-current={isActive}
                         className="relative flex items-center gap-3.5 rounded-xl px-4 py-3 text-left transition-colors duration-250"
                       >
                         {isActive && (
-                          <motion.span
+                          <m.span
                             layoutId="phasePill"
                             transition={SPRING.snappy}
                             className="absolute inset-0 rounded-xl border border-[rgba(114,56,61,0.24)] bg-[rgba(255,255,255,0.75)] shadow-[0_6px_20px_rgba(50,45,41,0.08)]"
@@ -490,7 +490,7 @@ export default function Home() {
                               : 'border-[rgba(209,199,189,0.7)] bg-white/40 text-muted'
                           }`}
                         >
-                          {String(m.id).padStart(2, '0')}
+                          {String(milestone.id).padStart(2, '0')}
                         </span>
                         <span className="relative z-10 flex min-w-0 flex-col">
                           <span
@@ -498,10 +498,10 @@ export default function Home() {
                               isActive ? 'text-foreground' : 'text-muted'
                             }`}
                           >
-                            {m.title}
+                            {milestone.title}
                           </span>
                           <span className="text-label uppercase text-muted">
-                            {m.period}
+                            {milestone.period}
                           </span>
                         </span>
                       </button>
@@ -513,7 +513,7 @@ export default function Home() {
               <Reveal direction="left" delay={0.1} className="lg:col-span-7">
                 <div className="surface-raised relative min-h-[19rem] overflow-hidden rounded-3xl p-8">
                   <AnimatePresence mode="wait">
-                    <motion.div
+                    <m.div
                       key={phase.id}
                       initial={{ opacity: 0, y: 16, filter: 'blur(6px)' }}
                       animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
@@ -547,7 +547,7 @@ export default function Home() {
                       </div>
 
                       <div className="mt-4 h-1 overflow-hidden rounded-full bg-[rgba(172,156,141,0.25)]">
-                        <motion.div
+                        <m.div
                           className="h-full rounded-full bg-gradient-to-r from-primary to-[#ac9c8d]"
                           initial={{ scaleX: 0 }}
                           animate={{ scaleX: (activePhase + 1) / SIH_MILESTONES.length }}
@@ -555,7 +555,7 @@ export default function Home() {
                           style={{ transformOrigin: 'left' }}
                         />
                       </div>
-                    </motion.div>
+                    </m.div>
                   </AnimatePresence>
                 </div>
               </Reveal>
@@ -619,7 +619,7 @@ export default function Home() {
 
               <div className="lg:col-span-8">
                 <AnimatePresence mode="wait">
-                  <motion.div
+                  <m.div
                     key={activeSet}
                     initial="hidden"
                     animate="visible"
@@ -628,7 +628,7 @@ export default function Home() {
                     className="grid gap-5 sm:grid-cols-3"
                   >
                     {ALL_18_THEME_SETS[activeSet].themes.map((theme, i) => (
-                      <motion.article
+                      <m.article
                         key={theme.name}
                         variants={{
                           hidden: { opacity: 0, y: 24, filter: 'blur(8px)' },
@@ -657,9 +657,9 @@ export default function Home() {
                             </div>
                           </SpotlightCard>
                         </TiltCard>
-                      </motion.article>
+                      </m.article>
                     ))}
-                  </motion.div>
+                  </m.div>
                 </AnimatePresence>
               </div>
             </div>

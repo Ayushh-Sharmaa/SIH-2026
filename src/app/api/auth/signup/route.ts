@@ -5,6 +5,7 @@ import { hashPassword, signToken, normalizeEmail, isAllowedCollegeEmail } from '
 import { ensureSandboxUser, parseSandboxRequest } from '@/lib/sandbox';
 import { clientIp, createRateLimiter, tooManyRequests } from '@/lib/rateLimit';
 import { logger } from '@/lib/logger';
+import { setSessionCookie } from '@/lib/sessionCookie';
 
 const bySignupIp = createRateLimiter({ limit: 5, windowMs: 60 * 60_000, prefix: 'signup:ip' });
 const MIN_PASSWORD_LENGTH = 8;
@@ -29,13 +30,7 @@ export async function POST(request: Request) {
         user: { id: user.id, email: user.email, role: resolvedRole, name: sandboxName },
       });
 
-      sandboxResponse.cookies.set('token', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 60 * 60 * 24 * 7,
-        path: '/',
-      });
+      setSessionCookie(sandboxResponse.cookies, token);
 
       return sandboxResponse;
     }
@@ -151,13 +146,7 @@ export async function POST(request: Request) {
       },
     });
 
-    response.cookies.set('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 60 * 60 * 24 * 7,
-      path: '/',
-    });
+    setSessionCookie(response.cookies, token);
 
     return response;
   } catch (error) {

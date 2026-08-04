@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
 import { DURATION, EASE } from '@/components/motion/tokens';
 
 /**
@@ -133,7 +133,7 @@ export default function LoadingScreen() {
   return (
     <AnimatePresence>
       {visible && (
-        <motion.div
+        <m.div
           key="intro"
           // aria-hidden: assistive technology should reach the real content
           // immediately rather than announce a decorative curtain.
@@ -143,7 +143,7 @@ export default function LoadingScreen() {
           className="fixed inset-0 z-boot flex items-center justify-center bg-canvas"
         >
           <div className="flex flex-col items-center gap-7">
-            <motion.svg
+            <m.svg
               viewBox="0 0 100 100"
               className="size-16"
               initial={{ opacity: 0, scale: 0.8 }}
@@ -156,7 +156,7 @@ export default function LoadingScreen() {
                   <stop offset="100%" stopColor="var(--color-clay)" />
                 </linearGradient>
               </defs>
-              <motion.polygon
+              <m.polygon
                 points="50,10 87,31 87,71 50,92 13,71 13,31"
                 fill="none"
                 stroke="url(#introGrad)"
@@ -166,7 +166,7 @@ export default function LoadingScreen() {
                 animate={{ pathLength: 1, opacity: 1 }}
                 transition={{ duration: 0.9, ease: EASE.outExpo }}
               />
-              <motion.circle
+              <m.circle
                 cx="50"
                 cy="50"
                 r="13"
@@ -176,10 +176,10 @@ export default function LoadingScreen() {
                 transition={{ duration: 0.5, delay: 0.35, ease: EASE.outExpo }}
                 style={{ transformOrigin: 'center' }}
               />
-            </motion.svg>
+            </m.svg>
 
             <div className="h-px w-40 overflow-hidden rounded-pill bg-clay/30">
-              <motion.div
+              <m.div
                 className="h-full bg-gradient-to-r from-accent to-clay"
                 initial={{ scaleX: 0 }}
                 animate={{ scaleX: 1 }}
@@ -188,7 +188,7 @@ export default function LoadingScreen() {
               />
             </div>
 
-            <motion.p
+            <m.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.25, duration: 0.45 }}
@@ -197,9 +197,9 @@ export default function LoadingScreen() {
               className="text-label uppercase tracking-[0.32em] text-muted"
             >
               SIH@GLBGOI
-            </motion.p>
+            </m.p>
           </div>
-        </motion.div>
+        </m.div>
       )}
     </AnimatePresence>
   );

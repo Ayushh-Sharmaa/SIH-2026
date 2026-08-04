@@ -2,9 +2,8 @@
 
 import { useState, type FormEvent } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useClerk } from '@clerk/nextjs';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
 import { useAuthenticatedRedirect } from '@/lib/session';
 import { looksLikeSandboxEmail } from '@/lib/sandboxShared';
 import {
@@ -29,7 +28,7 @@ const HIGHLIGHTS = [
 /** Full-screen hand-off shown while the session is being minted. */
 function AuthHandoff({ caption }: { caption: string }) {
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -56,7 +55,7 @@ function AuthHandoff({ caption }: { caption: string }) {
       <p className="text-center text-label uppercase text-muted">
         {caption}
       </p>
-    </motion.div>
+    </m.div>
   );
 }
 
@@ -70,14 +69,14 @@ function GoogleButton({
   label: string;
 }) {
   return (
-    <motion.button
+    <m.button
       type="button"
       onClick={onClick}
       disabled={loading}
       whileHover={{ y: -2 }}
       whileTap={{ scale: 0.985 }}
       transition={{ duration: DURATION.hover, ease: EASE.outExpo }}
-      className="flex w-full items-center justify-center gap-3 rounded-xl border border-[rgba(209,199,189,0.85)] bg-[rgba(248,246,242,0.7)] px-4 py-3 text-sm font-bold text-foreground shadow-[0_2px_10px_rgba(50,45,41,0.05)] backdrop-blur-sm transition-colors duration-250 hover:border-[rgba(114,56,61,0.3)] hover:bg-[rgba(248,246,242,0.95)] disabled:cursor-not-allowed disabled:opacity-55"
+      className="flex w-full items-center justify-center gap-3 rounded-xl border border-[rgba(209,199,189,0.85)] bg-[rgba(248,246,242,0.7)] px-4 py-3 text-sm font-bold text-foreground shadow-[0_2px_10px_rgba(50,45,41,0.05)] transition-colors duration-250 hover:border-[rgba(114,56,61,0.3)] hover:bg-[rgba(248,246,242,0.95)] disabled:cursor-not-allowed disabled:opacity-55"
     >
       <svg className="size-4 shrink-0" viewBox="0 0 24 24" aria-hidden>
         <path
@@ -98,7 +97,7 @@ function GoogleButton({
         />
       </svg>
       {loading ? 'Connecting to Google…' : label}
-    </motion.button>
+    </m.button>
   );
 }
 
@@ -110,7 +109,6 @@ export default function LoginPage() {
 }
 
 function ClerkLoginPage() {
-  const router = useRouter();
   const goAuthenticated = useAuthenticatedRedirect();
   const clerk = useClerk();
   const [email, setEmail] = useState('');
@@ -258,7 +256,6 @@ function ClerkLoginPage() {
 }
 
 function CustomLoginPage() {
-  const router = useRouter();
   const goAuthenticated = useAuthenticatedRedirect();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

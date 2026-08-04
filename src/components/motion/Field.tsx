@@ -8,7 +8,7 @@ import {
   type SelectHTMLAttributes,
   type TextareaHTMLAttributes,
 } from 'react';
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { Check, ChevronDown, Eye, EyeOff } from 'lucide-react';
 import Icon from '@/components/ui/Icon';
 import { DURATION, EASE } from './tokens';
@@ -136,7 +136,7 @@ export function Field({
 
   return (
     <div className={className}>
-      <motion.div
+      <m.div
         className="relative"
         // A short, hard-stopping shake: enough to register as rejection,
         // not enough to read as a glitch. Suppressed for reduced-motion
@@ -174,7 +174,7 @@ export function Field({
         )}
 
         {valid && !error && !isPassword && (
-          <motion.span
+          <m.span
             aria-hidden
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -182,9 +182,9 @@ export function Field({
             className="absolute right-4 top-1/2 -translate-y-1/2 text-accent"
           >
             <Icon icon={Check} size="sm" strokeWidth={2.5} />
-          </motion.span>
+          </m.span>
         )}
-      </motion.div>
+      </m.div>
 
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
@@ -253,14 +253,14 @@ export function SelectField({
         >
           {children}
         </select>
-        <motion.span
+        <m.span
           aria-hidden
           className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-muted"
           animate={{ rotate: focused ? 180 : 0 }}
           transition={{ duration: DURATION.hover, ease: EASE.outExpo }}
         >
           <Icon icon={ChevronDown} size="sm" />
-        </motion.span>
+        </m.span>
       </div>
       <Messages errorId={errorId} hintId={hintId} error={error} hint={hint} />
     </div>
@@ -294,7 +294,7 @@ export function TextAreaField({
 
   return (
     <div className={className}>
-      <motion.div
+      <m.div
         className="relative"
         animate={error ? { x: [0, -5, 5, -3, 3, 0] } : { x: 0 }}
         transition={{ duration: 0.4, ease: EASE.inOut }}
@@ -315,7 +315,7 @@ export function TextAreaField({
         >
           {label}
         </label>
-      </motion.div>
+      </m.div>
 
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">

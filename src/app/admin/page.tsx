@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
 import { ArrowUpRight, Check, GraduationCap, Layers, UserCheck, Users } from 'lucide-react';
 import Icon from '@/components/ui/Icon';
 import EmptyState from '@/components/ui/EmptyState';
@@ -107,7 +107,7 @@ function Overlay({
   useEscapeKey(true, onClose);
 
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -119,7 +119,7 @@ function Overlay({
         onClick={onClose}
         className="absolute inset-0 bg-[rgb(50_45_41/0.34)] backdrop-blur-md"
       />
-      <motion.div
+      <m.div
         ref={panelRef}
         role="dialog"
         aria-modal="true"
@@ -132,8 +132,8 @@ function Overlay({
         className="surface-overlay relative max-h-[88vh] w-full max-w-2xl overflow-y-auto rounded-container p-6"
       >
         {children}
-      </motion.div>
-    </motion.div>
+      </m.div>
+    </m.div>
   );
 }
 
@@ -592,26 +592,26 @@ export default function AdminDashboardPage() {
               stagger={0.07}
               delay={0.2}
             >
-              {METRICS.map((m) => (
-                <RevealItem key={m.label}>
+              {METRICS.map((metric) => (
+                <RevealItem key={metric.label}>
                   <TiltCard intensity={5}>
                     <button
                       type="button"
-                      onClick={() => setActiveTab(m.tab)}
+                      onClick={() => setActiveTab(metric.tab)}
                       className={`h-full w-full rounded-2xl border p-4 text-left transition-colors duration-250 ${
-                        activeTab === m.tab
+                        activeTab === metric.tab
                           ? 'border-[rgba(114,56,61,0.42)] bg-[rgba(248,246,242,0.92)] shadow-[0_14px_40px_rgba(50,45,41,0.12)]'
                           : 'border-[rgba(209,199,189,0.8)] bg-[rgba(248,246,242,0.62)] hover:border-[rgba(114,56,61,0.28)]'
                       }`}
                     >
                       <span className="block text-label uppercase text-muted">
-                        {m.label}
+                        {metric.label}
                       </span>
                       <span className="mt-1 block text-3xl font-extrabold tracking-tight text-foreground">
-                        <Counter to={m.value} duration={1.3} />
+                        <Counter to={metric.value} duration={1.3} />
                       </span>
                       <span className="mt-1.5 block text-caption leading-relaxed text-muted">
-                        {m.foot}
+                        {metric.foot}
                       </span>
                     </button>
                   </TiltCard>
@@ -640,7 +640,7 @@ export default function AdminDashboardPage() {
                         }`}
                       >
                         {active && (
-                          <motion.span
+                          <m.span
                             layoutId="adminTabPill"
                             transition={SPRING.snappy}
                             className="absolute inset-0 rounded-xl bg-primary shadow-[0_6px_20px_rgba(114,56,61,0.26)]"
@@ -679,7 +679,7 @@ export default function AdminDashboardPage() {
             {/* panels */}
             <div className="min-w-0">
               <AnimatePresence mode="wait" initial={false}>
-                <motion.div
+                <m.div
                   key={activeTab}
                   initial={{ opacity: 0, y: 16, filter: 'blur(6px)' }}
                   animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
@@ -838,10 +838,10 @@ export default function AdminDashboardPage() {
                         />
                       )}
 
-                      <motion.div layout className="grid gap-4 xl:grid-cols-2">
+                      <m.div layout className="grid gap-4 xl:grid-cols-2">
                         <AnimatePresence mode="popLayout" initial={false}>
                           {filteredTeams.map((team, i) => (
-                            <motion.article
+                            <m.article
                               key={team.id}
                               layout
                               initial={{ opacity: 0, y: 20, filter: 'blur(6px)' }}
@@ -946,10 +946,10 @@ export default function AdminDashboardPage() {
                                   Disband
                                 </PremiumButton>
                               </div>
-                            </motion.article>
+                            </m.article>
                           ))}
                         </AnimatePresence>
-                      </motion.div>
+                      </m.div>
                     </>
                   )}
 
@@ -1052,13 +1052,13 @@ export default function AdminDashboardPage() {
                         />
                       )}
 
-                      <motion.ul
+                      <m.ul
                         layout
                         className="surface-raised divide-y divide-[rgba(209,199,189,0.7)] overflow-hidden rounded-3xl empty:hidden"
                       >
                         <AnimatePresence mode="popLayout" initial={false}>
                           {filteredStudents.map((student, i) => (
-                            <motion.li
+                            <m.li
                               key={student.id}
                               layout
                               initial={{ opacity: 0, y: 12 }}
@@ -1132,10 +1132,10 @@ export default function AdminDashboardPage() {
                                   {student.isBanned ? 'Restore' : 'Suspend'}
                                 </PremiumButton>
                               </div>
-                            </motion.li>
+                            </m.li>
                           ))}
                         </AnimatePresence>
-                      </motion.ul>
+                      </m.ul>
                     </>
                   )}
 
@@ -1168,10 +1168,10 @@ export default function AdminDashboardPage() {
                         />
                       )}
 
-                      <motion.div layout className="grid gap-4 xl:grid-cols-2">
+                      <m.div layout className="grid gap-4 xl:grid-cols-2">
                         <AnimatePresence mode="popLayout" initial={false}>
                           {filteredPSTracks.map((track, i) => (
-                            <motion.article
+                            <m.article
                               key={track.id}
                               layout
                               initial={{ opacity: 0, y: 20, filter: 'blur(6px)' }}
@@ -1234,10 +1234,10 @@ export default function AdminDashboardPage() {
                                   </p>
                                 )}
                               </div>
-                            </motion.article>
+                            </m.article>
                           ))}
                         </AnimatePresence>
-                      </motion.div>
+                      </m.div>
                     </>
                   )}
 
@@ -1278,7 +1278,7 @@ export default function AdminDashboardPage() {
                                   </span>
                                 </div>
                                 <div className="h-1.5 overflow-hidden rounded-full bg-[rgba(209,199,189,0.7)]">
-                                  <motion.div
+                                  <m.div
                                     initial={{ scaleX: 0 }}
                                     whileInView={{
                                       scaleX:
@@ -1299,7 +1299,7 @@ export default function AdminDashboardPage() {
                       ))}
                     </RevealGroup>
                   )}
-                </motion.div>
+                </m.div>
               </AnimatePresence>
             </div>
           </div>

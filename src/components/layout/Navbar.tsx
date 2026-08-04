@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
-import { AnimatePresence, motion, useMotionValueEvent, useScroll } from 'framer-motion';
+import { AnimatePresence, m, useMotionValueEvent, useScroll } from 'framer-motion';
 import { EASE, SPRING } from '@/components/motion/tokens';
 import Magnetic from '@/components/motion/Magnetic';
 import { useSession } from '@/lib/session';
@@ -88,7 +88,7 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
           the anchor scroll-padding can never disagree again. Pages with a
           full-bleed hero pass `overlay` to sit beneath it instead. */}
       {!overlay && <div aria-hidden className="h-[var(--nav-h)]" />}
-      <motion.header
+      <m.header
         initial={{ y: -80, opacity: 0 }}
         animate={{ y: hidden ? -110 : 0, opacity: 1 }}
         transition={{ duration: 0.5, ease: EASE.outExpo }}
@@ -145,7 +145,7 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
                   }`}
                 >
                   {isActive && (
-                    <motion.span
+                    <m.span
                       layoutId="navPill"
                       className="absolute inset-0 rounded-lg bg-[rgba(172,156,141,0.22)]"
                       transition={SPRING.snappy}
@@ -222,12 +222,12 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
               aria-expanded={menuOpen}
               className="ml-1 flex size-9 flex-col items-center justify-center gap-[5px] rounded-lg border border-[rgba(209,199,189,0.6)] bg-white/40 md:hidden"
             >
-              <motion.span
+              <m.span
                 animate={menuOpen ? { rotate: 45, y: 3.5 } : { rotate: 0, y: 0 }}
                 transition={{ duration: 0.3, ease: EASE.outExpo }}
                 className="block h-[1.5px] w-4 rounded-full bg-foreground"
               />
-              <motion.span
+              <m.span
                 animate={menuOpen ? { rotate: -45, y: -3.5 } : { rotate: 0, y: 0 }}
                 transition={{ duration: 0.3, ease: EASE.outExpo }}
                 className="block h-[1.5px] w-4 rounded-full bg-foreground"
@@ -235,25 +235,25 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
             </button>
           </div>
         </nav>
-      </motion.header>
+      </m.header>
 
       <AnimatePresence>
         {menuOpen && (
-          <motion.div
+          <m.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
             className="fixed inset-0 z-40 bg-[rgba(239,233,225,0.92)] backdrop-blur-2xl md:hidden"
           >
-            <motion.ul
+            <m.ul
               initial="hidden"
               animate="visible"
               variants={{ visible: { transition: { staggerChildren: 0.06, delayChildren: 0.12 } } }}
               className="flex h-full flex-col items-start justify-center gap-2 px-8"
             >
               {NAV_LINKS.map((link) => (
-                <motion.li
+                <m.li
                   key={link.path}
                   variants={{
                     hidden: { opacity: 0, y: 24, filter: 'blur(6px)' },
@@ -274,10 +274,10 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
                   >
                     {link.name}
                   </Link>
-                </motion.li>
+                </m.li>
               ))}
               {!user && (
-                <motion.li
+                <m.li
                   variants={{
                     hidden: { opacity: 0, y: 24 },
                     visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: EASE.outExpo } },
@@ -296,10 +296,10 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
                   >
                     Get Started
                   </Link>
-                </motion.li>
+                </m.li>
               )}
-            </motion.ul>
-          </motion.div>
+            </m.ul>
+          </m.div>
         )}
       </AnimatePresence>
     </>

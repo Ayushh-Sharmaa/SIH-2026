@@ -35,19 +35,19 @@ export async function GET(request: Request) {
 
     // Client-side filtering for array fields to support clean fuzzy matching
     if (skillQuery) {
-      students = students.filter((s: any) =>
-        s.skills.some((sk: any) => sk.toLowerCase().includes(skillQuery))
+      students = students.filter((s) =>
+        s.skills.some((sk) => sk.toLowerCase().includes(skillQuery))
       );
     }
 
     if (softSkillQuery) {
-      students = students.filter((s: any) =>
+      students = students.filter((s) =>
         s.softSkills.includes(softSkillQuery)
       );
     }
 
     if (languageQuery) {
-      students = students.filter((s: any) =>
+      students = students.filter((s) =>
         s.languages.includes(languageQuery)
       );
     }
@@ -65,13 +65,13 @@ export async function GET(request: Request) {
       });
 
       // Intersect with the already filtered ones
-      const studentIds = new Set(studentsWithTracks.map((s: any) => s.userId));
-      students = students.filter((s: any) => studentIds.has(s.userId));
+      const studentIds = new Set(studentsWithTracks.map((s) => s.userId));
+      students = students.filter((s) => studentIds.has(s.userId));
     }
 
     return NextResponse.json({
       success: true,
-      students: students.map((s: any) => ({
+      students: students.map((s) => ({
         userId: s.userId,
         name: s.name,
         year: s.year,

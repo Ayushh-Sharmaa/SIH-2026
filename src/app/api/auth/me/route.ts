@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
-import { verifyToken, signToken, normalizeEmail, isAllowedCollegeEmail } from '@/lib/auth';
+import { verifyToken, signToken, normalizeEmail, isAllowedCollegeEmail, type SessionClaims } from '@/lib/auth';
 import { currentUser } from '@clerk/nextjs/server';
 import { logger } from '@/lib/logger';
 import { setSessionCookie } from '@/lib/sessionCookie';
@@ -13,59 +13,23 @@ export async function GET() {
     // Set by /api/admin/view-as while an admin is exploring another dashboard
     const isViewingAs = !!cookieStore.get('admin_token')?.value;
 
-    let decoded: any = null;
+    let decoded: SessionClaims | null = null;
     if (token) {
       decoded = verifyToken(token);
     }
 
-    // Auto-sync recovery: if custom token cookie is missing but Clerk has a valid Google/OAuth session
-    if (!decoded && !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
-      try {
-        const clerkUser = await currentUser();
-        const email = normalizeEmail(clerkUser?.emailAddresses?.[0]?.emailAddress ?? '');
-        // Same college-only restriction as email signup, so this recovery path
-        // cannot be used to provision an outside Google account.
-        if (email && isAllowedCollegeEmail(email)) {
-          const withProfiles = { studentProfile: true, mentorProfile: true } as const;
-
-          let user = await prisma.user.findUnique({
-            where: { email },
-            include: withProfiles,
-          });
-
-          if (!user) {
-            const created = await prisma.user.create({
-              data: {
-                email,
-                passwordHash: 'clerk_oauth_google_user',
-                role: 'STUDENT',
-              },
-            });
-            await prisma.studentProfile.create({
-              data: {
-                userId: created.id,
-                name: email.split('@')[0] || 'Student User',
-                year: '',
-                branch: '',
-              },
-            });
-            user = await prisma.user.findUnique({
-              where: { id: created.id },
-              include: withProfiles,
-            });
-          }
-
-          if (user) {
-            const newToken = signToken({ userId: user.id, email: user.email, role: user.role });
-            decoded = { userId: user.id, email: user.email, role: user.role };
-
-            setSessionCookie(cookieStore, newToken);
-          }
-        }
-      } catch (err) {
-        logger.error('Clerk session auto-sync check failed in me API', err);
-      }
-    }
+    // There was an "auto-sync recovery" here: when no session cookie was
+    // present, it read the Clerk session and minted a new one on the spot.
+    //
+    // It made signing out impossible. /api/auth/logout clears this app's cookie
+    // but does not end the Clerk session, so the very next call to this
+    // endpoint saw a live Clerk user and silently signed the person back in.
+    // To the user that reads as "it says I'm logged in when I never logged in",
+    // and as a sign-out button that does nothing.
+    //
+    // Establishing a session is the job of the sign-in routes, which is where
+    // it can be done deliberately and visibly. A read-only session check must
+    // not have the side effect of creating one.
 
     if (!decoded) {
       return NextResponse.json({ authenticated: false }, { status: 200 });

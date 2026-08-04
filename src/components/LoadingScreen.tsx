@@ -76,7 +76,9 @@ export default function LoadingScreen() {
       return;
     }
 
-    setVisible(true);
+    const mountTimer = window.setTimeout(() => {
+      setVisible(true);
+    }, 0);
     const shownAt = performance.now();
 
     let floorTimer = 0;
@@ -122,6 +124,7 @@ export default function LoadingScreen() {
     ceilingTimer = window.setTimeout(dismiss, MAXIMUM_VISIBLE_MS);
 
     return () => {
+      window.clearTimeout(mountTimer);
       window.clearTimeout(floorTimer);
       window.clearTimeout(ceilingTimer);
     };

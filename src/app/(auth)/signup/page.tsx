@@ -120,55 +120,26 @@ function ClerkSignupPage() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
+  // See the matching note on the sign-in page: no email-posting fallback here,
+  // because it authenticated the caller as an arbitrary address without a
+  // password. A failed Google sign-up must surface as an error.
   const handleGoogleSignUp = async () => {
     setError('');
     setGoogleLoading(true);
     try {
-      const pubKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || '';
-      const isRealKey =
-        pubKey.startsWith('pk_test_') && !pubKey.includes('glbgoi') && !pubKey.includes('placeholder');
-
-      if (isRealKey && clerk) {
-        if ((clerk as any).authenticateWithRedirect) {
-          await (clerk as any).authenticateWithRedirect({
-            strategy: 'oauth_google',
-            redirectUrl: '/api/auth/clerk-sync',
-            redirectUrlComplete: '/onboarding',
-          });
-        } else if (clerk?.client?.signUp) {
-          await clerk.client.signUp.authenticateWithRedirect({
-            strategy: 'oauth_google',
-            redirectUrl: '/api/auth/clerk-sync',
-            redirectUrlComplete: '/onboarding',
-          });
-        }
-      } else {
-        const res = await fetch('/api/auth/clerk-sync', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: email || 'new.student@glbajajgroup.org', role }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Google Sign-Up failed');
-        await goAuthenticated('/onboarding');
+      if (!clerk?.client?.signUp) {
+        throw new Error('Google Sign-Up is unavailable right now. Please sign up with your email.');
       }
+
+
+      await clerk.client.signUp.authenticateWithRedirect({
+        strategy: 'oauth_google',
+        redirectUrl: '/sso-callback',
+        redirectUrlComplete: '/api/auth/clerk-sync',
+      });
     } catch (err) {
       logger.error('Google Sign-Up error', err);
-      try {
-        const res = await fetch('/api/auth/clerk-sync', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: email || 'student.google@glbajajgroup.org', role }),
-        });
-        if (res.ok) {
-          await goAuthenticated('/onboarding');
-          return;
-        }
-      } catch {
-        // fall through to the surfaced error
-      }
       setError(userFacingMessage(err, 'Google Sign-Up failed. Please try again.'));
-    } finally {
       setGoogleLoading(false);
     }
   };
@@ -413,7 +384,7 @@ function SignupTemplate({
                 <span className="h-px flex-1 bg-[rgba(209,199,189,0.8)]" />
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} noValidate className="space-y-4">
                 {/* role segmented control */}
                 <div>
                   <p className="mb-2 pl-1 text-label uppercase text-muted">
@@ -474,7 +445,7 @@ function SignupTemplate({
 
                 <Field
                   label="College email"
-                  type="email"
+                  type="text"
                   autoComplete="email"
                   required
                   value={email}

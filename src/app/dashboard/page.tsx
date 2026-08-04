@@ -191,10 +191,126 @@ function DashboardSkeleton() {
   );
 }
 
+interface DashboardTeamMember {
+  id?: string;
+  userId: string;
+  name: string;
+  email?: string;
+  rollNo?: string | null;
+  branch: string;
+  year: string;
+  gender?: string | null;
+  skills?: string[];
+  avatarUrl?: string | null;
+}
+
+interface DashboardTeam {
+  id: string;
+  name: string;
+  status: string;
+  leaderId?: string;
+  memberCount: number;
+  skillsCovered: string[];
+  skillsNeeded: string[];
+  track?: {
+    id: string;
+    name: string;
+    problemStatementCode: string;
+    description: string;
+    category: string;
+  } | null;
+  trackName?: string;
+  members: DashboardTeamMember[];
+  leaderContact?: {
+    name: string;
+    email: string | null;
+    whatsapp: string | null;
+  } | null;
+  mentor?: {
+    name: string;
+    designation: string;
+    organization: string;
+  } | null;
+  mentorName?: string | null;
+  mentorEmail?: string | null;
+  inviteCode?: string;
+}
+
+interface PendingRequest {
+  id: string;
+  message?: string;
+  createdAt: string;
+  team: {
+    id: string;
+    name: string;
+    track: {
+      id: string;
+      name: string;
+      problemStatementCode: string;
+      description: string;
+      category: string;
+    };
+    skillsCovered: string[];
+  };
+}
+
+interface DashboardData {
+  role: 'STUDENT' | 'MENTOR' | 'ADMIN';
+  profile: {
+    userId?: string;
+    name: string;
+    year?: string;
+    branch?: string;
+    gender?: string | null;
+    rollNo?: string | null;
+    section?: string | null;
+    skills?: string[];
+    languages?: string[];
+    softSkills?: string[];
+    resumeUrl?: string | null;
+    githubUrl?: string | null;
+    linkedinUrl?: string | null;
+    avatarUrl?: string | null;
+    designation?: string;
+    organization?: string;
+    capacity?: number;
+    currentLoad?: number;
+    expertise?: string[];
+    bio?: string | null;
+    verified?: boolean;
+    email?: string;
+  } | null;
+  team: DashboardTeam | null;
+  availableMentors?: {
+    userId: string;
+    name: string;
+    designation: string;
+    organization: string;
+    expertise: string[];
+    capacity: number;
+    currentLoad: number;
+    bio: string | null;
+  }[];
+  teams?: {
+    id: string;
+    name: string;
+    status: string;
+    track: {
+      id: string;
+      name: string;
+      problemStatementCode: string;
+      description: string;
+      category: string;
+    };
+    memberCount: number;
+  }[];
+  pendingRequests?: PendingRequest[];
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -213,7 +329,10 @@ export default function DashboardPage() {
   }, [router]);
 
   useEffect(() => {
-    fetchDashboard();
+    const handle = requestAnimationFrame(() => {
+      fetchDashboard();
+    });
+    return () => cancelAnimationFrame(handle);
   }, [fetchDashboard]);
 
   const handleRequestResponse = async (requestId: string, action: 'accept' | 'decline') => {
@@ -418,11 +537,11 @@ export default function DashboardPage() {
                             <Label>Profiles &amp; links</Label>
                             <div className="mt-2 flex flex-wrap gap-2">
                               {[
-                                { url: profile?.githubUrl, label: 'GitHub' },
-                                { url: profile?.linkedinUrl, label: 'LinkedIn' },
-                                { url: profile?.resumeUrl, label: 'Résumé' },
+                                { url: profile?.githubUrl || undefined, label: 'GitHub' },
+                                { url: profile?.linkedinUrl || undefined, label: 'LinkedIn' },
+                                { url: profile?.resumeUrl || undefined, label: 'Résumé' },
                               ]
-                                .filter((l) => l.url)
+                                .filter((l): l is { url: string; label: string } => !!l.url)
                                 .map((l) => (
                                   <m.a
                                     key={l.label}
@@ -509,9 +628,9 @@ export default function DashboardPage() {
                             <p className="mt-1 text-xs text-muted">
                               Track{' '}
                               <span className="font-bold text-primary">
-                                {team.track.problemStatementCode}
+                                {team.track?.problemStatementCode || 'N/A'}
                               </span>{' '}
-                              — {team.track.name}
+                              — {team.track?.name || 'N/A'}
                             </p>
                           </div>
 
@@ -609,19 +728,19 @@ export default function DashboardPage() {
                                   <Label>Email address</Label>
                                   <div className="mt-1.5 flex items-center justify-between gap-2 rounded-lg border border-[rgba(209,199,189,0.7)] bg-[rgba(248,246,242,0.8)] px-3 py-2">
                                     <a
-                                      href={`mailto:${team.leaderContact.email}`}
+                                      href={team.leaderContact?.email ? `mailto:${team.leaderContact.email}` : '#'}
                                       className="truncate text-xs font-semibold text-primary hover:underline"
                                     >
-                                      {team.leaderContact.email || 'leader@glbajaj.org'}
+                                      {team.leaderContact?.email || 'leader@glbajaj.org'}
                                     </a>
                                     <button
                                       type="button"
                                       onClick={() => {
-                                        navigator.clipboard.writeText(
-                                          team.leaderContact.email || ''
-                                        );
-                                        setCopied(true);
-                                        window.setTimeout(() => setCopied(false), 1600);
+                                        if (team.leaderContact?.email) {
+                                          navigator.clipboard.writeText(team.leaderContact.email);
+                                          setCopied(true);
+                                          window.setTimeout(() => setCopied(false), 1600);
+                                        }
                                       }}
                                       className="shrink-0 rounded-md border border-[rgba(114,56,61,0.2)] bg-[rgba(114,56,61,0.08)] px-2 py-1 text-caption font-bold text-primary transition-colors hover:bg-[rgba(114,56,61,0.16)]"
                                     >
@@ -751,9 +870,9 @@ export default function DashboardPage() {
 
                     <Reveal direction="left" delay={0.06}>
                       <Panel title="Teams I guide">
-                        {data.teams.length > 0 ? (
+                        {(data?.teams || []).length > 0 ? (
                           <RevealGroup className="space-y-3" stagger={0.06} amount={0.1}>
-                            {data.teams.map((t: any) => (
+                            {(data?.teams || []).map((t) => (
                               <RevealItem key={t.id}>
                                 <m.div
                                   whileHover={{ y: -3 }}
@@ -785,15 +904,15 @@ export default function DashboardPage() {
                       <Panel
                         title="Pending team requests"
                         action={
-                          data.pendingRequests.length > 0 ? (
-                            <Chip tone="primary">{data.pendingRequests.length} waiting</Chip>
+                          (data?.pendingRequests || []).length > 0 ? (
+                            <Chip tone="primary">{(data?.pendingRequests || []).length} waiting</Chip>
                           ) : undefined
                         }
                       >
-                        {data.pendingRequests.length > 0 ? (
+                        {(data?.pendingRequests || []).length > 0 ? (
                           <div className="space-y-3">
                             <AnimatePresence initial={false}>
-                              {data.pendingRequests.map((req: any) => (
+                              {(data?.pendingRequests || []).map((req) => (
                                 <m.div
                                   key={req.id}
                                   layout

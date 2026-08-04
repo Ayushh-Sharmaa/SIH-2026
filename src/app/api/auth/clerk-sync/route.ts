@@ -101,23 +101,30 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
-    let email = body.email;
 
-    if (!email) {
-      try {
-        const clerkUser = await currentUser();
-        email = clerkUser?.emailAddresses?.[0]?.emailAddress;
-      } catch (e) {
-        logger.error('Clerk currentUser() failed.', e);
-      }
+    // The email MUST come from the verified Clerk session and nothing else.
+    //
+    // This previously fell back to `body.email` - a value supplied by the
+    // caller - and minted a full session for whatever address was sent, with
+    // no password and no proof of ownership. Any unauthenticated request to
+    // this endpoint could therefore sign in as any user, and the sign-in page
+    // did exactly that: its Google error handler posted a hardcoded super
+    // admin address, so a failed Google sign-in silently handed the caller an
+    // admin session.
+    let email: string | undefined;
+    try {
+      const clerkUser = await currentUser();
+      email = clerkUser?.emailAddresses?.[0]?.emailAddress;
+    } catch (e) {
+      logger.error('Clerk currentUser() failed.', e);
     }
 
-    const role = body.role || 'STUDENT';
+    const role = body.role === 'MENTOR' ? 'MENTOR' : 'STUDENT';
 
     if (!email) {
       return NextResponse.json(
-        { error: 'Please enter your college email address in the input box below to sign up.' },
-        { status: 400 }
+        { error: 'No verified Google session found. Please sign in with Google again.' },
+        { status: 401 }
       );
     }
 

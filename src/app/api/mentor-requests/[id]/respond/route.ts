@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { Prisma } from '@prisma/client';
 import { logger } from '@/lib/logger';
 
 export async function POST(
@@ -68,7 +69,7 @@ export async function POST(
     }
 
     // 4. Update request status, link team, and increment current load inside transaction
-    await prisma.$transaction(async (tx: any) => {
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Set request as accepted
       await tx.mentorRequest.update({
         where: { id },

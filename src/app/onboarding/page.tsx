@@ -192,7 +192,10 @@ function Labelled({
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const [session, setSession] = useState<any>(null);
+  const [session, setSession] = useState<{
+    user: { name: string; role: string; email?: string } | null;
+    status: string;
+  } | null>(null);
   const [tracks, setTracks] = useState<Track[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -319,7 +322,7 @@ export default function OnboardingPage() {
                 prof.languages.forEach((item: string) => {
                   const match = item.match(/^(.+?)\s*\((Basic|Moderate|Fluent)\)$/);
                   if (match) {
-                    langMap[match[1]] = match[2] as any;
+                    langMap[match[1]] = match[2] as 'Basic' | 'Moderate' | 'Fluent';
                   }
                 });
                 setLanguages(langMap);
@@ -731,7 +734,7 @@ export default function OnboardingPage() {
     );
   }
 
-  const isStudent = session?.role === 'STUDENT';
+  const isStudent = session?.user?.role === 'STUDENT';
   const fluencyMap = { Basic: '33%', Moderate: '66%', Fluent: '100%' };
 
   const STEPS = isStudent

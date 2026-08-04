@@ -160,8 +160,6 @@ export default function AdminDashboardPage() {
   const { toast } = useToast();
 
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
   const [activeTab, setActiveTab] = useState<TabKey>('access');
   const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
 
@@ -194,14 +192,13 @@ export default function AdminDashboardPage() {
 
   const fetchAdminData = useCallback(async () => {
     setLoading(true);
-    setError('');
     try {
       const res = await fetch('/api/admin/data');
       const data = await res.json();
 
       if (!res.ok) {
         if (res.status === 401 || res.status === 403) {
-          setError(data.error || 'Admin permissions required.');
+          toast(data.error || 'Admin permissions required.', 'error');
           router.push('/login');
           return;
         }
@@ -216,39 +213,23 @@ export default function AdminDashboardPage() {
       setProblemStatementStats(data.problemStatementStats || []);
     } catch (err: any) {
       console.error('Admin fetch error:', err);
-      setError(err.message || 'Error loading admin dashboard.');
+      toast(err.message || 'Error loading admin dashboard.', 'error');
     } finally {
       setLoading(false);
     }
-  }, [router]);
+    // `toast` is memoised in ToastProvider, so its identity is stable and this
+    // callback is not recreated on every render.
+  }, [router, toast]);
 
   useEffect(() => {
     fetchAdminData();
   }, [fetchAdminData]);
-
-  // Both messages route through the shared toast system, which owns stacking,
-  // dismissal, timing and the announcement role (assertive for errors, polite
-  // for confirmations). The local state stays as the trigger so every existing
-  // setSuccessMsg / setError call site keeps working unchanged.
-  useEffect(() => {
-    if (!successMsg) return;
-    toast(successMsg, 'success');
-    setSuccessMsg('');
-  }, [successMsg, toast]);
-
-  useEffect(() => {
-    if (!error) return;
-    toast(error, 'error');
-    setError('');
-  }, [error, toast]);
 
   const handleGrantAdminAccess = async (e: FormEvent) => {
     e.preventDefault();
     if (!newAdminEmail) return;
 
     setGranting(true);
-    setError('');
-    setSuccessMsg('');
 
     try {
       const res = await fetch('/api/admin/access', {
@@ -262,18 +243,16 @@ export default function AdminDashboardPage() {
 
       setAdminEmails(data.adminEmails);
       setNewAdminEmail('');
-      setSuccessMsg(data.message);
+      toast(data.message, 'success');
       fetchAdminData();
     } catch (err: any) {
-      setError(err.message);
+      toast(err.message, 'error');
     } finally {
       setGranting(false);
     }
   };
 
   const revokeAdminAccess = async (emailToRevoke: string) => {
-    setError('');
-    setSuccessMsg('');
     try {
       const res = await fetch('/api/admin/access', {
         method: 'POST',
@@ -285,16 +264,14 @@ export default function AdminDashboardPage() {
       if (!res.ok) throw new Error(data.error || 'Failed to revoke access');
 
       setAdminEmails(data.adminEmails);
-      setSuccessMsg(`Revoked admin access from ${emailToRevoke}`);
+      toast(`Revoked admin access from ${emailToRevoke}`, 'success');
       fetchAdminData();
     } catch (err: any) {
-      setError(err.message);
+      toast(err.message, 'error');
     }
   };
 
   const toggleStudentAccess = async (studentEmail: string, action: 'ban' | 'restore') => {
-    setError('');
-    setSuccessMsg('');
     try {
       const res = await fetch('/api/admin/student', {
         method: 'POST',
@@ -305,11 +282,11 @@ export default function AdminDashboardPage() {
 
       if (!res.ok) throw new Error(data.error || 'Failed to update student access');
 
-      setSuccessMsg(data.message);
+      toast(data.message, 'success');
       setSelectedStudent(null);
       fetchAdminData();
     } catch (err: any) {
-      setError(err.message);
+      toast(err.message, 'error');
     }
   };
 
@@ -321,10 +298,10 @@ export default function AdminDashboardPage() {
         body: JSON.stringify({ teamId, action: 'update_status', status }),
       });
       if (!res.ok) throw new Error('Failed to update team status');
-      setSuccessMsg(`Team status set to ${status}.`);
+      toast(`Team status set to ${status}.`, 'success');
       fetchAdminData();
     } catch (err: any) {
-      setError(err.message);
+      toast(err.message, 'error');
     }
   };
 
@@ -337,10 +314,10 @@ export default function AdminDashboardPage() {
       });
       if (!res.ok) throw new Error('Failed to disband team');
       setSelectedTeam(null);
-      setSuccessMsg('Team disbanded. Members returned to looking-for-team.');
+      toast('Team disbanded. Members returned to looking-for-team.', 'success');
       fetchAdminData();
     } catch (err: any) {
-      setError(err.message);
+      toast(err.message, 'error');
     }
   };
 

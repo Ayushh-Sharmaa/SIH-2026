@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowUpRight } from 'lucide-react';
 import Icon from '@/components/ui/Icon';
 import { useToast } from '@/components/ui/Toast';
+import { Container, Section } from '@/components/ui';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import {
@@ -104,9 +105,14 @@ export default function TracksPage() {
 
       <main id="main" className="flex-1">
         {/* ── MASTHEAD: split editorial, not centred like other pages ── */}
-        <section className="section-linen relative overflow-hidden">
+        {/* Quarry rather than the landing page's mist/dune: this page gets its
+            own light direction so it does not read as a repeat. */}
+        <Section tone="quarry" rhythm="compact" className="overflow-hidden">
           <Aurora variant="taupe" spotlight={false} />
-          <div className="relative mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 lg:grid-cols-[1.4fr_1fr] lg:items-end lg:px-8">
+          <Container
+            width="content"
+            className="relative grid gap-10 lg:grid-cols-[1.4fr_1fr] lg:items-end"
+          >
             <div>
               <Reveal direction="none" blur={false}>
                 <span className="text-label uppercase text-primary">
@@ -150,12 +156,18 @@ export default function TracksPage() {
                 </div>
               </div>
             </Reveal>
-          </div>
-        </section>
+          </Container>
+        </Section>
 
         {/* ── FILTER BAR ── */}
-        <section className="sticky top-[70px] z-30 border-y border-[rgba(209,199,189,0.6)] bg-[rgba(239,233,225,0.82)] backdrop-blur-xl sm:top-[78px]">
-          <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-3 sm:px-6 lg:flex-row lg:items-center lg:px-8">
+        {/* Pinned directly beneath the navbar. The offset was hardcoded at
+            70px / 78px while the bar actually measures 76px / 80px, so rows
+            slid underneath it. Derived from --nav-h now, so it cannot drift. */}
+        <section
+          aria-label="Filter problem statements"
+          className="sticky top-[var(--nav-h)] z-sticky border-y border-line bg-canvas/85 backdrop-blur-xl"
+        >
+          <Container width="content" className="flex flex-col gap-3 py-3 lg:flex-row lg:items-center">
             <div className="marquee-mask -mx-1 flex flex-1 gap-2 overflow-x-auto px-1 pb-1 lg:pb-0">
               {categories.map((c) => {
                 const active = c === category;
@@ -204,12 +216,12 @@ export default function TracksPage() {
                 />
               </svg>
             </div>
-          </div>
+          </Container>
         </section>
 
         {/* ── INDEX ROWS ── */}
-        <section className="section-mist">
-          <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+        <Section tone="vellum" rhythm="default">
+          <Container width="content">
             <p className="mb-5 text-label uppercase text-muted">
               Showing {visible.length} of {tracks.length}
             </p>
@@ -342,8 +354,8 @@ export default function TracksPage() {
                 </div>
               </motion.div>
             )}
-          </div>
-        </section>
+          </Container>
+        </Section>
       </main>
 
       <Footer />

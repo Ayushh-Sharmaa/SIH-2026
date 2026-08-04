@@ -202,17 +202,51 @@ p {
   color: var(--color-on-accent);
 }
 
+/* Trail canvas. Sits under the ring and dot, and is promoted to its own layer
+   so the per-frame arc fills never dirty the page's layer beneath it. */
+.cursor-trail {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: calc(var(--z-cursor) - 1);
+  will-change: opacity;
+  transition: opacity var(--duration-hover) var(--ease-out-expo);
+}
+
 /* ── Scroll progress ─────────────────────────────────────────────────────── */
 
 .scroll-progress {
   position: fixed;
   top: 0;
   left: 0;
+  width: 100%;
   height: 2px;
   background: linear-gradient(90deg, var(--color-accent), var(--color-clay));
+  transform: scaleX(0);
   transform-origin: left;
   z-index: var(--z-toast);
   border-radius: 0 var(--radius-pill) var(--radius-pill) 0;
+}
+
+/* Scroll-driven animations run on the compositor, off the main thread. Where
+   they are supported the bar costs zero JavaScript and cannot stutter, because
+   nothing it depends on is scheduled behind React. ScrollProgress.tsx detects
+   the same feature and only installs its scroll listener where this rule does
+   not apply, so the two can never both drive the element. */
+@supports (animation-timeline: scroll()) {
+  .scroll-progress {
+    animation: scroll-progress-advance linear both;
+    animation-timeline: scroll(root block);
+  }
+
+  @keyframes scroll-progress-advance {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
 }
 
 /* ── Reduced motion ──────────────────────────────────────────────────────── */

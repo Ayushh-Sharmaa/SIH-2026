@@ -10,6 +10,7 @@ import PageTransition from '@/components/PageTransition';
 import LoadingScreen from '@/components/LoadingScreen';
 import MotionProvider from '@/components/motion/MotionProvider';
 import { ToastProvider } from '@/components/ui/Toast';
+import { SiteStructuredData } from '@/components/seo/StructuredData';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -104,6 +105,9 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="noise-texture flex min-h-full flex-col">
+        {/* Rendered server-side so crawlers that do not execute JS still see it. */}
+        <SiteStructuredData />
+
         <a href="#main" className="skip-link">
           Skip to content
         </a>

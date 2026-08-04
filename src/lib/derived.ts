@@ -47,14 +47,7 @@ export async function recalculateTeamSkills(teamId: string) {
         skillsCovered,
         skillsNeeded,
       },
-    });
-
-    console.log(`Recalculated skills for team ${team.name} (id: ${teamId}):`, {
-      memberCount: team.members.length,
-      skillsCovered,
-      skillsNeeded,
-    });
-  } catch (error) {
+    });  } catch (error) {
     console.error(`Failed to recalculate team skills for teamId ${teamId}:`, error);
   }
 }

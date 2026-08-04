@@ -91,15 +91,27 @@ export default function PremiumButton({
   ...rest
 }: PremiumButtonProps) {
   const [ripples, setRipples] = useState<Ripple[]>([]);
-  const [showSuccess, setShowSuccess] = useState(false);
+  const [elapsed, setElapsed] = useState(false);
+  const [lastSuccess, setLastSuccess] = useState(success);
   const nextId = useRef(0);
   const reduced = usePrefersReducedMotion();
 
-  // Hold the confirmation long enough to register, then return to rest.
+  // Derived from the prop rather than mirrored into state, so there is no
+  // synchronous setState inside an effect (which triggers a cascading render).
+  // Adjusting state during render is the pattern React sanctions for resetting
+  // when a prop changes.
+  if (success !== lastSuccess) {
+    setLastSuccess(success);
+    setElapsed(false);
+  }
+
+  const showSuccess = Boolean(success) && !elapsed;
+
+  // Hold the confirmation long enough to register, then return to rest. The
+  // setState here runs from a timer, so it is asynchronous and safe.
   useEffect(() => {
     if (!success) return;
-    setShowSuccess(true);
-    const t = window.setTimeout(() => setShowSuccess(false), 1600);
+    const t = window.setTimeout(() => setElapsed(true), 1600);
     return () => window.clearTimeout(t);
   }, [success]);
 

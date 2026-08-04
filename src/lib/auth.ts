@@ -1,10 +1,47 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'sih-glbgoi-nexa-secret-key-sih2026';
+/**
+ * Token signing and password hashing.
+ *
+ * SECURITY: this module previously fell back to a hardcoded literal when
+ * NEXTAUTH_SECRET was unset. That literal was committed to the repository, so
+ * any deployment missing the env var silently signed sessions with a publicly
+ * known key — enough for anyone reading the source to forge an ADMIN token.
+ * The fallback is gone: production now refuses to sign rather than run
+ * insecurely. The old value is deliberately not repeated here, and should be
+ * treated as compromised if it was ever used in a real deployment.
+ */
+
+const BCRYPT_ROUNDS = 12; // OWASP's current floor; was 10.
+
+function resolveSecret(): string {
+  const secret = process.env.NEXTAUTH_SECRET;
+
+  if (secret && secret.length >= 32) return secret;
+
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(
+      'NEXTAUTH_SECRET is missing or shorter than 32 characters. Refusing to sign ' +
+        'sessions: they cannot be secured without it.',
+    );
+  }
+
+  // Development only. Deliberately random per process, so a forgotten env var
+  // can never become a known shared secret. Sessions ending on restart is the
+  // intended signal that the variable needs setting.
+  if (!globalThis.__sihDevSecret) {
+    globalThis.__sihDevSecret = `${crypto.randomUUID()}${crypto.randomUUID()}`;
+    console.warn(
+      '[SIH@GLBGOI] NEXTAUTH_SECRET is not set. Using an ephemeral development ' +
+        'secret — sessions will not survive a restart. Set it in .env.',
+    );
+  }
+  return globalThis.__sihDevSecret;
+}
 
 export async function hashPassword(password: string): Promise<string> {
-  const salt = await bcrypt.genSalt(10);
+  const salt = await bcrypt.genSalt(BCRYPT_ROUNDS);
   return bcrypt.hash(password, salt);
 }
 
@@ -12,14 +49,43 @@ export async function comparePassword(password: string, hash: string): Promise<b
   return bcrypt.compare(password, hash);
 }
 
-export function signToken(payload: { userId: string; email: string; role: string }): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
+export interface SessionClaims {
+  userId: string;
+  email: string;
+  role: string;
 }
 
-export function verifyToken(token: string) {
+const ISSUER = 'sih-glbgoi';
+const AUDIENCE = 'sih-glbgoi-portal';
+
+export function signToken(payload: SessionClaims): string {
+  return jwt.sign(payload, resolveSecret(), {
+    expiresIn: '7d',
+    algorithm: 'HS256',
+    // Binding issuer and audience means a token minted elsewhere with the same
+    // secret cannot be replayed against this app.
+    issuer: ISSUER,
+    audience: AUDIENCE,
+  });
+}
+
+export function verifyToken(token: string): SessionClaims | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as { userId: string; email: string; role: string };
-  } catch (error) {
+    const claims = jwt.verify(token, resolveSecret(), {
+      issuer: ISSUER,
+      audience: AUDIENCE,
+      // Pinning the algorithm rejects `alg: none` and HS/RS confusion attacks.
+      algorithms: ['HS256'],
+    }) as SessionClaims;
+
+    // Never trust the shape of a decoded payload without checking it.
+    if (!claims?.userId || !claims?.email || !claims?.role) return null;
+    return claims;
+  } catch {
     return null;
   }
+}
+
+declare global {
+  var __sihDevSecret: string | undefined;
 }

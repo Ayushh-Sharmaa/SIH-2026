@@ -379,24 +379,44 @@ onboarding measured **2.53:1**. Now `bg-clay text-ink` at **5.12:1**.
 
 `tsc` clean · `next build` clean · `scripts/contrast.mjs` passing.
 
+### Interaction pass — done
+
+| Defect | Resolution |
+| --- | --- |
+| The 3 admin dialogs had no focus trap, Escape, scroll lock or focus return | `Overlay` rebuilt on the shared hooks — fixes all 3 call sites, plus `aria-labelledby` on each |
+| 4 duplicate toast implementations | All removed; one `ToastProvider`. **0** remain |
+| 5 admin surfaces rendered blank at zero rows | `EmptyState` on teams, students, participation, mentors, with copy that distinguishes "none exist" from "none match" |
+| 6 fetch failures swallowed into `console.error` | All surfaced to the user (tracks, mentors, teammates ×2, create-team, onboarding) |
+| Navbar height had 4 conflicting definitions | One `--nav-h` token; spacer, `scroll-padding-top` and the Lenis anchor offset all derive from it |
+
+The 4px tablet discrepancy is gone: the spacer reserved 76/84px while the bar
+measured 76/80px, `scroll-padding` assumed 96px, and Lenis used −96px.
+
+`tsc` clean · `next build` clean · lint at **exactly** the pre-existing baseline
+(233 problems, 222 errors, 11 warnings) — **zero net regressions**.
+
+> **Note on toasts:** the first implementation bridged through local state
+> (`setNotice` → effect → `toast`). That is a synchronous `setState` inside an
+> effect, which the React Compiler lint correctly flags as a cascading render.
+> The bridge state was removed entirely and call sites now invoke `toast()`
+> directly. `PremiumButton`'s `success` flag had the same defect and now derives
+> from the prop, resetting via the sanctioned adjust-state-during-render pattern.
+
 ### Still outstanding
 
-- **Structural pass not started.** Pages have correct type and colour but still
-  hand-roll their own containers and section rhythm; they have not been moved
-  onto `Container` / `Section` / `SectionHeader`, and atmospheres are not yet
-  assigned per page. Five of the eight home-page sections still share
-  `py-24 sm:py-32`.
-- The three inline overlays in `admin` and the four duplicate toast
-  implementations still need to be swapped for `Modal` and `useToast` — both
-  components exist and are wired, but the call sites are untouched.
-- Five admin list surfaces still render blank when filtered to zero rows;
-  `EmptyState` exists but is not yet used.
-- Four pages still swallow fetch errors into `console.error` with no user-facing
-  surface.
-- Navbar height still has four conflicting definitions.
+- **Structural pass not started.** Pages have correct type, colour, headings and
+  interaction states, but still hand-roll their own containers and section
+  rhythm. They have not been moved onto `Container` / `Section` /
+  `SectionHeader`, and atmospheres are not yet assigned per page — five of the
+  eight home-page sections still share `py-24 sm:py-32`. `Card`, `Badge`,
+  `Modal` and `Divider` exist and are exported but are not yet used at most call
+  sites.
 - `onboarding` (1855 lines) and `admin` (1384 lines) still need component
   extraction.
-- 223 pre-existing `no-explicit-any` lint errors (`mockDb.ts` alone has 107).
-  Untouched by this work.
+- 222 pre-existing `no-explicit-any` errors (`mockDb.ts` alone has 107) and 3
+  pre-existing `useEffect(() => { fetchX() }, [fetchX])` cascading-render
+  errors. Both predate this work.
 - `npm audit`: 3 pre-existing high-severity advisories in `postcss` and `sharp`,
-  both transitive dependencies of `next`.
+  transitive dependencies of `next`.
+- Three commits (`cad7a12`, `235d962`, `ebb854c`) were made during this work by
+  something other than the agent session. Worth confirming they are intended.

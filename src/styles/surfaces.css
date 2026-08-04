@@ -173,6 +173,31 @@
   opacity: 1;
 }
 
+/* ── Per-card cursor spotlight ───────────────────────────────────────────── */
+
+/* A radial gradient that tracks the mouse inside each card. Position is driven
+   by --spotlight-x/y from SpotlightCard.tsx via style mutation — no React
+   renders needed. Radius and intensity are CSS vars for per-instance tuning. */
+.spotlight-card {
+  position: relative;
+  overflow: hidden;
+}
+.spotlight-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    var(--spotlight-r, 320px) circle at var(--spotlight-x, -9999px) var(--spotlight-y, -9999px),
+    rgb(255 255 255 / var(--spotlight-i, 0.12)),
+    transparent 70%
+  );
+  pointer-events: none;
+  z-index: 2;
+  transition: opacity var(--duration-hover) var(--ease-out-expo);
+}
+
+
 /* ── Dividers ────────────────────────────────────────────────────────────── */
 
 /* Straight rules read cheap. These fade at both ends so the line dissolves

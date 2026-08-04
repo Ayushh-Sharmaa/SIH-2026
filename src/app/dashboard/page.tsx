@@ -27,6 +27,7 @@ import {
   Reveal,
   RevealGroup,
   RevealItem,
+  SpotlightCard,
   SplitText,
   TiltCard,
   DURATION,
@@ -121,14 +122,16 @@ function DeckStat({
   return (
     <RevealItem className="min-w-0">
       <TiltCard intensity={5} className="h-full">
-        <div className="surface-raised h-full rounded-2xl px-4 py-3.5">
-          <div className="truncate text-2xl font-extrabold capitalize tracking-tight text-foreground sm:text-[1.7rem]">
-            {text ?? <Counter to={value ?? 0} duration={1.4} />}
+        <SpotlightCard className="h-full rounded-2xl" intensity={0.14}>
+          <div className="surface-raised h-full rounded-2xl px-4 py-3.5">
+            <div className="truncate text-2xl font-extrabold capitalize tracking-tight text-foreground sm:text-[1.7rem]">
+              {text ?? <Counter to={value ?? 0} duration={1.4} />}
+            </div>
+            <div className="mt-1 truncate text-label uppercase text-muted">
+              {label}
+            </div>
           </div>
-          <div className="mt-1 truncate text-label uppercase text-muted">
-            {label}
-          </div>
-        </div>
+        </SpotlightCard>
       </TiltCard>
     </RevealItem>
   );
@@ -146,14 +149,16 @@ function Panel({
   className?: string;
 }) {
   return (
-    <div className={`surface-raised rounded-3xl p-6 sm:p-7 ${className}`}>
-      <div className="mb-5 flex items-center justify-between gap-4">
-        <h2 className="text-feature text-foreground">{title}</h2>
-        {action}
+    <SpotlightCard className={`rounded-3xl ${className}`}>
+      <div className={`surface-raised rounded-3xl p-6 sm:p-7`}>
+        <div className="mb-5 flex items-center justify-between gap-4">
+          <h2 className="text-feature text-foreground">{title}</h2>
+          {action}
+        </div>
+        <div className="mb-5 h-px bg-gradient-to-r from-[rgba(172,156,141,0.55)] via-[rgba(209,199,189,0.35)] to-transparent" />
+        {children}
       </div>
-      <div className="mb-5 h-px bg-gradient-to-r from-[rgba(172,156,141,0.55)] via-[rgba(209,199,189,0.35)] to-transparent" />
-      {children}
-    </div>
+    </SpotlightCard>
   );
 }
 
@@ -192,7 +197,6 @@ export default function DashboardPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
   const fetchDashboard = useCallback(async () => {
@@ -212,14 +216,6 @@ export default function DashboardPage() {
     fetchDashboard();
   }, [fetchDashboard]);
 
-  // Routed through the shared toast system, which owns stacking, dismissal and
-  // the announcement role. The local `notice` state is kept as the trigger so
-  // every existing setNotice call site keeps working unchanged.
-  useEffect(() => {
-    if (!notice) return;
-    toast(notice, 'error');
-    setNotice(null);
-  }, [notice, toast]);
 
   const handleRequestResponse = async (requestId: string, action: 'accept' | 'decline') => {
     setActionLoading(requestId);
@@ -231,13 +227,13 @@ export default function DashboardPage() {
       });
       const result = await res.json();
       if (!res.ok) {
-        setNotice(result.error || 'Failed to process request');
+        toast(result.error || 'Failed to process request', 'error');
       } else {
         await fetchDashboard();
       }
     } catch (err) {
       console.error(err);
-      setNotice('Something went wrong. Please try again.');
+      toast('Something went wrong. Please try again.', 'error');
     } finally {
       setActionLoading(null);
     }

@@ -1,8 +1,19 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { hashPassword, signToken } from '@/lib/auth';
+import { clientIp, createRateLimiter, tooManyRequests } from '@/lib/rateLimit';
 
 const ALLOWED_DOMAINS = ['glbajaj.org', 'glbajajgroup.org'];
+
+/**
+ * Account creation is expensive (a bcrypt hash at cost 12) and is the obvious
+ * lever for filling the database with junk rows. Tighter than the login limit,
+ * because a legitimate user signs up once.
+ */
+const bySignupIp = createRateLimiter({ limit: 5, windowMs: 60 * 60_000, prefix: 'signup:ip' });
+
+/** Minimum that resists offline cracking if the table is ever dumped. */
+const MIN_PASSWORD_LENGTH = 8;
 
 export async function POST(request: Request) {
   try {
@@ -10,6 +21,21 @@ export async function POST(request: Request) {
 
     if (!email || !password || !role || !name) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    const rateCheck = await bySignupIp(clientIp(request));
+    if (!rateCheck.ok) {
+      return tooManyRequests(
+        rateCheck,
+        'Too many accounts created from this connection. Please try again later.',
+      );
+    }
+
+    if (typeof password !== 'string' || password.length < MIN_PASSWORD_LENGTH) {
+      return NextResponse.json(
+        { error: `Please choose a password of at least ${MIN_PASSWORD_LENGTH} characters.` },
+        { status: 400 },
+      );
     }
 
     if (role !== 'STUDENT' && role !== 'MENTOR') {

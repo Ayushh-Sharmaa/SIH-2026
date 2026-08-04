@@ -14,6 +14,8 @@ export { default as PremiumButton } from './PremiumButton';
 export type { PremiumButtonProps } from './PremiumButton';
 export { default as Aurora } from './Aurora';
 export { default as MotionProvider } from './MotionProvider';
+export { default as ParticleField } from './ParticleField';
+export { default as SpotlightCard } from './SpotlightCard';
 export { Field, SelectField, TextAreaField } from './Field';
 export type { FieldProps, SelectFieldProps, TextAreaFieldProps } from './Field';
 export { usePrefersReducedMotion, useIsCoarsePointer } from './useReducedMotion';

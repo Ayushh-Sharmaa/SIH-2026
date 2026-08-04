@@ -109,7 +109,6 @@ export default function FindTeammatesPage() {
   const [language, setLanguage] = useState('');
   const [trackId, setTrackId] = useState('');
   const [inviteState, setInviteState] = useState<Record<string, 'sending' | 'sent'>>({});
-  const [notice, setNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const fetchTeammates = useCallback(
     async (filters?: { skill: string; softSkill: string; language: string; trackId: string }) => {
@@ -127,15 +126,13 @@ export default function FindTeammatesPage() {
         if (data.success) setStudents(data.students);
       } catch (err) {
         console.error('Fetch teammates error:', err);
-        setNotice({
-          type: 'error',
-          message: 'Could not load students. Check your connection and try again.',
-        });
+        toast('Could not load students. Check your connection and try again.', 'error');
       } finally {
         setRefreshing(false);
       }
     },
-    [skill, softSkill, language, trackId]
+    // `toast` is memoised in ToastProvider, so its identity is stable.
+    [skill, softSkill, language, trackId, toast]
   );
 
   useEffect(() => {
@@ -146,7 +143,7 @@ export default function FindTeammatesPage() {
         if (data.success) setTracks(data.tracks);
       } catch (err) {
         console.error('Fetch tracks failed:', err);
-        setNotice({ type: 'error', message: 'Could not load track filters. Please refresh.' });
+        toast('Could not load track filters. Please refresh.', 'error');
       }
       await fetchTeammates({ skill: '', softSkill: '', language: '', trackId: '' });
       setLoading(false);
@@ -155,15 +152,6 @@ export default function FindTeammatesPage() {
     // Runs once on mount; later fetches are user-driven.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // Routed through the shared toast system, which already distinguishes success
-  // from error. The local `notice` state stays as the trigger so existing
-  // setNotice call sites keep working unchanged.
-  useEffect(() => {
-    if (!notice) return;
-    toast(notice.message, notice.type);
-    setNotice(null);
-  }, [notice, toast]);
 
   const handleSearch = (e: FormEvent) => {
     e.preventDefault();
@@ -180,7 +168,6 @@ export default function FindTeammatesPage() {
 
   const sendInvite = async (student: Student) => {
     setInviteState((previous) => ({ ...previous, [student.userId]: 'sending' }));
-    setNotice(null);
 
     try {
       const response = await fetch('/api/team-invites', {
@@ -192,20 +179,20 @@ export default function FindTeammatesPage() {
       if (!response.ok) throw new Error(result.error || 'Could not send the invitation.');
 
       setInviteState((previous) => ({ ...previous, [student.userId]: 'sent' }));
-      setNotice({
-        type: 'success',
-        message: `Invitation sent to ${student.name}. They can accept it from their notifications.`,
-      });
+      toast(
+        `Invitation sent to ${student.name}. They can accept it from their notifications.`,
+        'success',
+      );
     } catch (error: unknown) {
       setInviteState((previous) => {
         const next = { ...previous };
         delete next[student.userId];
         return next;
       });
-      setNotice({
-        type: 'error',
-        message: error instanceof Error ? error.message : 'Could not send the invitation.',
-      });
+      toast(
+        error instanceof Error ? error.message : 'Could not send the invitation.',
+        'error',
+      );
     }
   };
 

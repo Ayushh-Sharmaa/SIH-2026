@@ -76,7 +76,6 @@ export default function FindMentorsPage() {
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
   const [expertise, setExpertise] = useState('');
-  const [notice, setNotice] = useState<string | null>(null);
   const [requested, setRequested] = useState<Record<string, true>>({});
 
   const fetchMentors = useCallback(async (term?: string) => {
@@ -93,23 +92,17 @@ export default function FindMentorsPage() {
       // Logging alone left the user staring at an empty list with no idea the
       // request had failed.
       console.error('Fetch mentors failed:', err);
-      setNotice('Could not load mentors. Check your connection and try again.');
+      toast('Could not load mentors. Check your connection and try again.', 'error');
     } finally {
       setSearching(false);
     }
-  }, []);
+    // `toast` is memoised in ToastProvider, so its identity is stable.
+  }, [toast]);
 
   useEffect(() => {
     fetchMentors().finally(() => setLoading(false));
   }, [fetchMentors]);
 
-  // Routed through the shared toast system. The local `notice` state stays as
-  // the trigger so existing setNotice call sites keep working unchanged.
-  useEffect(() => {
-    if (!notice) return;
-    toast(notice, 'info');
-    setNotice(null);
-  }, [notice, toast]);
 
   const handleSearch = (e: FormEvent) => {
     e.preventDefault();
@@ -290,8 +283,9 @@ export default function FindMentorsPage() {
                               magnetic={false}
                               onClick={() => {
                                 setRequested((p) => ({ ...p, [mentor.userId]: true }));
-                                setNotice(
-                                  `Request to guide your team sent to ${mentor.name}. The full request flow ships in Phase 2.`
+                                toast(
+                                  `Request to guide your team sent to ${mentor.name}. The full request flow ships in Phase 2.`,
+                                  'success',
                                 );
                               }}
                             >

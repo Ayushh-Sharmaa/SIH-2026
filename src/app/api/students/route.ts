@@ -43,6 +43,7 @@ export async function GET(request: Request) {
         teamStatus: 'OPEN',
         userId: { not: decoded.userId }, // Do not include oneself in search results
         isDemo: false, // Sandbox rows are not real classmates
+        branch: { not: '' },
         ...(softSkillQuery ? { softSkills: { has: softSkillQuery } } : {}),
         ...(languageQuery ? { languages: { has: languageQuery } } : {}),
         ...(trackIdQuery ? { trackInterest: { some: { id: trackIdQuery } } } : {}),

@@ -90,7 +90,7 @@ export default function CreateTeamPage() {
     <div className="flex min-h-screen flex-col bg-background text-foreground">
       <Navbar />
 
-      <main id="main" className="relative flex-1 overflow-hidden">
+      <main id="main" className="relative flex-1 overflow-visible">
         <Aurora variant="rose" spotlight />
 
         {/* asymmetric split — copy rail left, form right */}

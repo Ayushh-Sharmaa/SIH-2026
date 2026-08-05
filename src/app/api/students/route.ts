@@ -25,65 +25,53 @@ export async function GET(request: Request) {
     const languageQuery = searchParams.get('language')?.trim();
     const trackIdQuery = searchParams.get('trackId')?.trim();
 
-    // Fetch all students who are looking for a team
-    let students = await prisma.studentProfile.findMany({
+    // One query, filtered in the database.
+    //
+    // This previously fetched every OPEN student with no `select` and no
+    // `take`, filtered skills/languages in Node, and — when `trackId` was
+    // supplied — issued a *second* full table scan and intersected the two in
+    // memory. Postgres can do all of it with array containment on an indexed
+    // column. `take` is the important part: without it the payload grows with
+    // enrollment forever.
+    //
+    // `softSkill` and `language` are exact matches (`has`), so they move
+    // straight into the where clause. `skill` is a substring search, which
+    // Prisma cannot express over a String[], so it stays in Node — but now it
+    // runs over an already-bounded result set rather than the whole table.
+    const students = await prisma.studentProfile.findMany({
       where: {
         teamStatus: 'OPEN',
         userId: { not: decoded.userId }, // Do not include oneself in search results
+        isDemo: false, // Sandbox rows are not real classmates
+        ...(softSkillQuery ? { softSkills: { has: softSkillQuery } } : {}),
+        ...(languageQuery ? { languages: { has: languageQuery } } : {}),
+        ...(trackIdQuery ? { trackInterest: { some: { id: trackIdQuery } } } : {}),
       },
+      // `resumeUrl` is deliberately absent: it is typically a private Drive
+      // link, and it was being handed to every authenticated caller before any
+      // team relationship existed.
+      select: {
+        userId: true,
+        name: true,
+        year: true,
+        branch: true,
+        skills: true,
+        languages: true,
+        softSkills: true,
+        githubUrl: true,
+        linkedinUrl: true,
+        avatarUrl: true,
+      },
+      take: 200,
     });
 
-    // Client-side filtering for array fields to support clean fuzzy matching
-    if (skillQuery) {
-      students = students.filter((s) =>
-        s.skills.some((sk) => sk.toLowerCase().includes(skillQuery))
-      );
-    }
-
-    if (softSkillQuery) {
-      students = students.filter((s) =>
-        s.softSkills.includes(softSkillQuery)
-      );
-    }
-
-    if (languageQuery) {
-      students = students.filter((s) =>
-        s.languages.includes(languageQuery)
-      );
-    }
-
-    if (trackIdQuery) {
-      // Fetch details including track interests relations
-      const studentsWithTracks = await prisma.studentProfile.findMany({
-        where: {
-          teamStatus: 'OPEN',
-          userId: { not: decoded.userId },
-          trackInterest: {
-            some: { id: trackIdQuery },
-          },
-        },
-      });
-
-      // Intersect with the already filtered ones
-      const studentIds = new Set(studentsWithTracks.map((s) => s.userId));
-      students = students.filter((s) => studentIds.has(s.userId));
-    }
+    const filtered = skillQuery
+      ? students.filter((s) => s.skills.some((sk) => sk.toLowerCase().includes(skillQuery)))
+      : students;
 
     return NextResponse.json({
       success: true,
-      students: students.map((s) => ({
-        userId: s.userId,
-        name: s.name,
-        year: s.year,
-        branch: s.branch,
-        skills: s.skills,
-        languages: s.languages,
-        softSkills: s.softSkills,
-        resumeUrl: s.resumeUrl,
-        githubUrl: s.githubUrl,
-        linkedinUrl: s.linkedinUrl,
-        avatarUrl: s.avatarUrl,
-      })),
+      students: filtered,
     });
   } catch (error) {
     logger.error('Search teammates error', error);

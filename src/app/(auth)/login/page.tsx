@@ -395,7 +395,7 @@ function LoginTemplate({
       {/* ── FORM COLUMN ── */}
       <main
         id="main"
-        className="relative flex flex-1 items-center justify-center overflow-hidden px-5 py-14 sm:px-8"
+        className="relative flex flex-1 items-center justify-center overflow-visible px-5 py-14 sm:px-8"
       >
         <Aurora variant="warm" spotlight />
 

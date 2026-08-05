@@ -334,7 +334,7 @@ function SignupTemplate({
   const activeRole = ROLES.find((r) => r.value === role)!;
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
+    <div className="relative min-h-screen overflow-visible bg-background text-foreground">
       {/* ── TOP BAND: wide, centred masthead ── */}
       <section className="section-cream relative overflow-hidden">
         <Aurora variant="taupe" spotlight={false} />

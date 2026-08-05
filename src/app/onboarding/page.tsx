@@ -232,6 +232,7 @@ export default function OnboardingPage() {
   }>({ English: null, Hindi: null });
 
   const [selectedSoftSkills, setSelectedSoftSkills] = useState<string[]>([]);
+  const [isEditMode, setIsEditMode] = useState(false);
 
   const handleAvatarUpload = (file?: File) => {
     if (!file) return;
@@ -279,7 +280,8 @@ export default function OnboardingPage() {
     async function initOnboarding() {
       try {
         const searchParams = new URLSearchParams(window.location.search);
-        const isEditMode = searchParams.get('edit') === 'true';
+        const editMode = searchParams.get('edit') === 'true';
+        setIsEditMode(editMode);
 
         const meRes = await fetch('/api/auth/me');
         const meData = await meRes.json();
@@ -344,7 +346,7 @@ export default function OnboardingPage() {
           }
         }
 
-        if (meData.user.isOnboarded && !isEditMode) {
+        if (meData.user.isOnboarded && !editMode) {
           router.push('/dashboard');
           return;
         }
@@ -771,22 +773,36 @@ export default function OnboardingPage() {
               SIH@GLBGOI
             </span>
           </Link>
-          <span className="text-label uppercase text-muted">
-            {isStudent ? 'Student' : 'Mentor'} onboarding
-          </span>
+          <div className="flex items-center gap-4">
+            <span className="text-label uppercase text-muted">
+              {isEditMode ? `${isStudent ? 'Student' : 'Mentor'} profile` : `${isStudent ? 'Student' : 'Mentor'} onboarding`}
+            </span>
+            {isEditMode && (
+              <PremiumButton
+                variant="glass"
+                size="sm"
+                onClick={() => router.push('/dashboard')}
+                className="text-xs"
+              >
+                Close
+              </PremiumButton>
+            )}
+          </div>
         </Container>
 
         <Container width="narrow" className="relative pb-12">
           <SplitText
+            key={isEditMode ? "edit" : "complete"}
             as="h1"
-            text="Complete your profile."
+            text={isEditMode ? "Edit your profile." : "Complete your profile."}
             className="text-title text-foreground"
             delay={0.08}
           />
           <Reveal delay={0.3} className="mt-3">
             <p className="max-w-xl text-sm leading-relaxed text-muted">
-              Everything here feeds team matching, mentor routing and the roster views. Every field
-              is required unless marked optional.
+              {isEditMode
+                ? "Update your profile details, technical stack, or project preferences here."
+                : "Everything here feeds team matching, mentor routing and the roster views. Every field is required unless marked optional."}
             </p>
           </Reveal>
         </Container>

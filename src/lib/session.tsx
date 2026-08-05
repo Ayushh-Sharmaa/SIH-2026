@@ -37,6 +37,7 @@ import { useRouter } from 'next/navigation';
 export interface SessionUser {
   name: string;
   role: string;
+  isOnboarded?: boolean;
 }
 
 /**
@@ -151,6 +152,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       const sessionUser = {
         name: typeof raw.name === 'string' ? raw.name : '',
         role: typeof raw.role === 'string' ? raw.role : '',
+        isOnboarded: typeof raw.isOnboarded === 'boolean' ? raw.isOnboarded : false,
       };
       setUser(sessionUser);
       setStatus('authenticated');

@@ -111,7 +111,7 @@ export async function PUT(request: Request) {
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;
@@ -121,14 +121,18 @@ export async function GET() {
     }
 
     const decoded = verifyToken(token);
-    if (!decoded || decoded.role !== 'STUDENT') {
+    if (!decoded) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { searchParams } = new URL(request.url);
+    const targetUserId = searchParams.get('userId');
+    const queryId = targetUserId || decoded.userId;
+
     const student = await prisma.studentProfile.findUnique({
-      where: { userId: decoded.userId },
+      where: { userId: queryId },
       include: {
-        trackInterest: { select: { id: true } },
+        trackInterest: { select: { id: true, name: true, problemStatementCode: true } },
       },
     });
 
@@ -153,6 +157,11 @@ export async function GET() {
         linkedinUrl: student.linkedinUrl,
         avatarUrl: student.avatarUrl,
         trackInterest: student.trackInterest.map((t) => t.id),
+        tracksDetailed: student.trackInterest.map((t) => ({
+          id: t.id,
+          name: t.name,
+          code: t.problemStatementCode,
+        })),
       },
     });
   } catch (error) {

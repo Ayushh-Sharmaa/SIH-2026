@@ -23,13 +23,27 @@ export async function GET(request: Request) {
     const expertiseQuery = searchParams.get('expertise')?.trim().toLowerCase();
 
     // Fetch all verified mentors
+    //
+    // Emails are deliberately not selected. Every faculty address used to be
+    // returned to any caller holding a valid token — including the passwordless
+    // sandbox account — which made this endpoint a one-request staff-email
+    // harvest. Contact details belong behind an accepted mentor request.
     let mentors = await prisma.mentorProfile.findMany({
       where: {
         verified: true,
       },
-      include: {
-        user: { select: { email: true } },
+      select: {
+        userId: true,
+        name: true,
+        designation: true,
+        organization: true,
+        expertise: true,
+        capacity: true,
+        currentLoad: true,
+        bio: true,
+        linkedinUrl: true,
       },
+      take: 200,
     });
 
     if (expertiseQuery) {
@@ -40,18 +54,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       success: true,
-      mentors: mentors.map((m) => ({
-        userId: m.userId,
-        name: m.name,
-        designation: m.designation,
-        organization: m.organization,
-        expertise: m.expertise,
-        capacity: m.capacity,
-        currentLoad: m.currentLoad,
-        bio: m.bio,
-        linkedinUrl: m.linkedinUrl,
-        email: m.user.email,
-      })),
+      mentors,
     });
   } catch (error) {
     logger.error('Search mentors error', error);

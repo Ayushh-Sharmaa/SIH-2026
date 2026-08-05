@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { m } from 'framer-motion';
 import Reveal, { RevealGroup, RevealItem } from '@/components/motion/Reveal';
 import { EASE } from '@/components/motion/tokens';
+import { Container } from '@/components/ui';
 
 const LINK_GROUPS = [
   {
@@ -48,7 +49,7 @@ export default function Footer() {
         className="pointer-events-none absolute -top-24 left-1/2 h-56 w-[52rem] max-w-full -translate-x-1/2 rounded-full bg-[radial-gradient(ellipse,rgba(172,156,141,0.32),transparent_68%)] blur-2xl"
       />
 
-      <div className="relative mx-auto max-w-7xl px-6 pb-10 pt-16 lg:px-8">
+      <Container width="wide" className="relative pb-10 pt-16">
         <div className="grid gap-12 md:grid-cols-[1.4fr_1fr_1fr]">
           <Reveal direction="up">
             <div className="flex items-center gap-3">
@@ -151,7 +152,7 @@ export default function Footer() {
             </p>
           </div>
         </Reveal>
-      </div>
+      </Container>
     </footer>
   );
 }

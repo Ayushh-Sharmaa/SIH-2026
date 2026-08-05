@@ -16,6 +16,7 @@ import {
   EASE,
 } from '@/components/motion';
 import { logger } from '@/lib/logger';
+import { userFacingMessage } from '@/lib/errors';
 
 
 
@@ -33,28 +34,30 @@ function AuthHandoff({ caption }: { caption: string }) {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: DURATION.hover, ease: EASE.outExpo }}
-      className="fixed inset-0 z-50 flex flex-col gap-5 bg-[rgba(239,233,225,0.96)] p-6 backdrop-blur-xl"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(239,233,225,0.96)] p-6 backdrop-blur-xl"
       role="status"
       aria-live="polite"
     >
-      <div className="flex items-center justify-between border-b border-[rgba(209,199,189,0.7)] pb-4">
-        <div className="flex items-center gap-3">
-          <div className="size-8 rounded-lg skeleton-shimmer" />
-          <div className="h-4 w-28 rounded skeleton-shimmer" />
+      <div className="flex w-full max-w-4xl flex-col gap-5">
+        <div className="flex items-center justify-between border-b border-[rgba(209,199,189,0.7)] pb-4">
+          <div className="flex items-center gap-3">
+            <div className="size-8 rounded-lg skeleton-shimmer" />
+            <div className="h-4 w-28 rounded skeleton-shimmer" />
+          </div>
+          <div className="h-8 w-20 rounded-xl skeleton-shimmer" />
         </div>
-        <div className="h-8 w-20 rounded-xl skeleton-shimmer" />
+
+        <div className="h-28 rounded-3xl skeleton-shimmer" />
+
+        <div className="grid h-64 grid-cols-1 gap-5 lg:grid-cols-3">
+          <div className="rounded-3xl skeleton-shimmer" />
+          <div className="rounded-3xl skeleton-shimmer lg:col-span-2" />
+        </div>
+
+        <p className="text-center text-label uppercase text-muted">
+          {caption}
+        </p>
       </div>
-
-      <div className="h-28 rounded-3xl skeleton-shimmer" />
-
-      <div className="grid flex-1 grid-cols-1 gap-5 lg:grid-cols-3">
-        <div className="rounded-3xl skeleton-shimmer" />
-        <div className="rounded-3xl skeleton-shimmer lg:col-span-2" />
-      </div>
-
-      <p className="text-center text-label uppercase text-muted">
-        {caption}
-      </p>
     </m.div>
   );
 }
@@ -187,7 +190,12 @@ interface LoginTemplateProps {
   error: string;
   loading: boolean;
   googleLoading: boolean;
-  handleGoogleSignIn: () => void;
+  /**
+   * Omitted when Google sign-in cannot work — the non-Clerk variant of this
+   * page. The button is then not rendered at all, rather than offered and
+   * guaranteed to fail.
+   */
+  handleGoogleSignIn?: () => void;
   handleSubmit: (e: FormEvent) => void;
 }
 
@@ -263,7 +271,7 @@ function LoginTemplate({
       {/* ── FORM COLUMN ── */}
       <main
         id="main"
-        className="relative flex flex-1 items-center justify-center overflow-hidden px-5 py-14 sm:px-8"
+        className="relative flex flex-1 items-center justify-center overflow-visible px-5 py-14 sm:px-8"
       >
         <Aurora variant="warm" spotlight />
 
@@ -294,23 +302,29 @@ function LoginTemplate({
             </p>
           </Reveal>
 
-          <Reveal delay={0.16} className="mt-8">
-            <GoogleButton
-              loading={googleLoading}
-              onClick={handleGoogleSignIn}
-              label="Continue with Google"
-            />
-          </Reveal>
+          {handleGoogleSignIn && (
+            <>
+              <Reveal delay={0.16} className="mt-8">
+                <GoogleButton
+                  loading={googleLoading}
+                  onClick={handleGoogleSignIn}
+                  label="Continue with Google"
+                />
+              </Reveal>
 
-          <Reveal delay={0.24} className="my-7">
-            <div className="flex items-center gap-3">
-              <span className="h-px flex-1 bg-[rgba(209,199,189,0.8)]" />
-              <span className="text-label uppercase text-muted">
-                or with email
-              </span>
-              <span className="h-px flex-1 bg-[rgba(209,199,189,0.8)]" />
-            </div>
-          </Reveal>
+              {/* The "or with email" rule only means anything with a second
+                  option above it, so it is hidden alongside the button. */}
+              <Reveal delay={0.24} className="my-7">
+                <div className="flex items-center gap-3">
+                  <span className="h-px flex-1 bg-[rgba(209,199,189,0.8)]" />
+                  <span className="text-label uppercase text-muted">
+                    or with email
+                  </span>
+                  <span className="h-px flex-1 bg-[rgba(209,199,189,0.8)]" />
+                </div>
+              </Reveal>
+            </>
+          )}
 
           <Reveal delay={0.3}>
             <form onSubmit={handleSubmit} noValidate className="space-y-4">

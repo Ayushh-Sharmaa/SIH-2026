@@ -17,6 +17,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import Icon from '@/components/ui/Icon';
+import { Container } from '@/components/ui';
 import { useToast } from '@/components/ui/Toast';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -166,7 +167,7 @@ function DashboardSkeleton() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Navbar />
-      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <Container width="wide" className="py-10">
         <div className="flex items-center gap-5">
           <div className="size-20 rounded-2xl skeleton-shimmer" />
           <div className="flex-1 space-y-3">
@@ -186,7 +187,7 @@ function DashboardSkeleton() {
             <div className="h-40 rounded-3xl skeleton-shimmer" />
           </div>
         </div>
-      </div>
+      </Container>
     </div>
   );
 }
@@ -375,7 +376,7 @@ export default function DashboardPage() {
           <Aurora variant="cool" spotlight />
           <div aria-hidden className="grid-lines absolute inset-0" />
 
-          <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <Container width="wide" className="relative">
             <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
               <m.div
                 initial={{ opacity: 0, scale: 0.9, filter: 'blur(10px)' }}
@@ -470,7 +471,7 @@ export default function DashboardPage() {
                 </>
               )}
             </RevealGroup>
-          </div>
+          </Container>
         </section>
 
         {/* ── WORKSPACE ── */}
@@ -480,7 +481,7 @@ export default function DashboardPage() {
             className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[rgba(172,156,141,0.6)] to-transparent"
           />
           <div className="surface-sunken border-x-0">
-            <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 px-4 py-12 sm:px-6 lg:grid-cols-5 lg:px-8">
+            <Container width="wide" className="grid grid-cols-1 gap-6 py-12 lg:grid-cols-5">
               {/* LEFT RAIL */}
               <Reveal direction="right" className="lg:col-span-2">
                 <div className="lg:sticky lg:top-28">
@@ -968,7 +969,7 @@ export default function DashboardPage() {
                   </>
                 )}
               </div>
-            </div>
+            </Container>
           </div>
         </section>
       </main>

@@ -8,6 +8,7 @@ import Icon from '@/components/ui/Icon';
 import { useToast } from '@/components/ui/Toast';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
+import { Container } from '@/components/ui';
 import {
   Aurora,
   Field,
@@ -19,6 +20,7 @@ import {
   EASE,
 } from '@/components/motion';
 import { logger } from '@/lib/logger';
+import { userFacingMessage } from '@/lib/errors';
 
 interface Track {
   id: string;
@@ -76,7 +78,7 @@ export default function CreateTeamPage() {
       if (!res.ok) throw new Error(data.error || 'Failed to create team');
       router.push('/dashboard');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred.');
+      setError(userFacingMessage(err, 'An error occurred.'));
     } finally {
       setLoading(false);
     }
@@ -88,11 +90,11 @@ export default function CreateTeamPage() {
     <div className="flex min-h-screen flex-col bg-background text-foreground">
       <Navbar />
 
-      <main id="main" className="relative flex-1 overflow-hidden">
+      <main id="main" className="relative flex-1 overflow-visible">
         <Aurora variant="rose" spotlight />
 
         {/* asymmetric split — copy rail left, form right */}
-        <div className="relative mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 lg:grid-cols-[0.85fr_1fr] lg:gap-16 lg:py-20 lg:px-8">
+        <Container width="content" className="grid gap-10 py-14 lg:grid-cols-[0.85fr_1fr] lg:gap-16 lg:py-20">
           {/* narrative rail */}
           <div className="lg:pt-6">
             <Reveal direction="none" blur={false}>
@@ -210,7 +212,7 @@ export default function CreateTeamPage() {
               </form>
             </div>
           </Reveal>
-        </div>
+        </Container>
       </main>
 
       <Footer />

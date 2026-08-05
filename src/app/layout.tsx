@@ -3,8 +3,6 @@ import { Geist, Geist_Mono } from 'next/font/google';
 
 import './globals.css';
 
-import SmoothScroll from '@/components/SmoothScroll';
-import PointerChrome from '@/components/PointerChrome';
 import ScrollProgress from '@/components/ScrollProgress';
 import PageTransition from '@/components/PageTransition';
 import LoadingScreen from '@/components/LoadingScreen';
@@ -101,7 +99,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} min-h-full antialiased`}
     >
       <body className="noise-texture flex min-h-full flex-col">
         {/* Rendered server-side so crawlers that do not execute JS still see it. */}
@@ -121,12 +119,7 @@ export default function RootLayout({
             <ToastProvider>
               <LoadingScreen />
               <ScrollProgress />
-              {/* Loads the custom cursor only on hovering, fine-pointer devices
-                  whose user has not asked for reduced motion. */}
-              <PointerChrome />
-              <SmoothScroll>
-                <PageTransition>{children}</PageTransition>
-              </SmoothScroll>
+              <PageTransition>{children}</PageTransition>
             </ToastProvider>
           </SessionProvider>
         </MotionProvider>

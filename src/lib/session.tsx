@@ -49,6 +49,11 @@ export type SessionStatus = 'loading' | 'authenticated' | 'anonymous';
 interface SessionValue {
   user: SessionUser | null;
   status: SessionStatus;
+  /**
+   * True while an admin is exploring the sandbox dashboards, i.e. their own
+   * session is parked in `admin_token`. Drives `ViewingAsBanner`.
+   */
+  isViewingAs: boolean;
   /** Re-reads the session from the server. Call after a successful sign-in. */
   refresh: () => Promise<void>;
   /** Drops to anonymous without a round trip. Call after sign-out. */
@@ -60,6 +65,7 @@ const SessionContext = createContext<SessionValue | null>(null);
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<SessionUser | null>(null);
   const [status, setStatus] = useState<SessionStatus>('loading');
+  const [isViewingAs, setIsViewingAs] = useState(false);
 
   // Guards against setting state after unmount, and against a stale response
   // from an earlier request overwriting a newer one.
@@ -91,6 +97,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       if (!response.ok) {
         setUser(null);
         setStatus('anonymous');
+        setIsViewingAs(false);
         return;
       }
 
@@ -112,6 +119,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       if (!authenticated) {
         setUser(null);
         setStatus('anonymous');
+        setIsViewingAs(false);
         return;
       }
 
@@ -121,6 +129,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         role: typeof raw.role === 'string' ? raw.role : '',
       });
       setStatus('authenticated');
+      // Sent by /api/auth/me when an admin's own session is parked in
+      // `admin_token`. Read defensively: it is absent for every normal user.
+      setIsViewingAs(
+        typeof data === 'object' && data !== null && 'isViewingAs' in data
+          ? (data as { isViewingAs: unknown }).isViewingAs === true
+          : false,
+      );
     } catch {
       // Network failure is not proof of being signed out, but it is the only
       // safe assumption for what the interface may offer. No error is surfaced:
@@ -128,6 +143,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       if (!mounted.current || id !== requestId.current) return;
       setUser(null);
       setStatus('anonymous');
+      setIsViewingAs(false);
     }
   }, []);
 
@@ -143,13 +159,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     requestId.current++;
     setUser(null);
     setStatus('anonymous');
+    setIsViewingAs(false);
   }, []);
 
   // Memoised so consumers do not re-render on every provider render merely
   // because the context object identity changed.
   const value = useMemo<SessionValue>(
-    () => ({ user, status, refresh: load, clear }),
-    [user, status, load, clear],
+    () => ({ user, status, isViewingAs, refresh: load, clear }),
+    [user, status, isViewingAs, load, clear],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { AnimatePresence, m } from 'framer-motion';
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight, Users } from 'lucide-react';
+import { Container, EmptyState } from '@/components/ui';
 import Icon from '@/components/ui/Icon';
 import { useToast } from '@/components/ui/Toast';
 import Image from 'next/image';
@@ -207,7 +208,7 @@ export default function FindTeammatesPage() {
         {/* ── HEADER BAND ── */}
         <section className="section-dune relative overflow-hidden">
           <Aurora variant="warm" spotlight={false} />
-          <div className="relative mx-auto flex max-w-7xl flex-col gap-6 px-4 py-12 sm:px-6 lg:flex-row lg:items-end lg:justify-between lg:px-8">
+          <Container width="wide" className="relative flex flex-col gap-6 py-12 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <Reveal direction="none" blur={false}>
                 <span className="text-label uppercase text-primary">
@@ -249,12 +250,12 @@ export default function FindTeammatesPage() {
                 </div>
               </div>
             </Reveal>
-          </div>
+          </Container>
         </section>
 
         {/* ── WORKSPACE: filter rail + results ── */}
         <section className="surface-sunken">
-          <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 px-4 py-10 sm:px-6 lg:grid-cols-[280px_1fr] lg:px-8">
+          <Container width="wide" className="grid grid-cols-1 gap-6 py-10 lg:grid-cols-[280px_1fr]">
             {/* filter rail */}
             <Reveal direction="right">
               <form
@@ -380,7 +381,7 @@ export default function FindTeammatesPage() {
                           }}
                         >
                           <TiltCard intensity={5} className="h-full">
-                            <article className="surface-raised flex h-full flex-col justify-between rounded-3xl p-6">
+                            <article className="surface-raised flex h-full flex-col justify-between rounded-3xl p-5 sm:p-6">
                               <div className="space-y-4">
                                 <div className="flex items-center gap-3">
                                   <ProfileAvatar
@@ -474,22 +475,20 @@ export default function FindTeammatesPage() {
                   </AnimatePresence>
                 </m.div>
               ) : (
-                <div className="surface-raised rounded-3xl border-dashed px-6 py-20 text-center">
-                  <p className="text-base font-extrabold tracking-tight text-foreground">
-                    No teammate profiles match these filters.
-                  </p>
-                  <p className="mt-1.5 text-sm text-muted">
-                    Clear a filter or widen your skill search to discover more collaborators.
-                  </p>
-                  <div className="mt-6 flex justify-center">
+                <EmptyState
+                  icon={Users}
+                  title="No teammate profiles match these filters."
+                  description="Clear a filter or widen your skill search to discover more collaborators."
+                  action={
                     <PremiumButton variant="glass" size="sm" onClick={handleReset}>
                       Reset filters
                     </PremiumButton>
-                  </div>
-                </div>
+                  }
+                  className="max-w-2xl mx-auto w-full"
+                />
               )}
             </div>
-          </div>
+          </Container>
         </section>
       </main>
 

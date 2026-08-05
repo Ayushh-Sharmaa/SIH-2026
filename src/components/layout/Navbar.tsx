@@ -95,7 +95,7 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
         className="fixed inset-x-0 top-0 z-50 px-3 pt-3 sm:px-5 sm:pt-4"
       >
         <nav
-          className={`mx-auto flex h-16 max-w-7xl items-center justify-between rounded-2xl border px-3 backdrop-blur-xl transition-[background-color,box-shadow,border-color] duration-500 sm:px-5 ${
+          className={`mx-auto flex h-16 max-w-wide items-center justify-between rounded-2xl border px-3 backdrop-blur-xl transition-[background-color,box-shadow,border-color] duration-500 sm:px-5 ${
             scrolled
               ? 'border-[rgba(209,199,189,0.6)] bg-[rgba(248,246,242,0.86)] shadow-[0_8px_32px_rgba(50,45,41,0.10)]'
               : 'border-[rgba(209,199,189,0.32)] bg-[rgba(248,246,242,0.55)] shadow-[0_2px_18px_rgba(50,45,41,0.05)]'
@@ -244,13 +244,13 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-40 bg-[rgba(239,233,225,0.92)] backdrop-blur-2xl md:hidden"
+            className="fixed inset-0 z-40 bg-[rgba(239,233,225,0.92)] backdrop-blur-2xl md:hidden overflow-y-auto"
           >
             <m.ul
               initial="hidden"
               animate="visible"
               variants={{ visible: { transition: { staggerChildren: 0.06, delayChildren: 0.12 } } }}
-              className="flex h-full flex-col items-start justify-center gap-2 px-8"
+              className="flex min-h-full flex-col items-start justify-center gap-2 px-8 py-20"
             >
               {NAV_LINKS.map((link) => (
                 <m.li

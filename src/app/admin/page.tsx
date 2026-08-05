@@ -6,6 +6,7 @@ import { AnimatePresence, m } from 'framer-motion';
 import { ArrowUpRight, Check, GraduationCap, Layers, UserCheck, Users } from 'lucide-react';
 import Icon from '@/components/ui/Icon';
 import EmptyState from '@/components/ui/EmptyState';
+import { Container } from '@/components/ui';
 import { useToast } from '@/components/ui/Toast';
 import { useEscapeKey, useFocusTrap, useScrollLock } from '@/hooks/useFocusTrap';
 import Navbar from '@/components/layout/Navbar';
@@ -24,6 +25,7 @@ import {
   SPRING,
 } from '@/components/motion';
 import { logger } from '@/lib/logger';
+import { userFacingMessage } from '@/lib/errors';
 
 type TabKey = 'access' | 'teams' | 'students' | 'ps_tracks' | 'mentors';
 
@@ -290,8 +292,7 @@ export default function AdminDashboardPage() {
       setProblemStatementStats(data.problemStatementStats || []);
     } catch (err) {
       logger.error('Admin fetch error', err);
-      const errMsg = err instanceof Error ? err.message : 'Error loading admin dashboard.';
-      toast(errMsg, 'error');
+      toast(userFacingMessage(err, 'Error loading admin dashboard.'), 'error');
     } finally {
       setLoading(false);
     }
@@ -325,7 +326,7 @@ export default function AdminDashboardPage() {
       toast(data.message, 'success');
       fetchAdminData();
     } catch (err) {
-      toast(err instanceof Error ? err.message : 'An error occurred', 'error');
+      toast(userFacingMessage(err, 'Could not grant admin access. Please try again.'), 'error');
     } finally {
       setGranting(false);
     }
@@ -346,7 +347,7 @@ export default function AdminDashboardPage() {
       toast(`Revoked admin access from ${emailToRevoke}`, 'success');
       fetchAdminData();
     } catch (err) {
-      toast(err instanceof Error ? err.message : 'An error occurred', 'error');
+      toast(userFacingMessage(err, 'Could not revoke access. Please try again.'), 'error');
     }
   };
 
@@ -365,7 +366,7 @@ export default function AdminDashboardPage() {
       setSelectedStudent(null);
       fetchAdminData();
     } catch (err) {
-      toast(err instanceof Error ? err.message : 'An error occurred', 'error');
+      toast(userFacingMessage(err, 'Could not update student access. Please try again.'), 'error');
     }
   };
 
@@ -380,7 +381,7 @@ export default function AdminDashboardPage() {
       toast(`Team status set to ${status}.`, 'success');
       fetchAdminData();
     } catch (err) {
-      toast(err instanceof Error ? err.message : 'An error occurred', 'error');
+      toast(userFacingMessage(err, 'Could not update team status. Please try again.'), 'error');
     }
   };
 
@@ -396,7 +397,7 @@ export default function AdminDashboardPage() {
       toast('Team disbanded. Members returned to looking-for-team.', 'success');
       fetchAdminData();
     } catch (err) {
-      toast(err instanceof Error ? err.message : 'An error occurred', 'error');
+      toast(userFacingMessage(err, 'Could not disband the team. Please try again.'), 'error');
     }
   };
 
@@ -416,7 +417,7 @@ export default function AdminDashboardPage() {
       if (!res.ok) throw new Error(data.error || 'Failed to switch dashboard');
       router.push(data.redirectUrl || '/dashboard');
     } catch (err) {
-      toast(err instanceof Error ? err.message : 'An error occurred', 'error');
+      toast(userFacingMessage(err, 'Could not switch dashboard view. Please try again.'), 'error');
     }
   };
 
@@ -481,7 +482,7 @@ export default function AdminDashboardPage() {
     return (
       <div className="min-h-screen bg-background text-foreground">
         <Navbar />
-        <div className="mx-auto max-w-7xl space-y-6 px-4 py-12 sm:px-6 lg:px-8">
+        <Container width="wide" className="space-y-6 py-12">
           <div className="h-32 rounded-3xl skeleton-shimmer" />
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             {Array.from({ length: 4 }, (_, i) => (
@@ -492,7 +493,7 @@ export default function AdminDashboardPage() {
             <div className="h-72 rounded-3xl skeleton-shimmer" />
             <div className="h-72 rounded-3xl skeleton-shimmer" />
           </div>
-        </div>
+        </Container>
       </div>
     );
   }
@@ -536,7 +537,7 @@ export default function AdminDashboardPage() {
           <Aurora variant="rose" spotlight />
           <div aria-hidden className="grid-lines absolute inset-0" />
 
-          <div className="relative mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+          <Container width="wide" className="relative py-12">
             <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
               <div>
                 <Reveal direction="none" blur={false}>
@@ -618,12 +619,12 @@ export default function AdminDashboardPage() {
                 </RevealItem>
               ))}
             </RevealGroup>
-          </div>
+          </Container>
         </section>
 
         {/* ── WORKSPACE: vertical tab rail + panel ── */}
         <section className="surface-sunken">
-          <div className="mx-auto grid max-w-7xl gap-6 px-4 py-10 sm:px-6 lg:grid-cols-[230px_1fr] lg:px-8">
+          <Container width="wide" className="grid gap-6 py-10 lg:grid-cols-[230px_1fr]">
             {/* rail */}
             <nav aria-label="Console sections" className="lg:sticky lg:top-28 lg:self-start">
               <ul className="marquee-mask flex gap-2 overflow-x-auto pb-2 lg:flex-col lg:overflow-visible lg:pb-0">
@@ -1302,7 +1303,7 @@ export default function AdminDashboardPage() {
                 </m.div>
               </AnimatePresence>
             </div>
-          </div>
+            </Container>
         </section>
       </main>
 

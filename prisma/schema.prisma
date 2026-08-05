@@ -58,6 +58,11 @@ model StudentProfile {
   trackInterest Track[]    @relation("StudentTrackInterest")
   joinRequests  JoinRequest[]
   teamInvites   TeamInvite[]
+
+  // The teammate directory filters on teamStatus and excludes demo rows; the
+  // roster and dashboard queries look members up by teamId.
+  @@index([teamId])
+  @@index([teamStatus, isDemo])
 }
 
 model MentorProfile {
@@ -76,6 +81,9 @@ model MentorProfile {
   registrationKey String?         // Key used during sign up
   teams           Team[]
   mentorRequests  MentorRequest[]
+
+  // /api/mentors serves only verified mentors.
+  @@index([verified])
 }
 
 model Track {
@@ -108,6 +116,10 @@ model Team {
   joinRequests   JoinRequest[]
   mentorRequests MentorRequest[]
   messages       Message[]
+
+  @@index([trackId])
+  @@index([leaderId])
+  @@index([mentorId])
 }
 
 model TeamInvite {
@@ -118,6 +130,11 @@ model TeamInvite {
   student   StudentProfile @relation(fields: [studentId], references: [userId], onDelete: Cascade)
   status    String         @default("pending") // pending, accepted, declined
   createdAt DateTime       @default(now())
+
+  // Both sides of the invite flow filter by status: the invitee lists their
+  // own pending invites, the leader lists the team's.
+  @@index([studentId, status])
+  @@index([teamId, status])
 }
 
 model JoinRequest {
@@ -129,6 +146,9 @@ model JoinRequest {
   status    String         @default("pending") // pending, accepted, declined
   message   String?
   createdAt DateTime       @default(now())
+
+  @@index([studentId, status])
+  @@index([teamId, status])
 }
 
 model MentorRequest {
@@ -140,6 +160,9 @@ model MentorRequest {
   status    String        @default("pending") // pending, accepted, declined
   message   String?
   createdAt DateTime      @default(now())
+
+  @@index([mentorId, status])
+  @@index([teamId, status])
 }
 
 // Admin allowlist. Only emails here (plus the immutable super admin defined in
@@ -172,6 +195,8 @@ model Notification {
   payload   Json
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
+
+  @@index([userId, read, createdAt])
 }
 
 model Message {
@@ -181,4 +206,6 @@ model Message {
   senderId  String
   content   String
   createdAt DateTime @default(now())
+
+  @@index([teamId, createdAt])
 }

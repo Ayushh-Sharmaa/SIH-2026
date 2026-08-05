@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { AnimatePresence, m } from 'framer-motion';
 import { ArrowUpRight, Check } from 'lucide-react';
 import Icon from '@/components/ui/Icon';
+import { Container } from '@/components/ui';
 import {
   Aurora,
   Field,
@@ -17,6 +18,7 @@ import {
   SPRING,
 } from '@/components/motion';
 import { logger } from '@/lib/logger';
+import { userFacingMessage } from '@/lib/errors';
 
 interface Track {
   id: string;
@@ -525,7 +527,7 @@ export default function OnboardingPage() {
 
       router.push('/dashboard');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred while saving profile.');
+      setError(userFacingMessage(err, 'An error occurred while saving profile.'));
       setSubmitting(false);
     }
   };
@@ -561,7 +563,7 @@ export default function OnboardingPage() {
 
       router.push('/dashboard');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred while saving profile.');
+      setError(userFacingMessage(err, 'An error occurred while saving profile.'));
       setSubmitting(false);
     }
   };
@@ -724,11 +726,11 @@ export default function OnboardingPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="mx-auto max-w-4xl space-y-6 px-5 py-16 sm:px-6">
+        <Container width="narrow" className="space-y-6 py-16">
           <div className="h-14 w-56 rounded-2xl skeleton-shimmer" />
           <div className="h-14 rounded-2xl skeleton-shimmer" />
           <div className="h-[28rem] rounded-3xl skeleton-shimmer" />
-        </div>
+        </Container>
       </div>
     );
   }
@@ -756,7 +758,7 @@ export default function OnboardingPage() {
         <Aurora variant="warm" spotlight />
         <div aria-hidden className="grid-lines absolute inset-0" />
 
-        <div className="relative mx-auto flex max-w-4xl items-center justify-between px-5 py-5 sm:px-6">
+        <Container width="narrow" className="relative flex items-center justify-between py-5">
           <Link href="/" className="flex items-center gap-2.5">
             <img
               src="/Logo/NexaSphere Icon without Background.png"
@@ -770,9 +772,9 @@ export default function OnboardingPage() {
           <span className="text-label uppercase text-muted">
             {isStudent ? 'Student' : 'Mentor'} onboarding
           </span>
-        </div>
+        </Container>
 
-        <div className="relative mx-auto max-w-4xl px-5 pb-12 sm:px-6">
+        <Container width="narrow" className="relative pb-12">
           <SplitText
             as="h1"
             text="Complete your profile."
@@ -785,12 +787,12 @@ export default function OnboardingPage() {
               is required unless marked optional.
             </p>
           </Reveal>
-        </div>
+        </Container>
       </header>
 
       {/* ── STICKY STEP RAIL ── */}
       <div className="sticky top-0 z-30 border-y border-[rgba(209,199,189,0.75)] bg-[rgba(239,233,225,0.82)] backdrop-blur-xl">
-        <nav aria-label="Onboarding progress" className="mx-auto max-w-4xl px-5 sm:px-6">
+        <Container width="narrow" as="nav" aria-label="Onboarding progress">
           <ol className="marquee-mask flex gap-2 overflow-x-auto py-3">
             {STEPS.map((s) => {
               const active = step === s.n;
@@ -849,11 +851,11 @@ export default function OnboardingPage() {
               transition={{ duration: DURATION.card, ease: EASE.outExpo }}
             />
           </div>
-        </nav>
+        </Container>
       </div>
 
       <main id="main" className="surface-sunken">
-        <div className="mx-auto max-w-4xl px-5 py-10 sm:px-6">
+        <Container width="narrow" className="py-10">
           <AnimatePresence initial={false}>
             {error && (
               <m.div
@@ -1857,7 +1859,7 @@ export default function OnboardingPage() {
               )}
             </AnimatePresence>
           </div>
-        </div>
+        </Container>
       </main>
     </div>
   );

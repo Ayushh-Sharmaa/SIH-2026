@@ -13,6 +13,9 @@ html {
   scroll-padding-top: calc(var(--nav-h) + 1.25rem);
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  height: auto;
 }
 
 html.lenis,
@@ -38,8 +41,8 @@ body {
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;
-  /* Prevents iOS rubber-band from revealing a white gutter behind the canvas. */
-  overscroll-behavior-y: none;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 /* Headings inherit the ink tone by default; a page may override per element. */

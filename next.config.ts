@@ -86,11 +86,22 @@ const nextConfig: NextConfig = {
         source: '/:path*',
         headers: securityHeaders,
       },
-      {
-        // Build output is content-hashed, so it is safe to cache immutably.
-        source: '/_next/static/:path*',
-        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
-      },
+      // There is deliberately no `/_next/static/:path*` rule here.
+      //
+      // It used to set `public, max-age=31536000, immutable`, which is exactly
+      // what Next already sends for that path unprompted — the build output is
+      // content-hashed, so the framework pins it without being asked. Restating
+      // it bought nothing and cost something: every build printed
+      //
+      //   Custom Cache-Control headers detected for the following routes:
+      //     - /_next/static/:path*
+      //   Setting a custom Cache-Control header can break Next.js development
+      //   behavior.
+      //
+      // and the warning is earned. In development the chunks under that path
+      // are regenerated on every edit while keeping their URLs, so an immutable
+      // header tells the browser never to revalidate them — leaving developers
+      // staring at stale JavaScript that a normal reload cannot clear.
       {
         // Brand assets are not content-hashed, so revalidate rather than pin.
         source: '/Logo/:path*',

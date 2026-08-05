@@ -409,6 +409,103 @@ swallowed — a monitoring integration must never fail the request it is observi
 
 ---
 
+## Code-quality pass — findings and fixes
+
+### Cookie deletion never matched — HIGH, fixed
+
+Two live bugs from one root cause. `NextResponse.cookies.delete(name)` emits a
+`Set-Cookie` with **no `Path`**, so the browser scopes the expiry to the
+directory of the current request. Cookies are keyed by (name, domain, path), so
+against a cookie written at `path: '/'` that expiry matches nothing and the
+cookie survives.
+
+- **`/api/admin/return`** called `delete('admin_token')` on the branch that
+  detects a revoked admin — the one whose comment reads *"clear it out rather
+  than restoring access"*. The parked admin JWT stayed in the browser for its
+  full seven days. Contained, because the route re-authorises the token on every
+  use rather than trusting possession, but a stale credential persisting against
+  explicit intent is exactly the kind of latent escalation that becomes real the
+  moment something downstream trusts the cookie's presence.
+- **`src/proxy.ts`** called `delete('token')` when rejecting an unverifiable
+  session. That line exists solely to prevent a redirect loop; scoped to
+  `/dashboard` instead of `/`, it could not clear the cookie it was aimed at, so
+  the loop it guards against could still occur.
+
+Both now go through `clearCookie`, which restates every attribute.
+
+### Nine hand-rolled copies of the session cookie — fixed
+
+`httpOnly`, `secure`, `sameSite`, `path` and the literal `60 * 60 * 24 * 7` were
+repeated across login, signup (×2), logout, clerk-sync (×2), me, view-as and
+return. They agreed — by luck, not construction. One missed `secure`, one
+`sameSite: 'lax'` typo or one omitted `path` in any of them silently weakens
+authentication wherever that route is used, and neither review nor CI would
+catch it.
+
+`src/lib/sessionCookie.ts` is now the single definition. `tests/sessionCookie.test.ts`
+(6 tests) pins the attributes, including a direct regression guard on the
+path-matching bug above.
+
+### Raw error message returned to the client — MEDIUM, fixed
+
+`POST /api/auth/clerk-sync` returned `error?.message` in its 500 body. A driver
+failure there carries the failing query — which can contain an email address —
+and a connection failure carries the database host and port. The client now gets
+a fixed string; the detail goes to the logger.
+
+### `catch (e: any)` × 28 — fixed
+
+`any` on a caught value disables checking for the whole block, so a typo like
+`err.response.data` compiles and then throws inside the error handler, which is
+the one place that must not throw. All 28 now bind `unknown`.
+
+The 20 call sites that read `.message` for display go through
+`userFacingMessage` (`src/lib/errors.ts`), which accepts `unknown`, handles
+non-`Error` throws, and refuses to surface text that looks internal — long
+messages, multi-line stacks, or anything naming Prisma, a connection failure or
+`node_modules`. Previously any of those would have been rendered straight into a
+toast.
+
+### Dependencies removed
+
+| Package | Installed | Why |
+| --- | --- | --- |
+| `@supabase/supabase-js` | 8.3 MB | Zero imports. Supabase hosts the Postgres database, but it is reached server-side by Prisma over the Postgres wire protocol — the JS client is not involved. |
+| `animejs` | 2.5 MB | Zero references anywhere. |
+| `@types/gsap` | 62 KB | A stub for GSAP v2. GSAP 3.15 ships its own types, and having both risks TypeScript resolving the wrong ones. |
+
+`connect-src` in the CSP lost `https://*.supabase.co` for the same reason: the
+browser never opens a connection to it, so the allowance only widened the policy
+for no one.
+
+### Design-system violations in merged code — fixed
+
+`ViewingAsBanner` arrived with the only emoji in the codebase (🛠️, rendered in
+whatever face the OS supplies), off-palette Tailwind `amber-*` colours, and a
+native `alert()` for its error path — blocking, unstyled, and the one modal in
+the app ignoring the design system. Now a Lucide `Wrench` through the `Icon`
+contract, palette tokens, and the existing toast system.
+
+It also issued its own `/api/auth/me` request on mount, on every page, for every
+user, to discover that almost none of them are impersonating. It reads the
+shared session instead; `isViewingAs` is now carried on the session context.
+
+### Verified
+
+```
+tsc --noEmit          clean (cache cleared)
+npm test              27/27
+npm run test:contrast all shipped tokens pass
+npx next build        clean — 36 routes
+npx eslint src        100 problems (92 errors, 8 warnings)
+```
+
+Lint is down from the documented 231 baseline to **100**. Roughly half of that
+came from the merge deleting `mockDb.ts`; the rest is this pass. `any` occurrences
+across `src` are down to 78.
+
+---
+
 ## Open — not addressed
 
 Honest scope boundary. These are substantial bodies of work, not oversights:

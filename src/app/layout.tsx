@@ -3,8 +3,6 @@ import { Geist, Geist_Mono } from 'next/font/google';
 import { ClerkProvider } from '@clerk/nextjs';
 import './globals.css';
 
-import SmoothScroll from '@/components/SmoothScroll';
-import PointerChrome from '@/components/PointerChrome';
 import ScrollProgress from '@/components/ScrollProgress';
 import PageTransition from '@/components/PageTransition';
 import LoadingScreen from '@/components/LoadingScreen';
@@ -123,12 +121,7 @@ export default function RootLayout({
             <ToastProvider>
               <LoadingScreen />
               <ScrollProgress />
-              {/* Loads the custom cursor only on hovering, fine-pointer devices
-                  whose user has not asked for reduced motion. */}
-              <PointerChrome />
-              <SmoothScroll>
-                <PageTransition>{children}</PageTransition>
-              </SmoothScroll>
+              <PageTransition>{children}</PageTransition>
             </ToastProvider>
           </SessionProvider>
         </MotionProvider>

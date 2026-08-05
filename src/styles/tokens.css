@@ -161,6 +161,14 @@
   --container-wide: 90rem; /* 1440 */
   --container-full: 120rem; /* 1920 — ultra-wide ceiling */
 
+  --max-w-form: 32rem;
+  --max-w-panel: 40rem;
+  --max-w-prose: 68ch;
+  --max-w-narrow: 48rem;
+  --max-w-content: 72rem;
+  --max-w-wide: 90rem;
+  --max-w-full: 120rem;
+
   --spacing-gutter: clamp(1.25rem, 0.7rem + 2.35vw, 2.5rem); /* 20 → 40 */
   --spacing-section-compact: clamp(3rem, 2.296rem + 3.005vw, 5rem); /*  48 →  80 */
   --spacing-section: clamp(4.5rem, 3.268rem + 5.258vw, 8rem); /*  72 → 128 */

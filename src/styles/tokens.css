@@ -159,15 +159,15 @@
   --container-narrow: 48rem; /*  768 */
   --container-content: 72rem; /* 1152 */
   --container-wide: 90rem; /* 1440 */
-  --container-full: 120rem; /* 1920 — ultra-wide ceiling */
+  --container-ceiling: 120rem; /* 1920 — ultra-wide ceiling */
 
-  --max-w-form: 32rem;
-  --max-w-panel: 40rem;
-  --max-w-prose: 68ch;
-  --max-w-narrow: 48rem;
-  --max-w-content: 72rem;
-  --max-w-wide: 90rem;
-  --max-w-full: 120rem;
+  --max-width-form: 32rem;
+  --max-width-panel: 40rem;
+  --max-width-prose: 68ch;
+  --max-width-narrow: 48rem;
+  --max-width-content: 72rem;
+  --max-width-wide: 90rem;
+  --max-width-ceiling: 120rem;
 
   --spacing-gutter: clamp(1.25rem, 0.7rem + 2.35vw, 2.5rem); /* 20 → 40 */
   --spacing-section-compact: clamp(3rem, 2.296rem + 3.005vw, 5rem); /*  48 →  80 */

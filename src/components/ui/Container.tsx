@@ -23,7 +23,7 @@ const WIDTHS = {
   /** Dashboards, tables, anything that earns the extra room. */
   wide: 'max-w-wide',
   /** Ultra-wide ceiling. Stops content stranding on 1920px+ displays. */
-  full: 'max-w-full',
+  full: 'max-w-ceiling',
 } as const;
 
 export interface ContainerProps {

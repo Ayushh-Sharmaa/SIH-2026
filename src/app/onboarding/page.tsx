@@ -288,7 +288,7 @@ export default function OnboardingPage() {
           return;
         }
 
-        setSession(meData.user);
+        setSession({ user: meData.user, status: 'authenticated' });
 
         const dashRes = await fetch('/api/dashboard');
         if (dashRes.ok) {

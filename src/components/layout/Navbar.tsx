@@ -27,6 +27,16 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
   const { user, status, clear } = useSession();
   const loading = status === 'loading';
 
+  const visibleLinks = NAV_LINKS.filter((link) => {
+    if (user?.role === 'MENTOR') {
+      return link.path === '/dashboard' || link.path === '/tracks';
+    }
+    if (user?.role === 'ADMIN') {
+      return link.path === '/dashboard';
+    }
+    return true;
+  });
+
   const [scrolled, setScrolled] = useState(false);
   const [hidden, setHidden] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -133,7 +143,7 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
           </Link>
 
           <div className="hidden items-center gap-1 md:flex">
-            {NAV_LINKS.map((link) => {
+            {visibleLinks.map((link) => {
               const isActive = pathname === link.path;
               return (
                 <Link
@@ -252,7 +262,7 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
               variants={{ visible: { transition: { staggerChildren: 0.06, delayChildren: 0.12 } } }}
               className="flex min-h-full flex-col items-start justify-center gap-2 px-8 py-20"
             >
-              {NAV_LINKS.map((link) => (
+              {visibleLinks.map((link) => (
                 <m.li
                   key={link.path}
                   variants={{

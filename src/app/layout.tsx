@@ -101,7 +101,7 @@ export default function RootLayout({
   const content = (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} min-h-full antialiased`}
     >
       <body className="noise-texture flex min-h-full flex-col">
         {/* Rendered server-side so crawlers that do not execute JS still see it. */}

@@ -124,22 +124,49 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Your team is already full (max 6 members).' }, { status: 400 });
     }
 
-    // Process accept inside transaction
-    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      // 1. Accept request
-      await tx.joinRequest.update({
-        where: { id: requestId },
+    // The seat has to be claimed by the write itself, not by the check above.
+    //
+    // Two leaders accepting the fifth and sixth request at the same moment both
+    // read `members.length === 5`, both pass, and the team ends up with seven
+    // members. The conditional `updateMany` on the team row is what makes this
+    // safe: it takes a row lock, so the second transaction blocks until the
+    // first commits and then re-evaluates `memberCount < 6` against the
+    // committed value and claims nothing.
+    const TEAM_FULL = 'TEAM_FULL';
+    const ALREADY_PROCESSED = 'ALREADY_PROCESSED';
+    const STUDENT_IN_TEAM = 'STUDENT_IN_TEAM';
+
+    try {
+      await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      // 1. Accept request — only if it is still pending, so a double-submit
+      //    cannot add the same student twice.
+      const accepted = await tx.joinRequest.updateMany({
+        where: { id: requestId, status: 'pending' },
         data: { status: 'accepted' },
       });
+      if (accepted.count !== 1) throw new Error(ALREADY_PROCESSED);
 
-      // 2. Add student to team
-      await tx.studentProfile.update({
-        where: { userId: joinRequest.studentId },
+      // 2. Claim a seat on the team.
+      const seat = await tx.team.updateMany({
+        where: { id: joinRequest.teamId, status: 'forming', memberCount: { lt: 6 } },
+        data: { memberCount: { increment: 1 } },
+      });
+      if (seat.count !== 1) throw new Error(TEAM_FULL);
+
+      // 3. Add student to team — only if they are still teamless, so accepting
+      //    two teams' requests concurrently cannot move an existing member.
+      const joined = await tx.studentProfile.updateMany({
+        where: { userId: joinRequest.studentId, teamId: null },
         data: { teamId: joinRequest.teamId, teamStatus: TeamStatus.IN_TEAM },
       });
+      if (joined.count !== 1) throw new Error(STUDENT_IN_TEAM);
 
       // If team reaches 6 members, lock it
-      if (joinRequest.team.members.length + 1 >= 6) {
+      const team = await tx.team.findUniqueOrThrow({
+        where: { id: joinRequest.teamId },
+        select: { memberCount: true },
+      });
+      if (team.memberCount >= 6) {
         await tx.team.update({
           where: { id: joinRequest.teamId },
           data: { status: 'locked' },
@@ -163,7 +190,21 @@ export async function PUT(request: Request) {
         },
         data: { status: 'declined' },
       });
-    });
+      });
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message === TEAM_FULL) {
+          return NextResponse.json({ error: 'Your team is already full (max 6 members).' }, { status: 400 });
+        }
+        if (error.message === ALREADY_PROCESSED) {
+          return NextResponse.json({ error: 'Request has already been processed.' }, { status: 400 });
+        }
+        if (error.message === STUDENT_IN_TEAM) {
+          return NextResponse.json({ error: 'That student has already joined another team.' }, { status: 400 });
+        }
+      }
+      throw error;
+    }
 
     // Recalculate team skills
     await recalculateTeamSkills(joinRequest.teamId);

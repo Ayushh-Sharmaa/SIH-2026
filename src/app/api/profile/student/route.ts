@@ -2,7 +2,18 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import {
+  MAX_TAGS,
+  avatarDataUri,
+  optionalText,
+  requiredText,
+  safeUrl,
+  tagArray,
+} from '@/lib/validate';
+import { SIH_OFFICIAL_18_THEMES } from '@/lib/tracks';
 import { logger } from '@/lib/logger';
+
+const VALID_TRACK_IDS = new Set(SIH_OFFICIAL_18_THEMES.map((t) => t.id));
 
 export async function PUT(request: Request) {
   try {

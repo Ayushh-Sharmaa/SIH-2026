@@ -23,8 +23,12 @@ export async function GET() {
     const bannedEmails = new Set(await getBannedEmails());
 
     const allUsers = await prisma.user.findMany();
-    const allStudentProfiles = await prisma.studentProfile.findMany();
-    const allMentorProfiles = await prisma.mentorProfile.findMany();
+    const allStudentProfiles = await prisma.studentProfile.findMany({
+      where: { isDemo: false }
+    });
+    const allMentorProfiles = await prisma.mentorProfile.findMany({
+      where: { isDemo: false }
+    });
     const allTeams = await prisma.team.findMany();
     const allTracks = await prisma.track.findMany();
 

@@ -95,6 +95,16 @@ const AVATAR_PATTERN = /^data:image\/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+/]+=
 
 export function avatarDataUri(value: unknown): string | null {
   if (typeof value !== 'string' || !value) return null;
+  if (value.startsWith('http://') || value.startsWith('https://')) {
+    try {
+      const parsed = new URL(value);
+      if (parsed.hostname.endsWith('googleusercontent.com')) {
+        return value;
+      }
+    } catch {
+      return null;
+    }
+  }
   if (value.length > MAX_AVATAR_CHARS) return null;
   if (!AVATAR_PATTERN.test(value)) return null;
   return value;

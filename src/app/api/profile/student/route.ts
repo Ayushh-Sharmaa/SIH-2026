@@ -92,14 +92,14 @@ export async function PUT(request: Request) {
     });
 
     // If user is a team leader, update their team's selected track
-    if (updatedProfile.teamId && Array.isArray(trackInterest) && trackInterest.length > 0) {
+    if (updatedProfile.teamId && cleanTrackIds.length > 0) {
       const team = await prisma.team.findUnique({
         where: { id: updatedProfile.teamId },
       });
       if (team && team.leaderId === decoded.userId) {
         await prisma.team.update({
           where: { id: team.id },
-          data: { trackId: trackInterest[0] },
+          data: { trackId: cleanTrackIds[0] },
         });
       }
     }

@@ -251,7 +251,7 @@ export default function FindMentorsPage() {
                         whileHover={{ y: -4 }}
                         className="surface-raised overflow-hidden rounded-3xl transition-colors duration-250"
                       >
-                        <div className="flex flex-col gap-6 p-6 sm:flex-row sm:p-7">
+                        <div className="flex flex-col gap-6 p-5 sm:flex-row sm:p-7">
                           <CapacityDial load={mentor.currentLoad} capacity={mentor.capacity} />
 
                           <div className="min-w-0 flex-1">

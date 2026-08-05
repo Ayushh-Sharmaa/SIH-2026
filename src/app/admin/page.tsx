@@ -6,6 +6,7 @@ import { AnimatePresence, m } from 'framer-motion';
 import { ArrowUpRight, Check, GraduationCap, Layers, UserCheck, Users } from 'lucide-react';
 import Icon from '@/components/ui/Icon';
 import EmptyState from '@/components/ui/EmptyState';
+import { Container } from '@/components/ui';
 import { useToast } from '@/components/ui/Toast';
 import { useEscapeKey, useFocusTrap, useScrollLock } from '@/hooks/useFocusTrap';
 import Navbar from '@/components/layout/Navbar';
@@ -481,7 +482,7 @@ export default function AdminDashboardPage() {
     return (
       <div className="min-h-screen bg-background text-foreground">
         <Navbar />
-        <div className="mx-auto max-w-7xl space-y-6 px-4 py-12 sm:px-6 lg:px-8">
+        <Container width="wide" className="space-y-6 py-12">
           <div className="h-32 rounded-3xl skeleton-shimmer" />
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             {Array.from({ length: 4 }, (_, i) => (
@@ -492,7 +493,7 @@ export default function AdminDashboardPage() {
             <div className="h-72 rounded-3xl skeleton-shimmer" />
             <div className="h-72 rounded-3xl skeleton-shimmer" />
           </div>
-        </div>
+        </Container>
       </div>
     );
   }
@@ -536,7 +537,7 @@ export default function AdminDashboardPage() {
           <Aurora variant="rose" spotlight />
           <div aria-hidden className="grid-lines absolute inset-0" />
 
-          <div className="relative mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+          <Container width="wide" className="relative py-12">
             <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
               <div>
                 <Reveal direction="none" blur={false}>
@@ -618,12 +619,12 @@ export default function AdminDashboardPage() {
                 </RevealItem>
               ))}
             </RevealGroup>
-          </div>
+          </Container>
         </section>
 
         {/* ── WORKSPACE: vertical tab rail + panel ── */}
         <section className="surface-sunken">
-          <div className="mx-auto grid max-w-7xl gap-6 px-4 py-10 sm:px-6 lg:grid-cols-[230px_1fr] lg:px-8">
+          <Container width="wide" className="grid gap-6 py-10 lg:grid-cols-[230px_1fr]">
             {/* rail */}
             <nav aria-label="Console sections" className="lg:sticky lg:top-28 lg:self-start">
               <ul className="marquee-mask flex gap-2 overflow-x-auto pb-2 lg:flex-col lg:overflow-visible lg:pb-0">
@@ -1302,7 +1303,7 @@ export default function AdminDashboardPage() {
                 </m.div>
               </AnimatePresence>
             </div>
-          </div>
+            </Container>
         </section>
       </main>
 

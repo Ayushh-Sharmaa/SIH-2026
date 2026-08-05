@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { hashPassword, signToken, normalizeEmail, isAllowedCollegeEmail } from '@/lib/auth';
+import { isUserBanned } from '@/lib/admin';
 import { ensureSandboxUser, parseSandboxRequest } from '@/lib/sandbox';
 import { clientIp, createRateLimiter, tooManyRequests } from '@/lib/rateLimit';
 import { logger } from '@/lib/logger';
@@ -72,8 +73,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'User with this email already exists.' }, { status: 400 });
     }
 
-    let isMentorVerified = false;
-    if (role === 'MENTOR' && registrationKey) {
+    // A revoked account must not be able to re-register itself back in.
+    if (await isUserBanned(email)) {
+      return NextResponse.json(
+        { error: 'Account Suspended: Your access has been revoked by the system administrator.' },
+        { status: 403 }
+      );
+    }
+
+    const wantsMentorKey = role === 'MENTOR' && typeof registrationKey === 'string' && !!registrationKey;
+
+    if (wantsMentorKey) {
+      // Cheap pre-check purely so a mistyped key gets a clear 400 rather than a
+      // rolled-back transaction. It is NOT what makes the claim safe -- the
+      // authoritative check is the conditional updateMany inside the
+      // transaction below.
       const dbKey = await prisma.mentorRegistrationKey.findUnique({
         where: { key: registrationKey },
       });
@@ -81,58 +95,83 @@ export async function POST(request: Request) {
       if (!dbKey || dbKey.isUsed) {
         return NextResponse.json({ error: 'Invalid or already used mentor registration key.' }, { status: 400 });
       }
-      isMentorVerified = true;
     }
 
     const passwordHash = await hashPassword(password);
 
-    const newUser = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const user = await tx.user.create({
-        data: {
-          email,
-          passwordHash,
-          role,
-        },
-      });
+    // Thrown inside the transaction to roll it back when the key was claimed by
+    // a concurrent request between the pre-check and the write.
+    const KEY_TAKEN = 'MENTOR_KEY_ALREADY_CLAIMED';
 
-      if (role === 'STUDENT') {
-        await tx.studentProfile.create({
+    let newUser;
+    try {
+      newUser = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+        const user = await tx.user.create({
           data: {
-            userId: user.id,
-            name,
-            year: '',
-            branch: '',
-            skills: [],
-            languages: [],
-            softSkills: [],
-          },
-        });
-      } else {
-        await tx.mentorProfile.create({
-          data: {
-            userId: user.id,
-            name,
-            designation: '',
-            organization: '',
-            expertise: [],
-            verified: isMentorVerified,
-            registrationKey: registrationKey || null,
+            email,
+            passwordHash,
+            role,
           },
         });
 
-        if (registrationKey) {
-          await tx.mentorRegistrationKey.update({
-            where: { key: registrationKey },
+        if (role === 'STUDENT') {
+          await tx.studentProfile.create({
             data: {
-              isUsed: true,
-              usedByUserId: user.id,
+              userId: user.id,
+              name,
+              year: '',
+              branch: '',
+              skills: [],
+              languages: [],
+              softSkills: [],
+            },
+          });
+        } else {
+          // Claim the key BEFORE trusting it, with `isUsed: false` in the where
+          // clause so the database -- not the application -- decides the winner.
+          //
+          // Reading the key outside the transaction and writing it inside was a
+          // time-of-check/time-of-use race: N concurrent signups with one leaked
+          // key all passed the `isUsed` check before any of them performed the
+          // write, so a single key minted N verified mentors. `usedByUserId`
+          // being @unique did not catch it, because every write targeted the
+          // same key row and simply overwrote the previous winner.
+          let isMentorVerified = false;
+
+          if (wantsMentorKey) {
+            const claimed = await tx.mentorRegistrationKey.updateMany({
+              where: { key: registrationKey, isUsed: false },
+              data: { isUsed: true, usedByUserId: user.id },
+            });
+
+            if (claimed.count !== 1) throw new Error(KEY_TAKEN);
+            isMentorVerified = true;
+          }
+
+          await tx.mentorProfile.create({
+            data: {
+              userId: user.id,
+              name,
+              designation: '',
+              organization: '',
+              expertise: [],
+              verified: isMentorVerified,
+              registrationKey: wantsMentorKey ? registrationKey : null,
             },
           });
         }
-      }
 
-      return user;
-    });
+        return user;
+      });
+    } catch (error) {
+      if (error instanceof Error && error.message === KEY_TAKEN) {
+        return NextResponse.json(
+          { error: 'Invalid or already used mentor registration key.' },
+          { status: 400 }
+        );
+      }
+      throw error;
+    }
 
     const token = signToken({ userId: newUser.id, email: newUser.email, role: newUser.role });
 

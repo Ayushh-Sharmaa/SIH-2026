@@ -1,49 +1,28 @@
 import { PrismaClient } from '@prisma/client';
+import { SIH_OFFICIAL_18_THEMES } from '../src/lib/tracks';
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('Seeding database...');
 
-  // 1. Seed Tracks (SIH Problem Statements)
-  const tracks = [
-    {
-      name: 'Smart Health Monitoring System',
-      problemStatementCode: 'SIH1299',
-      description: 'Develop an AI-powered system that tracks patients vitals in real-time, predicts health anomalies, and alerts medical professionals automatically.',
-      category: 'Software',
-    },
-    {
-      name: 'Automated Crop Disease Detection',
-      problemStatementCode: 'SIH1300',
-      description: 'A mobile/web platform utilizing computer vision models to identify crop diseases from leaf images, providing remediation methods and weather risk assessments.',
-      category: 'Software',
-    },
-    {
-      name: 'AI-based Traffic Management System',
-      problemStatementCode: 'SIH1301',
-      description: 'An intelligent system that leverages CCTV feeds to analyze traffic density at intersections and dynamically adjust signal timings to minimize congestion.',
-      category: 'Software',
-    },
-    {
-      name: 'IoT Smart Electric Metering Grid',
-      problemStatementCode: 'SIH1302',
-      description: 'A hardware-software hybrid framework for real-time monitoring of electricity consumption, detection of line faults, and prevention of power theft.',
-      category: 'Hardware',
-    },
-    {
-      name: 'Security Threat Assessment Portal',
-      problemStatementCode: 'SIH1303',
-      description: 'A cyber threat hunting tool that monitors log files, calculates risk factor metrics, and provides defensive playbook recommendations.',
-      category: 'Software',
-    },
-  ];
-
-  for (const track of tracks) {
+  // 1. Seed Tracks (the 18 official SIH themes)
+  //
+  // `id` is written explicitly rather than left to @default(uuid()). The API
+  // serves these same literal ids to the browser, and /api/teams looks the
+  // submitted trackId up by primary key -- so if the seed generated UUIDs
+  // instead, every team creation would 404. See src/lib/tracks.ts.
+  for (const theme of SIH_OFFICIAL_18_THEMES) {
+    const fields = {
+      name: theme.name,
+      problemStatementCode: theme.problemStatementCode,
+      description: theme.description,
+      category: theme.category,
+    };
     await prisma.track.upsert({
-      where: { problemStatementCode: track.problemStatementCode },
-      update: {},
-      create: track,
+      where: { id: theme.id },
+      update: fields,
+      create: { id: theme.id, ...fields },
     });
   }
   console.log('Tracks seeded successfully.');

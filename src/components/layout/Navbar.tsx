@@ -244,13 +244,13 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-40 bg-[rgba(239,233,225,0.92)] backdrop-blur-2xl md:hidden"
+            className="fixed inset-0 z-40 bg-[rgba(239,233,225,0.92)] backdrop-blur-2xl md:hidden overflow-y-auto"
           >
             <m.ul
               initial="hidden"
               animate="visible"
               variants={{ visible: { transition: { staggerChildren: 0.06, delayChildren: 0.12 } } }}
-              className="flex h-full flex-col items-start justify-center gap-2 px-8"
+              className="flex min-h-full flex-col items-start justify-center gap-2 px-8 py-20"
             >
               {NAV_LINKS.map((link) => (
                 <m.li

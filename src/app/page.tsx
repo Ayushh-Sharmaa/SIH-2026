@@ -386,7 +386,7 @@ export default function Home() {
                     <SpotlightCard className="h-full rounded-3xl">
                       <a
                         href={item.href}
-                        className="surface-raised group relative flex h-full flex-col gap-4 overflow-hidden rounded-3xl p-7 transition-shadow duration-400 hover:shadow-[0_22px_60px_rgba(50,45,41,0.13)]"
+                        className="surface-raised group relative flex h-full flex-col gap-4 overflow-hidden rounded-3xl p-5 sm:p-7 transition-shadow duration-400 hover:shadow-[0_22px_60px_rgba(50,45,41,0.13)]"
                       >
                         <span className="flex size-12 items-center justify-center rounded-2xl border border-[rgba(114,56,61,0.18)] bg-[rgba(114,56,61,0.07)] text-primary transition-transform duration-400 group-hover:scale-105">
                           <svg viewBox="0 0 24 24" fill="none" className="size-5">
@@ -511,7 +511,7 @@ export default function Home() {
               </Reveal>
 
               <Reveal direction="left" delay={0.1} className="lg:col-span-7">
-                <div className="surface-raised relative min-h-[19rem] overflow-hidden rounded-3xl p-8">
+                <div className="surface-raised relative min-h-[19rem] overflow-hidden rounded-3xl p-5 sm:p-8">
                   <AnimatePresence mode="wait">
                     <m.div
                       key={phase.id}
@@ -642,7 +642,7 @@ export default function Home() {
                       >
                         <TiltCard className="h-full" intensity={5}>
                           <SpotlightCard className="h-full rounded-2xl">
-                            <div className="surface-taupe flex h-full min-h-[13rem] flex-col justify-between overflow-hidden rounded-2xl p-6 backdrop-blur-md">
+                            <div className="surface-taupe flex h-full min-h-[13rem] flex-col justify-between overflow-hidden rounded-2xl p-5 sm:p-6 backdrop-blur-md">
                               <div>
                                 <span className="font-mono text-label uppercase text-primary">
                                   Theme {String(i + 1).padStart(2, '0')}

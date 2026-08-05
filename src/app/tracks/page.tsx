@@ -36,7 +36,7 @@ function TracksSkeleton() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Navbar />
-      <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
+      <Container width="content" className="py-12">
         <div className="h-10 w-96 max-w-full rounded-xl skeleton-shimmer" />
         <div className="mt-4 h-4 w-[28rem] max-w-full rounded skeleton-shimmer" />
         <div className="mt-10 flex flex-wrap gap-2">
@@ -49,7 +49,7 @@ function TracksSkeleton() {
             <div key={i} className="h-24 rounded-2xl skeleton-shimmer" />
           ))}
         </div>
-      </div>
+      </Container>
     </div>
   );
 }

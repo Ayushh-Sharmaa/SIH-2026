@@ -40,25 +40,42 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Missing basic profile information' }, { status: 400 });
     }
 
+    const cleanName = requiredText(name);
+    const cleanYear = requiredText(year, 40);
+    const cleanBranch = requiredText(branch, 40);
+
+    if (!cleanName || !cleanYear || !cleanBranch) {
+      return NextResponse.json({ error: 'Missing basic profile information' }, { status: 400 });
+    }
+
+    // Only ids the platform actually publishes are accepted. Without this an
+    // arbitrary string reaches the `trackInterest` relation connect and Prisma
+    // raises a foreign-key error, which surfaces to the user as a generic 500.
+    const cleanTrackIds = Array.isArray(trackInterest)
+      ? [...new Set(trackInterest.filter((id: unknown): id is string => typeof id === 'string'))]
+          .filter((id) => VALID_TRACK_IDS.has(id))
+          .slice(0, MAX_TAGS)
+      : [];
+
     // Update the StudentProfile & connect track interests
     const updatedProfile = await prisma.studentProfile.update({
       where: { userId: decoded.userId },
       data: {
-        name,
-        year,
-        branch,
-        gender: gender || null,
-        rollNo: rollNo || null,
-        section: section || null,
-        skills: skills || [],
-        languages: languages || [],
-        softSkills: softSkills || [],
-        resumeUrl: resumeUrl || null,
-        githubUrl: githubUrl || null,
-        linkedinUrl: linkedinUrl || null,
-        avatarUrl: avatarUrl || null,
+        name: cleanName,
+        year: cleanYear,
+        branch: cleanBranch,
+        gender: optionalText(gender, 40),
+        rollNo: optionalText(rollNo, 40),
+        section: optionalText(section, 10),
+        skills: tagArray(skills),
+        languages: tagArray(languages),
+        softSkills: tagArray(softSkills),
+        resumeUrl: safeUrl(resumeUrl),
+        githubUrl: safeUrl(githubUrl),
+        linkedinUrl: safeUrl(linkedinUrl),
+        avatarUrl: avatarDataUri(avatarUrl),
         trackInterest: {
-          set: (trackInterest || []).map((id: string) => ({ id })),
+          set: cleanTrackIds.map((id: string) => ({ id })),
         },
       },
     });

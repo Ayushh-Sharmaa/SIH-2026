@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { currentUser } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
 import { signToken, normalizeEmail, isAllowedCollegeEmail } from '@/lib/auth';
+import { isUserBanned } from '@/lib/admin';
 import { logger } from '@/lib/logger';
 import { setSessionCookie } from '@/lib/sessionCookie';
 
@@ -84,6 +85,13 @@ export async function GET(request: Request) {
       return NextResponse.redirect(new URL('/login?error=domain_not_allowed', request.url));
     }
 
+    // A ban has to be enforced on every way in, not just the password form.
+    // `/api/auth/login` checked this and Google sign-in did not, so a revoked
+    // account could walk straight back in through the OAuth button.
+    if (await isUserBanned(email)) {
+      return NextResponse.redirect(new URL('/login?error=account_suspended', request.url));
+    }
+
     const { token, isOnboarded } = await syncClerkUser(email);
 
     const redirectPath = isOnboarded ? '/dashboard' : '/onboarding';
@@ -133,6 +141,13 @@ export async function POST(request: Request) {
     if (!isAllowedCollegeEmail(email)) {
       return NextResponse.json(
         { error: 'Access restricted. Please use your official GL Bajaj email ID.' },
+        { status: 403 }
+      );
+    }
+
+    if (await isUserBanned(email)) {
+      return NextResponse.json(
+        { error: 'Account Suspended: Your access has been revoked by the system administrator.' },
         { status: 403 }
       );
     }

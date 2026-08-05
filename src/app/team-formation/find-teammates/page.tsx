@@ -381,7 +381,7 @@ export default function FindTeammatesPage() {
                           }}
                         >
                           <TiltCard intensity={5} className="h-full">
-                            <article className="surface-raised flex h-full flex-col justify-between rounded-3xl p-6">
+                            <article className="surface-raised flex h-full flex-col justify-between rounded-3xl p-5 sm:p-6">
                               <div className="space-y-4">
                                 <div className="flex items-center gap-3">
                                   <ProfileAvatar

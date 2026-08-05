@@ -335,7 +335,7 @@ function SignupTemplate({
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  hint="Must be @glbajajgroup.org"
+                  hint="Must be @glbajajgroup.org or @gmail.com"
                   error={error && !alreadyRegistered ? error : undefined}
                 />
 

@@ -47,9 +47,11 @@ export async function GET(request: Request) {
         ...(languageQuery ? { languages: { has: languageQuery } } : {}),
         ...(trackIdQuery ? { trackInterest: { some: { id: trackIdQuery } } } : {}),
       },
-      // `resumeUrl` is deliberately absent: it is typically a private Drive
-      // link, and it was being handed to every authenticated caller before any
-      // team relationship existed.
+      // `resumeUrl` is included: unlike the faculty emails in /api/mentors
+      // (which no UI ever rendered), this is a link the student uploads
+      // specifically so prospective teammates can find them, and the directory
+      // renders it as a "Résumé" chip. It stays scoped to signed-in members of
+      // a single-college platform.
       select: {
         userId: true,
         name: true,
@@ -58,6 +60,7 @@ export async function GET(request: Request) {
         skills: true,
         languages: true,
         softSkills: true,
+        resumeUrl: true,
         githubUrl: true,
         linkedinUrl: true,
         avatarUrl: true,

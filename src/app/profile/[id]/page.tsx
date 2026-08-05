@@ -222,7 +222,7 @@ export default function StudentProfilePage() {
                     {profile.name}
                   </h1>
                   <p className="mt-2 text-sm font-semibold text-primary uppercase tracking-wider">
-                    Student · {profile.branch} ({profile.year})
+                    Student{profile.branch || profile.year ? ` · ${profile.branch || ''} ${profile.year ? `(${profile.year})` : ''}` : ''}
                   </p>
                 </div>
               </div>
@@ -242,11 +242,11 @@ export default function StudentProfilePage() {
                     <div className="h-px bg-gradient-to-r from-[rgba(172,156,141,0.55)] via-[rgba(209,199,189,0.35)] to-transparent" />
                     <dl className="grid grid-cols-2 gap-4 text-sm">
                       {[
-                        ['Year of study', profile.year],
-                        ['Academic branch', profile.branch],
-                        ['Roll number', profile.rollNo],
-                        ['Section', `Section ${profile.section}`],
-                        ['Gender', profile.gender],
+                        ['Year of study', profile.year || 'N/A'],
+                        ['Academic branch', profile.branch || 'N/A'],
+                        ['Roll number', profile.rollNo || 'N/A'],
+                        ['Section', profile.section ? `Section ${profile.section}` : 'N/A'],
+                        ['Gender', profile.gender || 'N/A'],
                       ].map(([k, v]) => (
                         <div key={k}>
                           <dt className="text-label uppercase text-muted text-xs">{k}</dt>
@@ -351,6 +351,10 @@ export default function StudentProfilePage() {
                   <div className="h-px bg-gradient-to-r from-[rgba(172,156,141,0.55)] via-[rgba(209,199,189,0.35)] to-transparent" />
                   
                   <div className="space-y-5">
+                    {profile.skills.length === 0 && profile.softSkills.length === 0 && profile.languages.length === 0 && (
+                      <p className="text-sm text-muted">No skills listed yet.</p>
+                    )}
+
                     {profile.skills.length > 0 && (
                       <div>
                         <span className="block text-label uppercase text-muted text-xs mb-2">Technical Skills</span>
@@ -409,7 +413,7 @@ export default function StudentProfilePage() {
                   <div className="h-px bg-gradient-to-r from-[rgba(172,156,141,0.55)] via-[rgba(209,199,189,0.35)] to-transparent" />
                   
                   <div className="space-y-5">
-                    {profile.tracksDetailed && profile.tracksDetailed.length > 0 && (
+                    {profile.tracksDetailed && profile.tracksDetailed.length > 0 ? (
                       <div>
                         <span className="block text-label uppercase text-muted text-xs mb-2">Problem Statement Tracks</span>
                         <div className="space-y-2">
@@ -426,6 +430,11 @@ export default function StudentProfilePage() {
                           ))}
                         </div>
                       </div>
+                    ) : (
+                      <div>
+                        <span className="block text-label uppercase text-muted text-xs mb-2">Problem Statement Tracks</span>
+                        <p className="text-sm text-muted">No tracks chosen yet.</p>
+                      </div>
                     )}
 
                     <div>
@@ -435,19 +444,27 @@ export default function StudentProfilePage() {
                           { url: profile.githubUrl, label: 'GitHub' },
                           { url: profile.linkedinUrl, label: 'LinkedIn' },
                           { url: profile.resumeUrl, label: 'Résumé' },
-                        ]
-                          .filter((l) => l.url)
-                          .map((l) => (
-                            <a
-                              key={l.label}
-                              href={l.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1.5 rounded-lg border border-[rgba(209,199,189,0.7)] bg-white/50 px-4 py-2 text-xs font-bold text-foreground hover:border-[rgba(114,56,61,0.3)] hover:text-primary transition-all hover:-translate-y-0.5"
-                            >
-                              {l.label} <ArrowUpRight className="size-3.5" />
-                            </a>
-                          ))}
+                        ].filter((l) => l.url).length === 0 ? (
+                          <p className="text-sm text-muted">No links shared yet.</p>
+                        ) : (
+                          [
+                            { url: profile.githubUrl, label: 'GitHub' },
+                            { url: profile.linkedinUrl, label: 'LinkedIn' },
+                            { url: profile.resumeUrl, label: 'Résumé' },
+                          ]
+                            .filter((l) => l.url)
+                            .map((l) => (
+                              <a
+                                key={l.label}
+                                href={l.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 rounded-lg border border-[rgba(209,199,189,0.7)] bg-white/50 px-4 py-2 text-xs font-bold text-foreground hover:border-[rgba(114,56,61,0.3)] hover:text-primary transition-all hover:-translate-y-0.5"
+                              >
+                                {l.label} <ArrowUpRight className="size-3.5" />
+                              </a>
+                            ))
+                        )}
                       </div>
                     </div>
                   </div>

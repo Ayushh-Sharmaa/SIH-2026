@@ -351,6 +351,24 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const handleApproveMentor = async (mentorId: string) => {
+    try {
+      const res = await fetch('/api/admin/mentor/approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mentorId }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error || 'Failed to approve mentor');
+
+      toast(data.message || 'Mentor approved successfully.', 'success');
+      fetchAdminData();
+    } catch (err) {
+      toast(userFacingMessage(err, 'Could not approve mentor. Please try again.'), 'error');
+    }
+  };
+
   const toggleStudentAccess = async (studentEmail: string, action: 'ban' | 'restore') => {
     try {
       const res = await fetch('/api/admin/student', {
@@ -1268,7 +1286,9 @@ export default function AdminDashboardPage() {
                                     {mentor.email}
                                   </p>
                                 </div>
-                                <Chip tone="accent">Verified</Chip>
+                                <Chip tone={mentor.verified ? 'accent' : 'neutral'}>
+                                  {mentor.verified ? 'Verified' : 'Pending Approval'}
+                                </Chip>
                               </div>
 
                               <div>
@@ -1294,6 +1314,16 @@ export default function AdminDashboardPage() {
                                   />
                                 </div>
                               </div>
+
+                              {!mentor.verified && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleApproveMentor(mentor.id)}
+                                  className="mt-4 w-full rounded-xl border border-[rgba(114,56,61,0.25)] bg-[rgba(114,56,61,0.08)] py-2 text-xs font-bold uppercase tracking-wider text-primary transition-all duration-200 hover:bg-[rgba(114,56,61,0.16)] active:scale-95 cursor-pointer"
+                                >
+                                  Approve Mentor
+                                </button>
+                              )}
                             </div>
                           </TiltCard>
                         </RevealItem>

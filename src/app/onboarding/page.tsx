@@ -10,6 +10,7 @@ import { Container } from '@/components/ui';
 import {
   Aurora,
   Field,
+  SelectField,
   PremiumButton,
   Reveal,
   SplitText,
@@ -969,20 +970,18 @@ export default function OnboardingPage() {
                       value={studentForm.name}
                       onChange={(e) => setStudentForm({ ...studentForm, name: e.target.value })}
                     />
-                    <Labelled label="Gender">
-                      <select
-                        value={studentForm.gender}
-                        onChange={(e) => setStudentForm({ ...studentForm, gender: e.target.value })}
-                        className={SELECT}
-                      >
-                        <option value="">Select gender</option>
-                        {genderOptions.map((opt) => (
-                          <option key={opt} value={opt}>
-                            {opt}
-                          </option>
-                        ))}
-                      </select>
-                    </Labelled>
+                    <SelectField
+                      label="Gender"
+                      value={studentForm.gender}
+                      onChange={(e) => setStudentForm({ ...studentForm, gender: e.target.value })}
+                    >
+                      <option value="">Select gender</option>
+                      {genderOptions.map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
+                      ))}
+                    </SelectField>
                   </div>
 
                   <Field
@@ -993,48 +992,42 @@ export default function OnboardingPage() {
                   />
 
                   <div className="grid gap-4 sm:grid-cols-3">
-                    <Labelled label="Year of study">
-                      <select
-                        value={studentForm.year}
-                        onChange={(e) => setStudentForm({ ...studentForm, year: e.target.value })}
-                        className={SELECT}
-                      >
-                        <option value="">Select year</option>
-                        {yearOptions.map((opt) => (
-                          <option key={opt} value={opt}>
-                            {opt}
-                          </option>
-                        ))}
-                      </select>
-                    </Labelled>
-                    <Labelled label="Academic branch">
-                      <select
-                        value={studentForm.branch}
-                        onChange={(e) => setStudentForm({ ...studentForm, branch: e.target.value })}
-                        className={SELECT}
-                      >
-                        <option value="">Select branch</option>
-                        {branchOptions.map((opt) => (
-                          <option key={opt} value={opt}>
-                            {opt}
-                          </option>
-                        ))}
-                      </select>
-                    </Labelled>
-                    <Labelled label="Section">
-                      <select
-                        value={studentForm.section}
-                        onChange={(e) => setStudentForm({ ...studentForm, section: e.target.value })}
-                        className={SELECT}
-                      >
-                        <option value="">Select section</option>
-                        {sectionOptions.map((opt) => (
-                          <option key={opt} value={opt}>
-                            Section {opt}
-                          </option>
-                        ))}
-                      </select>
-                    </Labelled>
+                    <SelectField
+                      label="Year of study"
+                      value={studentForm.year}
+                      onChange={(e) => setStudentForm({ ...studentForm, year: e.target.value })}
+                    >
+                      <option value="">Select year</option>
+                      {yearOptions.map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
+                      ))}
+                    </SelectField>
+                    <SelectField
+                      label="Academic branch"
+                      value={studentForm.branch}
+                      onChange={(e) => setStudentForm({ ...studentForm, branch: e.target.value })}
+                    >
+                      <option value="">Select branch</option>
+                      {branchOptions.map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
+                      ))}
+                    </SelectField>
+                    <SelectField
+                      label="Section"
+                      value={studentForm.section}
+                      onChange={(e) => setStudentForm({ ...studentForm, section: e.target.value })}
+                    >
+                      <option value="">Select section</option>
+                      {sectionOptions.map((opt) => (
+                        <option key={opt} value={opt}>
+                          Section {opt}
+                        </option>
+                      ))}
+                    </SelectField>
                   </div>
 
                   <div className="flex justify-end border-t border-[rgba(209,199,189,0.7)] pt-5">

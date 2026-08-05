@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
-import { ClerkProvider } from '@clerk/nextjs';
+
 import './globals.css';
 
 import SmoothScroll from '@/components/SmoothScroll';
@@ -98,9 +98,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const clerkPubKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
-
-  const content = (
+  return (
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
@@ -135,10 +133,4 @@ export default function RootLayout({
       </body>
     </html>
   );
-
-  if (clerkPubKey) {
-    return <ClerkProvider publishableKey={clerkPubKey}>{content}</ClerkProvider>;
-  }
-
-  return content;
 }

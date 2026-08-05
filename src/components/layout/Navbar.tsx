@@ -176,10 +176,10 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
                 </span>
                 <Magnetic strength={6} as="span" className="hidden sm:inline-flex">
                   <Link
-                    href="/onboarding?edit=true"
+                    href={user.isOnboarded ? "/dashboard" : "/onboarding"}
                     className="rounded-lg border border-[rgba(114,56,61,0.22)] bg-[rgba(114,56,61,0.08)] px-3 py-2 text-label uppercase text-primary transition-colors duration-250 hover:bg-[rgba(114,56,61,0.16)]"
                   >
-                    Profile
+                    {user.isOnboarded ? "Dashboard" : "Profile"}
                   </Link>
                 </Magnetic>
                 <Magnetic strength={6} as="span" className="inline-flex">

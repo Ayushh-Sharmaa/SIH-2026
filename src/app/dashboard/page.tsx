@@ -38,6 +38,67 @@ import {
 } from '@/components/motion';
 import { logger } from '@/lib/logger';
 
+const classifySkillDomain = (name: string): 'Engineering' | 'Design' | 'Communication' => {
+  const n = name.toLowerCase();
+  if (
+    n.includes('figma') || n.includes('design') || n.includes('ux') ||
+    n.includes('ui') || n.includes('adobe') || n.includes('canva') ||
+    n.includes('wireframe') || n.includes('prototype') || n.includes('editing') ||
+    n.includes('ppt')
+  ) {
+    return 'Design';
+  }
+  if (
+    n.includes('speaking') || n.includes('writing') || n.includes('management') ||
+    n.includes('english') || n.includes('hindi') || n.includes('sanskrit') ||
+    n.includes('punjabi') || n.includes('tamil') || n.includes('telugu') ||
+    n.includes('bengali') || n.includes('marathi') || n.includes('gujarati') ||
+    n.includes('kannada') || n.includes('malayalam')
+  ) {
+    return 'Communication';
+  }
+  return 'Engineering';
+};
+
+const DOMAIN_SWATCH = {
+  Engineering: '#72383D',
+  Design: '#AC9C8D',
+  Communication: '#322D29',
+} as const;
+
+const getStudentSkillBalance = (profile: { skills: string[]; softSkills: string[]; languages: string[] }) => {
+  const allSelected = [...profile.skills, ...profile.softSkills, ...profile.languages];
+
+  if (allSelected.length === 0) {
+    return {
+      total: 0,
+      engineering: { count: 0, pct: 0 },
+      design: { count: 0, pct: 0 },
+      communication: { count: 0, pct: 0 },
+    };
+  }
+
+  let eng = 0;
+  let des = 0;
+  let comm = 0;
+
+  allSelected.forEach((item) => {
+    const domain = classifySkillDomain(item);
+    if (domain === 'Engineering') eng++;
+    else if (domain === 'Design') des++;
+    else comm++;
+  });
+
+  const total = allSelected.length;
+
+  return {
+    total,
+    engineering: { count: eng, pct: Math.round((eng / total) * 100) },
+    design: { count: des, pct: Math.round((des / total) * 100) },
+    communication: { count: comm, pct: Math.round((comm / total) * 100) },
+  };
+};
+
 const AVATAR_PRESETS: Record<string, { icon: LucideIcon; wash: string }> = {
   hacker: { icon: Terminal, wash: 'from-[#AC9C8D] to-[#D1C7BD]' },
   developer: { icon: Code2, wash: 'from-[#D1C7BD] to-[#EFE9E1]' },
@@ -502,6 +563,94 @@ export default function DashboardPage() {
                               {profile?.branch} ({profile?.year})
                             </span>
                           </div>
+
+                          {/* Skill Balance Donut Chart */}
+                          {(() => {
+                            const balance = getStudentSkillBalance({
+                              skills: profile?.skills || [],
+                              softSkills: profile?.softSkills || [],
+                              languages: profile?.languages || [],
+                            });
+                            if (balance.total === 0) return null;
+                            return (
+                              <div className="flex flex-col items-center gap-4 rounded-2xl border border-[rgba(209,199,189,0.7)] bg-[rgba(239,233,225,0.4)] p-4 sm:flex-row">
+                                <div className="relative grid size-20 shrink-0 place-items-center">
+                                  <svg className="size-full -rotate-90" viewBox="0 0 36 36" aria-hidden>
+                                    <circle
+                                      cx="18"
+                                      cy="18"
+                                      r="15.915"
+                                      fill="transparent"
+                                      stroke="rgba(209,199,189,0.3)"
+                                      strokeWidth="3.2"
+                                    />
+                                    {(
+                                      [
+                                        ['Engineering', balance.engineering.pct, 0],
+                                        ['Design', balance.design.pct, balance.engineering.pct],
+                                        [
+                                          'Communication',
+                                          balance.communication.pct,
+                                          balance.engineering.pct + balance.design.pct,
+                                        ],
+                                      ] as const
+                                    ).map(
+                                      ([domain, pct, offset]) =>
+                                        pct > 0 && (
+                                          <circle
+                                            key={domain}
+                                            cx="18"
+                                            cy="18"
+                                            r="15.915"
+                                            fill="transparent"
+                                            stroke={DOMAIN_SWATCH[domain]}
+                                            strokeWidth="3.4"
+                                            strokeDasharray={`${pct} ${100 - pct}`}
+                                            strokeDashoffset={`-${offset}`}
+                                          />
+                                        )
+                                    )}
+                                  </svg>
+                                  <div className="pointer-events-none absolute text-center">
+                                    <span className="block text-base font-extrabold leading-none tracking-tight text-foreground">
+                                      {balance.total}
+                                    </span>
+                                    <span className="mt-0.5 block text-[8px] uppercase tracking-wider text-muted">
+                                      skills
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <div className="w-full flex-1 space-y-1">
+                                  <span className="block text-[10px] font-bold text-foreground uppercase tracking-wider">
+                                    Domain Split
+                                  </span>
+                                  <div className="space-y-1 text-[11px]">
+                                    {(
+                                      [
+                                        ['Engineering', 'Engineering & code', balance.engineering],
+                                        ['Design', 'Design & UI/UX', balance.design],
+                                        ['Communication', 'Communication & soft', balance.communication],
+                                      ] as const
+                                    ).map(([key, label, val]) => (
+                                      <div key={key} className="flex items-center justify-between">
+                                        <span className="flex items-center gap-1 text-muted">
+                                          <span
+                                            className="size-1.5 rounded-full"
+                                            style={{ backgroundColor: DOMAIN_SWATCH[key] }}
+                                          />
+                                          {label}
+                                        </span>
+                                        <span className="font-bold text-foreground">
+                                          {val.count} ({val.pct}%)
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })()}
 
                           <div>
                             <Label>Languages</Label>

@@ -34,28 +34,30 @@ function AuthHandoff({ caption }: { caption: string }) {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: DURATION.hover, ease: EASE.outExpo }}
-      className="fixed inset-0 z-50 flex flex-col gap-5 bg-[rgba(239,233,225,0.96)] p-6 backdrop-blur-xl"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(239,233,225,0.96)] p-6 backdrop-blur-xl"
       role="status"
       aria-live="polite"
     >
-      <div className="flex items-center justify-between border-b border-[rgba(209,199,189,0.7)] pb-4">
-        <div className="flex items-center gap-3">
-          <div className="size-8 rounded-lg skeleton-shimmer" />
-          <div className="h-4 w-28 rounded skeleton-shimmer" />
+      <div className="flex w-full max-w-4xl flex-col gap-5">
+        <div className="flex items-center justify-between border-b border-[rgba(209,199,189,0.7)] pb-4">
+          <div className="flex items-center gap-3">
+            <div className="size-8 rounded-lg skeleton-shimmer" />
+            <div className="h-4 w-28 rounded skeleton-shimmer" />
+          </div>
+          <div className="h-8 w-20 rounded-xl skeleton-shimmer" />
         </div>
-        <div className="h-8 w-20 rounded-xl skeleton-shimmer" />
+
+        <div className="h-28 rounded-3xl skeleton-shimmer" />
+
+        <div className="grid h-64 grid-cols-1 gap-5 lg:grid-cols-3">
+          <div className="rounded-3xl skeleton-shimmer" />
+          <div className="rounded-3xl skeleton-shimmer lg:col-span-2" />
+        </div>
+
+        <p className="text-center text-label uppercase text-muted">
+          {caption}
+        </p>
       </div>
-
-      <div className="h-28 rounded-3xl skeleton-shimmer" />
-
-      <div className="grid flex-1 grid-cols-1 gap-5 lg:grid-cols-3">
-        <div className="rounded-3xl skeleton-shimmer" />
-        <div className="rounded-3xl skeleton-shimmer lg:col-span-2" />
-      </div>
-
-      <p className="text-center text-label uppercase text-muted">
-        {caption}
-      </p>
     </m.div>
   );
 }

@@ -8,6 +8,7 @@ import { AnimatePresence, m } from 'framer-motion';
 import { looksLikeSandboxEmail } from '@/lib/sandboxShared';
 import { ArrowRight } from 'lucide-react';
 import Icon from '@/components/ui/Icon';
+import { Container } from '@/components/ui';
 import {
   Aurora,
   Field,
@@ -339,7 +340,7 @@ function SignupTemplate({
         <Aurora variant="taupe" spotlight={false} />
         <div aria-hidden className="grid-lines absolute inset-0" />
 
-        <div className="relative mx-auto max-w-3xl px-5 pb-16 pt-12 text-center sm:px-6">
+        <Container width="narrow" className="relative pb-16 pt-12 text-center">
           <Reveal direction="none" blur={false}>
             <Link href="/" className="inline-flex items-center gap-2.5">
               <img
@@ -366,12 +367,12 @@ function SignupTemplate({
               problem-statement index.
             </p>
           </Reveal>
-        </div>
+        </Container>
       </section>
 
       {/* ── FORM CARD: lifted, overlapping the band above ── */}
       <main id="main" className="section-mist relative">
-        <div className="relative mx-auto max-w-lg px-5 pb-16 sm:px-6">
+        <Container width="form" className="relative pb-16">
           <Reveal scale delay={0.12} className="-mt-10">
             <div className="surface-raised rounded-3xl p-6 sm:p-9">
               <GoogleButton loading={googleLoading} onClick={handleGoogleSignUp} />
@@ -536,7 +537,7 @@ function SignupTemplate({
               </p>
             </div>
           </Reveal>
-        </div>
+        </Container>
       </main>
     </div>
   );

@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { AnimatePresence, m } from 'framer-motion';
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight, UserX } from 'lucide-react';
+import { Container, EmptyState } from '@/components/ui';
 import Icon from '@/components/ui/Icon';
 import { useToast } from '@/components/ui/Toast';
 import Navbar from '@/components/layout/Navbar';
@@ -133,7 +134,7 @@ export default function FindMentorsPage() {
           <Aurora variant="taupe" spotlight />
           <div aria-hidden className="grid-lines absolute inset-0" />
 
-          <div className="relative mx-auto max-w-3xl px-4 py-16 text-center sm:px-6 lg:px-8">
+          <Container width="narrow" className="relative py-16 text-center">
             <Reveal direction="none" blur={false}>
               <span className="inline-flex items-center gap-2 rounded-full border border-[rgba(172,156,141,0.6)] bg-[rgba(248,246,242,0.7)] px-3.5 py-1.5 text-label uppercase text-primary backdrop-blur-md">
                 Mentor directory
@@ -217,12 +218,12 @@ export default function FindMentorsPage() {
                 </div>
               </div>
             </Reveal>
-          </div>
+          </Container>
         </section>
 
         {/* ── ROSTER: wide rows, not a card grid ── */}
         <section className="section-dune">
-          <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
+          <Container width="content" className="py-12">
             {loading ? (
               <div className="space-y-4">
                 {Array.from({ length: 4 }, (_, i) => (
@@ -321,21 +322,19 @@ export default function FindMentorsPage() {
                 </AnimatePresence>
               </m.div>
             ) : (
-              <div className="surface-sunken rounded-3xl px-6 py-20 text-center">
-                <p className="text-base font-extrabold tracking-tight text-foreground">
-                  No verified mentors match these criteria.
-                </p>
-                <p className="mt-1.5 text-sm text-muted">
-                  Try a broader expertise term, or clear the search to see everyone.
-                </p>
-                <div className="mt-6 flex justify-center">
+              <EmptyState
+                icon={UserX}
+                title="No verified mentors match these criteria."
+                description="Try a broader expertise term, or clear the search to see everyone."
+                action={
                   <PremiumButton variant="glass" size="sm" onClick={handleReset}>
                     Show all mentors
                   </PremiumButton>
-                </div>
-              </div>
+                }
+                className="max-w-2xl mx-auto w-full"
+              />
             )}
-          </div>
+          </Container>
         </section>
       </main>
 

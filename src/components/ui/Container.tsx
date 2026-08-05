@@ -10,6 +10,10 @@ import { cn } from '@/lib/cn';
  */
 
 const WIDTHS = {
+  /** Smallest centered layouts — login, register, single inputs. */
+  form: 'max-w-form',
+  /** Settings drawers, filter rails, dialogue details. */
+  panel: 'max-w-panel',
   /** Long-form reading. Caps by character count, not pixels. */
   prose: 'max-w-prose',
   /** Focused single-column content — forms, auth, empty states. */

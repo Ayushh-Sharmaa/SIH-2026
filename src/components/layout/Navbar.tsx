@@ -95,7 +95,7 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
         className="fixed inset-x-0 top-0 z-50 px-3 pt-3 sm:px-5 sm:pt-4"
       >
         <nav
-          className={`mx-auto flex h-16 max-w-7xl items-center justify-between rounded-2xl border px-3 backdrop-blur-xl transition-[background-color,box-shadow,border-color] duration-500 sm:px-5 ${
+          className={`mx-auto flex h-16 max-w-wide items-center justify-between rounded-2xl border px-3 backdrop-blur-xl transition-[background-color,box-shadow,border-color] duration-500 sm:px-5 ${
             scrolled
               ? 'border-[rgba(209,199,189,0.6)] bg-[rgba(248,246,242,0.86)] shadow-[0_8px_32px_rgba(50,45,41,0.10)]'
               : 'border-[rgba(209,199,189,0.32)] bg-[rgba(248,246,242,0.55)] shadow-[0_2px_18px_rgba(50,45,41,0.05)]'

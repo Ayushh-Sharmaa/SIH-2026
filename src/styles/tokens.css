@@ -153,6 +153,8 @@
   /* ─────────────────────────────────────────────────────────────────────────
      9. LAYOUT — containers and section rhythm
      ───────────────────────────────────────────────────────────────────────── */
+  --container-form: 32rem; /*  512 — auth forms, search bars */
+  --container-panel: 40rem; /*  640 — settings panels, filter forms */
   --container-prose: 68ch;
   --container-narrow: 48rem; /*  768 */
   --container-content: 72rem; /* 1152 */

@@ -110,3 +110,53 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: 'Failed to update student profile.' }, { status: 500 });
   }
 }
+
+export async function GET() {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('token')?.value;
+
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded || decoded.role !== 'STUDENT') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const student = await prisma.studentProfile.findUnique({
+      where: { userId: decoded.userId },
+      include: {
+        trackInterest: { select: { id: true } },
+      },
+    });
+
+    if (!student) {
+      return NextResponse.json({ error: 'Student profile not found.' }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      profile: {
+        name: student.name,
+        year: student.year,
+        branch: student.branch,
+        gender: student.gender,
+        rollNo: student.rollNo,
+        section: student.section,
+        skills: student.skills,
+        languages: student.languages,
+        softSkills: student.softSkills,
+        resumeUrl: student.resumeUrl,
+        githubUrl: student.githubUrl,
+        linkedinUrl: student.linkedinUrl,
+        avatarUrl: student.avatarUrl,
+        trackInterest: student.trackInterest.map((t) => t.id),
+      },
+    });
+  } catch (error) {
+    logger.error('Get student profile error', error);
+    return NextResponse.json({ error: 'Failed to retrieve student profile.' }, { status: 500 });
+  }
+}

@@ -63,8 +63,26 @@ interface SessionValue {
 const SessionContext = createContext<SessionValue | null>(null);
 
 export function SessionProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<SessionUser | null>(null);
-  const [status, setStatus] = useState<SessionStatus>('loading');
+  const [user, setUser] = useState<SessionUser | null>(() => {
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem('sih_user_session');
+      if (cached) {
+        try {
+          return JSON.parse(cached);
+        } catch {
+          return null;
+        }
+      }
+    }
+    return null;
+  });
+  const [status, setStatus] = useState<SessionStatus>(() => {
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem('sih_user_session');
+      if (cached) return 'authenticated';
+    }
+    return 'loading';
+  });
   const [isViewingAs, setIsViewingAs] = useState(false);
 
   // Guards against setting state after unmount, and against a stale response
@@ -98,6 +116,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         setUser(null);
         setStatus('anonymous');
         setIsViewingAs(false);
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('sih_user_session');
+        }
         return;
       }
 
@@ -120,15 +141,22 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         setUser(null);
         setStatus('anonymous');
         setIsViewingAs(false);
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('sih_user_session');
+        }
         return;
       }
 
       const raw = (data as { user: Record<string, unknown> }).user;
-      setUser({
+      const sessionUser = {
         name: typeof raw.name === 'string' ? raw.name : '',
         role: typeof raw.role === 'string' ? raw.role : '',
-      });
+      };
+      setUser(sessionUser);
       setStatus('authenticated');
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('sih_user_session', JSON.stringify(sessionUser));
+      }
       // Sent by /api/auth/me when an admin's own session is parked in
       // `admin_token`. Read defensively: it is absent for every normal user.
       setIsViewingAs(
@@ -144,6 +172,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       setUser(null);
       setStatus('anonymous');
       setIsViewingAs(false);
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('sih_user_session');
+      }
     }
   }, []);
 
@@ -160,6 +191,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setStatus('anonymous');
     setIsViewingAs(false);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('sih_user_session');
+    }
   }, []);
 
   // Memoised so consumers do not re-render on every provider render merely

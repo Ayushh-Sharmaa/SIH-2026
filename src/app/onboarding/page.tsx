@@ -291,10 +291,11 @@ export default function OnboardingPage() {
 
         setSession({ user: meData.user, status: 'authenticated' });
 
-        const dashRes = await fetch('/api/dashboard');
-        if (dashRes.ok) {
-          const dashData = await dashRes.json();
-          const prof = dashData.profile;
+        const profileRoute = meData.user.role === 'STUDENT' ? '/api/profile/student' : '/api/profile/mentor';
+        const profileRes = await fetch(profileRoute);
+        if (profileRes.ok) {
+          const profileData = await profileRes.json();
+          const prof = profileData.profile;
           if (prof) {
             if (meData.user.role === 'STUDENT') {
               setStudentForm({

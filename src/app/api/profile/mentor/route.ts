@@ -84,3 +84,45 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: 'Failed to update mentor profile.' }, { status: 500 });
   }
 }
+
+export async function GET() {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('token')?.value;
+
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded || decoded.role !== 'MENTOR') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const mentor = await prisma.mentorProfile.findUnique({
+      where: { userId: decoded.userId },
+    });
+
+    if (!mentor) {
+      return NextResponse.json({ error: 'Mentor profile not found.' }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      profile: {
+        name: mentor.name,
+        designation: mentor.designation,
+        organization: mentor.organization,
+        expertise: mentor.expertise,
+        capacity: mentor.capacity,
+        currentLoad: mentor.currentLoad,
+        verified: mentor.verified,
+        bio: mentor.bio,
+        linkedinUrl: mentor.linkedinUrl,
+      },
+    });
+  } catch (error) {
+    logger.error('Get mentor profile error', error);
+    return NextResponse.json({ error: 'Failed to retrieve mentor profile.' }, { status: 500 });
+  }
+}

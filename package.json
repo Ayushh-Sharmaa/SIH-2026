@@ -14,7 +14,7 @@
     "verify": "npm run typecheck && npm run test && npm run test:contrast"
   },
   "dependencies": {
-    "@clerk/nextjs": "^7.6.4",
+
     "@prisma/client": "^6.19.3",
     "bcryptjs": "^3.0.3",
     "framer-motion": "^12.43.0",

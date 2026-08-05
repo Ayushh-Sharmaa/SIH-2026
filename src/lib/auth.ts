@@ -41,7 +41,7 @@ function resolveSecret(): string {
 }
 
 // Platform is restricted to GL Bajaj students and faculty only.
-export const ALLOWED_EMAIL_DOMAINS = ['glbajaj.org', 'glbajajgroup.org'];
+export const ALLOWED_EMAIL_DOMAINS = ['glbajajgroup.org'];
 
 // Emails are stored and looked up lowercased, so signup and login always agree.
 export function normalizeEmail(email: string): string {

@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from 'react';
 import Link from 'next/link';
-import { useClerk } from '@clerk/nextjs';
+
 import { AnimatePresence, m } from 'framer-motion';
 import { useAuthenticatedRedirect } from '@/lib/session';
 import { looksLikeSandboxEmail } from '@/lib/sandboxShared';
@@ -18,7 +18,7 @@ import {
 import { logger } from '@/lib/logger';
 import { userFacingMessage } from '@/lib/errors';
 
-const hasClerkKey = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+
 
 const HIGHLIGHTS = [
   { title: 'Find teammates by skill', copy: 'Filter by stack, soft skills and language.' },
@@ -105,56 +105,17 @@ function GoogleButton({
 }
 
 export default function LoginPage() {
-  if (hasClerkKey) {
-    return <ClerkLoginPage />;
-  }
-  return <CustomLoginPage />;
-}
-
-function ClerkLoginPage() {
   const goAuthenticated = useAuthenticatedRedirect();
-  const clerk = useClerk();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
-  // Hands off to Clerk, which redirects to /sso-callback to complete the
-  // handshake. There is deliberately no fallback that posts an email to
-  // /api/auth/clerk-sync: doing so signed the caller in as whatever address
-  // was sent, with no password, which is an authentication bypass rather than
-  // a recovery path. A failed Google sign-in must surface as an error.
-  const handleGoogleSignIn = async () => {
+  const handleGoogleSignIn = () => {
     setError('');
     setGoogleLoading(true);
-    try {
-      if (!clerk?.client?.signIn) {
-        throw new Error('Google Sign-In is unavailable right now. Please use your email and password.');
-      }
-
-      await clerk.client.signIn.authenticateWithRedirect({
-        strategy: 'oauth_google',
-        redirectUrl: '/sso-callback',
-        redirectUrlComplete: '/api/auth/clerk-sync',
-      });
-    } catch (err) {
-      logger.error('Google Sign-In error', err);
-      // There is deliberately no recovery attempt here.
-      //
-      // This used to POST a hardcoded super-admin address to
-      // /api/auth/clerk-sync, which at the time minted a session for whatever
-      // email it was sent — so a *failed* Google sign-in handed the caller an
-      // admin session. The server no longer reads the request body's email
-      // (it derives identity from the verified Clerk session and 401s without
-      // one), so the call is now merely useless rather than dangerous. It is
-      // removed because a fallback that cannot succeed only obscures the real
-      // error, and because restoring the server-side fallback would silently
-      // make this exploitable again.
-      setError(userFacingMessage(err, 'Google Sign-In failed. Please try again.'));
-    } finally {
-      setGoogleLoading(false);
-    }
+    window.location.href = '/api/auth/google';
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -215,91 +176,6 @@ function ClerkLoginPage() {
         loading={loading}
         googleLoading={googleLoading}
         handleGoogleSignIn={handleGoogleSignIn}
-        handleSubmit={handleSubmit}
-      />
-    </>
-  );
-}
-
-function CustomLoginPage() {
-  const goAuthenticated = useAuthenticatedRedirect();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  // No Google handler here, deliberately.
-  //
-  // This component renders only when NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY is
-  // absent, and Google OAuth is Clerk's handshake — without it there is nothing
-  // to hand off to. The handler that used to live here POSTed a hardcoded
-  // super-admin address to /api/auth/clerk-sync, which at the time minted a
-  // session for whatever email it received. That hole is closed server-side
-  // (identity now comes from the verified Clerk session, and the endpoint 401s
-  // without one), so the call could no longer succeed — it would only ever
-  // return "No verified Google session found", which is a baffling thing to
-  // tell someone on a deployment that has no Google sign-in at all.
-  //
-  // `LoginTemplate` omits the button entirely when no handler is passed, which
-  // is better than offering an affordance that cannot work.
-
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Invalid credentials');
-      }
-
-      if (data.redirectUrl) {
-        await goAuthenticated(data.redirectUrl);
-        return;
-      }
-
-      if (data.user?.role === 'ADMIN') {
-        await goAuthenticated('/admin');
-        return;
-      }
-
-      const meRes = await fetch('/api/auth/me');
-      const meData = await meRes.json();
-
-      if (meData.authenticated && meData.user?.role === 'ADMIN') {
-        await goAuthenticated('/admin');
-      } else if (meData.authenticated && meData.user?.isOnboarded) {
-        await goAuthenticated('/dashboard');
-      } else {
-        await goAuthenticated('/onboarding');
-      }
-    } catch (err) {
-      setLoading(false);
-      setError(err instanceof Error ? err.message : 'Something went wrong');
-    }
-  };
-
-  return (
-    <>
-      <AnimatePresence>
-        {loading && <AuthHandoff caption="Authorising your session" />}
-      </AnimatePresence>
-      <LoginTemplate
-        email={email}
-        setEmail={setEmail}
-        password={password}
-        setPassword={setPassword}
-        error={error}
-        loading={loading}
-        googleLoading={false}
         handleSubmit={handleSubmit}
       />
     </>

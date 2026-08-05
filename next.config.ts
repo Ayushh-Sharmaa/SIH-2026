@@ -16,19 +16,13 @@ const isDev = process.env.NODE_ENV === 'development';
 
 const CSP = [
   "default-src 'self'",
-  // Clerk serves its widget from its own CDN and calls its own API.
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''} https://*.clerk.accounts.dev https://*.clerk.com`,
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}`,
   "style-src 'self' 'unsafe-inline'",
   // next/font self-hosts the Google fonts at build time, so no external origin.
   "font-src 'self' data:",
-  "img-src 'self' data: blob: https://*.clerk.com https://img.clerk.com",
-  // Supabase is deliberately absent. It hosts the Postgres database, but that
-  // is reached server-side by Prisma over the Postgres wire protocol — the
-  // browser never opens a connection to it. The `@supabase/supabase-js` client
-  // that would have needed this allowance is no longer a dependency, so keeping
-  // the origin here would only widen the policy for no one.
-  "connect-src 'self' https://*.clerk.accounts.dev https://*.clerk.com",
-  "frame-src 'self' https://*.clerk.accounts.dev https://*.clerk.com",
+  "img-src 'self' data: blob: https://lh3.googleusercontent.com",
+  "connect-src 'self' https://*.supabase.co",
+  "frame-src 'self'",
   "worker-src 'self' blob:",
   "object-src 'none'",
   "base-uri 'self'",

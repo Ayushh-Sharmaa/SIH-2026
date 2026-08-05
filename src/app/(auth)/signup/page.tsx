@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from 'react';
 import Link from 'next/link';
-import { useClerk } from '@clerk/nextjs';
+
 import { useAuthenticatedRedirect } from '@/lib/session';
 import { AnimatePresence, m } from 'framer-motion';
 import { looksLikeSandboxEmail } from '@/lib/sandboxShared';
@@ -22,7 +22,7 @@ import {
 import { logger } from '@/lib/logger';
 import { errorMessageIncludes, userFacingMessage } from '@/lib/errors';
 
-const hasClerkKey = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+
 
 type Role = 'STUDENT' | 'MENTOR';
 
@@ -103,108 +103,6 @@ function GoogleButton({ loading, onClick }: { loading: boolean; onClick: () => v
 }
 
 export default function SignupPage() {
-  if (hasClerkKey) {
-    return <ClerkSignupPage />;
-  }
-  return <CustomSignupPage />;
-}
-
-function ClerkSignupPage() {
-  const goAuthenticated = useAuthenticatedRedirect();
-  const clerk = useClerk();
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [role, setRole] = useState<Role>('STUDENT');
-  const [registrationKey, setRegistrationKey] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
-
-  // See the matching note on the sign-in page: no email-posting fallback here,
-  // because it authenticated the caller as an arbitrary address without a
-  // password. A failed Google sign-up must surface as an error.
-  const handleGoogleSignUp = async () => {
-    setError('');
-    setGoogleLoading(true);
-    try {
-      if (!clerk?.client?.signUp) {
-        throw new Error('Google Sign-Up is unavailable right now. Please sign up with your email.');
-      }
-
-
-      await clerk.client.signUp.authenticateWithRedirect({
-        strategy: 'oauth_google',
-        redirectUrl: '/sso-callback',
-        redirectUrlComplete: '/api/auth/clerk-sync',
-      });
-    } catch (err) {
-      logger.error('Google Sign-Up error', err);
-      setError(userFacingMessage(err, 'Google Sign-Up failed. Please try again.'));
-      setGoogleLoading(false);
-    }
-  };
-
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    try {
-      const res = await fetch('/api/auth/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name,
-          email,
-          password,
-          role,
-          registrationKey: role === 'MENTOR' ? registrationKey : undefined,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Registration failed');
-      }
-
-      await goAuthenticated('/onboarding');
-    } catch (err) {
-      setLoading(false);
-      if (errorMessageIncludes(err, 'already exists')) {
-        setError('This email is already registered — sign in instead.');
-      } else {
-        setError(userFacingMessage(err, 'Something went wrong'));
-      }
-    }
-  };
-
-  return (
-    <>
-      <AnimatePresence>{loading && <OnboardingHandoff />}</AnimatePresence>
-      <SignupTemplate
-        name={name}
-        setName={setName}
-        email={email}
-        setEmail={setEmail}
-        password={password}
-        setPassword={setPassword}
-        role={role}
-        setRole={setRole}
-        registrationKey={registrationKey}
-        setRegistrationKey={setRegistrationKey}
-        error={error}
-        loading={loading}
-        googleLoading={googleLoading}
-        handleGoogleSignUp={handleGoogleSignUp}
-        handleSubmit={handleSubmit}
-      />
-    </>
-  );
-}
-
-function CustomSignupPage() {
   const goAuthenticated = useAuthenticatedRedirect();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -215,24 +113,10 @@ function CustomSignupPage() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
-  const handleGoogleSignUp = async () => {
+  const handleGoogleSignUp = () => {
     setError('');
     setGoogleLoading(true);
-    try {
-      const res = await fetch('/api/auth/clerk-sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email || 'new.student@glbajajgroup.org', role }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Google Sign-Up failed');
-      await goAuthenticated('/onboarding');
-    } catch (err) {
-      logger.error('Google Sign-Up error', err);
-      setError(userFacingMessage(err, 'Google Sign-Up failed. Please try again.'));
-    } finally {
-      setGoogleLoading(false);
-    }
+    window.location.href = `/api/auth/google?role=${role}`;
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -451,7 +335,7 @@ function SignupTemplate({
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  hint="Must be @glbajaj.org or @glbajajgroup.org"
+                  hint="Must be @glbajajgroup.org"
                   error={error && !alreadyRegistered ? error : undefined}
                 />
 

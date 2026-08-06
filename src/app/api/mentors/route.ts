@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { checkUserRateLimit } from '@/lib/rateLimit';
+import { mentorSearchQuerySchema, parseQuery } from '@/lib/validation';
 import { logger } from '@/lib/logger';
 
 
@@ -49,8 +50,11 @@ export async function GET(request: Request) {
     const limited = await checkUserRateLimit(request, decoded.userId);
     if (limited) return limited;
 
-    const { searchParams } = new URL(request.url);
-    const expertiseQuery = searchParams.get('expertise')?.trim().toLowerCase();
+    const parsedQuery = parseQuery(request.url, mentorSearchQuerySchema);
+    if (!parsedQuery.success) {
+      return NextResponse.json({ error: 'Invalid search filters.' }, { status: 400 });
+    }
+    const expertiseQuery = parsedQuery.data.expertise?.toLowerCase();
 
     let mentors = await getCachedMentors();
 

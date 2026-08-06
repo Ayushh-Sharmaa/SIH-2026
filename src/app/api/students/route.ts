@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { checkUserRateLimit } from '@/lib/rateLimit';
+import { studentSearchQuerySchema, parseQuery } from '@/lib/validation';
 import { logger } from '@/lib/logger';
 
 
@@ -54,11 +55,15 @@ export async function GET(request: Request) {
     const limited = await checkUserRateLimit(request, decoded.userId);
     if (limited) return limited;
 
-    const { searchParams } = new URL(request.url);
-    const skillQuery = searchParams.get('skill')?.trim().toLowerCase();
-    const softSkillQuery = searchParams.get('softSkill')?.trim();
-    const languageQuery = searchParams.get('language')?.trim();
-    const trackIdQuery = searchParams.get('trackId')?.trim();
+    const parsedQuery = parseQuery(request.url, studentSearchQuerySchema);
+    if (!parsedQuery.success) {
+      return NextResponse.json({ error: 'Invalid search filters.' }, { status: 400 });
+    }
+
+    const skillQuery = parsedQuery.data.skill?.toLowerCase();
+    const softSkillQuery = parsedQuery.data.softSkill;
+    const languageQuery = parsedQuery.data.language;
+    const trackIdQuery = parsedQuery.data.trackId;
 
     // Get base list from cache, filtering oneself out
     let students = await getCachedStudents();

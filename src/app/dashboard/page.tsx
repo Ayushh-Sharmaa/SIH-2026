@@ -401,11 +401,17 @@ export default function DashboardPage() {
     setActionLoading(requestId);
 
     // Optimistic UI Update: hide the request immediately
+    //
+    // This block referenced `data.mentorRequests`, which the dashboard API has
+    // never returned — the payload field is `pendingRequests`, and that is what
+    // every render site below reads. The guard was therefore always false, so
+    // the optimistic update never ran and the row stayed on screen until the
+    // refetch completed.
     const previousData = data;
-    if (data && data.mentorRequests) {
+    if (data && data.pendingRequests) {
       setData({
         ...data,
-        mentorRequests: data.mentorRequests.filter((r: any) => r.id !== requestId),
+        pendingRequests: data.pendingRequests.filter((r) => r.id !== requestId),
       });
     }
 

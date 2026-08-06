@@ -23,6 +23,8 @@ export default function SSOCallbackPage() {
       <div className="size-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       <p className="text-sm font-semibold text-muted">Completing Google sign-in…</p>
       <AuthenticateWithRedirectCallback
+        signInForceRedirectUrl="/api/auth/clerk-sync"
+        signUpForceRedirectUrl="/api/auth/clerk-sync"
         signInFallbackRedirectUrl="/api/auth/clerk-sync"
         signUpFallbackRedirectUrl="/api/auth/clerk-sync"
       />

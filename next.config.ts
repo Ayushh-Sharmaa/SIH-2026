@@ -16,18 +16,18 @@ const isDev = process.env.NODE_ENV === 'development';
 
 const CSP = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline' https://*.clerk.accounts.dev${isDev ? " 'unsafe-eval'" : ''}`,
+  `script-src 'self' 'unsafe-inline' https://*.clerk.accounts.dev https://*.accounts.dev https://challenges.cloudflare.com${isDev ? " 'unsafe-eval'" : ''}`,
   "style-src 'self' 'unsafe-inline'",
   // next/font self-hosts the Google fonts at build time, so no external origin.
   "font-src 'self' data:",
-  "img-src 'self' data: blob: https://lh3.googleusercontent.com https://img.clerk.com https://*.clerk.accounts.dev",
-  "connect-src 'self' https://*.supabase.co https://*.clerk.accounts.dev https://api.clerk.com",
-  "frame-src 'self' https://*.clerk.accounts.dev",
+  "img-src 'self' data: blob: https://lh3.googleusercontent.com https://img.clerk.com https://*.clerk.accounts.dev https://*.accounts.dev",
+  "connect-src 'self' https://*.supabase.co https://*.clerk.accounts.dev https://*.accounts.dev https://*.protect.clerk.com https://api.clerk.com",
+  "frame-src 'self' https://*.clerk.accounts.dev https://*.accounts.dev https://challenges.cloudflare.com",
   "worker-src 'self' blob:",
   "object-src 'none'",
   "base-uri 'self'",
   // Blocks <form action="https://attacker"> exfiltration.
-  "form-action 'self' https://*.clerk.accounts.dev",
+  "form-action 'self' https://*.clerk.accounts.dev https://*.accounts.dev",
   // Modern replacement for X-Frame-Options; also covers nested frames.
   "frame-ancestors 'none'",
   'upgrade-insecure-requests',

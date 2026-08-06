@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { checkUserRateLimit } from '@/lib/rateLimit';
+import { teamMemberActionSchema } from '@/lib/validation';
 import { recalculateTeamSkills } from '@/lib/derived';
 import { TeamStatus, Prisma } from '@prisma/client';
 import { logger } from '@/lib/logger';
@@ -20,10 +22,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { action, targetUserId } = await request.json(); // 'leave' or 'kick'
-    if (action !== 'leave' && action !== 'kick') {
-      return NextResponse.json({ error: 'Invalid action. Must be leave or kick.' }, { status: 400 });
+    // Authenticated user rate limit check
+    const rateLimitResponse = await checkUserRateLimit(request, decoded.userId);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
     }
+
+    const body = await request.json().catch(() => ({}));
+    
+    // Parse/Validate input using Zod Schema
+    const parsed = teamMemberActionSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid membership action format.' }, { status: 400 });
+    }
+
+    const { action, targetUserId } = parsed.data;
 
     // Fetch caller's profile to find their teamId
     const caller = await prisma.studentProfile.findUnique({

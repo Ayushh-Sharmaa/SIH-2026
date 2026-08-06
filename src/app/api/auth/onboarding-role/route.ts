@@ -2,16 +2,13 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken, signToken } from '@/lib/auth';
+import { checkUserRateLimit } from '@/lib/rateLimit';
+import { onboardingRoleSchema } from '@/lib/validation';
 import { logger } from '@/lib/logger';
 import { setSessionCookie } from '@/lib/sessionCookie';
 
 export async function POST(request: Request) {
   try {
-    const { role, registrationKey } = await request.json();
-    if (role !== 'STUDENT' && role !== 'MENTOR') {
-      return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
-    }
-
     const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;
     if (!token) {
@@ -22,6 +19,22 @@ export async function POST(request: Request) {
     if (!decoded) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    // Authenticated user rate limit check
+    const rateLimitResponse = await checkUserRateLimit(request, decoded.userId);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
+    }
+
+    const body = await request.json().catch(() => ({}));
+    
+    // Parse/Validate input using Zod Schema
+    const parsed = onboardingRoleSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid payload format.' }, { status: 400 });
+    }
+
+    const { role, registrationKey } = parsed.data;
 
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
@@ -34,7 +47,7 @@ export async function POST(request: Request) {
 
     let isUsingDbKey = false;
     if (role === 'MENTOR') {
-      const masterKey = 'GLB-MENTOR-MASTER-2026-SECURE';
+      const masterKey = process.env.GLB_MENTOR_MASTER_KEY || 'GLB-MENTOR-MASTER-2026-SECURE';
       let isMentorVerified = false;
       if (registrationKey === masterKey) {
         isMentorVerified = true;

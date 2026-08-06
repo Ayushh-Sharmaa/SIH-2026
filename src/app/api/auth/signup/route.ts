@@ -4,22 +4,26 @@ import { Prisma } from '@prisma/client';
 import { hashPassword, signToken, normalizeEmail, isAllowedCollegeEmail } from '@/lib/auth';
 import { isUserBanned } from '@/lib/admin';
 import { ensureSandboxUser, parseSandboxRequest } from '@/lib/sandbox';
-import { clientIp, createRateLimiter, tooManyRequests } from '@/lib/rateLimit';
+import { checkAuthRateLimit, recordAuthFailure, recordAuthSuccess } from '@/lib/rateLimit';
+import { signupSchema } from '@/lib/validation';
 import { logger } from '@/lib/logger';
 import { setSessionCookie } from '@/lib/sessionCookie';
 
-const bySignupIp = createRateLimiter({ limit: 5, windowMs: 60 * 60_000, prefix: 'signup:ip' });
-const MIN_PASSWORD_LENGTH = 8;
-
 export async function POST(request: Request) {
+  let requestEmail: string | undefined;
   try {
-    const { email: rawEmail, password, role, name, registrationKey } = await request.json();
-
-    if (!rawEmail) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    const body = await request.json().catch(() => ({}));
+    
+    // Parse/Validate input using Zod Schema
+    const parsed = signupSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Missing required fields or invalid format.' }, { status: 400 });
     }
 
-    const sandboxRole = parseSandboxRequest(String(rawEmail));
+    const { email: rawEmail, password, role, name, registrationKey } = parsed.data;
+    requestEmail = rawEmail;
+
+    const sandboxRole = parseSandboxRequest(rawEmail);
     if (sandboxRole) {
       const { user, name: sandboxName, role: resolvedRole } = await ensureSandboxUser(sandboxRole);
       const token = signToken({ userId: user.id, email: user.email, role: resolvedRole });
@@ -32,36 +36,19 @@ export async function POST(request: Request) {
       });
 
       setSessionCookie(sandboxResponse.cookies, token);
-
       return sandboxResponse;
     }
 
-    if (!password || !role || !name) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
-    }
-
-    const rateCheck = await bySignupIp(clientIp(request));
-    if (!rateCheck.ok) {
-      return tooManyRequests(
-        rateCheck,
-        'Too many accounts created from this connection. Please try again later.'
-      );
-    }
-
-    if (typeof password !== 'string' || password.length < MIN_PASSWORD_LENGTH) {
-      return NextResponse.json(
-        { error: `Please choose a password of at least ${MIN_PASSWORD_LENGTH} characters.` },
-        { status: 400 }
-      );
-    }
-
-    if (role !== 'STUDENT' && role !== 'MENTOR') {
-      return NextResponse.json({ error: 'Invalid role specified' }, { status: 400 });
+    // Hardened rate limiting checks
+    const rateLimitResponse = await checkAuthRateLimit(request, rawEmail);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
     }
 
     const email = normalizeEmail(rawEmail);
 
     if (!isAllowedCollegeEmail(email)) {
+      recordAuthFailure(request, email);
       return NextResponse.json({ error: 'Access restricted. Please use your official GL Bajaj email ID.' }, { status: 400 });
     }
 
@@ -70,11 +57,13 @@ export async function POST(request: Request) {
     });
 
     if (existingUser) {
+      recordAuthFailure(request, email);
       return NextResponse.json({ error: 'User with this email already exists.' }, { status: 400 });
     }
 
     // A revoked account must not be able to re-register itself back in.
     if (await isUserBanned(email)) {
+      recordAuthFailure(request, email);
       return NextResponse.json(
         { error: 'Account Suspended: Your access has been revoked by the system administrator.' },
         { status: 403 }
@@ -85,7 +74,7 @@ export async function POST(request: Request) {
     let isUsingDbKey = false;
 
     if (role === 'MENTOR') {
-      const masterKey = 'GLB-MENTOR-MASTER-2026-SECURE';
+      const masterKey = process.env.GLB_MENTOR_MASTER_KEY || 'GLB-MENTOR-MASTER-2026-SECURE';
       if (registrationKey === masterKey) {
         isMentorVerified = true;
       } else if (registrationKey) {
@@ -96,6 +85,11 @@ export async function POST(request: Request) {
           isMentorVerified = true;
           isUsingDbKey = true;
         }
+      }
+
+      if (!isMentorVerified) {
+        recordAuthFailure(request, email);
+        return NextResponse.json({ error: 'Invalid or already used mentor registration key.' }, { status: 400 });
       }
     }
 
@@ -143,10 +137,9 @@ export async function POST(request: Request) {
               userId: user.id,
               name,
               designation: '',
-              organization: '',
+              organization: 'GL Bajaj Group of Institutions',
               expertise: [],
               verified: isMentorVerified,
-              registrationKey: registrationKey || null,
             },
           });
         }
@@ -154,6 +147,7 @@ export async function POST(request: Request) {
         return user;
       });
     } catch (error) {
+      recordAuthFailure(request, email);
       if (error instanceof Error && error.message === KEY_TAKEN) {
         return NextResponse.json(
           { error: 'Invalid or already used mentor registration key.' },
@@ -162,6 +156,9 @@ export async function POST(request: Request) {
       }
       throw error;
     }
+
+    // Reset failures on success
+    recordAuthSuccess(request, email);
 
     const token = signToken({ userId: newUser.id, email: newUser.email, role: newUser.role });
 
@@ -179,6 +176,9 @@ export async function POST(request: Request) {
 
     return response;
   } catch (error) {
+    if (requestEmail) {
+      recordAuthFailure(request, requestEmail);
+    }
     logger.error('Signup error', error);
     return NextResponse.json({ error: 'An error occurred during registration.' }, { status: 500 });
   }

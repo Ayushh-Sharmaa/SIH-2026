@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { checkUserRateLimit } from '@/lib/rateLimit';
+import { respondMentorRequestSchema } from '@/lib/validation';
 import { Prisma } from '@prisma/client';
 import { logger } from '@/lib/logger';
 
@@ -23,10 +25,21 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized. Only mentors can respond to requests.' }, { status: 401 });
     }
 
-    const { action } = await request.json(); // 'accept' or 'decline'
-    if (action !== 'accept' && action !== 'decline') {
-      return NextResponse.json({ error: 'Invalid action specified. Must be accept or decline.' }, { status: 400 });
+    // Authenticated user rate limit check
+    const rateLimitResponse = await checkUserRateLimit(request, decoded.userId);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
     }
+
+    const body = await request.json().catch(() => ({}));
+    
+    // Parse/Validate input using Zod Schema
+    const parsed = respondMentorRequestSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid request parameters.' }, { status: 400 });
+    }
+
+    const { action } = parsed.data;
 
     // 1. Fetch the request
     const mentorRequest = await prisma.mentorRequest.findUnique({

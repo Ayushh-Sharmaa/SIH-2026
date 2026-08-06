@@ -2,11 +2,11 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { checkUserRateLimit } from '@/lib/rateLimit';
+import { studentProfileSchema } from '@/lib/validation';
 import {
   MAX_TAGS,
   avatarDataUri,
-  optionalText,
-  requiredText,
   safeUrl,
   tagArray,
 } from '@/lib/validate';
@@ -29,7 +29,20 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json();
+    // Authenticated user rate limit check
+    const rateLimitResponse = await checkUserRateLimit(request, decoded.userId);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
+    }
+
+    const body = await request.json().catch(() => ({}));
+    
+    // Parse/Validate input using Zod Schema
+    const parsed = studentProfileSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid profile information format.' }, { status: 400 });
+    }
+
     const {
       name,
       year,
@@ -44,20 +57,8 @@ export async function PUT(request: Request) {
       githubUrl,
       linkedinUrl,
       avatarUrl,
-      trackInterest, // Array of track IDs
-    } = body;
-
-    if (!name || !year || !branch) {
-      return NextResponse.json({ error: 'Missing basic profile information' }, { status: 400 });
-    }
-
-    const cleanName = requiredText(name);
-    const cleanYear = requiredText(year, 40);
-    const cleanBranch = requiredText(branch, 40);
-
-    if (!cleanName || !cleanYear || !cleanBranch) {
-      return NextResponse.json({ error: 'Missing basic profile information' }, { status: 400 });
-    }
+      trackInterest,
+    } = parsed.data;
 
     // Only ids the platform actually publishes are accepted. Without this an
     // arbitrary string reaches the `trackInterest` relation connect and Prisma
@@ -72,12 +73,12 @@ export async function PUT(request: Request) {
     const updatedProfile = await prisma.studentProfile.update({
       where: { userId: decoded.userId },
       data: {
-        name: cleanName,
-        year: cleanYear,
-        branch: cleanBranch,
-        gender: optionalText(gender, 40),
-        rollNo: optionalText(rollNo, 40),
-        section: optionalText(section, 10),
+        name,
+        year,
+        branch,
+        gender: gender || null,
+        rollNo: rollNo || null,
+        section: section || null,
         skills: tagArray(skills),
         languages: tagArray(languages),
         softSkills: tagArray(softSkills),
@@ -123,6 +124,12 @@ export async function GET(request: Request) {
     const decoded = verifyToken(token);
     if (!decoded) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Authenticated user rate limit check
+    const rateLimitResponse = await checkUserRateLimit(request, decoded.userId);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
     }
 
     const { searchParams } = new URL(request.url);

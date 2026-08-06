@@ -3,7 +3,8 @@ import { prisma } from '@/lib/prisma';
 import { comparePassword, signToken, normalizeEmail } from '@/lib/auth';
 import { isAuthorizedAdminEmail, isUserBanned, stripAdminSuffix } from '@/lib/admin';
 import { ensureSandboxUser, parseSandboxRequest } from '@/lib/sandbox';
-import { clientIp, createRateLimiter, tooManyRequests } from '@/lib/rateLimit';
+import { checkAuthRateLimit, recordAuthFailure, recordAuthSuccess } from '@/lib/rateLimit';
+import { loginSchema } from '@/lib/validation';
 import { logger } from '@/lib/logger';
 import { setSessionCookie } from '@/lib/sessionCookie';
 
@@ -12,23 +13,24 @@ function setTokenCookie(response: NextResponse, token: string) {
   return response;
 }
 
-const byIp = createRateLimiter({ limit: 10, windowMs: 60_000, prefix: 'login:ip' });
-const byAccount = createRateLimiter({ limit: 5, windowMs: 15 * 60_000, prefix: 'login:acct' });
-
 const DUMMY_HASH = '$2b$12$C6UzMDM.H6dfI/f/IKcEeO.Aq6M3xM.qXhLvI1nRJKtvXqM5FZ3Xq';
 
 export async function POST(request: Request) {
+  let requestEmail: string | undefined;
   try {
-    const { email, password } = await request.json();
-
-    if (!email) {
-      return NextResponse.json({ error: 'Email is required' }, { status: 400 });
+    const body = await request.json().catch(() => ({}));
+    
+    // Parse/Validate input using Zod Schema
+    const parsed = loginSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid email or password format.' }, { status: 400 });
     }
 
-    const rawEmail = String(email).trim();
+    const { email, password } = parsed.data;
+    requestEmail = email;
 
     // Passwordless sandbox access
-    const sandboxRole = parseSandboxRequest(rawEmail);
+    const sandboxRole = parseSandboxRequest(email);
     if (sandboxRole) {
       const { user, name, role } = await ensureSandboxUser(sandboxRole);
       const token = signToken({ userId: user.id, email: user.email, role });
@@ -44,27 +46,17 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!password) {
-      return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
-    }
+    const isAdminIntent = /\/admin$/i.test(email);
+    const cleanEmail = stripAdminSuffix(email);
 
-    const isAdminIntent = /\/admin$/i.test(rawEmail);
-    const cleanEmail = stripAdminSuffix(rawEmail);
-
-    const ipCheck = await byIp(clientIp(request));
-    if (!ipCheck.ok) {
-      return tooManyRequests(ipCheck, 'Too many sign-in attempts. Please wait a moment and try again.');
-    }
-
-    const accountCheck = await byAccount(cleanEmail);
-    if (!accountCheck.ok) {
-      return tooManyRequests(
-        accountCheck,
-        'This account has had too many failed sign-in attempts. Please try again in a few minutes.'
-      );
+    // Hardened rate limiting checks
+    const rateLimitResponse = await checkAuthRateLimit(request, cleanEmail);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
     }
 
     if (await isUserBanned(cleanEmail)) {
+      recordAuthFailure(request, cleanEmail);
       return NextResponse.json(
         { error: 'Account Suspended: Your access has been revoked by the system administrator.' },
         { status: 403 }
@@ -75,6 +67,7 @@ export async function POST(request: Request) {
 
     if (isAdminIntent) {
       if (!isAuthorizedAdmin) {
+        recordAuthFailure(request, cleanEmail);
         return NextResponse.json(
           { error: 'Access Denied: This email address has not been granted Admin permissions.' },
           { status: 403 }
@@ -91,13 +84,18 @@ export async function POST(request: Request) {
 
       if (!user) {
         await comparePassword(password, DUMMY_HASH);
+        recordAuthFailure(request, cleanEmail);
         return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
       }
 
       const isPasswordCorrect = await comparePassword(password, user.passwordHash);
       if (!isPasswordCorrect) {
+        recordAuthFailure(request, cleanEmail);
         return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
       }
+
+      // Reset failures on success
+      recordAuthSuccess(request, cleanEmail);
 
       const token = signToken({ userId: user.id, email: cleanEmail, role: 'ADMIN' });
 
@@ -129,13 +127,18 @@ export async function POST(request: Request) {
 
     if (!user) {
       await comparePassword(password, DUMMY_HASH);
+      recordAuthFailure(request, cleanEmail);
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
     }
 
     const isPasswordCorrect = await comparePassword(password, user.passwordHash);
     if (!isPasswordCorrect) {
+      recordAuthFailure(request, cleanEmail);
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
     }
+
+    // Reset failures on success
+    recordAuthSuccess(request, cleanEmail);
 
     const name = user.studentProfile?.name || user.mentorProfile?.name || 'User';
     const userRole = user.role === 'ADMIN' ? 'STUDENT' : user.role;
@@ -149,6 +152,9 @@ export async function POST(request: Request) {
       token
     );
   } catch (error) {
+    if (requestEmail) {
+      recordAuthFailure(request, requestEmail);
+    }
     logger.error('Login error', error);
     return NextResponse.json({ error: 'An error occurred during authentication.' }, { status: 500 });
   }

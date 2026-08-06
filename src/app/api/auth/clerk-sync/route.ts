@@ -3,6 +3,8 @@ import { currentUser } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
 import { signToken, normalizeEmail, isAllowedCollegeEmail } from '@/lib/auth';
 import { isUserBanned } from '@/lib/admin';
+import { checkAuthRateLimit } from '@/lib/rateLimit';
+import { onboardingRoleSchema } from '@/lib/validation';
 import { logger } from '@/lib/logger';
 import { setSessionCookie } from '@/lib/sessionCookie';
 
@@ -81,13 +83,16 @@ export async function GET(request: Request) {
 
     email = normalizeEmail(email);
 
+    // Hardened rate limiting checks
+    const rateLimitResponse = await checkAuthRateLimit(request, email);
+    if (rateLimitResponse) {
+      return NextResponse.redirect(new URL('/login?error=rate_limited', request.url));
+    }
+
     if (!isAllowedCollegeEmail(email)) {
       return NextResponse.redirect(new URL('/login?error=domain_not_allowed', request.url));
     }
 
-    // A ban has to be enforced on every way in, not just the password form.
-    // `/api/auth/login` checked this and Google sign-in did not, so a revoked
-    // account could walk straight back in through the OAuth button.
     if (await isUserBanned(email)) {
       return NextResponse.redirect(new URL('/login?error=account_suspended', request.url));
     }
@@ -108,17 +113,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json().catch(() => ({}));
-
     // The email MUST come from the verified Clerk session and nothing else.
-    //
-    // This previously fell back to `body.email` - a value supplied by the
-    // caller - and minted a full session for whatever address was sent, with
-    // no password and no proof of ownership. Any unauthenticated request to
-    // this endpoint could therefore sign in as any user, and the sign-in page
-    // did exactly that: its Google error handler posted a hardcoded super
-    // admin address, so a failed Google sign-in silently handed the caller an
-    // admin session.
     let email: string | undefined;
     try {
       const clerkUser = await currentUser();
@@ -126,8 +121,6 @@ export async function POST(request: Request) {
     } catch (e) {
       logger.error('Clerk currentUser() failed.', e);
     }
-
-    const role = body.role === 'MENTOR' ? 'MENTOR' : 'STUDENT';
 
     if (!email) {
       return NextResponse.json(
@@ -137,6 +130,22 @@ export async function POST(request: Request) {
     }
 
     email = normalizeEmail(email);
+
+    // Hardened rate limiting checks
+    const rateLimitResponse = await checkAuthRateLimit(request, email);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
+    }
+
+    const body = await request.json().catch(() => ({}));
+    
+    // Parse/Validate input using Zod Schema
+    const parsed = onboardingRoleSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid sync parameter formats.' }, { status: 400 });
+    }
+
+    const { role } = parsed.data;
 
     if (!isAllowedCollegeEmail(email)) {
       return NextResponse.json(
@@ -171,14 +180,9 @@ export async function POST(request: Request) {
     return response;
   } catch (error) {
     logger.error('Clerk POST sync failed', error);
-    // The raw message used to be returned to the caller. That is an information
-    // disclosure: a driver failure here carries the failing query, which can
-    // include an email address, and a connection failure carries the database
-    // host and port. The detail belongs in the log, where operators can reach
-    // it; the client gets a fixed string.
     return NextResponse.json(
       { error: 'Failed to synchronize user account' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { checkUserRateLimit } from '@/lib/rateLimit';
+import { teamInviteSchema, respondTeamInviteSchema } from '@/lib/validation';
 import { recalculateTeamSkills } from '@/lib/derived';
 import { TeamStatus, Prisma } from '@prisma/client';
 import { logger } from '@/lib/logger';
@@ -20,10 +22,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { studentId } = await request.json();
-    if (!studentId) {
-      return NextResponse.json({ error: 'Student ID to invite is required.' }, { status: 400 });
+    // Authenticated user rate limit check
+    const rateLimitResponse = await checkUserRateLimit(request, decoded.userId);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
     }
+
+    const body = await request.json().catch(() => ({}));
+    
+    // Parse/Validate input using Zod Schema
+    const parsed = teamInviteSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid invite parameters.' }, { status: 400 });
+    }
+
+    const { studentId } = parsed.data;
 
     // Fetch caller's profile to check if they are a team leader
     const caller = await prisma.studentProfile.findUnique({
@@ -102,10 +115,21 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { inviteId, action } = await request.json(); // 'accept' or 'decline'
-    if (!inviteId || (action !== 'accept' && action !== 'decline')) {
-      return NextResponse.json({ error: 'Invite ID and valid action (accept/decline) are required.' }, { status: 400 });
+    // Authenticated user rate limit check
+    const rateLimitResponse = await checkUserRateLimit(request, decoded.userId);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
     }
+
+    const body = await request.json().catch(() => ({}));
+    
+    // Parse/Validate input using Zod Schema
+    const parsed = respondTeamInviteSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid invitation response parameters.' }, { status: 400 });
+    }
+
+    const { inviteId, action } = parsed.data;
 
     const invite = await prisma.teamInvite.findUnique({
       where: { id: inviteId },

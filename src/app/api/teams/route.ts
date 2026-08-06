@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { checkUserRateLimit } from '@/lib/rateLimit';
+import { createTeamSchema } from '@/lib/validation';
 import { recalculateTeamSkills } from '@/lib/derived';
 import { TeamStatus, Prisma } from '@prisma/client';
 import { logger } from '@/lib/logger';
@@ -20,10 +22,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized. Only students can create teams.' }, { status: 401 });
     }
 
-    const { name, trackId, whatsapp } = await request.json();
-    if (!name?.trim() || !trackId?.trim()) {
-      return NextResponse.json({ error: 'Team name and Track ID are required.' }, { status: 400 });
+    // Authenticated user rate limit check
+    const rateLimitResponse = await checkUserRateLimit(request, decoded.userId);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
     }
+
+    const body = await request.json().catch(() => ({}));
+    
+    // Parse/Validate input using Zod Schema
+    const parsed = createTeamSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid team creation parameters.' }, { status: 400 });
+    }
+
+    const { name, trackId, whatsapp } = parsed.data;
 
     // Check if the student has a profile and is not already in a team
     const student = await prisma.studentProfile.findUnique({
@@ -52,11 +65,11 @@ export async function POST(request: Request) {
       // 1. Create the team
       const team = await tx.team.create({
         data: {
-          name: name.trim(),
+          name,
           trackId: trackId,
           leaderId: decoded.userId,
           status: 'forming',
-          whatsapp: whatsapp?.trim() || null,
+          whatsapp: whatsapp || null,
         },
       });
 

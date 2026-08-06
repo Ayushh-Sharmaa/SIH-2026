@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { checkUserRateLimit } from '@/lib/rateLimit';
+import { mentorRequestSchema } from '@/lib/validation';
 import { logger } from '@/lib/logger';
 
 export async function POST(request: Request) {
@@ -18,10 +20,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { mentorId, message } = await request.json();
-    if (!mentorId) {
-      return NextResponse.json({ error: 'Mentor ID is required.' }, { status: 400 });
+    // Authenticated user rate limit check
+    const rateLimitResponse = await checkUserRateLimit(request, decoded.userId);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
     }
+
+    const body = await request.json().catch(() => ({}));
+    
+    // Parse/Validate input using Zod Schema
+    const parsed = mentorRequestSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid request parameters.' }, { status: 400 });
+    }
+
+    const { mentorId, message } = parsed.data;
 
     // Fetch caller's profile to check if they are the leader of a team
     const caller = await prisma.studentProfile.findUnique({
@@ -79,7 +92,7 @@ export async function POST(request: Request) {
       data: {
         teamId: team.id,
         mentorId: mentorId,
-        message: message?.trim(),
+        message: message || null,
         status: 'pending',
       },
     });

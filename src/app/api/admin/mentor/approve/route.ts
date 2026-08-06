@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
+import { checkUserRateLimit } from '@/lib/rateLimit';
+import { adminMentorApproveSchema } from '@/lib/validation';
 import { isAuthorizedAdminEmail } from '@/lib/admin';
 import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
@@ -19,12 +21,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Forbidden: Admin permissions required.' }, { status: 403 });
     }
 
-    const body = await request.json();
-    const { mentorId } = body;
-
-    if (!mentorId) {
-      return NextResponse.json({ error: 'Mentor ID is required.' }, { status: 400 });
+    // Authenticated user rate limit check
+    const rateLimitResponse = await checkUserRateLimit(request, decoded.userId);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
     }
+
+    const body = await request.json().catch(() => ({}));
+    
+    // Parse/Validate input using Zod Schema
+    const parsed = adminMentorApproveSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid parameters format.' }, { status: 400 });
+    }
+
+    const { mentorId } = parsed.data;
 
     await prisma.mentorProfile.update({
       where: { userId: mentorId },

@@ -2,11 +2,11 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { checkUserRateLimit } from '@/lib/rateLimit';
+import { mentorProfileSchema } from '@/lib/validation';
 import {
-  boundedInt,
   MAX_TEXT,
   optionalText,
-  requiredText,
   safeUrl,
   tagArray,
 } from '@/lib/validate';
@@ -26,7 +26,20 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json();
+    // Authenticated user rate limit check
+    const rateLimitResponse = await checkUserRateLimit(request, decoded.userId);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
+    }
+
+    const body = await request.json().catch(() => ({}));
+    
+    // Parse/Validate input using Zod Schema
+    const parsed = mentorProfileSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid profile information format.' }, { status: 400 });
+    }
+
     const {
       name,
       designation,
@@ -35,44 +48,17 @@ export async function PUT(request: Request) {
       capacity,
       bio,
       linkedinUrl,
-    } = body;
-
-    if (!name || !designation || !organization) {
-      return NextResponse.json({ error: 'Missing basic profile information' }, { status: 400 });
-    }
-
-    const cleanName = requiredText(name);
-    const cleanDesignation = requiredText(designation);
-    const cleanOrganization = requiredText(organization);
-
-    if (!cleanName || !cleanDesignation || !cleanOrganization) {
-      return NextResponse.json({ error: 'Missing basic profile information' }, { status: 400 });
-    }
-
-    // Capacity gates every mentor-request accept (`currentLoad >= capacity`).
-    // Unbounded, a mentor could set it to 999999 and silently disable the gate
-    // for themselves; `parseInt('abc')` also produced NaN, which Prisma
-    // rejected as a 500 rather than a 400.
-    const cleanCapacity = capacity === undefined || capacity === null || capacity === ''
-      ? 2
-      : boundedInt(capacity, 1, 10);
-
-    if (cleanCapacity === null) {
-      return NextResponse.json(
-        { error: 'Capacity must be a whole number between 1 and 10.' },
-        { status: 400 }
-      );
-    }
+    } = parsed.data;
 
     // Update the MentorProfile
     const updatedProfile = await prisma.mentorProfile.update({
       where: { userId: decoded.userId },
       data: {
-        name: cleanName,
-        designation: cleanDesignation,
-        organization: cleanOrganization,
+        name,
+        designation,
+        organization,
         expertise: tagArray(expertise),
-        capacity: cleanCapacity,
+        capacity,
         bio: optionalText(bio, MAX_TEXT),
         linkedinUrl: safeUrl(linkedinUrl),
       },
@@ -85,7 +71,7 @@ export async function PUT(request: Request) {
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;
@@ -97,6 +83,12 @@ export async function GET() {
     const decoded = verifyToken(token);
     if (!decoded || decoded.role !== 'MENTOR') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Authenticated user rate limit check
+    const rateLimitResponse = await checkUserRateLimit(request, decoded.userId);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
     }
 
     const mentor = await prisma.mentorProfile.findUnique({

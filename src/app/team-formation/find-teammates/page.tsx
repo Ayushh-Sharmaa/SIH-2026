@@ -214,6 +214,7 @@ export default function FindTeammatesPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  const [name, setName] = useState('');
   const [skill, setSkill] = useState('');
   const [softSkill, setSoftSkill] = useState('');
   const [language, setLanguage] = useState('');
@@ -221,11 +222,12 @@ export default function FindTeammatesPage() {
   const [inviteState, setInviteState] = useState<Record<string, 'sending' | 'sent'>>({});
 
   const fetchTeammates = useCallback(
-    async (filters?: { skill: string; softSkill: string; language: string; trackId: string }) => {
-      const f = filters ?? { skill, softSkill, language, trackId };
+    async (filters?: { name: string; skill: string; softSkill: string; language: string; trackId: string }) => {
+      const f = filters ?? { name, skill, softSkill, language, trackId };
       setRefreshing(true);
       try {
         const queryParams = new URLSearchParams();
+        if (f.name) queryParams.append('name', f.name);
         if (f.skill) queryParams.append('skill', f.skill);
         if (f.softSkill) queryParams.append('softSkill', f.softSkill);
         if (f.language) queryParams.append('language', f.language);
@@ -242,7 +244,7 @@ export default function FindTeammatesPage() {
       }
     },
     // `toast` is memoised in ToastProvider, so its identity is stable.
-    [skill, softSkill, language, trackId, toast]
+    [name, skill, softSkill, language, trackId, toast]
   );
 
   useEffect(() => {
@@ -255,7 +257,7 @@ export default function FindTeammatesPage() {
         logger.error('Fetch tracks failed', err);
         toast('Could not load track filters. Please refresh.', 'error');
       }
-      await fetchTeammates({ skill: '', softSkill: '', language: '', trackId: '' });
+      await fetchTeammates({ name: '', skill: '', softSkill: '', language: '', trackId: '' });
       setLoading(false);
     }
     initPage();
@@ -269,11 +271,12 @@ export default function FindTeammatesPage() {
   };
 
   const handleReset = () => {
+    setName('');
     setSkill('');
     setSoftSkill('');
     setLanguage('');
     setTrackId('');
-    fetchTeammates({ skill: '', softSkill: '', language: '', trackId: '' });
+    fetchTeammates({ name: '', skill: '', softSkill: '', language: '', trackId: '' });
   };
 
   const sendInvite = async (student: Student) => {
@@ -377,6 +380,16 @@ export default function FindTeammatesPage() {
                 <div className="my-5 h-px bg-gradient-to-r from-[rgba(172,156,141,0.55)] to-transparent" />
 
                 <div className="space-y-4">
+                  <label className="block">
+                    <FilterLabel>Name</FilterLabel>
+                    <input
+                      type="text"
+                      placeholder="e.g. John"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className={CONTROL}
+                    />
+                  </label>
                   <label className="block">
                     <FilterLabel>Tech skill</FilterLabel>
                     <input

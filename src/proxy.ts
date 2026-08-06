@@ -1,3 +1,4 @@
+import { clerkMiddleware } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { verifyToken } from '@/lib/auth';
@@ -14,6 +15,7 @@ const PUBLIC_PATHS = [
   /^\/signup/,
   /^\/api\/auth/,
   /^\/tracks/,
+  /^\/sso-callback/,
 ];
 
 function isPublicRoute(pathname: string): boolean {
@@ -46,7 +48,7 @@ function redirectToLogin(req: NextRequest) {
   return res;
 }
 
-export function proxy(req: NextRequest) {
+export const proxy = clerkMiddleware(async (auth, req) => {
   const { pathname } = req.nextUrl;
   
   if (isPublicRoute(pathname)) {
@@ -56,9 +58,14 @@ export function proxy(req: NextRequest) {
   if (hasValidSession(req)) {
     return NextResponse.next();
   }
+
+  const { userId } = await auth();
+  if (userId) {
+    return NextResponse.next();
+  }
   
   return redirectToLogin(req);
-}
+});
 
 export default proxy;
 

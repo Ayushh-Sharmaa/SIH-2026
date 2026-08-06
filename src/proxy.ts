@@ -15,6 +15,13 @@ const PUBLIC_PATHS = [
   /^\/signup/,
   /^\/api\/auth/,
   /^\/tracks/,
+  // The page pattern above does not cover this: `/^\/tracks/` is anchored at the
+  // start, so it misses `/api/tracks`, and the matcher below gates every `/api/*`
+  // path explicitly. That left the public /tracks page redirecting its own data
+  // fetch to /login, along with the three other client pages that read this route
+  // on mount. The payload is the build-time theme list — no user data — and the
+  // handler is GET-only and `force-static`, so there is nothing here to gate.
+  /^\/api\/tracks/,
   /^\/sso-callback/,
 ];
 

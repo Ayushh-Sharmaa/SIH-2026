@@ -233,6 +233,54 @@ export default function OnboardingPage() {
 
   const [selectedSoftSkills, setSelectedSoftSkills] = useState<string[]>([]);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [roleChosen, setRoleChosen] = useState<'STUDENT' | 'MENTOR' | null>(null);
+  const [mentorKey, setMentorKey] = useState('');
+  const [showMentorKeyInput, setShowMentorKeyInput] = useState(false);
+  const [showKeyErrorPopup, setShowKeyErrorPopup] = useState(false);
+
+  const handleSelectStudent = async () => {
+    setError('');
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/auth/onboarding-role', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: 'STUDENT' }),
+      });
+      if (!res.ok) throw new Error('Failed to set role');
+      
+      setRoleChosen('STUDENT');
+      setSession((prev) => prev ? { ...prev, user: prev.user ? { ...prev.user, role: 'STUDENT' } : null } : null);
+    } catch (err) {
+      setError('Failed to select role. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleVerifyMentorKey = async () => {
+    setError('');
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/auth/onboarding-role', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: 'MENTOR', registrationKey: mentorKey }),
+      });
+      
+      if (!res.ok) {
+        setShowKeyErrorPopup(true);
+        return;
+      }
+      
+      setRoleChosen('MENTOR');
+      setSession((prev) => prev ? { ...prev, user: prev.user ? { ...prev.user, role: 'MENTOR' } : null } : null);
+    } catch (err) {
+      setError('Verification failed. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const handleAvatarUpload = (file?: File) => {
     if (!file) return;
@@ -292,6 +340,9 @@ export default function OnboardingPage() {
         }
 
         setSession({ user: meData.user, status: 'authenticated' });
+        if (editMode || meData.user.isOnboarded) {
+          setRoleChosen(meData.user.role);
+        }
 
         const profileRoute = meData.user.role === 'STUDENT' ? '/api/profile/student' : '/api/profile/mentor';
         const profileRes = await fetch(profileRoute);
@@ -739,7 +790,7 @@ export default function OnboardingPage() {
     );
   }
 
-  const isStudent = session?.user?.role === 'STUDENT';
+  const isStudent = roleChosen ? roleChosen === 'STUDENT' : session?.user?.role === 'STUDENT';
   const fluencyMap = { Basic: '33%', Moderate: '66%', Fluent: '100%' };
 
   const STEPS = isStudent
@@ -754,6 +805,163 @@ export default function OnboardingPage() {
       ];
 
   const lastStep = STEPS[STEPS.length - 1].n;
+
+  if (!roleChosen && !isEditMode) {
+    return (
+      <div className="relative min-h-screen overflow-visible bg-background text-foreground">
+        <header className="section-warm relative overflow-hidden">
+          <Aurora variant="warm" spotlight />
+          <div aria-hidden className="grid-lines absolute inset-0" />
+          <Container width="narrow" className="relative flex items-center justify-between py-5">
+            <Link href="/" className="flex items-center gap-2.5">
+              <img
+                src="/Logo/NexaSphere Icon without Background.png"
+                alt=""
+                className="size-7 object-contain"
+              />
+              <span className="text-xs font-extrabold uppercase tracking-[0.18em] text-foreground">
+                SIH@GLBGOI
+              </span>
+            </Link>
+          </Container>
+          <Container width="narrow" className="relative pb-12 pt-6 text-center">
+            <SplitText
+              as="h1"
+              text="Welcome! Choose your path."
+              className="text-title text-foreground"
+              delay={0.08}
+            />
+            <Reveal delay={0.3} className="mt-3">
+              <p className="mx-auto max-w-md text-sm leading-relaxed text-muted">
+                Select your role to configure your workspace. Students can find teams and mentors, while mentors can guide and evaluate teams.
+              </p>
+            </Reveal>
+          </Container>
+        </header>
+
+        <main className="surface-sunken py-12">
+          <Container width="narrow" className="max-w-2xl">
+            <div className="grid gap-6 sm:grid-cols-2">
+              {/* Student Card */}
+              <m.div
+                whileHover={{ y: -4 }}
+                transition={SPRING.snappy}
+                onClick={handleSelectStudent}
+                className="surface-raised cursor-pointer rounded-3xl p-6 border border-[rgba(209,199,189,0.7)] hover:border-primary transition-colors duration-250 flex flex-col justify-between"
+              >
+                <div>
+                  <div className="size-12 rounded-2xl bg-[rgba(114,56,61,0.08)] text-primary flex items-center justify-center mb-4">
+                    <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-bold text-foreground">Student</h3>
+                  <p className="text-sm text-muted mt-2 leading-relaxed">
+                    Build or join a team, view the problem statements index, and request mentors for guidance.
+                  </p>
+                </div>
+                <div className="mt-6 flex items-center gap-2 text-sm font-bold text-primary">
+                  <span>Start Student Onboarding</span>
+                  <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </m.div>
+
+              {/* Mentor Card */}
+              <m.div
+                whileHover={{ y: -4 }}
+                transition={SPRING.snappy}
+                onClick={() => setShowMentorKeyInput(true)}
+                className="surface-raised cursor-pointer rounded-3xl p-6 border border-[rgba(209,199,189,0.7)] hover:border-primary transition-colors duration-250 flex flex-col justify-between"
+              >
+                <div>
+                  <div className="size-12 rounded-2xl bg-[rgba(114,56,61,0.08)] text-primary flex items-center justify-center mb-4">
+                    <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-bold text-foreground">Mentor</h3>
+                  <p className="text-sm text-muted mt-2 leading-relaxed">
+                    Guide student teams, review project descriptions, and manage mentorship requests.
+                  </p>
+                </div>
+                <div className="mt-6 flex items-center gap-2 text-sm font-bold text-primary">
+                  <span>Register as Mentor</span>
+                  <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </m.div>
+            </div>
+
+            {/* Mentor Key Prompt Modal/Section */}
+            <AnimatePresence>
+              {showMentorKeyInput && (
+                <m.div
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  className="mt-8 surface-raised rounded-3xl p-6 border border-[rgba(209,199,189,0.85)]"
+                >
+                  <h4 className="text-lg font-bold text-foreground">Mentor Verification</h4>
+                  <p className="text-xs text-muted mt-1">
+                    To register as a mentor, please provide the Mentor Secret Key provided by the admin.
+                  </p>
+                  
+                  <div className="mt-4 space-y-4">
+                    <Field
+                      label="Mentor Secret Key"
+                      type="password"
+                      value={mentorKey}
+                      onChange={(e) => setMentorKey(e.target.value)}
+                    />
+                    
+                    <div className="flex gap-3 justify-end">
+                      <PremiumButton variant="ghost" onClick={() => setShowMentorKeyInput(false)}>
+                        Cancel
+                      </PremiumButton>
+                      <PremiumButton onClick={handleVerifyMentorKey} loading={submitting}>
+                        Verify & Continue
+                      </PremiumButton>
+                    </div>
+                  </div>
+                </m.div>
+              )}
+            </AnimatePresence>
+
+            {/* Error Popup Alert Modal */}
+            <AnimatePresence>
+              {showKeyErrorPopup && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
+                  <m.div
+                    initial={{ scale: 0.95, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.95, opacity: 0 }}
+                    className="surface-raised max-w-md w-full rounded-3xl p-6 border border-[rgba(114,56,61,0.35)] shadow-2xl space-y-4 text-center"
+                  >
+                    <div className="size-12 rounded-full bg-[rgba(114,56,61,0.09)] text-primary mx-auto flex items-center justify-center">
+                      <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-xl font-bold text-foreground">Invalid Secret Key</h3>
+                    <p className="text-sm text-muted leading-relaxed">
+                      The key you entered is incorrect. Please contact the SIH GL Bajaj team to obtain a valid Mentor Registration Key.
+                    </p>
+                    <PremiumButton onClick={() => setShowKeyErrorPopup(false)} className="w-full">
+                      Close
+                    </PremiumButton>
+                  </m.div>
+                </div>
+              )}
+            </AnimatePresence>
+          </Container>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">

@@ -12,6 +12,7 @@ import SpotlightCard from '@/components/motion/SpotlightCard';
 import Reveal, { RevealGroup, RevealItem } from '@/components/motion/Reveal';
 import SplitText from '@/components/motion/SplitText';
 import PremiumButton from '@/components/motion/PremiumButton';
+import { useSession } from '@/lib/session';
 import Counter from '@/components/motion/Counter';
 import { TiltCard } from '@/components/motion/Magnetic';
 import { EASE, SPRING } from '@/components/motion/tokens';
@@ -217,6 +218,7 @@ function FaqItem({ q, a, index }: { q: string; a: string; index: number }) {
 }
 
 export default function Home() {
+  const { status } = useSession();
   const [activeSet, setActiveSet] = useState(0);
   const [activePhase, setActivePhase] = useState(0);
   const heroRef = useRef<HTMLElement>(null);
@@ -300,21 +302,38 @@ export default function Home() {
                 transition={{ duration: 0.8, delay: 0.92, ease: EASE.outExpo }}
                 className="mt-9 flex flex-wrap items-center gap-3"
               >
-                <PremiumButton href="/signup" size="lg">
-                  Create your account
-                  <svg viewBox="0 0 24 24" fill="none" className="size-4">
-                    <path
-                      d="M5 12h14m-6-6 6 6-6 6"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </PremiumButton>
-                <PremiumButton href="/login" variant="glass" size="lg">
-                  Enter portal
-                </PremiumButton>
+                {status === 'authenticated' ? (
+                  <PremiumButton href="/dashboard" size="lg">
+                    Go to Dashboard
+                    <svg viewBox="0 0 24 24" fill="none" className="size-4">
+                      <path
+                        d="M5 12h14m-6-6 6 6-6 6"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </PremiumButton>
+                ) : (
+                  <>
+                    <PremiumButton href="/signup" size="lg">
+                      Create your account
+                      <svg viewBox="0 0 24 24" fill="none" className="size-4">
+                        <path
+                          d="M5 12h14m-6-6 6 6-6 6"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </PremiumButton>
+                    <PremiumButton href="/login" variant="glass" size="lg">
+                      Enter portal
+                    </PremiumButton>
+                  </>
+                )}
               </m.div>
 
               <m.p
@@ -707,9 +726,15 @@ export default function Home() {
                 to the Grand Finale.
               </p>
               <div className="mt-9 flex flex-wrap justify-center gap-3">
-                <PremiumButton href="/signup" size="lg">
-                  Get started
-                </PremiumButton>
+                {status === 'authenticated' ? (
+                  <PremiumButton href="/dashboard" size="lg">
+                    Go to Dashboard
+                  </PremiumButton>
+                ) : (
+                  <PremiumButton href="/signup" size="lg">
+                    Get started
+                  </PremiumButton>
+                )}
                 <PremiumButton href="/tracks" variant="glass" size="lg">
                   Browse tracks
                 </PremiumButton>

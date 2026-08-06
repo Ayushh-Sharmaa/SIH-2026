@@ -424,7 +424,7 @@ export default function AdminDashboardPage() {
       await (window as any).Clerk.signOut();
     }
     await fetch('/api/auth/logout', { method: 'POST' });
-    router.push('/login');
+    window.location.href = '/login';
   };
 
   const handleViewAs = async (role: 'STUDENT' | 'MENTOR') => {

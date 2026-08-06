@@ -25,6 +25,13 @@ const LINK_GROUPS = [
       { label: 'Build a Team', href: '/team-formation/create-team' },
     ],
   },
+  {
+    title: 'Resources',
+    links: [
+      { label: 'Top 50 Projects (Last Year)', href: 'https://docs.google.com/spreadsheets/d/1GjTmrLD_gnBtdqy7vNJiGcsjQ5cZuKRs3EWpa88zJUk/edit?usp=sharing' },
+      { label: 'Winning Playbook', href: 'https://app.notion.com/p/Smart-India-Hackathon-Winning-Playbook-from-Ex-Google-Microsoft-EY-SIH-Hackathon-accelerator-Winn-3b417556013080bf8499c9d348a1f206?source=copy_link' },
+    ],
+  },
 ];
 
 const SOCIALS = [
@@ -50,7 +57,7 @@ export default function Footer() {
       />
 
       <Container width="wide" className="relative pb-10 pt-16">
-        <div className="grid gap-12 md:grid-cols-[1.4fr_1fr_1fr]">
+        <div className="grid gap-12 md:grid-cols-[1.4fr_1fr_1fr_1.5fr]">
           <Reveal direction="up">
             <div className="flex items-center gap-3">
               <span className="flex size-11 items-center justify-center rounded-2xl border border-[rgba(209,199,189,0.6)] bg-white/60 p-1.5">
@@ -114,6 +121,8 @@ export default function Footer() {
                   <RevealItem key={link.href} as="li">
                     <Link
                       href={link.href}
+                      target={link.href.startsWith('http') ? '_blank' : undefined}
+                      rel={link.href.startsWith('http') ? 'noopener noreferrer' : undefined}
                       className="group inline-flex items-center gap-1.5 text-sm text-muted transition-colors duration-250 hover:text-primary"
                     >
                       <span className="relative">

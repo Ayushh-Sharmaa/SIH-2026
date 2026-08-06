@@ -89,7 +89,7 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
       // Drop the cached identity before navigating, so the sign-in view never
       // renders for a frame with the outgoing user's name still in the bar.
       clear();
-      router.push('/login');
+      window.location.href = '/login';
     } catch {
       // A failed sign-out leaves the user signed in, which the unchanged
       // interface already communicates. Logging the error to the console would

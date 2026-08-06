@@ -60,6 +60,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Invalid search filters.' }, { status: 400 });
     }
 
+    const nameQuery = parsedQuery.data.name?.toLowerCase();
     const skillQuery = parsedQuery.data.skill?.toLowerCase();
     const softSkillQuery = parsedQuery.data.softSkill;
     const languageQuery = parsedQuery.data.language;
@@ -70,6 +71,9 @@ export async function GET(request: Request) {
     students = students.filter((s) => s.userId !== decoded.userId);
 
     // Apply exact match filters in memory
+    if (nameQuery) {
+      students = students.filter((s) => s.name.toLowerCase().includes(nameQuery));
+    }
     if (softSkillQuery) {
       students = students.filter((s) => s.softSkills.includes(softSkillQuery));
     }

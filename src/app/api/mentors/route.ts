@@ -55,8 +55,13 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Invalid search filters.' }, { status: 400 });
     }
     const expertiseQuery = parsedQuery.data.expertise?.toLowerCase();
+    const nameQuery = parsedQuery.data.name?.toLowerCase();
 
     let mentors = await getCachedMentors();
+
+    if (nameQuery) {
+      mentors = mentors.filter((m) => m.name.toLowerCase().includes(nameQuery));
+    }
 
     if (expertiseQuery) {
       mentors = mentors.filter((m) =>

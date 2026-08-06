@@ -140,13 +140,21 @@ export const profileLookupQuerySchema = z.object({
 });
 
 export const studentSearchQuerySchema = z.object({
+  name: z.string().optional(),
   skill: z.string().trim().max(100).optional(),
   softSkill: z.string().trim().max(100).optional(),
   language: z.string().trim().max(100).optional(),
   trackId: recordId.optional(),
 });
 
+export const teamSearchQuerySchema = z.object({
+  name: z.string().optional(),
+  skill: z.string().optional(),
+  trackId: z.string().optional(),
+});
+
 export const mentorSearchQuerySchema = z.object({
+  name: z.string().optional(),
   expertise: z.string().trim().max(100).optional(),
 });
 

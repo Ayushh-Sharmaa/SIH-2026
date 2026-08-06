@@ -420,6 +420,9 @@ export default function AdminDashboardPage() {
   };
 
   const handleSignOut = async () => {
+    if (typeof window !== 'undefined' && (window as any).Clerk) {
+      await (window as any).Clerk.signOut();
+    }
     await fetch('/api/auth/logout', { method: 'POST' });
     router.push('/login');
   };

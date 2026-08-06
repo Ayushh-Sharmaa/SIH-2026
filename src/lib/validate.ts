@@ -93,14 +93,35 @@ export function boundedInt(value: unknown, min: number, max: number): number | n
 const MAX_AVATAR_CHARS = Math.ceil(1_500_000 * 1.37);
 const AVATAR_PATTERN = /^data:image\/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+/]+=*$/;
 
+/**
+ * The one remote host allowed through: Google serves OAuth profile photos from
+ * `*.googleusercontent.com`, and the Clerk sign-in flow stores that URL directly.
+ *
+ * Matched as a dot-anchored suffix, or the apex itself. A bare
+ * `endsWith('googleusercontent.com')` also accepts
+ * `evilgoogleusercontent.com` — an attacker-registrable domain — which would
+ * let a crafted PATCH point every viewer's avatar at a host they control.
+ */
+const AVATAR_HOST = 'googleusercontent.com';
+
+function isAllowedAvatarHost(hostname: string): boolean {
+  return hostname === AVATAR_HOST || hostname.endsWith(`.${AVATAR_HOST}`);
+}
+
 export function avatarDataUri(value: unknown): string | null {
   if (typeof value !== 'string' || !value) return null;
+  // `http:`/`https:` is a terminal branch: a remote URL is either an allowed
+  // host or rejected. Previously a failed hostname check fell through to the
+  // data-URI test below, which a URL can never satisfy — so the rejection
+  // happened to hold, but only by accident. Returning here makes it explicit
+  // and keeps a future edit to AVATAR_PATTERN from reopening the hole.
   if (value.startsWith('http://') || value.startsWith('https://')) {
     try {
       const parsed = new URL(value);
-      if (parsed.hostname.endsWith('googleusercontent.com')) {
-        return value;
-      }
+      // Plaintext http: would break the page's upgrade-insecure-requests CSP
+      // and strip the transport guarantee the avatar arrived with.
+      if (parsed.protocol !== 'https:') return null;
+      return isAllowedAvatarHost(parsed.hostname) ? value : null;
     } catch {
       return null;
     }

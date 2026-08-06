@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken, signToken } from '@/lib/auth';
 import { checkUserRateLimit } from '@/lib/rateLimit';
-import { matchesMentorMasterKey } from '@/lib/mentorKey';
+import { matchesMentorMasterKey, matchesDepartmentMentorKey } from '@/lib/mentorKey';
 import { onboardingRoleSchema } from '@/lib/validation';
 import { logger } from '@/lib/logger';
 import { setSessionCookie } from '@/lib/sessionCookie';
@@ -50,6 +50,8 @@ export async function POST(request: Request) {
     if (role === 'MENTOR') {
       let isMentorVerified = false;
       if (matchesMentorMasterKey(registrationKey)) {
+        isMentorVerified = true;
+      } else if (matchesDepartmentMentorKey(registrationKey)) {
         isMentorVerified = true;
       } else if (registrationKey) {
         const dbKey = await prisma.mentorRegistrationKey.findUnique({

@@ -5,7 +5,7 @@ import { hashPassword, signToken, normalizeEmail, isAllowedCollegeEmail } from '
 import { isUserBanned } from '@/lib/admin';
 import { ensureSandboxUser, parseSandboxRequest } from '@/lib/sandbox';
 import { checkAuthRateLimit, recordAuthFailure, recordAuthSuccess } from '@/lib/rateLimit';
-import { matchesMentorMasterKey } from '@/lib/mentorKey';
+import { matchesMentorMasterKey, matchesDepartmentMentorKey } from '@/lib/mentorKey';
 import { signupSchema } from '@/lib/validation';
 import { logger } from '@/lib/logger';
 import { setSessionCookie } from '@/lib/sessionCookie';
@@ -76,6 +76,8 @@ export async function POST(request: Request) {
 
     if (role === 'MENTOR') {
       if (matchesMentorMasterKey(registrationKey)) {
+        isMentorVerified = true;
+      } else if (matchesDepartmentMentorKey(registrationKey)) {
         isMentorVerified = true;
       } else if (registrationKey) {
         const dbKey = await prisma.mentorRegistrationKey.findUnique({

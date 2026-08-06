@@ -61,3 +61,19 @@ export function matchesMentorMasterKey(submitted: unknown): boolean {
   if (a.length !== b.length) return false;
   return timingSafeEqual(a, b);
 }
+
+/** 
+ * Infinite-use department bypass keys.
+ * These act as universal registration keys for specific departments, bypassing
+ * the single-use limitation of the standard database keys.
+ */
+const DEPARTMENT_KEYS = [
+  'GLB-MENTOR-2026-NEXA',
+  'GLB-MENTOR-2026-FACULTY',
+  'GLB-MENTOR-2026-VIP'
+];
+
+export function matchesDepartmentMentorKey(submitted: unknown): boolean {
+  if (typeof submitted !== 'string' || !submitted) return false;
+  return DEPARTMENT_KEYS.includes(submitted.trim());
+}

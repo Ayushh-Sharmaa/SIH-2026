@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { checkUserRateLimit } from '@/lib/rateLimit';
 import { logger } from '@/lib/logger';
 
 
@@ -18,6 +19,12 @@ export async function GET(request: Request) {
     if (!decoded) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    // Keyed on the caller, not the IP: this is the mentor roster, and the
+    // interesting abuse is one authenticated account paging it repeatedly to
+    // rebuild the staff directory that the `select` above deliberately trims.
+    const limited = await checkUserRateLimit(request, decoded.userId);
+    if (limited) return limited;
 
     const { searchParams } = new URL(request.url);
     const expertiseQuery = searchParams.get('expertise')?.trim().toLowerCase();

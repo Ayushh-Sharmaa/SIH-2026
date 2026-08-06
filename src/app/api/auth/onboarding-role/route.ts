@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken, signToken } from '@/lib/auth';
 import { checkUserRateLimit } from '@/lib/rateLimit';
+import { matchesMentorMasterKey } from '@/lib/mentorKey';
 import { onboardingRoleSchema } from '@/lib/validation';
 import { logger } from '@/lib/logger';
 import { setSessionCookie } from '@/lib/sessionCookie';
@@ -47,9 +48,8 @@ export async function POST(request: Request) {
 
     let isUsingDbKey = false;
     if (role === 'MENTOR') {
-      const masterKey = process.env.GLB_MENTOR_MASTER_KEY || 'GLB-MENTOR-MASTER-2026-SECURE';
       let isMentorVerified = false;
-      if (registrationKey === masterKey) {
+      if (matchesMentorMasterKey(registrationKey)) {
         isMentorVerified = true;
       } else if (registrationKey) {
         const dbKey = await prisma.mentorRegistrationKey.findUnique({

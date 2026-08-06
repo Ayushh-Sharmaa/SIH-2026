@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { checkUserRateLimit } from '@/lib/rateLimit';
 import { logger } from '@/lib/logger';
 
 
@@ -18,6 +19,11 @@ export async function GET(request: Request) {
     if (!decoded) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    // The teammate directory is filterable by skill, language and track, so an
+    // unlimited caller can enumerate the whole student body one facet at a time.
+    const limited = await checkUserRateLimit(request, decoded.userId);
+    if (limited) return limited;
 
     const { searchParams } = new URL(request.url);
     const skillQuery = searchParams.get('skill')?.trim().toLowerCase();

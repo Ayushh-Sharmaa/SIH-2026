@@ -6,36 +6,11 @@ import { checkUserRateLimit } from '@/lib/rateLimit';
 import { logger } from '@/lib/logger';
 
 
-export async function GET(request: Request) {
-  try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('token')?.value;
+import { unstable_cache } from 'next/cache';
 
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const decoded = verifyToken(token);
-    if (!decoded) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Keyed on the caller, not the IP: this is the mentor roster, and the
-    // interesting abuse is one authenticated account paging it repeatedly to
-    // rebuild the staff directory that the `select` above deliberately trims.
-    const limited = await checkUserRateLimit(request, decoded.userId);
-    if (limited) return limited;
-
-    const { searchParams } = new URL(request.url);
-    const expertiseQuery = searchParams.get('expertise')?.trim().toLowerCase();
-
-    // Fetch all verified mentors
-    //
-    // Emails are deliberately not selected. Every faculty address used to be
-    // returned to any caller holding a valid token — including the passwordless
-    // sandbox account — which made this endpoint a one-request staff-email
-    // harvest. Contact details belong behind an accepted mentor request.
-    let mentors = await prisma.mentorProfile.findMany({
+const getCachedMentors = unstable_cache(
+  async () => {
+    return prisma.mentorProfile.findMany({
       where: {
         verified: true,
       },
@@ -52,6 +27,32 @@ export async function GET(request: Request) {
       },
       take: 200,
     });
+  },
+  ['verified-mentors'],
+  { revalidate: 900, tags: ['mentors'] }
+);
+
+export async function GET(request: Request) {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('token')?.value;
+
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const limited = await checkUserRateLimit(request, decoded.userId);
+    if (limited) return limited;
+
+    const { searchParams } = new URL(request.url);
+    const expertiseQuery = searchParams.get('expertise')?.trim().toLowerCase();
+
+    let mentors = await getCachedMentors();
 
     if (expertiseQuery) {
       mentors = mentors.filter((m) =>

@@ -5,6 +5,7 @@ import { signToken, normalizeEmail, isAllowedCollegeEmail } from '@/lib/auth';
 import { isUserBanned } from '@/lib/admin';
 import { checkAuthRateLimit } from '@/lib/rateLimit';
 import { onboardingRoleSchema } from '@/lib/validation';
+import { clerkCircuitBreaker } from '@/lib/circuitBreaker';
 import { logger } from '@/lib/logger';
 import { setSessionCookie } from '@/lib/sessionCookie';
 
@@ -71,7 +72,13 @@ export async function GET(request: Request) {
   try {
     let email: string | undefined;
     try {
-      const clerkUser = await currentUser();
+      const clerkUser = await clerkCircuitBreaker.execute(
+        () => currentUser(),
+        async () => {
+          logger.warn('Clerk API circuit breaker tripped open. Falling back.');
+          return null;
+        }
+      );
       email = clerkUser?.emailAddresses?.[0]?.emailAddress;
     } catch (e) {
       logger.error('Clerk currentUser() failed.', e);
@@ -116,7 +123,13 @@ export async function POST(request: Request) {
     // The email MUST come from the verified Clerk session and nothing else.
     let email: string | undefined;
     try {
-      const clerkUser = await currentUser();
+      const clerkUser = await clerkCircuitBreaker.execute(
+        () => currentUser(),
+        async () => {
+          logger.warn('Clerk API circuit breaker tripped open. Falling back.');
+          return null;
+        }
+      );
       email = clerkUser?.emailAddresses?.[0]?.emailAddress;
     } catch (e) {
       logger.error('Clerk currentUser() failed.', e);

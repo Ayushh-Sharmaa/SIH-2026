@@ -399,6 +399,16 @@ export default function DashboardPage() {
 
   const handleRequestResponse = async (requestId: string, action: 'accept' | 'decline') => {
     setActionLoading(requestId);
+
+    // Optimistic UI Update: hide the request immediately
+    const previousData = data;
+    if (data && data.mentorRequests) {
+      setData({
+        ...data,
+        mentorRequests: data.mentorRequests.filter((r: any) => r.id !== requestId),
+      });
+    }
+
     try {
       const res = await fetch(`/api/mentor-requests/${requestId}/respond`, {
         method: 'POST',
@@ -408,12 +418,17 @@ export default function DashboardPage() {
       const result = await res.json();
       if (!res.ok) {
         toast(result.error || 'Failed to process request', 'error');
+        // Rollback on failure
+        setData(previousData);
       } else {
-        await fetchDashboard();
+        // Sync full state in background
+        fetchDashboard();
       }
     } catch (err) {
       logger.error('Mentor request response failed', err, { requestId, action });
       toast('Something went wrong. Please try again.', 'error');
+      // Rollback on failure
+      setData(previousData);
     } finally {
       setActionLoading(null);
     }

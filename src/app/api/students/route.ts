@@ -6,6 +6,37 @@ import { checkUserRateLimit } from '@/lib/rateLimit';
 import { logger } from '@/lib/logger';
 
 
+import { unstable_cache } from 'next/cache';
+
+const getCachedStudents = unstable_cache(
+  async () => {
+    return prisma.studentProfile.findMany({
+      where: {
+        teamStatus: 'OPEN',
+        isDemo: false,
+        branch: { not: '' },
+      },
+      select: {
+        userId: true,
+        name: true,
+        year: true,
+        branch: true,
+        skills: true,
+        languages: true,
+        softSkills: true,
+        resumeUrl: true,
+        githubUrl: true,
+        linkedinUrl: true,
+        avatarUrl: true,
+        trackInterest: true, // Need this to filter by trackIdQuery in memory
+      },
+      take: 200,
+    });
+  },
+  ['open-students'],
+  { revalidate: 900, tags: ['students'] }
+);
+
 export async function GET(request: Request) {
   try {
     const cookieStore = await cookies();
@@ -20,8 +51,6 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // The teammate directory is filterable by skill, language and track, so an
-    // unlimited caller can enumerate the whole student body one facet at a time.
     const limited = await checkUserRateLimit(request, decoded.userId);
     if (limited) return limited;
 
@@ -31,49 +60,20 @@ export async function GET(request: Request) {
     const languageQuery = searchParams.get('language')?.trim();
     const trackIdQuery = searchParams.get('trackId')?.trim();
 
-    // One query, filtered in the database.
-    //
-    // This previously fetched every OPEN student with no `select` and no
-    // `take`, filtered skills/languages in Node, and — when `trackId` was
-    // supplied — issued a *second* full table scan and intersected the two in
-    // memory. Postgres can do all of it with array containment on an indexed
-    // column. `take` is the important part: without it the payload grows with
-    // enrollment forever.
-    //
-    // `softSkill` and `language` are exact matches (`has`), so they move
-    // straight into the where clause. `skill` is a substring search, which
-    // Prisma cannot express over a String[], so it stays in Node — but now it
-    // runs over an already-bounded result set rather than the whole table.
-    const students = await prisma.studentProfile.findMany({
-      where: {
-        teamStatus: 'OPEN',
-        userId: { not: decoded.userId }, // Do not include oneself in search results
-        isDemo: false, // Sandbox rows are not real classmates
-        branch: { not: '' },
-        ...(softSkillQuery ? { softSkills: { has: softSkillQuery } } : {}),
-        ...(languageQuery ? { languages: { has: languageQuery } } : {}),
-        ...(trackIdQuery ? { trackInterest: { some: { id: trackIdQuery } } } : {}),
-      },
-      // `resumeUrl` is included: unlike the faculty emails in /api/mentors
-      // (which no UI ever rendered), this is a link the student uploads
-      // specifically so prospective teammates can find them, and the directory
-      // renders it as a "Résumé" chip. It stays scoped to signed-in members of
-      // a single-college platform.
-      select: {
-        userId: true,
-        name: true,
-        year: true,
-        branch: true,
-        skills: true,
-        languages: true,
-        softSkills: true,
-        resumeUrl: true,
-        githubUrl: true,
-        linkedinUrl: true,
-        avatarUrl: true,
-      },
-      take: 200,
-    });
+    // Get base list from cache, filtering oneself out
+    let students = await getCachedStudents();
+    students = students.filter((s) => s.userId !== decoded.userId);
+
+    // Apply exact match filters in memory
+    if (softSkillQuery) {
+      students = students.filter((s) => s.softSkills.includes(softSkillQuery));
+    }
+    if (languageQuery) {
+      students = students.filter((s) => s.languages.includes(languageQuery));
+    }
+    if (trackIdQuery) {
+      students = students.filter((s) => s.trackInterest?.some((t) => t.id === trackIdQuery));
+    }
 
     const filtered = skillQuery
       ? students.filter((s) => s.skills.some((sk) => sk.toLowerCase().includes(skillQuery)))

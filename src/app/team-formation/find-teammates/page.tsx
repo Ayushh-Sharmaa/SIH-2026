@@ -277,7 +277,8 @@ export default function FindTeammatesPage() {
   };
 
   const sendInvite = async (student: Student) => {
-    setInviteState((previous) => ({ ...previous, [student.userId]: 'sending' }));
+    // Optimistic UI Update: assume it succeeds immediately
+    setInviteState((previous) => ({ ...previous, [student.userId]: 'sent' }));
 
     try {
       const response = await fetch('/api/team-invites', {
@@ -288,21 +289,21 @@ export default function FindTeammatesPage() {
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'Could not send the invitation.');
 
-      setInviteState((previous) => ({ ...previous, [student.userId]: 'sent' }));
       toast(
         `Invitation sent to ${student.name}. They can accept it from their notifications.`,
         'success',
       );
     } catch (error: unknown) {
+      // Revert optimistic update
       setInviteState((previous) => {
         const next = { ...previous };
         delete next[student.userId];
         return next;
       });
-      toast(
-        error instanceof Error ? error.message : 'Could not send the invitation.',
-        'error',
-      );
+      
+      logger.error('Failed to send invite', error);
+      const e = error as Error;
+      toast(e.message || 'Something went wrong. Please try again.', 'error');
     }
   };
 

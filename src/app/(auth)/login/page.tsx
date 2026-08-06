@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import Link from 'next/link';
 import { useClerk } from '@clerk/nextjs';
 import { AnimatePresence, m } from 'framer-motion';
@@ -121,6 +121,15 @@ function ClerkLoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+
+  // If the user reaches this page (meaning the app session is gone),
+  // but Clerk thinks they are still signed in (from a ghost session before our logout fix),
+  // instantly drop the Clerk session to sync state.
+  useEffect(() => {
+    if (clerk.user) {
+      clerk.signOut();
+    }
+  }, [clerk.user, clerk.signOut]);
 
   const handleGoogleSignIn = async () => {
     setError('');

@@ -2,8 +2,10 @@
 
 import { useState, type FormEvent } from 'react';
 import Link from 'next/link';
-
+import { useClerk } from '@clerk/nextjs';
 import { AnimatePresence, m } from 'framer-motion';
+
+const hasClerkKey = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 import { useAuthenticatedRedirect } from '@/lib/session';
 import { looksLikeSandboxEmail } from '@/lib/sandboxShared';
 import {
@@ -105,17 +107,40 @@ function GoogleButton({
 }
 
 export default function LoginPage() {
+  if (hasClerkKey) {
+    return <ClerkLoginPage />;
+  }
+  return <CustomLoginPage />;
+}
+
+function ClerkLoginPage() {
   const goAuthenticated = useAuthenticatedRedirect();
+  const clerk = useClerk();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
-  const handleGoogleSignIn = () => {
+  const handleGoogleSignIn = async () => {
     setError('');
     setGoogleLoading(true);
-    window.location.href = '/api/auth/google';
+    try {
+      if (!clerk?.client?.signIn) {
+        throw new Error('Google Sign-In is unavailable right now. Please use your email and password.');
+      }
+
+      await clerk.client.signIn.authenticateWithRedirect({
+        strategy: 'oauth_google',
+        redirectUrl: '/sso-callback',
+        redirectUrlComplete: '/api/auth/clerk-sync',
+      });
+    } catch (err) {
+      logger.error('Google Sign-In error', err);
+      setError(userFacingMessage(err, 'Google Sign-In failed. Please try again.'));
+    } finally {
+      setGoogleLoading(false);
+    }
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -176,6 +201,76 @@ export default function LoginPage() {
         loading={loading}
         googleLoading={googleLoading}
         handleGoogleSignIn={handleGoogleSignIn}
+        handleSubmit={handleSubmit}
+      />
+    </>
+  );
+}
+
+function CustomLoginPage() {
+  const goAuthenticated = useAuthenticatedRedirect();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Invalid credentials');
+      }
+
+      if (data.redirectUrl) {
+        await goAuthenticated(data.redirectUrl);
+        return;
+      }
+
+      if (data.user?.role === 'ADMIN') {
+        await goAuthenticated('/admin');
+        return;
+      }
+
+      const meRes = await fetch('/api/auth/me');
+      const meData = await meRes.json();
+
+      if (meData.authenticated && meData.user?.role === 'ADMIN') {
+        await goAuthenticated('/admin');
+      } else if (meData.authenticated && meData.user?.isOnboarded) {
+        await goAuthenticated('/dashboard');
+      } else {
+        await goAuthenticated('/onboarding');
+      }
+    } catch (err) {
+      setLoading(false);
+      setError(err instanceof Error ? err.message : 'Something went wrong');
+    }
+  };
+
+  return (
+    <>
+      <AnimatePresence>
+        {loading && <AuthHandoff caption="Authorising your session" />}
+      </AnimatePresence>
+      <LoginTemplate
+        email={email}
+        setEmail={setEmail}
+        password={password}
+        setPassword={setPassword}
+        error={error}
+        loading={loading}
+        googleLoading={false}
         handleSubmit={handleSubmit}
       />
     </>

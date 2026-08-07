@@ -1,8 +1,6 @@
-# NexaSphere — SIH Team Discovery & Collaboration Portal
+# GL Bajaj Internal SIH Portal (Powered by NexaSphere)
 
-NexaSphere is a premium, high-performance platform designed for **GL Bajaj Group of Institutions** to streamline internal evaluations, team formation, and mentor matching for the **Smart India Hackathon (SIH)**. 
-
-The application facilitates discovery and seamless coordination between students, team leaders, and faculty mentors.
+The GL Bajaj Internal SIH Portal is a premium, high-performance platform designed for **GL Bajaj Group of Institutions** to streamline internal evaluations, team formation, and mentor matching for the **Smart India Hackathon (SIH)**. Developed and maintained by the **NexaSphere** student club, the application facilitates discovery and seamless coordination between students, team leaders, and faculty mentors.
 
 ---
 

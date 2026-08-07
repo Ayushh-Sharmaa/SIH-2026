@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type ReactNode, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, m } from 'framer-motion';
 import Image from 'next/image';
@@ -14,14 +15,26 @@ import {
   Palette,
   PenLine,
   Terminal,
+  Users,
+  UserCheck,
+  MailOpen,
+  Calendar,
+  Sparkles,
+  UserX,
+  X,
+  Edit2,
+  Lock,
+  Unlock,
+  ShieldCheck,
   type LucideIcon,
 } from 'lucide-react';
 import Icon from '@/components/ui/Icon';
-import { Container } from '@/components/ui';
+import { Container, EmptyState } from '@/components/ui';
 import { useToast } from '@/components/ui/Toast';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import ViewingAsBanner from '@/components/layout/ViewingAsBanner';
+import { useEscapeKey, useFocusTrap, useScrollLock } from '@/hooks/useFocusTrap';
 import {
   Aurora,
   Counter,
@@ -253,129 +266,104 @@ function DashboardSkeleton() {
   );
 }
 
-interface DashboardTeamMember {
-  id?: string;
-  userId: string;
-  name: string;
-  email?: string;
-  rollNo?: string | null;
-  branch: string;
-  year: string;
-  gender?: string | null;
-  skills?: string[];
-  avatarUrl?: string | null;
+interface EditRoleModalProps {
+  member: any;
+  onClose: () => void;
+  onSubmit: (role: string) => Promise<void>;
 }
 
-interface DashboardTeam {
-  id: string;
-  name: string;
-  status: string;
-  leaderId?: string;
-  memberCount: number;
-  skillsCovered: string[];
-  skillsNeeded: string[];
-  track?: {
-    id: string;
-    name: string;
-    problemStatementCode: string;
-    description: string;
-    category: string;
-  } | null;
-  trackName?: string;
-  members: DashboardTeamMember[];
-  leaderContact?: {
-    name: string;
-    email: string | null;
-    whatsapp: string | null;
-  } | null;
-  mentor?: {
-    name: string;
-    designation: string;
-    organization: string;
-  } | null;
-  mentorName?: string | null;
-  mentorEmail?: string | null;
-  inviteCode?: string;
-}
+function EditRoleModal({ member, onClose, onSubmit }: EditRoleModalProps) {
+  const [role, setRole] = useState(member.roleInTeam || 'Member');
+  const [loading, setLoading] = useState(false);
+  const panelRef = useFocusTrap<HTMLDivElement>(true);
+  useScrollLock(true);
+  useEscapeKey(true, onClose);
 
-interface PendingRequest {
-  id: string;
-  message?: string;
-  createdAt: string;
-  team: {
-    id: string;
-    name: string;
-    track: {
-      id: string;
-      name: string;
-      problemStatementCode: string;
-      description: string;
-      category: string;
-    };
-    skillsCovered: string[];
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    await onSubmit(role);
+    setLoading(false);
+    onClose();
   };
-}
 
-interface DashboardData {
-  role: 'STUDENT' | 'MENTOR' | 'ADMIN';
-  profile: {
-    userId?: string;
-    name: string;
-    year?: string;
-    branch?: string;
-    gender?: string | null;
-    rollNo?: string | null;
-    section?: string | null;
-    skills?: string[];
-    languages?: string[];
-    softSkills?: string[];
-    resumeUrl?: string | null;
-    githubUrl?: string | null;
-    linkedinUrl?: string | null;
-    avatarUrl?: string | null;
-    designation?: string;
-    organization?: string;
-    capacity?: number;
-    currentLoad?: number;
-    expertise?: string[];
-    bio?: string | null;
-    verified?: boolean;
-    email?: string;
-  } | null;
-  team: DashboardTeam | null;
-  availableMentors?: {
-    userId: string;
-    name: string;
-    designation: string;
-    organization: string;
-    expertise: string[];
-    capacity: number;
-    currentLoad: number;
-    bio: string | null;
-  }[];
-  teams?: {
-    id: string;
-    name: string;
-    status: string;
-    track: {
-      id: string;
-      name: string;
-      problemStatementCode: string;
-      description: string;
-      category: string;
-    };
-    memberCount: number;
-  }[];
-  pendingRequests?: PendingRequest[];
+  return (
+    <m.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-modal flex items-center justify-center p-4"
+    >
+      <div
+        aria-hidden
+        onClick={onClose}
+        className="absolute inset-0 bg-[rgb(50_45_41/0.34)] backdrop-blur-md"
+      />
+      <m.div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        initial={{ opacity: 0, scale: 0.95, y: 16 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 12 }}
+        className="surface-overlay relative w-full max-w-sm rounded-container p-6 text-foreground shadow-2xl"
+      >
+        <div className="flex items-center justify-between pb-3 border-b border-[rgba(209,199,189,0.5)]">
+          <h3 className="text-feature text-foreground">Edit Member Role</h3>
+          <button onClick={onClose} aria-label="Close dialog">
+            <X className="size-4 text-muted" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+          <p className="text-xs text-muted">
+            Assign a tech/collaboration role for <strong>{member.name}</strong> within the team.
+          </p>
+
+          <label className="block">
+            <span className="mb-1.5 block text-label uppercase text-muted">Role Title</span>
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              className="w-full rounded-xl border border-[rgba(209,199,189,0.8)] bg-[rgba(248,246,242,0.65)] px-3.5 py-2 text-sm text-foreground outline-none focus:border-primary"
+            >
+              <option value="Member">Member</option>
+              <option value="Lead Developer">Lead Developer</option>
+              <option value="Frontend Developer">Frontend Developer</option>
+              <option value="Backend Developer">Backend Developer</option>
+              <option value="UI/UX Designer">UI/UX Designer</option>
+              <option value="Researcher">Researcher</option>
+              <option value="Presenter">Presenter</option>
+            </select>
+          </label>
+
+          <div className="mt-6 flex justify-end gap-2">
+            <PremiumButton variant="glass" size="sm" onClick={onClose} disabled={loading}>
+              Cancel
+            </PremiumButton>
+            <PremiumButton type="submit" size="sm" loading={loading}>
+              Save
+            </PremiumButton>
+          </div>
+        </form>
+      </m.div>
+    </m.div>
+  );
 }
 
 export default function DashboardPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [data, setData] = useState<DashboardData | null>(null);
+  const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+
+  // Student dashboard tabs: 'team' or 'invitations'
+  const [activeTab, setActiveTab] = useState<'team' | 'invitations'>('team');
+
+  // Modal states
+  const [editingRoleMember, setEditingRoleMember] = useState<any>(null);
 
   const fetchDashboard = useCallback(async () => {
     try {
@@ -397,7 +385,11 @@ export default function DashboardPage() {
     return () => cancelAnimationFrame(handle);
   }, [fetchDashboard]);
 
-  const handleRequestResponse = async (requestId: string, action: 'accept' | 'decline') => {
+  // Mentor Request actions (Mentor perspective)
+  const handleMentorRequestResponse = async (
+    requestId: string,
+    action: 'accept' | 'decline' | 'meeting_requested' | 'keep_pending'
+  ) => {
     setActionLoading(requestId);
     try {
       const res = await fetch(`/api/mentor-requests/${requestId}/respond`, {
@@ -409,13 +401,139 @@ export default function DashboardPage() {
       if (!res.ok) {
         toast(result.error || 'Failed to process request', 'error');
       } else {
+        toast(`Request status updated successfully.`, 'success');
         await fetchDashboard();
       }
     } catch (err) {
-      logger.error('Mentor request response failed', err, { requestId, action });
+      logger.error('Mentor request response failed', err);
       toast('Something went wrong. Please try again.', 'error');
     } finally {
       setActionLoading(null);
+    }
+  };
+
+  // Join Request actions (Team Leader perspective)
+  const handleJoinRequestResponse = async (
+    requestId: string,
+    action: 'accept' | 'decline' | 'on_hold' | 'meeting_requested'
+  ) => {
+    setActionLoading(requestId);
+    try {
+      const res = await fetch('/api/join-requests', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestId, action }),
+      });
+      const result = await res.json();
+      if (!res.ok) {
+        toast(result.error || 'Failed to process request', 'error');
+      } else {
+        toast(`Join request status updated: ${action}`, 'success');
+        await fetchDashboard();
+      }
+    } catch (err) {
+      logger.error('Respond join request failed', err);
+      toast('Could not complete operation.', 'error');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Team Invite actions (Student perspective)
+  const handleTeamInviteResponse = async (
+    inviteId: string,
+    action: 'accept' | 'decline' | 'on_hold' | 'waitlist'
+  ) => {
+    setActionLoading(inviteId);
+    try {
+      const res = await fetch('/api/team-invites', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inviteId, action }),
+      });
+      const result = await res.json();
+      if (!res.ok) {
+        toast(result.error || 'Failed to process invitation', 'error');
+      } else {
+        toast(`Invitation status updated: ${action}`, 'success');
+        await fetchDashboard();
+      }
+    } catch (err) {
+      logger.error('Respond team invite failed', err);
+      toast('Could not complete invite response.', 'error');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Edit recruitment status (Leader action)
+  const handleRecruitmentToggle = async (teamId: string, currentStatus: string) => {
+    const nextStatus = currentStatus === 'forming' ? 'locked' : 'forming';
+    try {
+      const res = await fetch('/api/teams', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'update_recruitment', teamId, status: nextStatus }),
+      });
+      const result = await res.json();
+      if (!res.ok) {
+        toast(result.error || 'Failed to toggle recruitment', 'error');
+      } else {
+        toast(`Recruitment ${nextStatus === 'forming' ? 'opened' : 'closed'}.`, 'success');
+        await fetchDashboard();
+      }
+    } catch (err) {
+      logger.error('Recruitment toggle failed', err);
+      toast('Something went wrong.', 'error');
+    }
+  };
+
+  // Kick member (Leader action)
+  const handleKickMember = async (targetUserId: string) => {
+    if (!confirm('Are you sure you want to remove this member from the team?')) return;
+    try {
+      const res = await fetch('/api/teams/members', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'kick', targetUserId }),
+      });
+      const result = await res.json();
+      if (!res.ok) {
+        toast(result.error || 'Failed to remove member.', 'error');
+      } else {
+        toast('Member removed successfully.', 'success');
+        await fetchDashboard();
+      }
+    } catch (err) {
+      logger.error('Kick member failed', err);
+      toast('Something went wrong.', 'error');
+    }
+  };
+
+  // Edit member role submission (Leader action)
+  const handleEditRoleSubmit = async (newRole: string) => {
+    if (!editingRoleMember) return;
+    try {
+      const res = await fetch('/api/teams', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update_member_role',
+          teamId: data.team.id,
+          targetUserId: editingRoleMember.userId,
+          newRole,
+        }),
+      });
+      const result = await res.json();
+      if (!res.ok) {
+        toast(result.error || 'Failed to update member role.', 'error');
+      } else {
+        toast('Member role updated successfully.', 'success');
+        await fetchDashboard();
+      }
+    } catch (err) {
+      logger.error('Edit role failed', err);
+      toast('Something went wrong.', 'error');
     }
   };
 
@@ -425,6 +543,7 @@ export default function DashboardPage() {
   const profile = data?.profile;
   const team = data?.team;
   const filledSeats = team?.members?.length ?? 0;
+  const isLeader = team && team.leaderId === profile?.userId;
 
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
@@ -432,7 +551,7 @@ export default function DashboardPage() {
       <Navbar />
 
       <main id="main" className="flex-1">
-        {/* ── COMMAND DECK ── */}
+        {/* Welcome Section */}
         <section className="relative overflow-hidden pb-14 pt-8 sm:pt-12">
           <Aurora variant="cool" spotlight />
           <div aria-hidden className="grid-lines absolute inset-0" />
@@ -475,7 +594,7 @@ export default function DashboardPage() {
                 <SplitText
                   as="h1"
                   text={`Welcome back, ${profile?.name || 'User'}`}
-                  className="text-title text-foreground"
+                  className="text-title text-foreground font-black"
                   delay={0.1}
                 />
 
@@ -516,8 +635,8 @@ export default function DashboardPage() {
                     label="Mentor assigned"
                   />
                   <DeckStat
-                    text={team ? String(team.status).toLowerCase() : 'No team'}
-                    label="Team status"
+                    text={team ? String(team.status === 'forming' ? 'Open' : 'Closed') : 'No team'}
+                    label="Recruitment"
                   />
                 </>
               ) : (
@@ -535,7 +654,7 @@ export default function DashboardPage() {
           </Container>
         </section>
 
-        {/* ── WORKSPACE ── */}
+        {/* Dashboard Panels */}
         <section className="relative">
           <div
             aria-hidden
@@ -543,7 +662,8 @@ export default function DashboardPage() {
           />
           <div className="surface-sunken border-x-0">
             <Container width="wide" className="grid grid-cols-1 gap-6 py-12 lg:grid-cols-5">
-              {/* LEFT RAIL */}
+              
+              {/* Profile Sidebar */}
               <Reveal direction="right" className="lg:col-span-2">
                 <div className="lg:sticky lg:top-28">
                   <Panel title="My profile">
@@ -653,15 +773,6 @@ export default function DashboardPage() {
                           })()}
 
                           <div>
-                            <Label>Languages</Label>
-                            <div className="mt-1.5 flex flex-wrap gap-1.5">
-                              {profile?.languages?.map((l: string) => (
-                                <Chip key={l}>{l}</Chip>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div>
                             <Label>Technical skills</Label>
                             <div className="mt-1.5 flex flex-wrap gap-1.5">
                               {profile?.skills?.map((s: string) => (
@@ -680,34 +791,6 @@ export default function DashboardPage() {
                                   {s}
                                 </Chip>
                               ))}
-                            </div>
-                          </div>
-
-                          <div>
-                            <Label>Profiles &amp; links</Label>
-                            <div className="mt-2 flex flex-wrap gap-2">
-                              {[
-                                { url: profile?.githubUrl || undefined, label: 'GitHub' },
-                                { url: profile?.linkedinUrl || undefined, label: 'LinkedIn' },
-                                { url: profile?.resumeUrl || undefined, label: 'Résumé' },
-                              ]
-                                .filter((l): l is { url: string; label: string } => !!l.url)
-                                .map((l) => (
-                                  <m.a
-                                    key={l.label}
-                                    href={l.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    whileHover={{ y: -2 }}
-                                    transition={SPRING.snappy}
-                                    className="group inline-flex items-center gap-1.5 rounded-lg border border-[rgba(209,199,189,0.7)] bg-[rgba(248,246,242,0.75)] px-3 py-1.5 text-xs font-bold text-foreground transition-colors hover:border-[rgba(114,56,61,0.28)] hover:text-primary"
-                                  >
-                                    {l.label}
-                                    <span className="transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5">
-                                      <Icon icon={ArrowUpRight} size="xs" />
-                                    </span>
-                                  </m.a>
-                                ))}
                             </div>
                           </div>
                         </>
@@ -737,25 +820,6 @@ export default function DashboardPage() {
                               {profile?.bio || 'No bio provided.'}
                             </p>
                           </div>
-
-                          <div>
-                            <Label>Verification status</Label>
-                            <div className="mt-1.5">
-                              <Chip tone={profile?.verified ? 'primary' : 'neutral'}>
-                                {profile?.verified ? (
-                                  <>
-                                    <Icon icon={BadgeCheck} size="xs" />
-                                    Verified mentor
-                                  </>
-                                ) : (
-                                  <>
-                                    <Icon icon={Clock} size="xs" />
-                                    Awaiting verification
-                                  </>
-                                )}
-                              </Chip>
-                            </div>
-                          </div>
                         </>
                       )}
                     </div>
@@ -763,230 +827,600 @@ export default function DashboardPage() {
                 </div>
               </Reveal>
 
-              {/* RIGHT COLUMN */}
+              {/* Main Content Area */}
               <div className="space-y-6 lg:col-span-3">
                 {isStudent ? (
-                  team ? (
-                    <>
-                      <Reveal direction="left">
-                        <Panel
-                          title="My team"
-                          action={<Chip tone="primary">{String(team.status).toLowerCase()}</Chip>}
+                  <>
+                    {/* Student Dashboard Tabs */}
+                    <div className="flex gap-2 border-b border-[rgba(209,199,189,0.6)] pb-px mb-4">
+                      <button
+                        onClick={() => setActiveTab('team')}
+                        className={`px-4 py-2 text-xs font-black uppercase tracking-wider transition-colors border-b-2 ${
+                          activeTab === 'team'
+                            ? 'border-primary text-primary'
+                            : 'border-transparent text-muted hover:text-foreground'
+                        }`}
+                      >
+                        My Team
+                      </button>
+                      <button
+                        onClick={() => setActiveTab('invitations')}
+                        className={`px-4 py-2 text-xs font-black uppercase tracking-wider transition-colors border-b-2 flex items-center gap-1.5 ${
+                          activeTab === 'invitations'
+                            ? 'border-primary text-primary'
+                            : 'border-transparent text-muted hover:text-foreground'
+                        }`}
+                      >
+                        Collaboration Hub
+                        {data?.receivedInvites?.length > 0 && (
+                          <span className="inline-block px-1.5 py-0.2 rounded-full bg-primary text-[8px] text-on-accent font-black">
+                            {data.receivedInvites.length}
+                          </span>
+                        )}
+                      </button>
+                    </div>
+
+                    <AnimatePresence mode="wait">
+                      {activeTab === 'team' ? (
+                        <m.div
+                          key="team-tab"
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: 10 }}
+                          transition={{ duration: 0.2 }}
+                          className="space-y-6"
                         >
-                          <div className="mb-6">
-                            <h3 className="text-feature text-foreground">{team.name}</h3>
-                            <p className="mt-1 text-xs text-muted">
-                              Track{' '}
-                              <span className="font-bold text-primary">
-                                {team.track?.problemStatementCode || 'N/A'}
-                              </span>{' '}
-                              — {team.track?.name || 'N/A'}
-                            </p>
-                          </div>
-
-                          <div className="mb-6">
-                            <div className="mb-3 flex items-center justify-between gap-4">
-                              <Label>Team roster</Label>
-                              <span className="text-caption font-semibold text-muted">
-                                {filledSeats} of 6 seats filled
-                              </span>
-                            </div>
-
-                            <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-[rgba(209,199,189,0.55)]">
-                              <m.div
-                                initial={{ scaleX: 0 }}
-                                animate={{ scaleX: filledSeats / 6 }}
-                                transition={{ duration: 0.9, ease: EASE.outExpo, delay: 0.2 }}
-                                style={{ transformOrigin: 'left' }}
-                                className="h-full rounded-full bg-gradient-to-r from-[#AC9C8D] to-primary"
-                              />
-                            </div>
-
-                            <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
-                              {Array.from({ length: 6 }, (_, index) => {
-                                const member = team.members[index];
-                                return member ? (
-                                  <m.div
-                                    key={member.userId}
-                                    initial={{ opacity: 0, y: 12 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{
-                                      delay: 0.1 + index * 0.05,
-                                      duration: DURATION.card,
-                                      ease: EASE.outExpo,
-                                    }}
-                                    whileHover={{ y: -4, scale: 1.04 }}
-                                    className="min-w-0"
-                                  >
-                                    <Avatar
-                                      avatarUrl={member.avatarUrl}
-                                      name={member.name}
-                                      className="aspect-square w-full rounded-xl border border-[rgba(209,199,189,0.7)] text-xl shadow-[0_4px_16px_rgba(50,45,41,0.08)]"
-                                    />
-                                    <p className="mt-1.5 truncate text-center text-caption font-semibold text-foreground">
-                                      {member.name}
-                                    </p>
-                                    {member.userId === team.leaderId && (
-                                      <p className="text-center text-label uppercase text-primary">
-                                        Leader
+                          {team ? (
+                            <>
+                              {/* Roster & Management */}
+                              <Reveal direction="left">
+                                <Panel
+                                  title="My team"
+                                  action={<Chip tone="primary">{team.status === 'forming' ? 'Open for Recruitment' : 'Recruitment Closed'}</Chip>}
+                                >
+                                  <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                    <div>
+                                      <h3 className="text-feature text-foreground font-extrabold">{team.name}</h3>
+                                      <p className="mt-1 text-xs text-muted">
+                                        Track{' '}
+                                        <span className="font-bold text-primary">
+                                          {team.track?.problemStatementCode || 'N/A'}
+                                        </span>{' '}
+                                        — {team.track?.name || 'N/A'}
                                       </p>
+                                    </div>
+
+                                    {/* Team Leader Recruitment Toggle */}
+                                    {isLeader && (
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-[10px] text-muted font-bold uppercase">Recruitment Status:</span>
+                                        <button
+                                          onClick={() => handleRecruitmentToggle(team.id, team.status)}
+                                          className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-caption font-black transition-colors ${
+                                            team.status === 'forming'
+                                              ? 'border-primary bg-primary/10 text-primary hover:bg-primary/20'
+                                              : 'border-[rgba(209,199,189,0.7)] bg-[rgba(239,233,225,0.6)] text-muted hover:text-foreground'
+                                          }`}
+                                        >
+                                          {team.status === 'forming' ? (
+                                            <>
+                                              <Unlock className="size-3" /> Recruiting Open
+                                            </>
+                                          ) : (
+                                            <>
+                                              <Lock className="size-3" /> Recruiting Closed
+                                            </>
+                                          )}
+                                        </button>
+                                      </div>
                                     )}
-                                  </m.div>
-                                ) : (
-                                  <div
-                                    key={`open-seat-${index}`}
-                                    aria-label="Open team seat"
-                                    className="grid aspect-square place-items-center rounded-xl border border-dashed border-[rgba(172,156,141,0.6)] bg-[rgba(239,233,225,0.45)] text-lg text-muted"
-                                  >
-                                    +
                                   </div>
-                                );
-                              })}
-                            </div>
-                          </div>
 
-                          {team.leaderContact && (
-                            <details className="group overflow-hidden rounded-2xl border border-[rgba(172,156,141,0.5)] bg-[rgba(239,233,225,0.6)]">
-                              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-3.5">
-                                <div className="min-w-0">
-                                  <Label>Team leader</Label>
-                                  <span className="text-sm font-bold text-foreground">
-                                    {team.leaderContact.name}
-                                  </span>
-                                </div>
-                                <span className="inline-flex shrink-0 items-center gap-1.5 text-xs font-bold text-primary">
-                                  Contact
-                                  <svg
-                                    className="size-3.5 transition-transform duration-300 group-open:rotate-180"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    aria-hidden
-                                  >
-                                    <path
-                                      d="m6 9 6 6 6-6"
-                                      stroke="currentColor"
-                                      strokeWidth="2"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                    />
-                                  </svg>
-                                </span>
-                              </summary>
+                                  {/* Leader Team Roster List (Rich table view if leader, standard grid if member) */}
+                                  <div className="mb-6">
+                                    <div className="mb-3 flex items-center justify-between gap-4">
+                                      <Label>Team roster</Label>
+                                      <span className="text-caption font-semibold text-muted">
+                                        {filledSeats} of 6 seats filled
+                                      </span>
+                                    </div>
 
-                              <div className="space-y-3 border-t border-[rgba(209,199,189,0.6)] px-4 py-4">
-                                <div>
-                                  <Label>Email address</Label>
-                                  <div className="mt-1.5 flex items-center justify-between gap-2 rounded-lg border border-[rgba(209,199,189,0.7)] bg-[rgba(248,246,242,0.8)] px-3 py-2">
-                                    <a
-                                      href={team.leaderContact?.email ? `mailto:${team.leaderContact.email}` : '#'}
-                                      className="truncate text-xs font-semibold text-primary hover:underline"
-                                    >
-                                      {team.leaderContact?.email || 'leader@glbajaj.org'}
-                                    </a>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        if (team.leaderContact?.email) {
-                                          navigator.clipboard.writeText(team.leaderContact.email);
-                                          setCopied(true);
-                                          window.setTimeout(() => setCopied(false), 1600);
-                                        }
-                                      }}
-                                      className="shrink-0 rounded-md border border-[rgba(114,56,61,0.2)] bg-[rgba(114,56,61,0.08)] px-2 py-1 text-caption font-bold text-primary transition-colors hover:bg-[rgba(114,56,61,0.16)]"
-                                    >
-                                      {copied ? 'Copied' : 'Copy'}
-                                    </button>
-                                  </div>
-                                </div>
+                                    {isLeader ? (
+                                      // Leader view with role changes and kicking
+                                      <div className="space-y-2.5">
+                                        {team.members.map((member: any) => (
+                                          <div
+                                            key={member.userId}
+                                            className="flex items-center justify-between p-3.5 rounded-xl border border-[rgba(209,199,189,0.6)] bg-[rgba(248,246,242,0.75)] hover:border-primary/30 transition-all duration-200"
+                                          >
+                                            <div className="flex items-center gap-3 min-w-0">
+                                              <Avatar
+                                                avatarUrl={member.avatarUrl}
+                                                name={member.name}
+                                                className="size-9 rounded-lg shrink-0"
+                                              />
+                                              <div className="min-w-0">
+                                                <span className="block text-xs font-bold text-foreground truncate">
+                                                  {member.name}
+                                                </span>
+                                                <span className="block text-[10px] text-muted mt-0.5">
+                                                  {member.branch} · {member.year}
+                                                </span>
+                                              </div>
+                                            </div>
 
-                                <div>
-                                  <Label>Phone / WhatsApp</Label>
-                                  <div className="mt-1.5 flex flex-wrap items-center gap-3 rounded-lg border border-[rgba(209,199,189,0.7)] bg-[rgba(248,246,242,0.8)] px-3 py-2">
-                                    <a
-                                      href={`tel:${team.leaderContact.whatsapp || ''}`}
-                                      className="text-xs font-semibold text-foreground hover:text-primary"
-                                    >
-                                      {team.leaderContact.whatsapp || 'Not provided'}
-                                    </a>
-                                    {team.leaderContact.whatsapp && (
-                                      <a
-                                        href={`https://wa.me/${team.leaderContact.whatsapp.replace(/\D/g, '')}`}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="text-xs font-bold text-primary hover:underline"
-                                      >
-                                        Open WhatsApp <Icon icon={ArrowUpRight} size="xs" />
-                                      </a>
+                                            <div className="flex items-center gap-2 shrink-0">
+                                              <span className="rounded bg-[rgba(114,56,61,0.08)] border border-[rgba(114,56,61,0.2)] px-2 py-0.5 text-[9px] font-black text-primary">
+                                                {member.roleInTeam || 'Member'}
+                                              </span>
+
+                                              {/* Actions */}
+                                              {member.userId !== team.leaderId && (
+                                                <div className="flex items-center gap-1">
+                                                  <button
+                                                    onClick={() => setEditingRoleMember(member)}
+                                                    className="p-1.5 rounded border border-[rgba(209,199,189,0.7)] text-muted hover:text-foreground hover:border-foreground"
+                                                    aria-label="Edit role"
+                                                  >
+                                                    <Edit2 className="size-3" />
+                                                  </button>
+                                                  <button
+                                                    onClick={() => handleKickMember(member.userId)}
+                                                    className="p-1.5 rounded border border-[rgba(114,56,61,0.3)] text-primary hover:bg-primary/5"
+                                                    aria-label="Remove member"
+                                                  >
+                                                    <X className="size-3" />
+                                                  </button>
+                                                </div>
+                                              )}
+                                            </div>
+                                          </div>
+                                        ))}
+
+                                        {/* Empty Seats */}
+                                        {Array.from({ length: Math.max(0, 6 - filledSeats) }).map((_, idx) => (
+                                          <div
+                                            key={`empty-${idx}`}
+                                            className="flex items-center justify-between p-3.5 rounded-xl border border-dashed border-[rgba(172,156,141,0.6)] bg-[rgba(239,233,225,0.45)] text-xs text-muted"
+                                          >
+                                            <span>Open Roster Seat</span>
+                                            <PremiumButton href="/team-formation/find-teammates" size="sm" variant="glass">
+                                              Invite
+                                            </PremiumButton>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      // Standard Grid view for team member
+                                      <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
+                                        {Array.from({ length: 6 }, (_, index) => {
+                                          const member = team.members[index];
+                                          return member ? (
+                                            <m.div
+                                              key={member.userId}
+                                              className="min-w-0 text-center"
+                                              whileHover={{ y: -4, scale: 1.04 }}
+                                            >
+                                              <Avatar
+                                                avatarUrl={member.avatarUrl}
+                                                name={member.name}
+                                                className="aspect-square w-full rounded-xl border border-[rgba(209,199,189,0.7)] text-xl"
+                                              />
+                                              <p className="mt-1.5 truncate text-caption font-semibold text-foreground">
+                                                {member.name}
+                                              </p>
+                                              <span className="block text-[8px] uppercase tracking-wider text-primary font-bold">
+                                                {member.roleInTeam || 'Member'}
+                                              </span>
+                                            </m.div>
+                                          ) : (
+                                            <div
+                                              key={`seat-${index}`}
+                                              className="grid aspect-square place-items-center rounded-xl border border-dashed border-[rgba(172,156,141,0.6)] bg-[rgba(239,233,225,0.45)] text-lg text-muted"
+                                            >
+                                              +
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
                                     )}
+                                  </div>
+                                </Panel>
+                              </Reveal>
+
+                              {/* Leader Incoming Join Requests & Sent Invites */}
+                              {isLeader && (
+                                <>
+                                  {/* Team Join Requests */}
+                                  <Reveal direction="left" delay={0.05}>
+                                    <Panel
+                                      title="Incoming Join Requests"
+                                      action={
+                                        team.joinRequests?.filter((r: any) => r.status === 'pending').length > 0 ? (
+                                          <Chip tone="primary">
+                                            {team.joinRequests.filter((r: any) => r.status === 'pending').length} waiting
+                                          </Chip>
+                                        ) : undefined
+                                      }
+                                    >
+                                      {team.joinRequests && team.joinRequests.length > 0 ? (
+                                        <div className="space-y-3.5">
+                                          <AnimatePresence initial={false}>
+                                            {team.joinRequests.map((req: any) => (
+                                              <m.div
+                                                key={req.id}
+                                                layout
+                                                initial={{ opacity: 0, y: 12 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0, x: -20 }}
+                                                className="p-4 rounded-2xl border border-[rgba(209,199,189,0.65)] bg-[rgba(248,246,242,0.7)] space-y-3"
+                                              >
+                                                <div className="flex items-start justify-between gap-4">
+                                                  <div className="flex items-center gap-3">
+                                                    <Avatar
+                                                      avatarUrl={req.student.avatarUrl}
+                                                      name={req.student.name}
+                                                      className="size-10 rounded-xl"
+                                                    />
+                                                    <div>
+                                                      <span className="block text-xs font-bold text-foreground">
+                                                        {req.student.name}
+                                                      </span>
+                                                      <span className="block text-[10px] text-muted">
+                                                        {req.student.branch} · {req.student.year}
+                                                      </span>
+                                                    </div>
+                                                  </div>
+
+                                                  <span
+                                                    className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase border ${
+                                                      req.status === 'pending'
+                                                        ? 'bg-amber-500/10 text-amber-600 border-amber-500/20'
+                                                        : req.status === 'on_hold'
+                                                        ? 'bg-blue-500/10 text-blue-600 border-blue-500/20'
+                                                        : req.status === 'meeting_requested'
+                                                        ? 'bg-purple-500/10 text-purple-600 border-purple-500/20'
+                                                        : 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+                                                    }`}
+                                                  >
+                                                    {req.status.replace('_', ' ')}
+                                                  </span>
+                                                </div>
+
+                                                {req.message && (
+                                                  <p className="rounded-xl border-l-2 border-primary/35 bg-[rgba(239,233,225,0.7)] px-3 py-2 text-xs italic text-body">
+                                                    &ldquo;{req.message}&rdquo;
+                                                  </p>
+                                                )}
+
+                                                {req.status !== 'accepted' && req.status !== 'declined' && (
+                                                  <div className="flex flex-wrap gap-2 pt-1 border-t border-[rgba(209,199,189,0.3)]">
+                                                    <PremiumButton
+                                                      size="sm"
+                                                      disabled={actionLoading !== null}
+                                                      onClick={() => handleJoinRequestResponse(req.id, 'accept')}
+                                                    >
+                                                      Accept
+                                                    </PremiumButton>
+                                                    <PremiumButton
+                                                      size="sm"
+                                                      variant="glass"
+                                                      disabled={actionLoading !== null}
+                                                      onClick={() => handleJoinRequestResponse(req.id, 'meeting_requested')}
+                                                    >
+                                                      Request Meeting
+                                                    </PremiumButton>
+                                                    <PremiumButton
+                                                      size="sm"
+                                                      variant="glass"
+                                                      disabled={actionLoading !== null}
+                                                      onClick={() => handleJoinRequestResponse(req.id, 'on_hold')}
+                                                    >
+                                                      Hold
+                                                    </PremiumButton>
+                                                    <PremiumButton
+                                                      size="sm"
+                                                      variant="glass"
+                                                      disabled={actionLoading !== null}
+                                                      onClick={() => handleJoinRequestResponse(req.id, 'decline')}
+                                                    >
+                                                      Decline
+                                                    </PremiumButton>
+                                                  </div>
+                                                )}
+                                              </m.div>
+                                            ))}
+                                          </AnimatePresence>
+                                        </div>
+                                      ) : (
+                                        <p className="py-6 text-center text-xs text-muted">
+                                          No incoming join requests.
+                                        </p>
+                                      )}
+                                    </Panel>
+                                  </Reveal>
+
+                                  {/* Sent Invitations */}
+                                  <Reveal direction="left" delay={0.08}>
+                                    <Panel title="Sent Team Invitations">
+                                      {team.invites && team.invites.length > 0 ? (
+                                        <div className="space-y-3.5">
+                                          {team.invites.map((inv: any) => (
+                                            <div
+                                              key={inv.id}
+                                              className="flex items-center justify-between p-3.5 rounded-xl border border-[rgba(209,199,189,0.6)] bg-[rgba(248,246,242,0.7)]"
+                                            >
+                                              <div className="flex items-center gap-3">
+                                                <Avatar
+                                                  avatarUrl={inv.student.avatarUrl}
+                                                  name={inv.student.name}
+                                                  className="size-9 rounded-lg"
+                                                />
+                                                <div>
+                                                  <span className="block text-xs font-bold text-foreground">
+                                                    {inv.student.name}
+                                                  </span>
+                                                  <span className="block text-[10px] text-muted">
+                                                    {inv.student.branch} · {inv.student.year}
+                                                  </span>
+                                                </div>
+                                              </div>
+
+                                              <span
+                                                className={`rounded bg-[rgba(239,233,225,0.8)] border border-[rgba(209,199,189,0.7)] px-2 py-0.5 text-[9px] font-black uppercase text-muted`}
+                                              >
+                                                {inv.status}
+                                              </span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      ) : (
+                                        <p className="py-6 text-center text-xs text-muted">
+                                          No team invitations sent.
+                                        </p>
+                                      )}
+                                    </Panel>
+                                  </Reveal>
+                                </>
+                              )}
+
+                              {/* Assigned Mentor & Responses */}
+                              <Reveal direction="left" delay={0.12}>
+                                <div className="space-y-4">
+                                  <div className="surface-raised flex flex-col items-start justify-between gap-4 rounded-3xl p-6 sm:flex-row sm:items-center">
+                                    <div>
+                                      <Label>Assigned mentor</Label>
+                                      {team.mentor ? (
+                                        <p className="mt-1 text-sm font-bold text-foreground flex items-center gap-1.5">
+                                          <ShieldCheck className="size-4 text-emerald-600" />
+                                          {team.mentor.name}{' '}
+                                          <span className="font-medium text-muted">
+                                            ({team.mentor.designation})
+                                          </span>
+                                        </p>
+                                      ) : (
+                                        <p className="mt-1 text-sm font-semibold text-body">
+                                          No mentor assigned yet.
+                                        </p>
+                                      )}
+                                    </div>
+                                    {!team.mentor && isLeader && (
+                                      <PremiumButton size="sm" href="/team-formation/find-mentors">
+                                        Find mentors
+                                      </PremiumButton>
+                                    )}
+                                  </div>
+
+                                  {/* Mentor Request responses history */}
+                                  {team.mentorRequests && team.mentorRequests.length > 0 && (
+                                    <Panel title="Mentor Requests Status">
+                                      <div className="space-y-3">
+                                        {team.mentorRequests.map((req: any) => (
+                                          <div
+                                            key={req.id}
+                                            className="p-3.5 rounded-xl border border-[rgba(209,199,189,0.6)] bg-[rgba(248,246,242,0.7)] flex justify-between items-center"
+                                          >
+                                            <div>
+                                              <span className="block text-xs font-bold text-foreground">
+                                                {req.mentor.name}
+                                              </span>
+                                              <span className="block text-[10px] text-muted">
+                                                {req.mentor.designation} at {req.mentor.organization}
+                                              </span>
+                                            </div>
+                                            <span
+                                              className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase border ${
+                                                req.status === 'accepted'
+                                                  ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+                                                  : req.status === 'declined'
+                                                  ? 'bg-rose-500/10 text-rose-600 border-rose-500/20'
+                                                  : req.status === 'meeting_requested'
+                                                  ? 'bg-purple-500/10 text-purple-600 border-purple-500/20'
+                                                  : 'bg-amber-500/10 text-amber-600 border-amber-500/20'
+                                              }`}
+                                            >
+                                              {req.status.replace('_', ' ')}
+                                            </span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </Panel>
+                                  )}
+                                </div>
+                              </Reveal>
+                            </>
+                          ) : (
+                            <Reveal direction="left" scale>
+                              <div className="surface-raised relative overflow-hidden rounded-3xl p-8 text-center sm:p-12">
+                                <Aurora variant="rose" spotlight={false} />
+                                <div className="relative">
+                                  <div className="mx-auto grid size-14 place-items-center rounded-2xl border border-[rgba(114,56,61,0.2)] bg-[rgba(114,56,61,0.08)] text-primary">
+                                    <svg className="size-6" viewBox="0 0 24 24" fill="none" aria-hidden>
+                                      <path
+                                        d="M17 20h5v-2a3 3 0 0 0-5.36-1.87M17 20H7m10 0v-2c0-.66-.13-1.29-.36-1.87m0 0a5 5 0 0 0-9.28 0M7 20H2v-2a3 3 0 0 1 5.36-1.87M7 20v-2c0-.66.13-1.29.36-1.87m0 0a5 5 0 1 1 9.28 0M15 7a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
+                                        stroke="currentColor"
+                                        strokeWidth="1.7"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                      />
+                                    </svg>
+                                  </div>
+                                  <h2 className="mt-5 text-feature text-foreground">
+                                    You don&apos;t have a team yet
+                                  </h2>
+                                  <p className="mx-auto mt-2.5 max-w-sm text-sm leading-relaxed text-body">
+                                    To participate in SIH@GLBGOI you must either join an existing forming
+                                    team or start a new one as a leader.
+                                  </p>
+                                  <div className="mt-7 flex flex-wrap justify-center gap-3">
+                                    <PremiumButton href="/team-formation/create-team">
+                                      Create a team
+                                    </PremiumButton>
+                                    <PremiumButton variant="glass" href="/team-formation/find-teammates">
+                                      Find teammates
+                                    </PremiumButton>
                                   </div>
                                 </div>
                               </div>
-                            </details>
+                            </Reveal>
                           )}
-                        </Panel>
-                      </Reveal>
+                        </m.div>
+                      ) : (
+                        <m.div
+                          key="invitations-tab"
+                          initial={{ opacity: 0, x: 10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: -10 }}
+                          transition={{ duration: 0.2 }}
+                          className="space-y-6"
+                        >
+                          {/* Received Team Invitations */}
+                          <Panel title="Team Invitations">
+                            {data?.receivedInvites && data.receivedInvites.length > 0 ? (
+                              <div className="space-y-3.5">
+                                <AnimatePresence initial={false}>
+                                  {data.receivedInvites.map((inv: any) => (
+                                    <m.div
+                                      key={inv.id}
+                                      layout
+                                      initial={{ opacity: 0, y: 10 }}
+                                      animate={{ opacity: 1, y: 0 }}
+                                      exit={{ opacity: 0, x: -20 }}
+                                      className="p-4 rounded-2xl border border-[rgba(209,199,189,0.7)] bg-[rgba(248,246,242,0.7)] space-y-3.5"
+                                    >
+                                      <div>
+                                        <div className="flex items-center justify-between gap-3">
+                                          <span className="text-xs font-black text-foreground">
+                                            Invite to join {inv.team.name}
+                                          </span>
+                                          <span
+                                            className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase border ${
+                                              inv.status === 'pending'
+                                                ? 'bg-amber-500/10 text-amber-600 border-amber-500/20'
+                                                : inv.status === 'on_hold'
+                                                ? 'bg-blue-500/10 text-blue-600 border-blue-500/20'
+                                                : 'bg-purple-500/10 text-purple-600 border-purple-500/20'
+                                            }`}
+                                          >
+                                            {inv.status}
+                                          </span>
+                                        </div>
+                                        <span className="block text-[10px] text-muted mt-1 leading-relaxed">
+                                          Problem Statement: <strong>{inv.team.track.problemStatementCode}</strong> — {inv.team.track.name}
+                                        </span>
+                                      </div>
 
-                      <Reveal direction="left" delay={0.08}>
-                        <div className="surface-raised flex flex-col items-start justify-between gap-4 rounded-3xl p-6 sm:flex-row sm:items-center">
-                          <div>
-                            <Label>Assigned mentor</Label>
-                            {team.mentor ? (
-                              <p className="mt-1 text-sm font-bold text-foreground">
-                                {team.mentor.name}{' '}
-                                <span className="font-medium text-muted">
-                                  ({team.mentor.designation})
-                                </span>
-                              </p>
+                                      {inv.status !== 'accepted' && inv.status !== 'declined' && (
+                                        <div className="flex flex-wrap gap-2 pt-1 border-t border-[rgba(209,199,189,0.3)]">
+                                          <PremiumButton
+                                            size="sm"
+                                            disabled={actionLoading !== null}
+                                            onClick={() => handleTeamInviteResponse(inv.id, 'accept')}
+                                          >
+                                            Accept
+                                          </PremiumButton>
+                                          <PremiumButton
+                                            size="sm"
+                                            variant="glass"
+                                            disabled={actionLoading !== null}
+                                            onClick={() => handleTeamInviteResponse(inv.id, 'on_hold')}
+                                          >
+                                            On Hold
+                                          </PremiumButton>
+                                          <PremiumButton
+                                            size="sm"
+                                            variant="glass"
+                                            disabled={actionLoading !== null}
+                                            onClick={() => handleTeamInviteResponse(inv.id, 'waitlist')}
+                                          >
+                                            Waitlist
+                                          </PremiumButton>
+                                          <PremiumButton
+                                            size="sm"
+                                            variant="glass"
+                                            disabled={actionLoading !== null}
+                                            onClick={() => handleTeamInviteResponse(inv.id, 'decline')}
+                                          >
+                                            Decline
+                                          </PremiumButton>
+                                        </div>
+                                      )}
+                                    </m.div>
+                                  ))}
+                                </AnimatePresence>
+                              </div>
                             ) : (
-                              <p className="mt-1 text-sm font-semibold text-body">
-                                No mentor assigned yet.
+                              <p className="py-8 text-center text-xs text-muted">
+                                No active team invitations.
                               </p>
                             )}
-                          </div>
-                          {!team.mentor && (
-                            <PremiumButton size="sm" href="/team-formation/find-mentors">
-                              Find mentors
-                            </PremiumButton>
-                          )}
-                        </div>
-                      </Reveal>
-                    </>
-                  ) : (
-                    <Reveal direction="left" scale>
-                      <div className="surface-raised relative overflow-hidden rounded-3xl p-8 text-center sm:p-12">
-                        <Aurora variant="rose" spotlight={false} />
-                        <div className="relative">
-                          <div className="mx-auto grid size-14 place-items-center rounded-2xl border border-[rgba(114,56,61,0.2)] bg-[rgba(114,56,61,0.08)] text-primary">
-                            <svg className="size-6" viewBox="0 0 24 24" fill="none" aria-hidden>
-                              <path
-                                d="M17 20h5v-2a3 3 0 0 0-5.36-1.87M17 20H7m10 0v-2c0-.66-.13-1.29-.36-1.87m0 0a5 5 0 0 0-9.28 0M7 20H2v-2a3 3 0 0 1 5.36-1.87M7 20v-2c0-.66.13-1.29.36-1.87m0 0a5 5 0 1 1 9.28 0M15 7a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
-                                stroke="currentColor"
-                                strokeWidth="1.7"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                            </svg>
-                          </div>
-                          <h2 className="mt-5 text-feature text-foreground">
-                            You don&apos;t have a team yet
-                          </h2>
-                          <p className="mx-auto mt-2.5 max-w-sm text-sm leading-relaxed text-body">
-                            To participate in SIH@GLBGOI you must either join an existing forming
-                            team or start a new one as a leader.
-                          </p>
-                          <div className="mt-7 flex flex-wrap justify-center gap-3">
-                            <PremiumButton href="/team-formation/create-team">
-                              Create a team
-                            </PremiumButton>
-                            <PremiumButton variant="glass" href="/team-formation/find-teammates">
-                              Find teammates
-                            </PremiumButton>
-                          </div>
-                        </div>
-                      </div>
-                    </Reveal>
-                  )
+                          </Panel>
+
+                          {/* Sent Join Requests & Status approvals */}
+                          <Panel title="My Join Requests">
+                            {data?.sentRequests && data.sentRequests.length > 0 ? (
+                              <div className="space-y-3">
+                                {data.sentRequests.map((req: any) => (
+                                  <div
+                                    key={req.id}
+                                    className="p-3.5 rounded-xl border border-[rgba(209,199,189,0.6)] bg-[rgba(248,246,242,0.7)] flex justify-between items-center"
+                                  >
+                                    <div>
+                                      <span className="block text-xs font-bold text-foreground">
+                                        Request to join: {req.team.name}
+                                      </span>
+                                      <span className="block text-[10px] text-muted mt-0.5">
+                                        Track: {req.team.track.problemStatementCode}
+                                      </span>
+                                    </div>
+                                    <span
+                                      className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase border ${
+                                        req.status === 'accepted'
+                                          ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+                                          : req.status === 'declined'
+                                          ? 'bg-rose-500/10 text-rose-600 border-rose-500/20'
+                                          : req.status === 'meeting_requested'
+                                          ? 'bg-purple-500/10 text-purple-600 border-purple-500/20'
+                                          : 'bg-amber-500/10 text-amber-600 border-amber-500/20'
+                                      }`}
+                                    >
+                                      {req.status.replace('_', ' ')}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="py-8 text-center text-xs text-muted">
+                                You have not sent any team join requests yet.
+                              </p>
+                            )}
+                          </Panel>
+                        </m.div>
+                      )}
+                    </AnimatePresence>
+                  </>
                 ) : (
+                  // Faculty Mentor Dashboard View
                   <>
                     <Reveal direction="left">
                       <Panel title="Mentoring capacity">
@@ -1022,7 +1456,7 @@ export default function DashboardPage() {
                       <Panel title="Teams I guide">
                         {(data?.teams || []).length > 0 ? (
                           <RevealGroup className="space-y-3" stagger={0.06} amount={0.1}>
-                            {(data?.teams || []).map((t) => (
+                            {(data?.teams || []).map((t: any) => (
                               <RevealItem key={t.id}>
                                 <m.div
                                   whileHover={{ y: -3 }}
@@ -1034,7 +1468,7 @@ export default function DashboardPage() {
                                       {t.name}
                                     </span>
                                     <span className="mt-0.5 block truncate text-xs text-muted">
-                                      Track: {t.track.name}
+                                      Track: {t.track?.name || 'N/A'}
                                     </span>
                                   </div>
                                   <Chip tone="accent">{t.memberCount} / 6</Chip>
@@ -1050,9 +1484,10 @@ export default function DashboardPage() {
                       </Panel>
                     </Reveal>
 
+                    {/* Mentor Requests List */}
                     <Reveal direction="left" delay={0.12}>
                       <Panel
-                        title="Pending team requests"
+                        title="Incoming Mentorship Requests"
                         action={
                           (data?.pendingRequests || []).length > 0 ? (
                             <Chip tone="primary">{(data?.pendingRequests || []).length} waiting</Chip>
@@ -1060,38 +1495,70 @@ export default function DashboardPage() {
                         }
                       >
                         {(data?.pendingRequests || []).length > 0 ? (
-                          <div className="space-y-3">
+                          <div className="space-y-4">
                             <AnimatePresence initial={false}>
-                              {(data?.pendingRequests || []).map((req) => (
+                              {(data?.pendingRequests || []).map((req: any) => (
                                 <m.div
                                   key={req.id}
                                   layout
                                   initial={{ opacity: 0, y: 12 }}
                                   animate={{ opacity: 1, y: 0 }}
-                                  exit={{ opacity: 0, x: -24, filter: 'blur(6px)' }}
-                                  transition={{ duration: DURATION.card, ease: EASE.outExpo }}
+                                  exit={{ opacity: 0, x: -24 }}
                                   className="space-y-4 rounded-2xl border border-[rgba(209,199,189,0.65)] bg-[rgba(248,246,242,0.7)] p-4"
                                 >
                                   <div>
-                                    <span className="text-sm font-bold text-foreground">
-                                      {req.team.name}
-                                    </span>
+                                    <div className="flex justify-between items-center gap-2">
+                                      <span className="text-sm font-black text-foreground">
+                                        {req.team.name}
+                                      </span>
+                                      <span
+                                        className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase border ${
+                                          req.status === 'pending'
+                                            ? 'bg-amber-500/10 text-amber-600 border-amber-500/20'
+                                            : req.status === 'meeting_requested'
+                                            ? 'bg-purple-500/10 text-purple-600 border-purple-500/20'
+                                            : 'bg-blue-500/10 text-blue-600 border-blue-500/20'
+                                        }`}
+                                      >
+                                        {req.status.replace('_', ' ')}
+                                      </span>
+                                    </div>
                                     <span className="mt-0.5 block text-xs text-muted">
-                                      Track: {req.team.track.name}
+                                      Track: {req.team.track.name} ({req.team.track.problemStatementCode})
                                     </span>
+
+                                    {/* Team Members List */}
+                                    <div className="mt-3 flex items-center gap-1.5">
+                                      <span className="text-[10px] text-muted uppercase font-bold">Roster:</span>
+                                      <div className="flex -space-x-1.5">
+                                        {req.team.members?.map((m: any, idx: number) => (
+                                          <div key={idx} className="group relative">
+                                            <Avatar
+                                              avatarUrl={m.avatarUrl}
+                                              name={m.name}
+                                              className="size-6 rounded-full border border-white"
+                                            />
+                                            <span className="pointer-events-none absolute bottom-full left-1/2 z-10 -translate-x-1/2 translate-y-[-2px] whitespace-nowrap rounded bg-foreground px-1.5 py-0.5 text-[8px] text-background opacity-0 transition-opacity group-hover:opacity-100">
+                                              {m.name} ({m.branch})
+                                            </span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+
                                     {req.message && (
-                                      <p className="mt-2.5 rounded-xl border-l-2 border-[rgba(114,56,61,0.35)] bg-[rgba(239,233,225,0.7)] px-3 py-2 text-xs italic leading-relaxed text-body">
-                                        {req.message}
+                                      <p className="mt-3.5 rounded-xl border-l-2 border-primary/35 bg-[rgba(239,233,225,0.7)] px-3 py-2 text-xs italic leading-relaxed text-body">
+                                        &ldquo;{req.message}&rdquo;
                                       </p>
                                     )}
                                   </div>
 
-                                  <div className="flex flex-wrap gap-2">
+                                  <div className="flex flex-wrap gap-2 border-t border-[rgba(209,199,189,0.3)] pt-3">
                                     <PremiumButton
                                       size="sm"
                                       loading={actionLoading === req.id}
                                       disabled={actionLoading !== null}
-                                      onClick={() => handleRequestResponse(req.id, 'accept')}
+                                      onClick={() => handleMentorRequestResponse(req.id, 'accept')}
                                     >
                                       Accept
                                     </PremiumButton>
@@ -1099,7 +1566,23 @@ export default function DashboardPage() {
                                       size="sm"
                                       variant="glass"
                                       disabled={actionLoading !== null}
-                                      onClick={() => handleRequestResponse(req.id, 'decline')}
+                                      onClick={() => handleMentorRequestResponse(req.id, 'meeting_requested')}
+                                    >
+                                      Request Meeting
+                                    </PremiumButton>
+                                    <PremiumButton
+                                      size="sm"
+                                      variant="glass"
+                                      disabled={actionLoading !== null}
+                                      onClick={() => handleMentorRequestResponse(req.id, 'keep_pending')}
+                                    >
+                                      Keep Pending
+                                    </PremiumButton>
+                                    <PremiumButton
+                                      size="sm"
+                                      variant="glass"
+                                      disabled={actionLoading !== null}
+                                      onClick={() => handleMentorRequestResponse(req.id, 'decline')}
                                     >
                                       Decline
                                     </PremiumButton>
@@ -1118,12 +1601,24 @@ export default function DashboardPage() {
                   </>
                 )}
               </div>
+
             </Container>
           </div>
         </section>
       </main>
 
       <Footer />
+
+      {/* Edit Role Dialog */}
+      <AnimatePresence>
+        {editingRoleMember && (
+          <EditRoleModal
+            member={editingRoleMember}
+            onClose={() => setEditingRoleMember(null)}
+            onSubmit={handleEditRoleSubmit}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

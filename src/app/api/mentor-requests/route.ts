@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { logger } from '@/lib/logger';
+import { createNotification } from '@/lib/notifications';
 
 export async function POST(request: Request) {
   try {
@@ -26,7 +27,7 @@ export async function POST(request: Request) {
     // Fetch caller's profile to check if they are the leader of a team
     const caller = await prisma.studentProfile.findUnique({
       where: { userId: decoded.userId },
-      include: { team: true },
+      include: { team: { include: { track: true } } },
     });
 
     if (!caller || !caller.teamId) {
@@ -67,7 +68,7 @@ export async function POST(request: Request) {
       where: {
         teamId: team.id,
         mentorId: mentorId,
-        status: 'pending',
+        status: { in: ['pending', 'keep_pending', 'meeting_requested'] },
       },
     });
 
@@ -83,6 +84,21 @@ export async function POST(request: Request) {
         status: 'pending',
       },
     });
+
+    // Notify mentor
+    await createNotification(
+      mentorId,
+      'mentor_request_received',
+      {
+        title: 'New Mentorship Request',
+        message: `Team "${team.name}" has requested you as a guide for track ${team.track?.problemStatementCode || 'N/A'}.`,
+        teamId: team.id,
+        teamName: team.name,
+        leaderId: decoded.userId,
+        leaderName: caller.name,
+        messageText: message?.trim(),
+      }
+    );
 
     return NextResponse.json({ success: true, message: 'Mentorship request sent successfully.', requestId: newRequest.id });
   } catch (error) {

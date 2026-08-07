@@ -54,6 +54,7 @@ model StudentProfile {
   teamStatus  TeamStatus @default(OPEN)
   teamId      String?
   team        Team?      @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  roleInTeam  String     @default("Member")
 
   trackInterest Track[]    @relation("StudentTrackInterest")
   joinRequests  JoinRequest[]

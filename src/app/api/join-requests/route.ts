@@ -5,6 +5,7 @@ import { verifyToken } from '@/lib/auth';
 import { recalculateTeamSkills } from '@/lib/derived';
 import { TeamStatus, Prisma } from '@prisma/client';
 import { logger } from '@/lib/logger';
+import { createNotification } from '@/lib/notifications';
 
 export async function POST(request: Request) {
   try {
@@ -46,7 +47,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'This team is full or locked.' }, { status: 400 });
     }
 
-    // Check if duplicate pending request exists
     const existing = await prisma.joinRequest.findFirst({
       where: {
         teamId: teamId,
@@ -67,6 +67,21 @@ export async function POST(request: Request) {
         status: 'pending',
       },
     });
+
+    // Notify Team Leader
+    await createNotification(
+      team.leaderId,
+      'join_request_received',
+      {
+        title: 'New Join Request',
+        message: `${student.name} has requested to join your team "${team.name}".`,
+        teamId: team.id,
+        teamName: team.name,
+        studentId: decoded.userId,
+        studentName: student.name,
+        messageText: message?.trim(),
+      }
+    );
 
     return NextResponse.json({ success: true, message: 'Join request sent successfully.', requestId: newRequest.id });
   } catch (error) {
@@ -89,14 +104,17 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { requestId, action } = await request.json(); // 'accept' or 'decline'
-    if (!requestId || (action !== 'accept' && action !== 'decline')) {
-      return NextResponse.json({ error: 'Request ID and valid action (accept/decline) are required.' }, { status: 400 });
+    const { requestId, action } = await request.json(); // 'accept', 'decline', 'on_hold', 'meeting_requested'
+    if (!requestId || !['accept', 'decline', 'on_hold', 'meeting_requested'].includes(action)) {
+      return NextResponse.json({ error: 'Request ID and a valid action are required.' }, { status: 400 });
     }
 
     const joinRequest = await prisma.joinRequest.findUnique({
       where: { id: requestId },
-      include: { team: { include: { members: true } } },
+      include: {
+        team: { include: { members: true } },
+        student: true,
+      },
     });
 
     if (!joinRequest) {
@@ -107,8 +125,9 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Only the team leader can manage join requests.' }, { status: 403 });
     }
 
-    if (joinRequest.status !== 'pending') {
-      return NextResponse.json({ error: 'Request has already been processed.' }, { status: 400 });
+    // Allow changing status unless it's already accepted/declined (or allow transitions from on_hold/meeting_requested)
+    if (joinRequest.status === 'accepted' || joinRequest.status === 'declined') {
+      return NextResponse.json({ error: 'Request has already been finalized.' }, { status: 400 });
     }
 
     if (action === 'decline') {
@@ -116,7 +135,65 @@ export async function PUT(request: Request) {
         where: { id: requestId },
         data: { status: 'declined' },
       });
+
+      // Notify Student
+      await createNotification(
+        joinRequest.studentId,
+        'join_request_response',
+        {
+          title: 'Join Request Declined',
+          message: `Your request to join team "${joinRequest.team.name}" was declined.`,
+          teamId: joinRequest.teamId,
+          teamName: joinRequest.team.name,
+          status: 'declined',
+        }
+      );
+
       return NextResponse.json({ success: true, message: 'Request declined.' });
+    }
+
+    if (action === 'on_hold') {
+      await prisma.joinRequest.update({
+        where: { id: requestId },
+        data: { status: 'on_hold' },
+      });
+
+      // Notify Student
+      await createNotification(
+        joinRequest.studentId,
+        'join_request_response',
+        {
+          title: 'Join Request On Hold',
+          message: `Your request to join team "${joinRequest.team.name}" has been put on hold.`,
+          teamId: joinRequest.teamId,
+          teamName: joinRequest.team.name,
+          status: 'on_hold',
+        }
+      );
+
+      return NextResponse.json({ success: true, message: 'Request put on hold.' });
+    }
+
+    if (action === 'meeting_requested') {
+      await prisma.joinRequest.update({
+        where: { id: requestId },
+        data: { status: 'meeting_requested' },
+      });
+
+      // Notify Student
+      await createNotification(
+        joinRequest.studentId,
+        'join_request_response',
+        {
+          title: 'Join Request Meeting',
+          message: `The leader of team "${joinRequest.team.name}" has requested a meeting to discuss your join request.`,
+          teamId: joinRequest.teamId,
+          teamName: joinRequest.team.name,
+          status: 'meeting_requested',
+        }
+      );
+
+      return NextResponse.json({ success: true, message: 'Meeting requested.' });
     }
 
     // Action is ACCEPT
@@ -124,73 +201,82 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Your team is already full (max 6 members).' }, { status: 400 });
     }
 
-    // The seat has to be claimed by the write itself, not by the check above.
-    //
-    // Two leaders accepting the fifth and sixth request at the same moment both
-    // read `members.length === 5`, both pass, and the team ends up with seven
-    // members. The conditional `updateMany` on the team row is what makes this
-    // safe: it takes a row lock, so the second transaction blocks until the
-    // first commits and then re-evaluates `memberCount < 6` against the
-    // committed value and claims nothing.
     const TEAM_FULL = 'TEAM_FULL';
     const ALREADY_PROCESSED = 'ALREADY_PROCESSED';
     const STUDENT_IN_TEAM = 'STUDENT_IN_TEAM';
 
     try {
       await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      // 1. Accept request — only if it is still pending, so a double-submit
-      //    cannot add the same student twice.
-      const accepted = await tx.joinRequest.updateMany({
-        where: { id: requestId, status: 'pending' },
-        data: { status: 'accepted' },
-      });
-      if (accepted.count !== 1) throw new Error(ALREADY_PROCESSED);
-
-      // 2. Claim a seat on the team.
-      const seat = await tx.team.updateMany({
-        where: { id: joinRequest.teamId, status: 'forming', memberCount: { lt: 6 } },
-        data: { memberCount: { increment: 1 } },
-      });
-      if (seat.count !== 1) throw new Error(TEAM_FULL);
-
-      // 3. Add student to team — only if they are still teamless, so accepting
-      //    two teams' requests concurrently cannot move an existing member.
-      const joined = await tx.studentProfile.updateMany({
-        where: { userId: joinRequest.studentId, teamId: null },
-        data: { teamId: joinRequest.teamId, teamStatus: TeamStatus.IN_TEAM },
-      });
-      if (joined.count !== 1) throw new Error(STUDENT_IN_TEAM);
-
-      // If team reaches 6 members, lock it
-      const team = await tx.team.findUniqueOrThrow({
-        where: { id: joinRequest.teamId },
-        select: { memberCount: true },
-      });
-      if (team.memberCount >= 6) {
-        await tx.team.update({
-          where: { id: joinRequest.teamId },
-          data: { status: 'locked' },
+        // Accept request: check that it is not already accepted
+        const currentReq = await tx.joinRequest.findUnique({
+          where: { id: requestId },
         });
-      }
+        if (currentReq?.status === 'accepted') throw new Error(ALREADY_PROCESSED);
 
-      // Decline all other pending join requests for this student
-      await tx.joinRequest.updateMany({
-        where: {
-          studentId: joinRequest.studentId,
-          status: 'pending',
-        },
-        data: { status: 'declined' },
+        const accepted = await tx.joinRequest.updateMany({
+          where: { id: requestId, status: { notIn: ['accepted', 'declined'] } },
+          data: { status: 'accepted' },
+        });
+        if (accepted.count !== 1) throw new Error(ALREADY_PROCESSED);
+
+        // Claim a seat
+        const seat = await tx.team.updateMany({
+          where: { id: joinRequest.teamId, status: 'forming', memberCount: { lt: 6 } },
+          data: { memberCount: { increment: 1 } },
+        });
+        if (seat.count !== 1) throw new Error(TEAM_FULL);
+
+        // Add student to team
+        const joined = await tx.studentProfile.updateMany({
+          where: { userId: joinRequest.studentId, teamId: null },
+          data: { teamId: joinRequest.teamId, teamStatus: TeamStatus.IN_TEAM },
+        });
+        if (joined.count !== 1) throw new Error(STUDENT_IN_TEAM);
+
+        // Lock team if full
+        const team = await tx.team.findUniqueOrThrow({
+          where: { id: joinRequest.teamId },
+          select: { memberCount: true },
+        });
+        if (team.memberCount >= 6) {
+          await tx.team.update({
+            where: { id: joinRequest.teamId },
+            data: { status: 'locked' },
+          });
+        }
+
+        // Decline all other pending requests for this student
+        await tx.joinRequest.updateMany({
+          where: {
+            studentId: joinRequest.studentId,
+            status: { in: ['pending', 'on_hold', 'meeting_requested'] },
+            id: { not: requestId },
+          },
+          data: { status: 'declined' },
+        });
+
+        // Decline any pending invites for this student
+        await tx.teamInvite.updateMany({
+          where: {
+            studentId: joinRequest.studentId,
+            status: { in: ['pending', 'on_hold', 'waitlist'] },
+          },
+          data: { status: 'declined' },
+        });
       });
 
-      // Decline any pending invites for this student
-      await tx.teamInvite.updateMany({
-        where: {
-          studentId: joinRequest.studentId,
-          status: 'pending',
-        },
-        data: { status: 'declined' },
-      });
-      });
+      // Notify Student of Acceptance
+      await createNotification(
+        joinRequest.studentId,
+        'join_request_response',
+        {
+          title: 'Join Request Approved',
+          message: `Congratulations! Your request to join team "${joinRequest.team.name}" has been accepted.`,
+          teamId: joinRequest.teamId,
+          teamName: joinRequest.team.name,
+          status: 'accepted',
+        }
+      );
     } catch (error) {
       if (error instanceof Error) {
         if (error.message === TEAM_FULL) {
@@ -206,7 +292,6 @@ export async function PUT(request: Request) {
       throw error;
     }
 
-    // Recalculate team skills
     await recalculateTeamSkills(joinRequest.teamId);
 
     return NextResponse.json({ success: true, message: 'Student successfully added to your team.' });

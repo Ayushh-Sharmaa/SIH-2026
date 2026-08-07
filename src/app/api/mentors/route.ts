@@ -4,7 +4,6 @@ import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 
-
 export async function GET(request: Request) {
   try {
     const cookieStore = await cookies();
@@ -20,15 +19,12 @@ export async function GET(request: Request) {
     }
 
     const { searchParams } = new URL(request.url);
+    const search = searchParams.get('search')?.trim().toLowerCase();
+    const nameQuery = searchParams.get('name')?.trim().toLowerCase();
     const expertiseQuery = searchParams.get('expertise')?.trim().toLowerCase();
 
     // Fetch all verified mentors
-    //
-    // Emails are deliberately not selected. Every faculty address used to be
-    // returned to any caller holding a valid token — including the passwordless
-    // sandbox account — which made this endpoint a one-request staff-email
-    // harvest. Contact details belong behind an accepted mentor request.
-    let mentors = await prisma.mentorProfile.findMany({
+    const mentors = await prisma.mentorProfile.findMany({
       where: {
         verified: true,
       },
@@ -46,15 +42,37 @@ export async function GET(request: Request) {
       take: 200,
     });
 
-    if (expertiseQuery) {
-      mentors = mentors.filter((m) =>
-        m.expertise.some((e) => e.toLowerCase().includes(expertiseQuery))
-      );
+    let filtered = mentors;
+
+    if (search || nameQuery || expertiseQuery) {
+      filtered = mentors.filter((m) => {
+        if (nameQuery && !m.name.toLowerCase().includes(nameQuery)) {
+          return false;
+        }
+
+        if (expertiseQuery && !m.expertise.some((e) => e.toLowerCase().includes(expertiseQuery))) {
+          return false;
+        }
+
+        if (search) {
+          const matchesName = m.name.toLowerCase().includes(search);
+          const matchesExpertise = m.expertise.some((e) => e.toLowerCase().includes(search));
+          const matchesOrg = m.organization.toLowerCase().includes(search);
+          const matchesDesig = m.designation.toLowerCase().includes(search);
+          const matchesBio = m.bio?.toLowerCase().includes(search) || false;
+
+          if (!matchesName && !matchesExpertise && !matchesOrg && !matchesDesig && !matchesBio) {
+            return false;
+          }
+        }
+
+        return true;
+      });
     }
 
     return NextResponse.json({
       success: true,
-      mentors,
+      mentors: filtered,
     });
   } catch (error) {
     logger.error('Search mentors error', error);

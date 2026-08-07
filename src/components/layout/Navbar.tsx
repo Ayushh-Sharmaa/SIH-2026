@@ -1,29 +1,232 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
 import { AnimatePresence, m, useMotionValueEvent, useScroll } from 'framer-motion';
+import { Bell, Check, Inbox, AlertCircle, Calendar, MessageSquare } from 'lucide-react';
 import { EASE, SPRING } from '@/components/motion/tokens';
 import Magnetic from '@/components/motion/Magnetic';
 import { useSession } from '@/lib/session';
 
 const NAV_LINKS = [
   { name: 'Dashboard', path: '/dashboard' },
-  { name: 'Tracks', path: '/tracks' },
+  { name: 'Find Teams', path: '/team-formation/find-teams' },
   { name: 'Find Teammates', path: '/team-formation/find-teammates' },
   { name: 'Find Mentors', path: '/team-formation/find-mentors' },
+  { name: 'Tracks', path: '/tracks' },
 ];
+
+interface Notification {
+  id: string;
+  dbId?: string;
+  type: string;
+  title: string;
+  message: string;
+  messageText?: string | null;
+  read: boolean;
+  createdAt: string;
+}
+
+function NotificationsMenu() {
+  const [open, setOpen] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  const fetchNotifications = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/notifications', { cache: 'no-store' });
+      const data = await res.json();
+      if (data.success) {
+        setNotifications(data.notifications);
+      }
+    } catch (err) {
+      console.error('Fetch notifications error', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (open) {
+      const handle = requestAnimationFrame(() => {
+        fetchNotifications();
+      });
+      return () => cancelAnimationFrame(handle);
+    }
+  }, [open, fetchNotifications]);
+
+  // Click outside handler
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const markAsRead = async (id?: string) => {
+    try {
+      const res = await fetch('/api/notifications', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notificationId: id }),
+      });
+      if (res.ok) {
+        if (id) {
+          setNotifications((prev) =>
+            prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+          );
+        } else {
+          setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+        }
+      }
+    } catch (err) {
+      console.error('Mark read error', err);
+    }
+  };
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
+  return (
+    <div className="relative" ref={menuRef}>
+      <Magnetic strength={5} as="span">
+        <button
+          onClick={() => setOpen((prev) => !prev)}
+          className="relative grid size-9 place-items-center rounded-xl border border-[rgba(209,199,189,0.6)] bg-white/40 text-foreground transition-colors duration-250 hover:bg-white/80"
+          aria-label="View notifications"
+        >
+          <Bell className="size-4.5" />
+          <AnimatePresence>
+            {unreadCount > 0 && (
+              <m.span
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                exit={{ scale: 0 }}
+                transition={SPRING.snappy}
+                className="absolute -top-1.5 -right-1.5 flex size-5 items-center justify-center rounded-full bg-primary text-[9px] font-black text-on-accent"
+              >
+                {unreadCount}
+              </m.span>
+            )}
+          </AnimatePresence>
+        </button>
+      </Magnetic>
+
+      <AnimatePresence>
+        {open && (
+          <m.div
+            initial={{ opacity: 0, y: 12, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8, scale: 0.97 }}
+            transition={{ duration: 0.28, ease: EASE.outExpo }}
+            className="absolute right-0 mt-2.5 w-80 sm:w-96 rounded-2xl border border-[rgba(209,199,189,0.75)] bg-[rgba(248,246,242,0.94)] p-4 shadow-[0_12px_36px_rgba(50,45,41,0.14)] backdrop-blur-xl z-50 text-foreground"
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-[rgba(209,199,189,0.5)]">
+              <span className="text-xs font-black uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                <Inbox className="size-3.5 text-primary" /> Notifications
+              </span>
+              {unreadCount > 0 && (
+                <button
+                  onClick={() => markAsRead()}
+                  className="text-[10px] font-bold text-primary hover:underline"
+                >
+                  Mark all read
+                </button>
+              )}
+            </div>
+
+            <div className="mt-3 max-h-64 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+              {loading ? (
+                <div className="py-8 text-center text-xs text-muted">
+                  <div className="inline-block size-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                  <span className="ml-2">Loading...</span>
+                </div>
+              ) : notifications.length > 0 ? (
+                <m.div className="space-y-2">
+                  {notifications.map((n) => {
+                    const isSystemLog = !!n.dbId; // If it has a DB ID, it's a read-only notification log
+                    return (
+                      <m.div
+                        key={n.id}
+                        layout
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className={`p-3 rounded-xl border transition-colors flex gap-3 items-start ${
+                          n.read
+                            ? 'border-[rgba(209,199,189,0.4)] bg-[rgba(239,233,225,0.35)]'
+                            : 'border-[rgba(114,56,61,0.22)] bg-[rgba(114,56,61,0.04)]'
+                        }`}
+                      >
+                        {/* Status Icons */}
+                        <span className="mt-0.5 shrink-0">
+                          {n.type === 'team_invite_received' || n.type === 'team_invite' ? (
+                            <Calendar className="size-3.5 text-primary" />
+                          ) : n.type === 'join_request_received' || n.type === 'join_request' ? (
+                            <MessageSquare className="size-3.5 text-foreground" />
+                          ) : (
+                            <AlertCircle className="size-3.5 text-muted" />
+                          )}
+                        </span>
+
+                        <div className="flex-1 min-w-0">
+                          <span className="block text-[11px] font-black text-foreground truncate">
+                            {n.title}
+                          </span>
+                          <span className="block text-[10px] text-body leading-relaxed mt-0.5 break-words">
+                            {n.message}
+                          </span>
+                          {n.messageText && (
+                            <span className="block text-[9px] italic text-muted mt-1 border-l border-primary/30 pl-1.5">
+                              &ldquo;{n.messageText}&rdquo;
+                            </span>
+                          )}
+                          <span className="block text-[8px] text-muted mt-1.5">
+                            {new Date(n.createdAt).toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </span>
+                        </div>
+
+                        {/* Read/Read Action */}
+                        {!n.read && isSystemLog && (
+                          <button
+                            onClick={() => markAsRead(n.id)}
+                            className="shrink-0 rounded-md border border-[rgba(114,56,61,0.2)] bg-[rgba(114,56,61,0.08)] p-1 text-primary hover:bg-[rgba(114,56,61,0.16)]"
+                            aria-label="Mark read"
+                          >
+                            <Check className="size-3" />
+                          </button>
+                        )}
+                      </m.div>
+                    );
+                  })}
+                </m.div>
+              ) : (
+                <div className="py-8 text-center text-xs text-muted">
+                  No notifications.
+                </div>
+              )}
+            </div>
+          </m.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
 export default function Navbar({ overlay = false }: { overlay?: boolean }) {
   const router = useRouter();
   const pathname = usePathname();
 
-  // Read from the shared session rather than refetching `/api/auth/me` on every
-  // pathname change. That effect put a network request on the critical path of
-  // every navigation and flashed the identity block back to a skeleton each
-  // time, so the user's own name blinked out on every page they opened.
   const { user, status, clear } = useSession();
   const loading = status === 'loading';
 
@@ -46,7 +249,6 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
   useMotionValueEvent(scrollY, 'change', (latest) => {
     const previous = scrollY.getPrevious() ?? 0;
     setScrolled(latest > 12);
-    // Hide going down, reveal going up — but never while the mobile menu is open.
     if (menuOpen) return;
     setHidden(latest > previous && latest > 140);
   });
@@ -68,7 +270,7 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
   const [signingOut, setSigningOut] = useState(false);
 
   const handleLogout = async () => {
-    if (signingOut) return; // Double-submit guard: the button stays focusable.
+    if (signingOut) return;
     setSigningOut(true);
     try {
       const response = await fetch('/api/auth/logout', {
@@ -79,24 +281,15 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
         setSigningOut(false);
         return;
       }
-      // Drop the cached identity before navigating, so the sign-in view never
-      // renders for a frame with the outgoing user's name still in the bar.
       clear();
       router.push('/login');
     } catch {
-      // A failed sign-out leaves the user signed in, which the unchanged
-      // interface already communicates. Logging the error to the console would
-      // only put diagnostic noise in a production build.
       setSigningOut(false);
     }
   };
 
   return (
     <>
-      {/* Reserves layout space so content is not covered by the fixed bar.
-          Height comes from --nav-h (see tokens.css) so the spacer, the bar and
-          the anchor scroll-padding can never disagree again. Pages with a
-          full-bleed hero pass `overlay` to sit beneath it instead. */}
       {!overlay && <div aria-hidden className="h-[var(--nav-h)]" />}
       <m.header
         initial={{ y: -80, opacity: 0 }}
@@ -178,6 +371,9 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
               </div>
             ) : user ? (
               <div className="flex items-center gap-2.5">
+                {/* Notifications Bell */}
+                <NotificationsMenu />
+
                 <span className="hidden flex-col text-right leading-none sm:flex">
                   <span className="text-xs font-bold text-foreground">{user.name}</span>
                   <span className="mt-1 text-label uppercase text-muted">
@@ -196,8 +392,6 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
                   <button
                     onClick={handleLogout}
                     disabled={signingOut}
-                    // aria-busy tells a screen reader the control is working,
-                    // which the visual label change alone does not convey.
                     aria-busy={signingOut}
                     className="rounded-lg border border-[rgba(209,199,189,0.7)] bg-white/40 px-3 py-2 text-label uppercase text-foreground transition-colors duration-250 hover:bg-white/80 disabled:cursor-not-allowed disabled:opacity-60"
                   >

@@ -5,8 +5,6 @@ import { verifyToken } from '@/lib/auth';
 import { checkUserRateLimit } from '@/lib/rateLimit';
 import { mentorSearchQuerySchema, parseQuery } from '@/lib/validation';
 import { logger } from '@/lib/logger';
-
-
 import { unstable_cache } from 'next/cache';
 
 const getCachedMentors = unstable_cache(
@@ -54,24 +52,44 @@ export async function GET(request: Request) {
     if (!parsedQuery.success) {
       return NextResponse.json({ error: 'Invalid search filters.' }, { status: 400 });
     }
-    const expertiseQuery = parsedQuery.data.expertise?.toLowerCase();
-    const nameQuery = parsedQuery.data.name?.toLowerCase();
 
-    let mentors = await getCachedMentors();
+    const nameQuery = parsedQuery.data.name?.trim().toLowerCase();
+    const expertiseQuery = parsedQuery.data.expertise?.trim().toLowerCase();
+    const search = parsedQuery.data.search?.trim().toLowerCase();
 
-    if (nameQuery) {
-      mentors = mentors.filter((m) => m.name.toLowerCase().includes(nameQuery));
-    }
+    const mentors = await getCachedMentors();
 
-    if (expertiseQuery) {
-      mentors = mentors.filter((m) =>
-        m.expertise.some((e) => e.toLowerCase().includes(expertiseQuery))
-      );
+    let filtered = mentors;
+
+    if (search || nameQuery || expertiseQuery) {
+      filtered = mentors.filter((m) => {
+        if (nameQuery && !m.name.toLowerCase().includes(nameQuery)) {
+          return false;
+        }
+
+        if (expertiseQuery && !m.expertise.some((e) => e.toLowerCase().includes(expertiseQuery))) {
+          return false;
+        }
+
+        if (search) {
+          const matchesName = m.name.toLowerCase().includes(search);
+          const matchesExpertise = m.expertise.some((e) => e.toLowerCase().includes(search));
+          const matchesOrg = m.organization.toLowerCase().includes(search);
+          const matchesDesig = m.designation.toLowerCase().includes(search);
+          const matchesBio = m.bio?.toLowerCase().includes(search) || false;
+
+          if (!matchesName && !matchesExpertise && !matchesOrg && !matchesDesig && !matchesBio) {
+            return false;
+          }
+        }
+
+        return true;
+      });
     }
 
     return NextResponse.json({
       success: true,
-      mentors,
+      mentors: filtered,
     });
   } catch (error) {
     logger.error('Search mentors error', error);

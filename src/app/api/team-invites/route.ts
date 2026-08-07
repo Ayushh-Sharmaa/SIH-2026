@@ -7,6 +7,7 @@ import { teamInviteSchema, respondTeamInviteSchema } from '@/lib/validation';
 import { recalculateTeamSkills } from '@/lib/derived';
 import { TeamStatus, Prisma } from '@prisma/client';
 import { logger } from '@/lib/logger';
+import { createNotification } from '@/lib/notifications';
 
 export async function POST(request: Request) {
   try {
@@ -41,7 +42,7 @@ export async function POST(request: Request) {
     // Fetch caller's profile to check if they are a team leader
     const caller = await prisma.studentProfile.findUnique({
       where: { userId: decoded.userId },
-      include: { team: { include: { members: true } } },
+      include: { team: { include: { members: true, track: true } } },
     });
 
     if (!caller || !caller.teamId) {
@@ -60,7 +61,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Your team is already full (max 6 members).' }, { status: 400 });
     }
 
-    // Verify target student exists and is open to joining
     const targetStudent = await prisma.studentProfile.findUnique({
       where: { userId: studentId },
     });
@@ -73,7 +73,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'This student is already in a team.' }, { status: 400 });
     }
 
-    // Check duplicate invites
     const existing = await prisma.teamInvite.findFirst({
       where: {
         teamId: team.id,
@@ -93,6 +92,19 @@ export async function POST(request: Request) {
         status: 'pending',
       },
     });
+
+    // Notify target student
+    await createNotification(
+      studentId,
+      'team_invite_received',
+      {
+        title: 'New Team Invitation',
+        message: `You have been invited to join team "${team.name}" for track ${team.track.problemStatementCode}.`,
+        teamId: team.id,
+        teamName: team.name,
+        inviteId: invite.id,
+      }
+    );
 
     return NextResponse.json({ success: true, message: 'Invitation sent successfully.', inviteId: invite.id });
   } catch (error) {
@@ -144,32 +156,87 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'This invitation was not sent to you.' }, { status: 403 });
     }
 
-    if (invite.status !== 'pending' && invite.status !== 'hold') {
-      return NextResponse.json({ error: 'Invitation has already been processed.' }, { status: 400 });
+    if (invite.status === 'accepted' || invite.status === 'declined') {
+      return NextResponse.json({ error: 'Invitation has already been finalized.' }, { status: 400 });
     }
 
-    if (action === 'hold') {
-      await prisma.teamInvite.update({
-        where: { id: inviteId },
-        data: { status: 'hold' },
-      });
-      return NextResponse.json({ success: true, message: 'Invitation put on hold / waitlist.' });
-    }
+    const student = await prisma.studentProfile.findUnique({
+      where: { userId: decoded.userId },
+    });
 
     if (action === 'decline') {
       await prisma.teamInvite.update({
         where: { id: inviteId },
         data: { status: 'declined' },
       });
+
+      // Notify team leader
+      await createNotification(
+        invite.team.leaderId,
+        'invite_response',
+        {
+          title: 'Invitation Declined',
+          message: `${student?.name} has declined your invitation to join team "${invite.team.name}".`,
+          teamId: invite.teamId,
+          teamName: invite.team.name,
+          studentId: decoded.userId,
+          studentName: student?.name,
+          status: 'declined',
+        }
+      );
+
       return NextResponse.json({ success: true, message: 'Invitation declined.' });
     }
 
-    // Action is ACCEPT
-    // Check if user is already in a team
-    const student = await prisma.studentProfile.findUnique({
-      where: { userId: decoded.userId },
-    });
+    if (action === 'on_hold') {
+      await prisma.teamInvite.update({
+        where: { id: inviteId },
+        data: { status: 'on_hold' },
+      });
 
+      // Notify team leader
+      await createNotification(
+        invite.team.leaderId,
+        'invite_response',
+        {
+          title: 'Invitation On Hold',
+          message: `${student?.name} has put your invitation to join team "${invite.team.name}" on hold.`,
+          teamId: invite.teamId,
+          teamName: invite.team.name,
+          studentId: decoded.userId,
+          studentName: student?.name,
+          status: 'on_hold',
+        }
+      );
+
+      return NextResponse.json({ success: true, message: 'Invitation put on hold.' });
+    }
+
+    if (action === 'waitlist') {
+      await prisma.teamInvite.update({
+        where: { id: inviteId },
+        data: { status: 'waitlist' },
+      });
+
+      // Notify team leader
+      await createNotification(
+        invite.team.leaderId,
+        'invite_response',
+        {
+          title: 'Invitation Put on Waitlist',
+          message: `${student?.name} has kept your invitation to join team "${invite.team.name}" in their waitlist.`,
+          teamId: invite.teamId,
+          teamName: invite.team.name,
+          studentId: decoded.userId,
+          studentName: student?.name,
+          status: 'waitlist',
+        }
+      );
+
+      return NextResponse.json({ success: true, message: 'Invitation kept on waitlist.' });
+    }
+
+    // Action is ACCEPT
     if (student?.teamId) {
       return NextResponse.json({ error: 'You are already in a team.' }, { status: 400 });
     }
@@ -188,7 +255,7 @@ export async function PUT(request: Request) {
       // 2. Add member
       await tx.studentProfile.update({
         where: { userId: decoded.userId },
-        data: { teamId: invite.teamId, teamStatus: TeamStatus.IN_TEAM },
+        data: { teamId: invite.teamId, teamStatus: TeamStatus.IN_TEAM, roleInTeam: 'Member' },
       });
 
       // If team reaches 6 members, lock it
@@ -203,7 +270,7 @@ export async function PUT(request: Request) {
       await tx.joinRequest.updateMany({
         where: {
           studentId: decoded.userId,
-          status: 'pending',
+          status: { in: ['pending', 'on_hold', 'meeting_requested'] },
         },
         data: { status: 'declined' },
       });
@@ -212,13 +279,28 @@ export async function PUT(request: Request) {
       await tx.teamInvite.updateMany({
         where: {
           studentId: decoded.userId,
-          status: 'pending',
+          status: { in: ['pending', 'on_hold', 'waitlist'] },
+          id: { not: inviteId },
         },
         data: { status: 'declined' },
       });
     });
 
-    // Recalculate team skills
+    // Notify team leader of acceptance
+    await createNotification(
+      invite.team.leaderId,
+      'invite_response',
+      {
+        title: 'Invitation Accepted',
+        message: `${student?.name} has accepted your invitation and joined team "${invite.team.name}"!`,
+        teamId: invite.teamId,
+        teamName: invite.team.name,
+        studentId: decoded.userId,
+        studentName: student?.name,
+        status: 'accepted',
+      }
+    );
+
     await recalculateTeamSkills(invite.teamId);
 
     return NextResponse.json({ success: true, message: 'Joined team successfully.' });

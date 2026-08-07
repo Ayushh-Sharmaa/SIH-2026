@@ -67,7 +67,7 @@ export const teamInviteSchema = z.object({
 
 export const respondTeamInviteSchema = z.object({
   inviteId: z.string().trim().min(1).max(100),
-  action: z.enum(['accept', 'decline', 'hold']),
+  action: z.enum(['accept', 'decline', 'on_hold', 'waitlist']),
 });
 
 export const joinRequestSchema = z.object({
@@ -77,7 +77,7 @@ export const joinRequestSchema = z.object({
 
 export const respondJoinRequestSchema = z.object({
   requestId: z.string().trim().min(1).max(100),
-  action: z.enum(['accept', 'decline']),
+  action: z.enum(['accept', 'decline', 'on_hold', 'meeting_requested']),
 });
 
 export const mentorRequestSchema = z.object({
@@ -86,7 +86,7 @@ export const mentorRequestSchema = z.object({
 });
 
 export const respondMentorRequestSchema = z.object({
-  action: z.enum(['accept', 'decline']),
+  action: z.enum(['accept', 'decline', 'meeting_requested', 'keep_pending']),
 });
 
 // 4. Admin Management
@@ -145,17 +145,27 @@ export const studentSearchQuerySchema = z.object({
   softSkill: z.string().trim().max(100).optional(),
   language: z.string().trim().max(100).optional(),
   trackId: recordId.optional(),
+  college: z.string().trim().max(100).optional(),
+  branch: z.string().trim().max(100).optional(),
+  year: z.string().trim().max(100).optional(),
+  search: z.string().trim().max(100).optional(),
 });
 
 export const teamSearchQuerySchema = z.object({
   name: z.string().optional(),
   skill: z.string().optional(),
   trackId: z.string().optional(),
+  domain: z.string().trim().max(100).optional(),
+  leader: z.string().trim().max(100).optional(),
+  size: z.string().trim().max(100).optional(),
+  status: z.string().trim().max(100).optional(),
+  search: z.string().trim().max(100).optional(),
 });
 
 export const mentorSearchQuerySchema = z.object({
   name: z.string().optional(),
   expertise: z.string().trim().max(100).optional(),
+  search: z.string().trim().max(100).optional(),
 });
 
 export const dashboardQuerySchema = z.object({

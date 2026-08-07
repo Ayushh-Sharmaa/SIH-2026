@@ -74,12 +74,14 @@ export async function GET(request: Request) {
             {
               id: 'demo-req-1',
               message: 'Hello Professor! We would love your guidance on our Smart India Hackathon project.',
+              status: 'pending',
               createdAt: new Date().toISOString(),
               team: {
                 id: 'demo-team-1',
                 name: 'TechShak',
                 track: 'PS-MEDTECH',
                 skillsCovered: ['React', 'Python', 'Node.js', 'Machine Learning'],
+                members: [{ name: 'Preview Student', branch: 'CSE', year: '3rd Year', avatarUrl: null }],
               },
             },
           ],
@@ -95,6 +97,7 @@ export async function GET(request: Request) {
         role: 'STUDENT',
         isAdminPreview: true,
         profile: {
+          userId: decoded.userId,
           name: firstStudent?.name || 'Admin Student Preview',
           email: decoded.email,
           branch: firstStudent?.branch || 'CSE',
@@ -129,6 +132,7 @@ export async function GET(request: Request) {
                   year: firstStudent.year,
                   skills: firstStudent.skills,
                   avatarUrl: firstStudent.avatarUrl,
+                  roleInTeam: 'Leader',
                 },
               ],
               leaderContact: {
@@ -137,18 +141,38 @@ export async function GET(request: Request) {
                 whatsapp: '+91 9876543210',
               },
               mentor: null,
+              joinRequests: [],
+              invites: [],
+              mentorRequests: [],
             }
           : null,
+        receivedInvites: [],
+        sentRequests: [],
       });
     }
 
     if (decoded.role === 'STUDENT') {
-      // Fetch student profile and their team
       const student = await prisma.studentProfile.findUnique({
         where: { userId: decoded.userId },
         include: {
           user: { select: { email: true } },
           trackInterest: true,
+          joinRequests: {
+            include: {
+              team: {
+                include: { track: true },
+              },
+            },
+            orderBy: { createdAt: 'desc' },
+          },
+          teamInvites: {
+            include: {
+              team: {
+                include: { track: true },
+              },
+            },
+            orderBy: { createdAt: 'desc' },
+          },
           team: {
             include: {
               track: true,
@@ -160,6 +184,7 @@ export async function GET(request: Request) {
                   year: true,
                   skills: true,
                   avatarUrl: true,
+                  roleInTeam: true,
                   user: { select: { email: true } },
                 },
               },
@@ -171,7 +196,6 @@ export async function GET(request: Request) {
                 },
               },
               joinRequests: {
-                where: { status: { in: ['pending', 'hold'] } },
                 include: {
                   student: {
                     select: {
@@ -184,16 +208,28 @@ export async function GET(request: Request) {
                     },
                   },
                 },
+                orderBy: { createdAt: 'desc' },
               },
-            },
-          },
-          teamInvites: {
-            where: { status: { in: ['pending', 'hold'] } },
-            include: {
-              team: {
+              invites: {
                 include: {
-                  track: true,
+                  student: {
+                    select: {
+                      userId: true,
+                      name: true,
+                      branch: true,
+                      year: true,
+                      skills: true,
+                      avatarUrl: true,
+                    },
+                  },
                 },
+                orderBy: { createdAt: 'desc' },
+              },
+              mentorRequests: {
+                include: {
+                  mentor: true,
+                },
+                orderBy: { createdAt: 'desc' },
               },
             },
           },
@@ -208,6 +244,7 @@ export async function GET(request: Request) {
         success: true,
         role: 'STUDENT',
         profile: {
+          userId: student.userId,
           name: student.name,
           email: student.user.email,
           branch: student.branch,
@@ -233,6 +270,7 @@ export async function GET(request: Request) {
                 year: member.year,
                 skills: member.skills,
                 avatarUrl: member.avatarUrl,
+                roleInTeam: member.roleInTeam,
               }));
               const leader = student.team.members.find((member) => member.userId === student.team!.leaderId);
 
@@ -254,34 +292,57 @@ export async function GET(request: Request) {
                     }
                   : null,
                 mentor: student.team.mentor,
-                joinRequests: student.team.leaderId === decoded.userId ? student.team.joinRequests.map((r) => ({
+                joinRequests: student.team.leaderId === decoded.userId
+                  ? student.team.joinRequests.map((r) => ({
+                      id: r.id,
+                      status: r.status,
+                      message: r.message,
+                      createdAt: r.createdAt,
+                      student: r.student,
+                    }))
+                  : [],
+                invites: student.team.leaderId === decoded.userId
+                  ? student.team.invites.map((i) => ({
+                      id: i.id,
+                      status: i.status,
+                      createdAt: i.createdAt,
+                      student: i.student,
+                    }))
+                  : [],
+                mentorRequests: student.team.mentorRequests.map((r) => ({
                   id: r.id,
                   status: r.status,
-                  createdAt: r.createdAt,
                   message: r.message,
-                  student: {
-                    userId: r.student.userId,
-                    name: r.student.name,
-                    branch: r.student.branch,
-                    year: r.student.year,
-                    skills: r.student.skills,
-                    avatarUrl: r.student.avatarUrl,
+                  createdAt: r.createdAt,
+                  mentor: {
+                    userId: r.mentor.userId,
+                    name: r.mentor.name,
+                    designation: r.mentor.designation,
+                    organization: r.mentor.organization,
                   },
-                })) : [],
+                })),
               };
             })()
           : null,
-        teamInvites: student.teamInvites.map((invite) => ({
-          id: invite.id,
-          status: invite.status,
-          createdAt: invite.createdAt,
+        receivedInvites: student.teamInvites.map((i) => ({
+          id: i.id,
+          status: i.status,
+          createdAt: i.createdAt,
           team: {
-            id: invite.team.id,
-            name: invite.team.name,
-            memberCount: invite.team.memberCount,
-            skillsCovered: invite.team.skillsCovered,
-            skillsNeeded: invite.team.skillsNeeded,
-            track: invite.team.track,
+            id: i.team.id,
+            name: i.team.name,
+            track: i.team.track,
+          },
+        })),
+        sentRequests: student.joinRequests.map((r) => ({
+          id: r.id,
+          status: r.status,
+          message: r.message,
+          createdAt: r.createdAt,
+          team: {
+            id: r.team.id,
+            name: r.team.name,
+            track: r.team.track,
           },
         })),
       });
@@ -296,14 +357,23 @@ export async function GET(request: Request) {
             },
           },
           mentorRequests: {
-            where: { status: 'pending' },
+            where: { status: { in: ['pending', 'keep_pending', 'meeting_requested'] } },
             include: {
               team: {
                 include: {
                   track: true,
+                  members: {
+                    select: {
+                      name: true,
+                      branch: true,
+                      year: true,
+                      avatarUrl: true,
+                    },
+                  },
                 },
               },
             },
+            orderBy: { createdAt: 'desc' },
           },
         },
       });
@@ -336,12 +406,14 @@ export async function GET(request: Request) {
         pendingRequests: mentor.mentorRequests.map((r) => ({
           id: r.id,
           message: r.message,
+          status: r.status,
           createdAt: r.createdAt,
           team: {
             id: r.team.id,
             name: r.team.name,
             track: r.team.track,
             skillsCovered: r.team.skillsCovered,
+            members: r.team.members,
           },
         })),
       });

@@ -6,6 +6,7 @@ import { checkUserRateLimit } from '@/lib/rateLimit';
 import { respondMentorRequestSchema } from '@/lib/validation';
 import { Prisma } from '@prisma/client';
 import { logger } from '@/lib/logger';
+import { createNotification } from '@/lib/notifications';
 
 export async function POST(
   request: Request,
@@ -58,8 +59,8 @@ export async function POST(
       return NextResponse.json({ error: 'You are not authorized to respond to this request.' }, { status: 403 });
     }
 
-    if (mentorRequest.status !== 'pending') {
-      return NextResponse.json({ error: 'This request has already been processed.' }, { status: 400 });
+    if (mentorRequest.status === 'accepted' || mentorRequest.status === 'declined') {
+      return NextResponse.json({ error: 'This request has already been finalized.' }, { status: 400 });
     }
 
     if (action === 'decline') {
@@ -67,35 +68,93 @@ export async function POST(
         where: { id },
         data: { status: 'declined' },
       });
+
+      // Notify team leader
+      await createNotification(
+        mentorRequest.team.leaderId,
+        'mentor_response',
+        {
+          title: 'Mentorship Request Declined',
+          message: `${mentorRequest.mentor.name} has declined your mentorship request for team "${mentorRequest.team.name}".`,
+          teamId: mentorRequest.teamId,
+          teamName: mentorRequest.team.name,
+          mentorId: decoded.userId,
+          mentorName: mentorRequest.mentor.name,
+          status: 'declined',
+        }
+      );
+
       return NextResponse.json({ success: true, message: 'Request declined successfully.' });
     }
 
+    if (action === 'meeting_requested') {
+      await prisma.mentorRequest.update({
+        where: { id },
+        data: { status: 'meeting_requested' },
+      });
+
+      // Notify team leader
+      await createNotification(
+        mentorRequest.team.leaderId,
+        'mentor_response',
+        {
+          title: 'Mentorship Request Meeting',
+          message: `${mentorRequest.mentor.name} has requested a meeting to discuss mentorship with team "${mentorRequest.team.name}".`,
+          teamId: mentorRequest.teamId,
+          teamName: mentorRequest.team.name,
+          mentorId: decoded.userId,
+          mentorName: mentorRequest.mentor.name,
+          status: 'meeting_requested',
+        }
+      );
+
+      return NextResponse.json({ success: true, message: 'Meeting requested successfully.' });
+    }
+
+    if (action === 'keep_pending') {
+      await prisma.mentorRequest.update({
+        where: { id },
+        data: { status: 'keep_pending' },
+      });
+
+      // Notify team leader
+      await createNotification(
+        mentorRequest.team.leaderId,
+        'mentor_response',
+        {
+          title: 'Mentorship Request Pending',
+          message: `${mentorRequest.mentor.name} has marked your request as pending review.`,
+          teamId: mentorRequest.teamId,
+          teamName: mentorRequest.team.name,
+          mentorId: decoded.userId,
+          mentorName: mentorRequest.mentor.name,
+          status: 'keep_pending',
+        }
+      );
+
+      return NextResponse.json({ success: true, message: 'Request kept pending.' });
+    }
+
     // Action is ACCEPT
-    // 2. Verification check
     if (!mentorRequest.mentor.verified) {
       return NextResponse.json({ error: 'Your profile is not verified yet. Verified mentors are required.' }, { status: 400 });
     }
 
-    // 3. Capacity check
     if (mentorRequest.mentor.currentLoad >= mentorRequest.mentor.capacity) {
       return NextResponse.json({ error: 'You have reached your mentoring capacity limit.' }, { status: 400 });
     }
 
-    // 4. Update request status, link team, and increment current load inside transaction
     await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      // Set request as accepted
       await tx.mentorRequest.update({
         where: { id },
         data: { status: 'accepted' },
       });
 
-      // Link mentor to team
       await tx.team.update({
         where: { id: mentorRequest.teamId },
         data: { mentorId: decoded.userId },
       });
 
-      // Increment mentor load
       await tx.mentorProfile.update({
         where: { userId: decoded.userId },
         data: { currentLoad: { increment: 1 } },
@@ -105,11 +164,27 @@ export async function POST(
       await tx.mentorRequest.updateMany({
         where: {
           teamId: mentorRequest.teamId,
-          status: 'pending',
+          status: { in: ['pending', 'keep_pending', 'meeting_requested'] },
+          id: { not: id },
         },
         data: { status: 'declined' },
       });
     });
+
+    // Notify team leader of acceptance
+    await createNotification(
+      mentorRequest.team.leaderId,
+      'mentor_response',
+      {
+        title: 'Mentorship Request Approved',
+        message: `${mentorRequest.mentor.name} has approved your mentorship request and is now your team guide!`,
+        teamId: mentorRequest.teamId,
+        teamName: mentorRequest.team.name,
+        mentorId: decoded.userId,
+        mentorName: mentorRequest.mentor.name,
+        status: 'accepted',
+      }
+    );
 
     return NextResponse.json({ success: true, message: 'Request accepted successfully.' });
   } catch (error) {

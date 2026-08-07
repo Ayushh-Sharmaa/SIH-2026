@@ -30,7 +30,7 @@ export function useParallaxY<T extends HTMLElement>(
     let ctx: { revert?: () => void } | null = null;
 
     (async () => {
-      const { gsap } = await import('gsap');
+      const gsap = (await import('gsap')).default;
       const { ScrollTrigger } = await import('gsap/ScrollTrigger');
       gsap.registerPlugin(ScrollTrigger);
 
@@ -95,7 +95,7 @@ export function useScrubReveal<T extends HTMLElement>(
     if (reduced) return;
 
     (async () => {
-      const { gsap } = await import('gsap');
+      const gsap = (await import('gsap')).default;
       const { ScrollTrigger } = await import('gsap/ScrollTrigger');
       gsap.registerPlugin(ScrollTrigger);
 
@@ -164,7 +164,7 @@ export function useTextScrub<T extends HTMLElement>(
     if (reduced) return;
 
     (async () => {
-      const { gsap } = await import('gsap');
+      const gsap = (await import('gsap')).default;
       const { ScrollTrigger } = await import('gsap/ScrollTrigger');
       gsap.registerPlugin(ScrollTrigger);
 

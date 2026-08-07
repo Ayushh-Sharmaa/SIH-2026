@@ -276,7 +276,9 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
       // If Clerk is active, drop its session before hitting our own logout.
       // This prevents the "You're already signed in" error on the next attempt
       // to sign in with Google via Clerk.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if (typeof window !== 'undefined' && (window as any).Clerk) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await (window as any).Clerk.signOut();
       }
 

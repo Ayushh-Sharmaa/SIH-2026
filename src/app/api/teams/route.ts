@@ -287,7 +287,7 @@ export async function PUT(request: Request) {
         if (!track) {
           return NextResponse.json({ error: 'Invalid track ID.' }, { status: 400 });
         }
-        updateData.trackId = trackId;
+        updateData.track = { connect: { id: trackId } };
       }
 
       await prisma.team.update({

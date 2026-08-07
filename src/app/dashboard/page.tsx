@@ -403,7 +403,7 @@ export default function DashboardPage() {
     if (data && data.pendingRequests) {
       setData({
         ...data,
-        pendingRequests: data.pendingRequests.filter((r) => r.id !== requestId),
+        pendingRequests: data.pendingRequests.filter((r: any) => r.id !== requestId),
       });
     }
 

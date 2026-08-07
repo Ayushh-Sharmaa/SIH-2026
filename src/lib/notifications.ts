@@ -6,7 +6,8 @@ export async function createNotification(userId: string, type: string, payload: 
       data: {
         userId,
         type,
-        payload: payload ?? {},
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        payload: payload as any,
       },
     });
   } catch (error) {

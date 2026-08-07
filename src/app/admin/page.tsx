@@ -420,7 +420,9 @@ export default function AdminDashboardPage() {
   };
 
   const handleSignOut = async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if (typeof window !== 'undefined' && (window as any).Clerk) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (window as any).Clerk.signOut();
     }
     await fetch('/api/auth/logout', { method: 'POST' });

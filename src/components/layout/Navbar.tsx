@@ -14,6 +14,7 @@ const NAV_LINKS = [
   { name: 'Dashboard', path: '/dashboard' },
   { name: 'Find Teams', path: '/team-formation/find-teams' },
   { name: 'Find Teammates', path: '/team-formation/find-teammates' },
+  { name: 'Find Teams', path: '/team-formation/find-teams' },
   { name: 'Find Mentors', path: '/team-formation/find-mentors' },
   { name: 'Tracks', path: '/tracks' },
 ];

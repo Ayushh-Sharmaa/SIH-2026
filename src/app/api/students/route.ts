@@ -80,13 +80,9 @@ export async function GET(request: Request) {
     const yearParam = parsedQuery.data.year?.trim().toLowerCase();
     const search = parsedQuery.data.search?.trim().toLowerCase();
 
-    // Get open student profiles from unstable_cache
     let students = await getCachedStudents();
 
-    // Exclude oneself
     students = students.filter((s) => s.userId !== decoded.userId);
-
-    // Apply primary filters in memory
     if (softSkillQuery) {
       students = students.filter((s) => s.softSkills.includes(softSkillQuery));
     }

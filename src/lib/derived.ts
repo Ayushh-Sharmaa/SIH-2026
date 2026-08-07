@@ -3,7 +3,6 @@ import { logger } from './logger';
 
 export async function recalculateTeamSkills(teamId: string) {
   try {
-    // 1. Fetch the team and its track category, plus members' skills
     const team = await prisma.team.findUnique({
       where: { id: teamId },
       include: {
@@ -17,12 +16,11 @@ export async function recalculateTeamSkills(teamId: string) {
       return;
     }
 
-    // 2. Aggregate all members' skills
     const rawSkills = team.members.flatMap((m) => m.skills);
     // Make unique and capitalize neatly
     const skillsCovered = Array.from(new Set(rawSkills.map((s) => s.trim()))).filter((s) => s !== '');
 
-    // 3. Define default required skills based on track category
+    // Define default required skills based on track category
     const category = team.track.category.toLowerCase();
     let defaultRequired: string[] = [];
 
@@ -34,13 +32,11 @@ export async function recalculateTeamSkills(teamId: string) {
       defaultRequired = ['React', 'Node.js', 'Git', 'UI/UX'];
     }
 
-    // 4. Calculate skillsNeeded (any defaultRequired not covered in members' skills)
     const coveredLower = new Set(skillsCovered.map((s) => s.toLowerCase()));
     const skillsNeeded = defaultRequired.filter(
       (req) => !coveredLower.has(req.toLowerCase())
     );
 
-    // 5. Update team count and skills fields
     await prisma.team.update({
       where: { id: teamId },
       data: {

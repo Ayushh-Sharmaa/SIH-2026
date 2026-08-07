@@ -37,7 +37,9 @@ export async function PUT(request: Request) {
     // Parse/Validate input using Zod Schema
     const parsed = mentorProfileSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: 'Invalid profile information format.' }, { status: 400 });
+      logger.error('Mentor profile validation failed', parsed.error.format(), { body });
+      const errorMsg = parsed.error.issues[0]?.message || 'Invalid profile information format.';
+      return NextResponse.json({ error: errorMsg }, { status: 400 });
     }
 
     const {

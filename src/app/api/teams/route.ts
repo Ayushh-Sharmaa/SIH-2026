@@ -62,9 +62,30 @@ export async function POST(request: Request) {
 
     // Create the team and associate the leader inside a transaction
     const newTeam = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      // 1. Create the team
+      // 1. Generate sequential Team ID starting at SIH100
+      const existingTeams = await tx.team.findMany({
+        where: {
+          id: {
+            startsWith: 'SIH',
+          },
+        },
+        select: { id: true },
+      });
+
+      let maxNum = 99;
+      for (const t of existingTeams) {
+        const numPart = t.id.substring(3);
+        const parsed = parseInt(numPart, 10);
+        if (!isNaN(parsed) && parsed > maxNum) {
+          maxNum = parsed;
+        }
+      }
+      const nextId = `SIH${maxNum + 1}`;
+
+      // 2. Create the team
       const team = await tx.team.create({
         data: {
+          id: nextId,
           name,
           trackId: trackId,
           leaderId: decoded.userId,

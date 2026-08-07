@@ -67,7 +67,7 @@ export const teamInviteSchema = z.object({
 
 export const respondTeamInviteSchema = z.object({
   inviteId: z.string().trim().min(1).max(100),
-  action: z.enum(['accept', 'decline']),
+  action: z.enum(['accept', 'decline', 'hold']),
 });
 
 export const joinRequestSchema = z.object({

@@ -296,6 +296,40 @@ interface DashboardTeam {
   mentorName?: string | null;
   mentorEmail?: string | null;
   inviteCode?: string;
+  joinRequests?: DashboardJoinRequest[];
+}
+
+interface DashboardJoinRequest {
+  id: string;
+  status: string;
+  createdAt: string;
+  message?: string | null;
+  student: {
+    userId: string;
+    name: string;
+    branch: string;
+    year: string;
+    skills: string[];
+    avatarUrl?: string | null;
+  };
+}
+
+interface DashboardTeamInvite {
+  id: string;
+  status: string;
+  createdAt: string;
+  team: {
+    id: string;
+    name: string;
+    memberCount: number;
+    skillsCovered: string[];
+    skillsNeeded: string[];
+    track: {
+      id: string;
+      name: string;
+      problemStatementCode: string;
+    };
+  };
 }
 
 interface PendingRequest {
@@ -343,6 +377,7 @@ interface DashboardData {
     email?: string;
   } | null;
   team: DashboardTeam | null;
+  teamInvites?: DashboardTeamInvite[];
   availableMentors?: {
     userId: string;
     name: string;
@@ -434,6 +469,88 @@ export default function DashboardPage() {
       logger.error('Mentor request response failed', err, { requestId, action });
       toast('Something went wrong. Please try again.', 'error');
       // Rollback on failure
+      setData(previousData);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleTeamInviteResponse = async (inviteId: string, action: 'accept' | 'decline' | 'hold') => {
+    setActionLoading(inviteId);
+    const previousData = data;
+    if (data && data.teamInvites) {
+      if (action === 'accept') {
+        setData({
+          ...data,
+          teamInvites: [],
+        });
+      } else if (action === 'decline') {
+        setData({
+          ...data,
+          teamInvites: data.teamInvites.filter((i) => i.id !== inviteId),
+        });
+      } else {
+        setData({
+          ...data,
+          teamInvites: data.teamInvites.map((i) => i.id === inviteId ? { ...i, status: 'hold' } : i),
+        });
+      }
+    }
+
+    try {
+      const res = await fetch('/api/team-invites', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inviteId, action }),
+      });
+      const result = await res.json();
+      if (!res.ok) {
+        toast(result.error || 'Failed to respond to invite', 'error');
+        setData(previousData);
+      } else {
+        toast(result.message || 'Invitation processed successfully', 'success');
+        fetchDashboard();
+      }
+    } catch (err) {
+      logger.error('Team invite response failed', err, { inviteId, action });
+      toast('Something went wrong. Please try again.', 'error');
+      setData(previousData);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleJoinRequestResponse = async (requestId: string, action: 'accept' | 'decline') => {
+    setActionLoading(requestId);
+    const previousData = data;
+
+    if (data && data.team && data.team.joinRequests) {
+      setData({
+        ...data,
+        team: {
+          ...data.team,
+          joinRequests: data.team.joinRequests.filter((r) => r.id !== requestId),
+        },
+      });
+    }
+
+    try {
+      const res = await fetch('/api/join-requests', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestId, action }),
+      });
+      const result = await res.json();
+      if (!res.ok) {
+        toast(result.error || 'Failed to respond to join request', 'error');
+        setData(previousData);
+      } else {
+        toast(result.message || 'Join request processed successfully', 'success');
+        fetchDashboard();
+      }
+    } catch (err) {
+      logger.error('Join request response failed', err, { requestId, action });
+      toast('Something went wrong. Please try again.', 'error');
       setData(previousData);
     } finally {
       setActionLoading(null);
@@ -971,41 +1088,195 @@ export default function DashboardPage() {
                           )}
                         </div>
                       </Reveal>
+
+                      {team.leaderId === data?.profile?.userId && (
+                        <Reveal direction="left" delay={0.12} className="mt-6">
+                          <Panel
+                            title="Incoming Join Requests"
+                            action={
+                              team.joinRequests && team.joinRequests.length > 0 ? (
+                                <Chip tone="primary">{team.joinRequests.length} waiting</Chip>
+                              ) : undefined
+                            }
+                          >
+                            {team.joinRequests && team.joinRequests.length > 0 ? (
+                              <div className="space-y-4">
+                                <AnimatePresence initial={false}>
+                                  {team.joinRequests.map((req) => (
+                                    <m.div
+                                      key={req.id}
+                                      layout
+                                      initial={{ opacity: 0, y: 12 }}
+                                      animate={{ opacity: 1, y: 0 }}
+                                      exit={{ opacity: 0, x: -24, filter: 'blur(6px)' }}
+                                      transition={{ duration: DURATION.card, ease: EASE.outExpo }}
+                                      className="space-y-4 rounded-2xl border border-[rgba(209,199,189,0.65)] bg-[rgba(248,246,242,0.7)] p-4"
+                                    >
+                                      <div className="flex items-center justify-between gap-4">
+                                        <div>
+                                          <span className="text-sm font-bold text-foreground">
+                                            {req.student.name}
+                                          </span>
+                                          <span className="mt-0.5 block text-xs text-muted">
+                                            {req.student.branch} · {req.student.year}
+                                          </span>
+                                        </div>
+                                      </div>
+
+                                      {req.message && (
+                                        <p className="rounded-xl border-l-2 border-[rgba(114,56,61,0.35)] bg-[rgba(239,233,225,0.7)] px-3 py-2 text-xs italic leading-relaxed text-body">
+                                          &ldquo;{req.message}&rdquo;
+                                        </p>
+                                      )}
+
+                                      <div className="flex flex-wrap gap-2 pt-2 border-t border-[rgba(209,199,189,0.3)]">
+                                        <PremiumButton
+                                          size="sm"
+                                          loading={actionLoading === req.id}
+                                          disabled={actionLoading !== null}
+                                          onClick={() => handleJoinRequestResponse(req.id, 'accept')}
+                                        >
+                                          Accept
+                                        </PremiumButton>
+                                        <PremiumButton
+                                          size="sm"
+                                          variant="glass"
+                                          disabled={actionLoading !== null}
+                                          onClick={() => handleJoinRequestResponse(req.id, 'decline')}
+                                        >
+                                          Decline
+                                        </PremiumButton>
+                                      </div>
+                                    </m.div>
+                                  ))}
+                                </AnimatePresence>
+                              </div>
+                            ) : (
+                              <p className="py-8 text-center text-sm text-muted">
+                                No incoming join requests from other students.
+                              </p>
+                            )}
+                          </Panel>
+                        </Reveal>
+                      )}
                     </>
-                  ) : (
-                    <Reveal direction="left" scale>
-                      <div className="surface-raised relative overflow-hidden rounded-3xl p-8 text-center sm:p-12">
-                        <Aurora variant="rose" spotlight={false} />
-                        <div className="relative">
-                          <div className="mx-auto grid size-14 place-items-center rounded-2xl border border-[rgba(114,56,61,0.2)] bg-[rgba(114,56,61,0.08)] text-primary">
-                            <svg className="size-6" viewBox="0 0 24 24" fill="none" aria-hidden>
-                              <path
-                                d="M17 20h5v-2a3 3 0 0 0-5.36-1.87M17 20H7m10 0v-2c0-.66-.13-1.29-.36-1.87m0 0a5 5 0 0 0-9.28 0M7 20H2v-2a3 3 0 0 1 5.36-1.87M7 20v-2c0-.66.13-1.29.36-1.87m0 0a5 5 0 1 1 9.28 0M15 7a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
-                                stroke="currentColor"
-                                strokeWidth="1.7"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                            </svg>
-                          </div>
-                          <h2 className="mt-5 text-feature text-foreground">
-                            You don&apos;t have a team yet
-                          </h2>
-                          <p className="mx-auto mt-2.5 max-w-sm text-sm leading-relaxed text-body">
-                            To participate in SIH@GLBGOI you must either join an existing forming
-                            team or start a new one as a leader.
-                          </p>
-                          <div className="mt-7 flex flex-wrap justify-center gap-3">
-                            <PremiumButton href="/team-formation/create-team">
-                              Create a team
-                            </PremiumButton>
-                            <PremiumButton variant="glass" href="/team-formation/find-teammates">
-                              Find teammates
-                            </PremiumButton>
+                    <>
+                      <Reveal direction="left" scale>
+                        <div className="surface-raised relative overflow-hidden rounded-3xl p-8 text-center sm:p-12">
+                          <Aurora variant="rose" spotlight={false} />
+                          <div className="relative">
+                            <div className="mx-auto grid size-14 place-items-center rounded-2xl border border-[rgba(114,56,61,0.2)] bg-[rgba(114,56,61,0.08)] text-primary">
+                              <svg className="size-6" viewBox="0 0 24 24" fill="none" aria-hidden>
+                                <path
+                                  d="M17 20h5v-2a3 3 0 0 0-5.36-1.87M17 20H7m10 0v-2c0-.66-.13-1.29-.36-1.87m0 0a5 5 0 0 0-9.28 0M7 20H2v-2a3 3 0 0 1 5.36-1.87M7 20v-2c0-.66.13-1.29.36-1.87m0 0a5 5 0 1 1 9.28 0M15 7a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
+                                  stroke="currentColor"
+                                  strokeWidth="1.7"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
+                            </div>
+                            <h2 className="mt-5 text-feature text-foreground">
+                              You don&apos;t have a team yet
+                            </h2>
+                            <p className="mx-auto mt-2.5 max-w-sm text-sm leading-relaxed text-body">
+                              To participate in SIH@GLBGOI you must either join an existing forming
+                              team or start a new one as a leader.
+                            </p>
+                            <div className="mt-7 flex flex-wrap justify-center gap-3">
+                              <PremiumButton href="/team-formation/create-team">
+                                Create a team
+                              </PremiumButton>
+                              <PremiumButton variant="glass" href="/team-formation/find-teammates">
+                                Find teammates
+                              </PremiumButton>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </Reveal>
+                      </Reveal>
+
+                      <Reveal direction="left" delay={0.08} className="mt-6">
+                        <Panel
+                          title="Team Invitations"
+                          action={
+                            data?.teamInvites && data.teamInvites.length > 0 ? (
+                              <Chip tone="primary">{data.teamInvites.length} pending</Chip>
+                            ) : undefined
+                          }
+                        >
+                          {data?.teamInvites && data.teamInvites.length > 0 ? (
+                            <div className="space-y-4">
+                              <AnimatePresence initial={false}>
+                                {data.teamInvites.map((invite) => (
+                                  <m.div
+                                    key={invite.id}
+                                    layout
+                                    initial={{ opacity: 0, y: 12 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, x: -24, filter: 'blur(6px)' }}
+                                    transition={{ duration: DURATION.card, ease: EASE.outExpo }}
+                                    className="flex flex-col justify-between gap-4 rounded-2xl border border-[rgba(209,199,189,0.65)] bg-[rgba(248,246,242,0.7)] p-5 sm:flex-row sm:items-center"
+                                  >
+                                    <div>
+                                      <span className="text-sm font-bold text-foreground block">
+                                        {invite.team.name}
+                                      </span>
+                                      <span className="mt-0.5 block text-xs text-muted">
+                                        Track: {invite.team.track.problemStatementCode} — {invite.team.track.name}
+                                      </span>
+                                      <span className="mt-1 text-xs text-primary font-bold flex items-center gap-1">
+                                        <Users size={12} /> {invite.team.memberCount}/6 members
+                                      </span>
+                                      {invite.status === 'hold' && (
+                                        <span className="inline-flex mt-2 items-center gap-1 rounded bg-[rgba(209,199,189,0.25)] px-2 py-0.5 text-[10px] font-bold text-muted uppercase tracking-wider">
+                                          On Hold
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="flex flex-wrap gap-2 items-center">
+                                      <PremiumButton
+                                        size="sm"
+                                        loading={actionLoading === invite.id}
+                                        disabled={actionLoading !== null}
+                                        onClick={() => handleTeamInviteResponse(invite.id, 'accept')}
+                                      >
+                                        Accept
+                                      </PremiumButton>
+                                      {invite.status !== 'hold' && (
+                                        <PremiumButton
+                                          size="sm"
+                                          variant="glass"
+                                          disabled={actionLoading !== null}
+                                          onClick={() => handleTeamInviteResponse(invite.id, 'hold')}
+                                        >
+                                          Hold
+                                        </PremiumButton>
+                                      )}
+                                      <PremiumButton
+                                        size="sm"
+                                        variant="glass"
+                                        disabled={actionLoading !== null}
+                                        onClick={() => handleTeamInviteResponse(invite.id, 'decline')}
+                                      >
+                                        Decline
+                                      </PremiumButton>
+                                    </div>
+                                  </m.div>
+                                ))}
+                              </AnimatePresence>
+                            </div>
+                          ) : (
+                            <p className="py-8 text-center text-sm text-muted">
+                              No team invitations received. Use the{" "}
+                              <a href="/team-formation/find-teams" className="text-primary font-bold hover:underline">
+                                Find Teams
+                              </a>{" "}
+                              directory to apply.
+                            </p>
+                          )}
+                        </Panel>
+                      </Reveal>
+                    </>
                   )
                 ) : (
                   <>

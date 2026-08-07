@@ -77,33 +77,32 @@ export default function FindMentorsPage() {
   const [mentors, setMentors] = useState<Mentor[]>([]);
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
+  const [name, setName] = useState('');
   const [expertise, setExpertise] = useState('');
   const [requested, setRequested] = useState<Record<string, true>>({});
 
-  const fetchMentors = useCallback(async (term?: string) => {
-    const q = term ?? '';
+  const fetchMentors = useCallback(async (filters?: { name?: string; expertise?: string }) => {
+    const f = filters ?? { name, expertise };
     setSearching(true);
     try {
       const queryParams = new URLSearchParams();
-      if (q) queryParams.append('expertise', q);
+      if (f.name) queryParams.append('name', f.name);
+      if (f.expertise) queryParams.append('expertise', f.expertise);
 
       const res = await fetch(`/api/mentors?${queryParams.toString()}`);
       const data = await res.json();
       if (data.success) setMentors(data.mentors);
     } catch (err) {
-      // Logging alone left the user staring at an empty list with no idea the
-      // request had failed.
       logger.error('Fetch mentors failed', err);
       toast('Could not load mentors. Check your connection and try again.', 'error');
     } finally {
       setSearching(false);
     }
-    // `toast` is memoised in ToastProvider, so its identity is stable.
-  }, [toast]);
+  }, [name, expertise, toast]);
 
   useEffect(() => {
     const handle = requestAnimationFrame(() => {
-      fetchMentors().finally(() => setLoading(false));
+      fetchMentors({ name: '', expertise: '' }).finally(() => setLoading(false));
     });
     return () => cancelAnimationFrame(handle);
   }, [fetchMentors]);
@@ -111,12 +110,13 @@ export default function FindMentorsPage() {
 
   const handleSearch = (e: FormEvent) => {
     e.preventDefault();
-    fetchMentors(expertise);
+    fetchMentors();
   };
 
   const handleReset = () => {
+    setName('');
     setExpertise('');
-    fetchMentors('');
+    fetchMentors({ name: '', expertise: '' });
   };
 
   const openSlots = mentors.reduce(
@@ -159,14 +159,39 @@ export default function FindMentorsPage() {
             <Reveal delay={0.42} className="mt-8">
               <form
                 onSubmit={handleSearch}
-                className="mx-auto flex max-w-md flex-col gap-2 sm:flex-row"
+                className="mx-auto flex max-w-2xl flex-col gap-3 sm:flex-row items-center"
               >
-                <div className="relative flex-1">
+                <div className="relative flex-1 w-full">
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Search by name..."
+                    aria-label="Search mentor name"
+                    className="w-full rounded-full border border-[rgba(209,199,189,0.85)] bg-[rgba(248,246,242,0.75)] py-3 pl-11 pr-4 text-sm text-foreground outline-none transition-[border-color,box-shadow,background-color] duration-250 focus:border-primary focus:bg-[rgba(248,246,242,0.96)] focus:shadow-[0_0_0_4px_rgba(114,56,61,0.10)]"
+                  />
+                  <svg
+                    aria-hidden
+                    className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                  >
+                    <path
+                      d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+
+                <div className="relative flex-1 w-full">
                   <input
                     type="text"
                     value={expertise}
                     onChange={(e) => setExpertise(e.target.value)}
-                    placeholder="Search expertise — e.g. Machine Learning, Cloud"
+                    placeholder="Search expertise — e.g. AI, Cloud"
                     aria-label="Search mentor expertise"
                     className="w-full rounded-full border border-[rgba(209,199,189,0.85)] bg-[rgba(248,246,242,0.75)] py-3 pl-11 pr-4 text-sm text-foreground outline-none transition-[border-color,box-shadow,background-color] duration-250 focus:border-primary focus:bg-[rgba(248,246,242,0.96)] focus:shadow-[0_0_0_4px_rgba(114,56,61,0.10)]"
                   />
@@ -184,11 +209,12 @@ export default function FindMentorsPage() {
                     />
                   </svg>
                 </div>
-                <div className="flex gap-2">
+
+                <div className="flex gap-2 w-full sm:w-auto">
                   <PremiumButton type="submit" loading={searching} className="flex-1 sm:flex-none">
                     Search
                   </PremiumButton>
-                  {expertise && (
+                  {(name || expertise) && (
                     <PremiumButton variant="ghost" onClick={handleReset}>
                       Clear
                     </PremiumButton>

@@ -144,8 +144,16 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'This invitation was not sent to you.' }, { status: 403 });
     }
 
-    if (invite.status !== 'pending') {
+    if (invite.status !== 'pending' && invite.status !== 'hold') {
       return NextResponse.json({ error: 'Invitation has already been processed.' }, { status: 400 });
+    }
+
+    if (action === 'hold') {
+      await prisma.teamInvite.update({
+        where: { id: inviteId },
+        data: { status: 'hold' },
+      });
+      return NextResponse.json({ success: true, message: 'Invitation put on hold / waitlist.' });
     }
 
     if (action === 'decline') {

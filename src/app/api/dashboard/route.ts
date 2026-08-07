@@ -170,6 +170,31 @@ export async function GET(request: Request) {
                   organization: true,
                 },
               },
+              joinRequests: {
+                where: { status: { in: ['pending', 'hold'] } },
+                include: {
+                  student: {
+                    select: {
+                      userId: true,
+                      name: true,
+                      branch: true,
+                      year: true,
+                      skills: true,
+                      avatarUrl: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+          teamInvites: {
+            where: { status: { in: ['pending', 'hold'] } },
+            include: {
+              team: {
+                include: {
+                  track: true,
+                },
+              },
             },
           },
         },
@@ -229,9 +254,36 @@ export async function GET(request: Request) {
                     }
                   : null,
                 mentor: student.team.mentor,
+                joinRequests: student.team.leaderId === decoded.userId ? student.team.joinRequests.map((r) => ({
+                  id: r.id,
+                  status: r.status,
+                  createdAt: r.createdAt,
+                  message: r.message,
+                  student: {
+                    userId: r.student.userId,
+                    name: r.student.name,
+                    branch: r.student.branch,
+                    year: r.student.year,
+                    skills: r.student.skills,
+                    avatarUrl: r.student.avatarUrl,
+                  },
+                })) : [],
               };
             })()
           : null,
+        teamInvites: student.teamInvites.map((invite) => ({
+          id: invite.id,
+          status: invite.status,
+          createdAt: invite.createdAt,
+          team: {
+            id: invite.team.id,
+            name: invite.team.name,
+            memberCount: invite.team.memberCount,
+            skillsCovered: invite.team.skillsCovered,
+            skillsNeeded: invite.team.skillsNeeded,
+            track: invite.team.track,
+          },
+        })),
       });
     } else {
       // Fetch mentor profile, mentored teams, and pending requests

@@ -12,19 +12,21 @@ async function main() {
   // serves these same literal ids to the browser, and /api/teams looks the
   // submitted trackId up by primary key -- so if the seed generated UUIDs
   // instead, every team creation would 404. See src/lib/tracks.ts.
-  for (const theme of SIH_OFFICIAL_18_THEMES) {
+  const trackUpserts = SIH_OFFICIAL_18_THEMES.map((theme) => {
     const fields = {
       name: theme.name,
       problemStatementCode: theme.problemStatementCode,
       description: theme.description,
       category: theme.category,
     };
-    await prisma.track.upsert({
+    return prisma.track.upsert({
       where: { id: theme.id },
       update: fields,
       create: { id: theme.id, ...fields },
     });
-  }
+  });
+
+  await prisma.$transaction(trackUpserts);
   console.log('Tracks seeded successfully.');
 
   // 2. Seed Mentor Registration Keys
@@ -34,13 +36,15 @@ async function main() {
     { key: 'GLB-MENTOR-2026-VIP' },
   ];
 
-  for (const item of mentorKeys) {
-    await prisma.mentorRegistrationKey.upsert({
+  const keyUpserts = mentorKeys.map((item) =>
+    prisma.mentorRegistrationKey.upsert({
       where: { key: item.key },
       update: {},
       create: item,
-    });
-  }
+    })
+  );
+
+  await prisma.$transaction(keyUpserts);
   console.log('Mentor keys seeded successfully.');
 }
 

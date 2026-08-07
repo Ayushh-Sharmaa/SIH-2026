@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { checkUserRateLimit } from '@/lib/rateLimit';
+import { dashboardQuerySchema, parseQuery } from '@/lib/validation';
 import { logger } from '@/lib/logger';
 
 export async function GET(request: Request) {
@@ -18,8 +20,17 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { searchParams } = new URL(request.url);
-    const roleOverride = searchParams.get('role');
+    // The dashboard aggregates several tables per call, so it is the most
+    // expensive authenticated GET in the app — worth a per-user ceiling.
+    const limited = await checkUserRateLimit(request, decoded.userId);
+    if (limited) return limited;
+
+    const parsedQuery = parseQuery(request.url, dashboardQuerySchema);
+    if (!parsedQuery.success) {
+      return NextResponse.json({ error: 'Invalid dashboard query.' }, { status: 400 });
+    }
+    // Only meaningful for ADMIN; the branch below is what enforces that.
+    const roleOverride = parsedQuery.data.role;
 
     // Admin Role Preview Switcher Mode
     if (decoded.role === 'ADMIN') {

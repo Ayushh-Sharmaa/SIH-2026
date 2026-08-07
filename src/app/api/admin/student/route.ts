@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
+import { checkUserRateLimit } from '@/lib/rateLimit';
+import { adminStudentActionSchema } from '@/lib/validation';
 import { banUserEmail, isAuthorizedAdminEmail, unbanUserEmail, SUPER_ADMIN_EMAIL } from '@/lib/admin';
 import { logger } from '@/lib/logger';
 
@@ -18,12 +20,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Forbidden: Admin permissions required.' }, { status: 403 });
     }
 
-    const { email, action } = await request.json();
-
-    if (!email) {
-      return NextResponse.json({ error: 'Student email is required.' }, { status: 400 });
+    // Authenticated user rate limit check
+    const rateLimitResponse = await checkUserRateLimit(request, decoded.userId);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
     }
 
+    const body = await request.json().catch(() => ({}));
+    
+    // Parse/Validate input using Zod Schema
+    const parsed = adminStudentActionSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid parameters format.' }, { status: 400 });
+    }
+
+    const { email, action } = parsed.data;
     const cleanEmail = email.trim().toLowerCase();
 
     if (action === 'ban' || action === 'remove') {
@@ -38,16 +49,16 @@ export async function POST(request: Request) {
     }
 
     if (action === 'restore' || action === 'unban') {
-      await unbanUserEmail(cleanEmail);
+      await unbanUserEmail(cleanEmail, decoded.email);
       return NextResponse.json({
         success: true,
-        message: `Restored access for ${cleanEmail}. The user can now sign in normally.`,
+        message: `Restored access for ${cleanEmail}. The user can sign in again.`,
       });
     }
 
-    return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+    return NextResponse.json({ error: 'Unknown admin student action' }, { status: 400 });
   } catch (error) {
-    logger.error('Admin student update error', error);
-    return NextResponse.json({ error: 'Failed to update student access.' }, { status: 500 });
+    logger.error('Admin student action error', error);
+    return NextResponse.json({ error: 'Failed to process admin action.' }, { status: 500 });
   }
 }

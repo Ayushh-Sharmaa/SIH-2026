@@ -1,5 +1,6 @@
 import { prisma } from './prisma';
 import { normalizeEmail } from './auth';
+import { logger } from './logger';
 
 /**
  * The one account that can never be removed and always has admin rights.
@@ -102,8 +103,21 @@ export async function banUserEmail(
   return getBannedEmails();
 }
 
-export async function unbanUserEmail(email: string): Promise<string[]> {
+/**
+ * Lifts a ban.
+ *
+ * `unbannedBy` mirrors `banUserEmail`'s `bannedBy` and is logged rather than
+ * stored: the row is deleted, so there is nowhere on `BannedEmail` to keep it.
+ * Without the parameter the admin route's audit argument was a type error, and
+ * dropping the argument instead would have silently discarded the only record
+ * of who restored the account.
+ */
+export async function unbanUserEmail(email: string, unbannedBy?: string): Promise<string[]> {
   const clean = normalizeEmail(email);
   await prisma.bannedEmail.deleteMany({ where: { email: clean } });
+  logger.warn('Ban lifted', undefined, {
+    email: clean,
+    unbannedBy: unbannedBy ? normalizeEmail(unbannedBy) : 'unknown',
+  });
   return getBannedEmails();
 }

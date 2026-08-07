@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, m } from 'framer-motion';
 import { ArrowUpRight, Users, BookOpen, GraduationCap, Calendar, Compass, ShieldCheck } from 'lucide-react';
@@ -10,7 +10,6 @@ import { useToast } from '@/components/ui/Toast';
 import Image from 'next/image';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
-import { useEscapeKey, useFocusTrap, useScrollLock } from '@/hooks/useFocusTrap';
 import {
   Aurora,
   Counter,

@@ -273,6 +273,13 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
     if (signingOut) return;
     setSigningOut(true);
     try {
+      // If Clerk is active, drop its session before hitting our own logout.
+      // This prevents the "You're already signed in" error on the next attempt
+      // to sign in with Google via Clerk.
+      if (typeof window !== 'undefined' && (window as any).Clerk) {
+        await (window as any).Clerk.signOut();
+      }
+
       const response = await fetch('/api/auth/logout', {
         method: 'POST',
         credentials: 'same-origin',
@@ -282,7 +289,7 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
         return;
       }
       clear();
-      router.push('/login');
+      window.location.href = '/login';
     } catch {
       setSigningOut(false);
     }

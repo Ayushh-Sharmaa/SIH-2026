@@ -391,6 +391,22 @@ export default function DashboardPage() {
     action: 'accept' | 'decline' | 'meeting_requested' | 'keep_pending'
   ) => {
     setActionLoading(requestId);
+
+    // Optimistic UI Update: hide the request immediately
+    //
+    // This block referenced `data.mentorRequests`, which the dashboard API has
+    // never returned — the payload field is `pendingRequests`, and that is what
+    // every render site below reads. The guard was therefore always false, so
+    // the optimistic update never ran and the row stayed on screen until the
+    // refetch completed.
+    const previousData = data;
+    if (data && data.pendingRequests) {
+      setData({
+        ...data,
+        pendingRequests: data.pendingRequests.filter((r) => r.id !== requestId),
+      });
+    }
+
     try {
       const res = await fetch(`/api/mentor-requests/${requestId}/respond`, {
         method: 'POST',
@@ -400,6 +416,8 @@ export default function DashboardPage() {
       const result = await res.json();
       if (!res.ok) {
         toast(result.error || 'Failed to process request', 'error');
+        // Rollback on failure
+        setData(previousData);
       } else {
         toast(`Request status updated successfully.`, 'success');
         await fetchDashboard();
@@ -407,6 +425,8 @@ export default function DashboardPage() {
     } catch (err) {
       logger.error('Mentor request response failed', err);
       toast('Something went wrong. Please try again.', 'error');
+      // Rollback on failure
+      setData(previousData);
     } finally {
       setActionLoading(null);
     }

@@ -1,19 +1,8 @@
-/**
- * Rate limiting.
- *
- * The store is pluggable on purpose. The default is in-memory, which is
- * genuinely useful — it protects a single-instance or self-hosted deployment and
- * makes local abuse obvious — but it is NOT sufficient on serverless, where each
- * cold instance keeps its own counters and an attacker distributed across
- * instances gets N× the budget.
- *
- * To harden for production, implement `RateLimitStore` against Upstash Redis and
- * pass it to `createRateLimiter`. Nothing else has to change; see the bottom of
- * this file for the exact shape.
- */
+import { NextResponse } from 'next/server';
+import { RATE_LIMIT_CONFIG } from './rateLimitConfig';
+import { normalizeEmail } from './auth';
 
 export interface RateLimitStore {
-  /** Increments the counter for `key` and returns the new count plus its window reset time. */
   hit(key: string, windowMs: number): Promise<{ count: number; resetAt: number }>;
 }
 
@@ -22,14 +11,6 @@ interface Bucket {
   resetAt: number;
 }
 
-/**
- * Fixed-window counter held in module scope.
- *
- * Fixed rather than sliding window: a sliding log needs per-request timestamps,
- * and for a login endpoint the extra precision does not justify the memory. The
- * tradeoff is that an attacker can burst 2× the limit across a window boundary,
- * which is acceptable at these thresholds.
- */
 class MemoryStore implements RateLimitStore {
   private buckets = new Map<string, Bucket>();
   private lastSweep = 0;
@@ -49,11 +30,6 @@ class MemoryStore implements RateLimitStore {
     return existing;
   }
 
-  /**
-   * Drops expired buckets. Without this the map grows unbounded — one entry per
-   * distinct IP, forever, which is a slow memory leak an attacker can drive.
-   * Swept at most once a minute so a burst of requests does not each pay for it.
-   */
   private sweep(now: number) {
     if (now - this.lastSweep < 60_000) return;
     this.lastSweep = now;
@@ -63,8 +39,6 @@ class MemoryStore implements RateLimitStore {
   }
 }
 
-// Module scope survives between requests within one instance; that is the whole
-// mechanism. `globalThis` keeps it alive across hot reloads in development.
 const store: RateLimitStore = globalThis.__sihRateStore ?? new MemoryStore();
 if (process.env.NODE_ENV !== 'production') globalThis.__sihRateStore = store;
 
@@ -72,7 +46,6 @@ export interface RateLimitResult {
   ok: boolean;
   limit: number;
   remaining: number;
-  /** Seconds until the window resets. For the Retry-After header. */
   retryAfter: number;
 }
 
@@ -98,15 +71,6 @@ export function createRateLimiter({
   };
 }
 
-/**
- * Best-effort client IP.
- *
- * `x-forwarded-for` is client-controllable unless a trusted proxy overwrites it.
- * On Vercel and Cloudflare it is set by the platform, so the leftmost entry is
- * the real client. Behind an untrusted proxy this is spoofable — which is why
- * the login limiter also keys on the submitted email, so spoofing the IP still
- * does not grant unlimited attempts against one account.
- */
 export function clientIp(request: Request): string {
   const forwarded = request.headers.get('x-forwarded-for');
   if (forwarded) return forwarded.split(',')[0]!.trim();
@@ -117,9 +81,8 @@ export function clientIp(request: Request): string {
   );
 }
 
-/** Standard 429 with the headers clients and crawlers expect. */
 export function tooManyRequests(result: RateLimitResult, message: string) {
-  return Response.json(
+  return NextResponse.json(
     { error: message },
     {
       status: 429,
@@ -129,28 +92,177 @@ export function tooManyRequests(result: RateLimitResult, message: string) {
         'RateLimit-Remaining': '0',
         'RateLimit-Reset': String(result.retryAfter),
       },
-    },
+    }
   );
+}
+
+// ==========================================
+// Authentication Failure Backoff Tracking
+// ==========================================
+
+interface FailureRecord {
+  failures: number;
+  lastAttempt: number;
+}
+
+class FailureTracker {
+  private records = new Map<string, FailureRecord>();
+  private lastSweep = 0;
+
+  get(key: string): FailureRecord {
+    const now = Date.now();
+    this.sweep(now);
+    const existing = this.records.get(key);
+    if (!existing) {
+      return { failures: 0, lastAttempt: 0 };
+    }
+    return existing;
+  }
+
+  recordFailure(key: string) {
+    const now = Date.now();
+    this.sweep(now);
+    const existing = this.records.get(key) || { failures: 0, lastAttempt: 0 };
+    existing.failures += 1;
+    existing.lastAttempt = now;
+    this.records.set(key, existing);
+  }
+
+  reset(key: string) {
+    this.records.delete(key);
+  }
+
+  private sweep(now: number) {
+    if (now - this.lastSweep < 60_000) return;
+    this.lastSweep = now;
+    const maxAge = RATE_LIMIT_CONFIG.auth.maxBackoffMs * 2;
+    for (const [key, record] of this.records) {
+      if (now - record.lastAttempt > maxAge) {
+        this.records.delete(key);
+      }
+    }
+  }
+}
+
+const failureTracker: FailureTracker = globalThis.__sihFailureTracker ?? new FailureTracker();
+if (process.env.NODE_ENV !== 'production') globalThis.__sihFailureTracker = failureTracker;
+
+/**
+ * Calculates exponential backoff lockout details if the user has too many consecutive failures.
+ * Returns { ok: false, retryAfter: number } if locked out, or { ok: true } if allowed.
+ */
+function getBackoffStatus(key: string, threshold: number): { ok: boolean; retryAfter: number } {
+  const record = failureTracker.get(key);
+  if (record.failures < threshold) {
+    return { ok: true, retryAfter: 0 };
+  }
+
+  const excess = record.failures - threshold + 1;
+  const backoffMs = Math.min(
+    RATE_LIMIT_CONFIG.auth.baseBackoffMs * Math.pow(RATE_LIMIT_CONFIG.auth.backoffMultiplier, excess),
+    RATE_LIMIT_CONFIG.auth.maxBackoffMs
+  );
+
+  const timePassed = Date.now() - record.lastAttempt;
+  const remainingMs = backoffMs - timePassed;
+
+  if (remainingMs > 0) {
+    return { ok: false, retryAfter: Math.max(1, Math.ceil(remainingMs / 1000)) };
+  }
+
+  return { ok: true, retryAfter: 0 };
+}
+
+// IP-based burst limiter for auth endpoints (e.g. login, signup)
+const authIpLimiter = createRateLimiter({
+  limit: RATE_LIMIT_CONFIG.auth.ipLimit,
+  windowMs: RATE_LIMIT_CONFIG.auth.ipWindowMs,
+  prefix: 'auth:ip',
+});
+
+export async function checkAuthRateLimit(request: Request, email?: string): Promise<NextResponse | null> {
+  const ip = clientIp(request);
+
+  // 1. IP burst limit check (prevent high frequency flooding)
+  const ipBurstCheck = await authIpLimiter(ip);
+  if (!ipBurstCheck.ok) {
+    return tooManyRequests(ipBurstCheck, 'Too many authentication attempts. Please wait a moment and try again.');
+  }
+
+  // 2. IP-based consecutive failure backoff
+  const ipBackoff = getBackoffStatus(`ip:${ip}`, RATE_LIMIT_CONFIG.auth.maxIpFailures);
+  if (!ipBackoff.ok) {
+    return tooManyRequests(
+      { ok: false, limit: RATE_LIMIT_CONFIG.auth.maxIpFailures, remaining: 0, retryAfter: ipBackoff.retryAfter },
+      'Too many failed attempts from this connection. Please try again later.'
+    );
+  }
+
+  // 3. Account/email-based consecutive failure backoff
+  if (email) {
+    const cleanEmail = normalizeEmail(email);
+    const acctBackoff = getBackoffStatus(`acct:${cleanEmail}`, RATE_LIMIT_CONFIG.auth.maxAccountFailures);
+    if (!acctBackoff.ok) {
+      return tooManyRequests(
+        { ok: false, limit: RATE_LIMIT_CONFIG.auth.maxAccountFailures, remaining: 0, retryAfter: acctBackoff.retryAfter },
+        'This account has had too many failed sign-in attempts. Please try again later.'
+      );
+    }
+  }
+
+  return null;
+}
+
+export function recordAuthFailure(request: Request, email?: string) {
+  const ip = clientIp(request);
+  failureTracker.recordFailure(`ip:${ip}`);
+  if (email) {
+    failureTracker.recordFailure(`acct:${normalizeEmail(email)}`);
+  }
+}
+
+export function recordAuthSuccess(request: Request, email?: string) {
+  const ip = clientIp(request);
+  failureTracker.reset(`ip:${ip}`);
+  if (email) {
+    failureTracker.reset(`acct:${normalizeEmail(email)}`);
+  }
+}
+
+// ==========================================
+// Public & Authenticated Endpoints Limiting
+// ==========================================
+
+const publicLimiter = createRateLimiter({
+  limit: RATE_LIMIT_CONFIG.public.limit,
+  windowMs: RATE_LIMIT_CONFIG.public.windowMs,
+  prefix: 'pub:ip',
+});
+
+const userLimiter = createRateLimiter({
+  limit: RATE_LIMIT_CONFIG.authenticated.limit,
+  windowMs: RATE_LIMIT_CONFIG.authenticated.windowMs,
+  prefix: 'user',
+});
+
+export async function checkPublicRateLimit(request: Request): Promise<NextResponse | null> {
+  const ip = clientIp(request);
+  const result = await publicLimiter(ip);
+  if (!result.ok) {
+    return tooManyRequests(result, 'Too many requests. Please wait a moment and try again.');
+  }
+  return null;
+}
+
+export async function checkUserRateLimit(request: Request, userId: string): Promise<NextResponse | null> {
+  const result = await userLimiter(userId);
+  if (!result.ok) {
+    return tooManyRequests(result, 'Too many requests on your account. Please wait a moment and try again.');
+  }
+  return null;
 }
 
 declare global {
   var __sihRateStore: RateLimitStore | undefined;
+  var __sihFailureTracker: FailureTracker | undefined;
 }
-
-/*
- * Upstash Redis swap, for reference:
- *
- *   import { Redis } from '@upstash/redis';
- *   const redis = Redis.fromEnv();
- *
- *   const redisStore: RateLimitStore = {
- *     async hit(key, windowMs) {
- *       const count = await redis.incr(key);
- *       if (count === 1) await redis.pexpire(key, windowMs);
- *       const ttl = await redis.pttl(key);
- *       return { count, resetAt: Date.now() + Math.max(ttl, 0) };
- *     },
- *   };
- *
- *   export const loginLimiter = createRateLimiter({ ..., backend: redisStore });
- */

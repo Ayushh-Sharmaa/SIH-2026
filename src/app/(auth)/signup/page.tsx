@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from 'react';
 import Link from 'next/link';
-
+import { useClerk } from '@clerk/nextjs';
 import { useAuthenticatedRedirect } from '@/lib/session';
 import { AnimatePresence, m } from 'framer-motion';
 import { looksLikeSandboxEmail } from '@/lib/sandboxShared';
@@ -21,9 +21,7 @@ import {
 } from '@/components/motion';
 import { logger } from '@/lib/logger';
 import { errorMessageIncludes, userFacingMessage } from '@/lib/errors';
-
-
-
+const hasClerkKey = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 type Role = 'STUDENT' | 'MENTOR';
 
 const ROLES: { value: Role; label: string; blurb: string }[] = [
@@ -103,7 +101,15 @@ function GoogleButton({ loading, onClick }: { loading: boolean; onClick: () => v
 }
 
 export default function SignupPage() {
+  if (hasClerkKey) {
+    return <ClerkSignupPage />;
+  }
+  return <CustomSignupPage />;
+}
+
+function ClerkSignupPage() {
   const goAuthenticated = useAuthenticatedRedirect();
+  const clerk = useClerk();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -113,10 +119,24 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
-  const handleGoogleSignUp = () => {
+  const handleGoogleSignUp = async () => {
     setError('');
     setGoogleLoading(true);
-    window.location.href = `/api/auth/google?role=${role}`;
+    try {
+      if (!clerk?.client?.signUp) {
+        throw new Error('Google Sign-Up is unavailable right now. Please sign up with your email.');
+      }
+
+      await clerk.client.signUp.authenticateWithRedirect({
+        strategy: 'oauth_google',
+        redirectUrl: '/sso-callback',
+        redirectUrlComplete: '/api/auth/clerk-sync',
+      });
+    } catch (err) {
+      logger.error('Google Sign-Up error', err);
+      setError(userFacingMessage(err, 'Google Sign-Up failed. Please try again.'));
+      setGoogleLoading(false);
+    }
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -178,6 +198,74 @@ export default function SignupPage() {
   );
 }
 
+function CustomSignupPage() {
+  const goAuthenticated = useAuthenticatedRedirect();
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [role, setRole] = useState<Role>('STUDENT');
+  const [registrationKey, setRegistrationKey] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+          role,
+          registrationKey: role === 'MENTOR' ? registrationKey : undefined,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Registration failed');
+      }
+
+      await goAuthenticated('/onboarding');
+    } catch (err) {
+      setLoading(false);
+      if (errorMessageIncludes(err, 'already exists')) {
+        setError('This email is already registered — sign in instead.');
+      } else {
+        setError(userFacingMessage(err, 'Something went wrong'));
+      }
+    }
+  };
+
+  return (
+    <>
+      <AnimatePresence>{loading && <OnboardingHandoff />}</AnimatePresence>
+      <SignupTemplate
+        name={name}
+        setName={setName}
+        email={email}
+        setEmail={setEmail}
+        password={password}
+        setPassword={setPassword}
+        role={role}
+        setRole={setRole}
+        registrationKey={registrationKey}
+        setRegistrationKey={setRegistrationKey}
+        error={error}
+        loading={loading}
+        googleLoading={false}
+        handleSubmit={handleSubmit}
+      />
+    </>
+  );
+}
+
 interface SignupTemplateProps {
   name: string;
   setName: (v: string) => void;
@@ -192,7 +280,7 @@ interface SignupTemplateProps {
   error: string;
   loading: boolean;
   googleLoading: boolean;
-  handleGoogleSignUp: () => void;
+  handleGoogleSignUp?: () => void;
   handleSubmit: (e: FormEvent) => void;
 }
 
@@ -259,15 +347,19 @@ function SignupTemplate({
         <Container width="form" className="relative pb-16">
           <Reveal scale delay={0.12} className="-mt-10">
             <div className="surface-raised rounded-3xl p-6 sm:p-9">
-              <GoogleButton loading={googleLoading} onClick={handleGoogleSignUp} />
+              {handleGoogleSignUp && (
+                <>
+                  <GoogleButton loading={googleLoading} onClick={handleGoogleSignUp} />
 
-              <div className="my-7 flex items-center gap-3">
-                <span className="h-px flex-1 bg-[rgba(209,199,189,0.8)]" />
-                <span className="text-label uppercase text-muted">
-                  or with email
-                </span>
-                <span className="h-px flex-1 bg-[rgba(209,199,189,0.8)]" />
-              </div>
+                  <div className="my-7 flex items-center gap-3">
+                    <span className="h-px flex-1 bg-[rgba(209,199,189,0.8)]" />
+                    <span className="text-label uppercase text-muted">
+                      or with email
+                    </span>
+                    <span className="h-px flex-1 bg-[rgba(209,199,189,0.8)]" />
+                  </div>
+                </>
+              )}
 
               <form onSubmit={handleSubmit} noValidate className="space-y-4">
                 {/* role segmented control */}

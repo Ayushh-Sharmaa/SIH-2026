@@ -1,3 +1,4 @@
+import { clerkMiddleware } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { verifyToken } from '@/lib/auth';
@@ -14,6 +15,14 @@ const PUBLIC_PATHS = [
   /^\/signup/,
   /^\/api\/auth/,
   /^\/tracks/,
+  // The page pattern above does not cover this: `/^\/tracks/` is anchored at the
+  // start, so it misses `/api/tracks`, and the matcher below gates every `/api/*`
+  // path explicitly. That left the public /tracks page redirecting its own data
+  // fetch to /login, along with the three other client pages that read this route
+  // on mount. The payload is the build-time theme list — no user data — and the
+  // handler is GET-only and `force-static`, so there is nothing here to gate.
+  /^\/api\/tracks/,
+  /^\/sso-callback/,
 ];
 
 function isPublicRoute(pathname: string): boolean {
@@ -46,7 +55,7 @@ function redirectToLogin(req: NextRequest) {
   return res;
 }
 
-export function proxy(req: NextRequest) {
+export const proxy = clerkMiddleware(async (auth, req) => {
   const { pathname } = req.nextUrl;
   
   if (isPublicRoute(pathname)) {
@@ -56,9 +65,14 @@ export function proxy(req: NextRequest) {
   if (hasValidSession(req)) {
     return NextResponse.next();
   }
+
+  const { userId } = await auth();
+  if (userId) {
+    return NextResponse.next();
+  }
   
   return redirectToLogin(req);
-}
+});
 
 export default proxy;
 

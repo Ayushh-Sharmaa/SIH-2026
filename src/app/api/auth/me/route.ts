@@ -2,10 +2,14 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken, type SessionClaims } from '@/lib/auth';
+import { checkPublicRateLimit } from '@/lib/rateLimit';
 import { logger } from '@/lib/logger';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const rateLimitResponse = await checkPublicRateLimit(request);
+    if (rateLimitResponse) return rateLimitResponse;
+
     const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;
     // Set by /api/admin/view-as while an admin is exploring another dashboard

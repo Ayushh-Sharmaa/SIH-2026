@@ -2,29 +2,14 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { checkUserRateLimit } from '@/lib/rateLimit';
+import { mentorSearchQuerySchema, parseQuery } from '@/lib/validation';
 import { logger } from '@/lib/logger';
+import { unstable_cache } from 'next/cache';
 
-export async function GET(request: Request) {
-  try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('token')?.value;
-
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const decoded = verifyToken(token);
-    if (!decoded) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { searchParams } = new URL(request.url);
-    const search = searchParams.get('search')?.trim().toLowerCase();
-    const nameQuery = searchParams.get('name')?.trim().toLowerCase();
-    const expertiseQuery = searchParams.get('expertise')?.trim().toLowerCase();
-
-    // Fetch all verified mentors
-    const mentors = await prisma.mentorProfile.findMany({
+const getCachedMentors = unstable_cache(
+  async () => {
+    return prisma.mentorProfile.findMany({
       where: {
         verified: true,
       },
@@ -41,6 +26,38 @@ export async function GET(request: Request) {
       },
       take: 200,
     });
+  },
+  ['verified-mentors'],
+  { revalidate: 900, tags: ['mentors'] }
+);
+
+export async function GET(request: Request) {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('token')?.value;
+
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const limited = await checkUserRateLimit(request, decoded.userId);
+    if (limited) return limited;
+
+    const parsedQuery = parseQuery(request.url, mentorSearchQuerySchema);
+    if (!parsedQuery.success) {
+      return NextResponse.json({ error: 'Invalid search filters.' }, { status: 400 });
+    }
+
+    const nameQuery = parsedQuery.data.name?.trim().toLowerCase();
+    const expertiseQuery = parsedQuery.data.expertise?.trim().toLowerCase();
+    const search = parsedQuery.data.search?.trim().toLowerCase();
+
+    const mentors = await getCachedMentors();
 
     let filtered = mentors;
 

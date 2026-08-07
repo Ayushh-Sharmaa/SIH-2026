@@ -2,11 +2,11 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { checkUserRateLimit } from '@/lib/rateLimit';
+import { studentProfileSchema, profileLookupQuerySchema, parseQuery } from '@/lib/validation';
 import {
   MAX_TAGS,
   avatarDataUri,
-  optionalText,
-  requiredText,
   safeUrl,
   tagArray,
 } from '@/lib/validate';
@@ -29,7 +29,20 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json();
+    // Authenticated user rate limit check
+    const rateLimitResponse = await checkUserRateLimit(request, decoded.userId);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
+    }
+
+    const body = await request.json().catch(() => ({}));
+    
+    // Parse/Validate input using Zod Schema
+    const parsed = studentProfileSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid profile information format.' }, { status: 400 });
+    }
+
     const {
       name,
       year,
@@ -44,20 +57,8 @@ export async function PUT(request: Request) {
       githubUrl,
       linkedinUrl,
       avatarUrl,
-      trackInterest, // Array of track IDs
-    } = body;
-
-    if (!name || !year || !branch) {
-      return NextResponse.json({ error: 'Missing basic profile information' }, { status: 400 });
-    }
-
-    const cleanName = requiredText(name);
-    const cleanYear = requiredText(year, 40);
-    const cleanBranch = requiredText(branch, 40);
-
-    if (!cleanName || !cleanYear || !cleanBranch) {
-      return NextResponse.json({ error: 'Missing basic profile information' }, { status: 400 });
-    }
+      trackInterest,
+    } = parsed.data;
 
     // Only ids the platform actually publishes are accepted. Without this an
     // arbitrary string reaches the `trackInterest` relation connect and Prisma
@@ -72,12 +73,12 @@ export async function PUT(request: Request) {
     const updatedProfile = await prisma.studentProfile.update({
       where: { userId: decoded.userId },
       data: {
-        name: cleanName,
-        year: cleanYear,
-        branch: cleanBranch,
-        gender: optionalText(gender, 40),
-        rollNo: optionalText(rollNo, 40),
-        section: optionalText(section, 10),
+        name,
+        year,
+        branch,
+        gender: gender || null,
+        rollNo: rollNo || null,
+        section: section || null,
         skills: tagArray(skills),
         languages: tagArray(languages),
         softSkills: tagArray(softSkills),
@@ -125,8 +126,23 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { searchParams } = new URL(request.url);
-    const targetUserId = searchParams.get('userId');
+    // Authenticated user rate limit check
+    const rateLimitResponse = await checkUserRateLimit(request, decoded.userId);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
+    }
+
+    const parsedQuery = parseQuery(request.url, profileLookupQuerySchema);
+    if (!parsedQuery.success) {
+      return NextResponse.json({ error: 'Invalid profile query.' }, { status: 400 });
+    }
+
+    const targetUserId = parsedQuery.data.userId;
+    // `userId` is a direct object reference: any authenticated caller can name
+    // any other user. That is intentional — /profile/[id] is the teammate viewer
+    // — but it means the response must depend on who is asking, not just on who
+    // was asked for.
+    const isSelf = !targetUserId || targetUserId === decoded.userId;
     const queryId = targetUserId || decoded.userId;
 
     const student = await prisma.studentProfile.findUnique({
@@ -140,29 +156,38 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Student profile not found.' }, { status: 404 });
     }
 
+    const trackInterest = student.trackInterest.map((t) => t.id);
+    const tracksDetailed = student.trackInterest.map((t) => ({
+      id: t.id,
+      name: t.name,
+      code: t.problemStatementCode,
+    }));
+
+    // Fields the teammate viewer renders for everyone. Keeping this list
+    // explicit — rather than spreading the row and deleting keys — means a
+    // column added to StudentProfile later is private by default.
+    const shared = {
+      name: student.name,
+      year: student.year,
+      branch: student.branch,
+      rollNo: student.rollNo,
+      section: student.section,
+      skills: student.skills,
+      languages: student.languages,
+      softSkills: student.softSkills,
+      resumeUrl: student.resumeUrl,
+      githubUrl: student.githubUrl,
+      linkedinUrl: student.linkedinUrl,
+      avatarUrl: student.avatarUrl,
+      trackInterest,
+      tracksDetailed,
+    };
+
     return NextResponse.json({
       success: true,
-      profile: {
-        name: student.name,
-        year: student.year,
-        branch: student.branch,
-        gender: student.gender,
-        rollNo: student.rollNo,
-        section: student.section,
-        skills: student.skills,
-        languages: student.languages,
-        softSkills: student.softSkills,
-        resumeUrl: student.resumeUrl,
-        githubUrl: student.githubUrl,
-        linkedinUrl: student.linkedinUrl,
-        avatarUrl: student.avatarUrl,
-        trackInterest: student.trackInterest.map((t) => t.id),
-        tracksDetailed: student.trackInterest.map((t) => ({
-          id: t.id,
-          name: t.name,
-          code: t.problemStatementCode,
-        })),
-      },
+      // `gender` is self-only. It is collected for the owner's own record and
+      // the public viewer has no product reason to receive it for a stranger.
+      profile: isSelf ? { ...shared, gender: student.gender } : shared,
     });
   } catch (error) {
     logger.error('Get student profile error', error);

@@ -3,9 +3,10 @@ import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { getAdminEmails, getBannedEmails, isAuthorizedAdminEmail } from '@/lib/admin';
+import { checkUserRateLimit } from '@/lib/rateLimit';
 import { logger } from '@/lib/logger';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;
@@ -18,6 +19,9 @@ export async function GET() {
     if (!decoded || !(await isAuthorizedAdminEmail(decoded.email))) {
       return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
     }
+
+    const rateLimitResponse = await checkUserRateLimit(request, decoded.userId);
+    if (rateLimitResponse) return rateLimitResponse;
 
     const adminEmails = await getAdminEmails();
     const bannedEmails = new Set(await getBannedEmails());

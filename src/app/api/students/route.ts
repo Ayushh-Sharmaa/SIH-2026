@@ -2,54 +2,19 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { checkUserRateLimit } from '@/lib/rateLimit';
+import { studentSearchQuerySchema, parseQuery } from '@/lib/validation';
 import { logger } from '@/lib/logger';
+import { unstable_cache } from 'next/cache';
 
-export async function GET(request: Request) {
-  try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('token')?.value;
-
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const decoded = verifyToken(token);
-    if (!decoded) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { searchParams } = new URL(request.url);
-    const search = searchParams.get('search')?.trim().toLowerCase();
-    const skillQuery = searchParams.get('skill')?.trim().toLowerCase();
-    const softSkillQuery = searchParams.get('softSkill')?.trim();
-    const languageQuery = searchParams.get('language')?.trim();
-    const trackIdQuery = searchParams.get('trackId')?.trim();
-    
-    // Explicit filter inputs
-    const nameParam = searchParams.get('name')?.trim().toLowerCase();
-    const collegeParam = searchParams.get('college')?.trim().toLowerCase();
-    const branchParam = searchParams.get('branch')?.trim().toLowerCase();
-    const yearParam = searchParams.get('year')?.trim().toLowerCase();
-
-    const where: import('@prisma/client').Prisma.StudentProfileWhereInput = {
-      teamStatus: 'OPEN',
-      userId: { not: decoded.userId }, // Exclude oneself
-      isDemo: false,
-      branch: { not: '' },
-    };
-
-    if (softSkillQuery) {
-      where.softSkills = { has: softSkillQuery };
-    }
-    if (languageQuery) {
-      where.languages = { has: languageQuery };
-    }
-    if (trackIdQuery) {
-      where.trackInterest = { some: { id: trackIdQuery } };
-    }
-
-    const students = await prisma.studentProfile.findMany({
-      where,
+const getCachedStudents = unstable_cache(
+  async () => {
+    return prisma.studentProfile.findMany({
+      where: {
+        teamStatus: 'OPEN',
+        isDemo: false,
+        branch: { not: '' },
+      },
       select: {
         userId: true,
         name: true,
@@ -78,6 +43,59 @@ export async function GET(request: Request) {
       },
       take: 200,
     });
+  },
+  ['open-students'],
+  { revalidate: 900, tags: ['students'] }
+);
+
+export async function GET(request: Request) {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('token')?.value;
+
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const limited = await checkUserRateLimit(request, decoded.userId);
+    if (limited) return limited;
+
+    const parsedQuery = parseQuery(request.url, studentSearchQuerySchema);
+    if (!parsedQuery.success) {
+      return NextResponse.json({ error: 'Invalid search filters.' }, { status: 400 });
+    }
+
+    const nameParam = parsedQuery.data.name?.trim().toLowerCase();
+    const skillQuery = parsedQuery.data.skill?.trim().toLowerCase();
+    const softSkillQuery = parsedQuery.data.softSkill;
+    const languageQuery = parsedQuery.data.language;
+    const trackIdQuery = parsedQuery.data.trackId;
+    const collegeParam = parsedQuery.data.college?.trim().toLowerCase();
+    const branchParam = parsedQuery.data.branch?.trim().toLowerCase();
+    const yearParam = parsedQuery.data.year?.trim().toLowerCase();
+    const search = parsedQuery.data.search?.trim().toLowerCase();
+
+    // Get open student profiles from unstable_cache
+    let students = await getCachedStudents();
+
+    // Exclude oneself
+    students = students.filter((s) => s.userId !== decoded.userId);
+
+    // Apply primary filters in memory
+    if (softSkillQuery) {
+      students = students.filter((s) => s.softSkills.includes(softSkillQuery));
+    }
+    if (languageQuery) {
+      students = students.filter((s) => s.languages.includes(languageQuery));
+    }
+    if (trackIdQuery) {
+      students = students.filter((s) => s.trackInterest?.some((t) => t.id === trackIdQuery));
+    }
 
     // Apply secondary filters in JS for exact case-insensitive matches & search logic
     let filtered = students;

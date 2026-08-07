@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { checkUserRateLimit } from '@/lib/rateLimit';
+import { adminTeamActionSchema } from '@/lib/validation';
 import { isAuthorizedAdminEmail } from '@/lib/admin';
 import { logger } from '@/lib/logger';
 
@@ -19,13 +21,26 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
     }
 
-    const { teamId, action, status } = await request.json();
-
-    if (!teamId) {
-      return NextResponse.json({ error: 'Team ID is required' }, { status: 400 });
+    // Authenticated user rate limit check
+    const rateLimitResponse = await checkUserRateLimit(request, decoded.userId);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
     }
 
+    const body = await request.json().catch(() => ({}));
+    
+    // Parse/Validate input using Zod Schema
+    const parsed = adminTeamActionSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid parameters format.' }, { status: 400 });
+    }
+
+    const { teamId, action, status } = parsed.data;
+
     if (action === 'update_status') {
+      if (!status) {
+        return NextResponse.json({ error: 'Status is required for status updates.' }, { status: 400 });
+      }
       const updatedTeam = await prisma.team.update({
         where: { id: teamId },
         data: { status },

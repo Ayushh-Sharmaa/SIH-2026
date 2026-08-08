@@ -23,6 +23,7 @@ import {
   UserX,
   X,
   Edit2,
+  Trash2,
   Lock,
   Unlock,
   ShieldCheck,
@@ -351,6 +352,39 @@ function EditRoleModal({ member, onClose, onSubmit }: EditRoleModalProps) {
   );
 }
 
+function TeamEditModal({ team, onClose, onSubmit }: { team: any; onClose: () => void; onSubmit: (details: any) => Promise<void> }) {
+  const [name, setName] = useState(team.name || '');
+  const [trackId, setTrackId] = useState(team.track?.id || '');
+  const [whatsapp, setWhatsapp] = useState(team.whatsapp || '');
+  const [mentorName, setMentorName] = useState(team.customMentorName || '');
+  const [mentorDesignation, setMentorDesignation] = useState(team.customMentorDesignation || '');
+  const [mentorMobile, setMentorMobile] = useState(team.customMentorMobile || '');
+  const [mentorEmail, setMentorEmail] = useState(team.customMentorEmail || '');
+  const [tracks, setTracks] = useState<any[]>([]);
+  const [saving, setSaving] = useState(false);
+  const panelRef = useFocusTrap<HTMLDivElement>(true);
+  useScrollLock(true);
+  useEscapeKey(true, onClose);
+  useEffect(() => { fetch('/api/tracks').then((r) => r.json()).then((d) => d.success && setTracks(d.tracks)).catch(() => undefined); }, []);
+  const submit = async (e: FormEvent) => {
+    e.preventDefault(); setSaving(true);
+    try { await onSubmit({ action: 'update_team_details', teamId: team.id, name, trackId, whatsapp, logoUrl: team.logoUrl || null, customMentorName: mentorName, customMentorDesignation: mentorDesignation, customMentorMobile: mentorMobile, customMentorEmail: mentorEmail }); onClose(); } finally { setSaving(false); }
+  };
+  const control = 'w-full rounded-xl border border-[rgba(209,199,189,0.8)] bg-[rgba(248,246,242,0.7)] px-3.5 py-2 text-sm text-foreground outline-none focus:border-primary';
+  return <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-modal flex items-center justify-center p-4">
+    <div aria-hidden onClick={onClose} className="absolute inset-0 bg-[rgb(50_45_41/0.34)] backdrop-blur-md" />
+    <m.div ref={panelRef} role="dialog" aria-modal="true" tabIndex={-1} initial={{ opacity: 0, y: 20, scale: .98 }} animate={{ opacity: 1, y: 0, scale: 1 }} className="surface-overlay relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl p-6 text-foreground sm:p-8">
+      <div className="flex items-center justify-between"><div><span className="text-label uppercase text-primary">{team.teamCode}</span><h3 className="mt-1 text-feature font-extrabold">Edit team details</h3></div><button onClick={onClose} aria-label="Close"><X className="size-4 text-muted" /></button></div>
+      <form onSubmit={submit} className="mt-6 space-y-4">
+        <div className="grid gap-4 sm:grid-cols-2"><label><Label>Team name</Label><input required value={name} onChange={(e) => setName(e.target.value)} className={`${control} mt-1.5`} /></label><label><Label>Problem statement</Label><select required value={trackId} onChange={(e) => setTrackId(e.target.value)} className={`${control} mt-1.5`}>{tracks.map((t) => <option key={t.id} value={t.id}>{t.problemStatementCode} — {t.name}</option>)}</select></label></div>
+        <label><Label>Leader WhatsApp</Label><input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} className={`${control} mt-1.5`} /></label>
+        <div className="rounded-2xl border border-[rgba(209,199,189,0.7)] bg-[rgba(239,233,225,0.45)] p-4"><Label>External mentor (optional)</Label><div className="mt-3 grid gap-3 sm:grid-cols-2"><input placeholder="Name" value={mentorName} onChange={(e) => setMentorName(e.target.value)} className={control} /><input placeholder="Designation" value={mentorDesignation} onChange={(e) => setMentorDesignation(e.target.value)} className={control} /><input placeholder="Mobile" value={mentorMobile} onChange={(e) => setMentorMobile(e.target.value)} className={control} /><input type="email" placeholder="Email" value={mentorEmail} onChange={(e) => setMentorEmail(e.target.value)} className={control} /></div></div>
+        <div className="flex justify-end gap-2 pt-2"><PremiumButton type="button" variant="glass" size="sm" onClick={onClose} disabled={saving}>Cancel</PremiumButton><PremiumButton type="submit" size="sm" loading={saving}>Save changes</PremiumButton></div>
+      </form>
+    </m.div>
+  </m.div>;
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const { toast } = useToast();
@@ -364,6 +398,7 @@ export default function DashboardPage() {
 
   // Modal states
   const [editingRoleMember, setEditingRoleMember] = useState<any>(null);
+  const [editingTeam, setEditingTeam] = useState(false);
 
   const fetchDashboard = useCallback(async () => {
     try {

@@ -79,6 +79,7 @@ export async function PUT(request: Request) {
     revalidateTag('mentors', { expire: 0 });
     revalidateTag('teams', { expire: 0 });
 
+    // Dummy comment to trigger IDE diagnostics refresh
     return NextResponse.json({ success: true, profile: updatedProfile });
   } catch (error) {
     logger.error('Update mentor profile error', error);

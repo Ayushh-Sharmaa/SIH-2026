@@ -121,6 +121,7 @@ export async function PUT(request: Request) {
       }
     }
 
+    // Dummy comment to trigger IDE diagnostics refresh
     return NextResponse.json({ success: true, profile: updatedProfile });
   } catch (error) {
     logger.error('Update student profile error', error);

@@ -239,6 +239,7 @@ export async function POST(request: Request) {
     revalidateTag('teams', { expire: 0 });
     revalidateTag('students', { expire: 0 });
 
+    // Dummy comment to trigger IDE diagnostics refresh
     return NextResponse.json({
       success: true,
       message: 'Team created successfully.',

@@ -203,7 +203,7 @@ export default function FindMentorsPage() {
 
         const res = await fetch(`/api/mentors?${queryParams.toString()}`);
         const data = await res.json();
-        if (data.success) setMentors(data.mentors);
+        if (data.success) { setMentors(data.mentors); setCurrentPage(1); }
       } catch (err) {
         logger.error('Fetch mentors failed', err);
         toast('Could not load mentors. Check your connection.', 'error');
@@ -229,12 +229,6 @@ export default function FindMentorsPage() {
   const itemsPerPage = 20;
   const totalPages = Math.max(1, Math.ceil(mentors.length / itemsPerPage));
   const paginatedMentors = mentors.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-
-  useEffect(() => {
-    if (currentPage > totalPages) {
-      setCurrentPage(1);
-    }
-  }, [mentors.length, totalPages, currentPage]);
 
   const handleReset = () => {
     setName('');

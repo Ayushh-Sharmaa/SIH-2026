@@ -159,7 +159,7 @@ export default function FindTeammatesPage() {
 
         const res = await fetch(`/api/students?${queryParams.toString()}`);
         const data = await res.json();
-        if (data.success) setStudents(data.students);
+        if (data.success) { setStudents(data.students); setCurrentPage(1); }
       } catch (err) {
         logger.error('Fetch teammates error', err);
         toast('Could not load students. Check your connection.', 'error');
@@ -203,12 +203,6 @@ export default function FindTeammatesPage() {
   const itemsPerPage = 20;
   const totalPages = Math.max(1, Math.ceil(students.length / itemsPerPage));
   const paginatedTeammates = students.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-
-  useEffect(() => {
-    if (currentPage > totalPages) {
-      setCurrentPage(1);
-    }
-  }, [students.length, totalPages, currentPage]);
 
   const handleReset = () => {
     setName('');

@@ -243,6 +243,7 @@ export default function FindTeamsPage() {
         const data = await res.json();
         if (data.success) {
           setTeams(data.teams);
+          setCurrentPage(1);
         }
       } catch (err) {
         logger.error('Fetch teams error', err);
@@ -271,12 +272,6 @@ export default function FindTeamsPage() {
   const itemsPerPage = 20;
   const totalPages = Math.max(1, Math.ceil(teams.length / itemsPerPage));
   const paginatedTeams = teams.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-
-  useEffect(() => {
-    if (currentPage > totalPages) {
-      setCurrentPage(1);
-    }
-  }, [teams.length, totalPages, currentPage]);
 
   const handleReset = () => {
     setSearch('');

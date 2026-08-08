@@ -37,7 +37,8 @@ export async function POST(request: Request) {
 
     const { mentorId, message } = parsed.data;
 
-    // Fetch caller's profile to check if they are the leader of a team
+    // Any student in a formed team can start the mentor conversation. Duplicate
+    // team-level requests are still blocked below.
     const caller = await prisma.studentProfile.findUnique({
       where: { userId: decoded.userId },
       include: { team: { include: { track: true } } },
@@ -51,10 +52,6 @@ export async function POST(request: Request) {
     if (!team) {
       return NextResponse.json({ error: 'Team record not found.' }, { status: 404 });
     }
-    if (team.leaderId !== decoded.userId) {
-      return NextResponse.json({ error: 'Only the team leader can request a mentor.' }, { status: 403 });
-    }
-
     if (team.mentorId) {
       return NextResponse.json({ error: 'Your team already has an assigned mentor.' }, { status: 400 });
     }
@@ -70,6 +67,10 @@ export async function POST(request: Request) {
 
     if (!mentor.verified) {
       return NextResponse.json({ error: 'Target mentor is not verified yet by the administrators.' }, { status: 400 });
+    }
+
+    if (mentor.currentLoad >= mentor.capacity) {
+      return NextResponse.json({ error: 'This mentor is currently at capacity.' }, { status: 400 });
     }
 
 
@@ -105,8 +106,9 @@ export async function POST(request: Request) {
         message: `Team "${team.name}" has requested you as a guide for track ${team.track?.problemStatementCode || 'N/A'}.`,
         teamId: team.id,
         teamName: team.name,
-        leaderId: decoded.userId,
-        leaderName: caller.name,
+        leaderId: team.leaderId,
+        requestedById: decoded.userId,
+        requestedByName: caller.name,
         messageText: message?.trim(),
       }
     );

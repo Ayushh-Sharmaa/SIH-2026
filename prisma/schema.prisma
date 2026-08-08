@@ -103,6 +103,7 @@ model Track {
 
 model Team {
   id                      String         @id @default(uuid())
+  teamCode                String         @unique
   name                    String
   trackId                 String
   track                   Track          @relation(fields: [trackId], references: [id])

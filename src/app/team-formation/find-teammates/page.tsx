@@ -38,6 +38,14 @@ interface Student {
   avatarUrl?: string | null;
   college: string;
   teamStatus: string;
+  team: {
+    id: string;
+    teamCode: string;
+    name: string;
+    status: string;
+    leaderId: string;
+    mentor?: { userId: string; name: string; designation: string; organization: string } | null;
+  } | null;
   interests: string[];
 }
 
@@ -315,10 +323,10 @@ export default function FindTeammatesPage() {
 
                 <div className="space-y-4">
                   <label className="block">
-                    <FilterLabel>Student Name</FilterLabel>
+                    <FilterLabel>Student or Team ID</FilterLabel>
                     <input
                       type="text"
-                      placeholder="Search name"
+                      placeholder="Name, SIH100, or team name"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       className={CONTROL}
@@ -496,8 +504,8 @@ export default function FindTeammatesPage() {
                                         </span>
                                       </div>
                                     </div>
-                                    <span className="rounded-full bg-[rgba(114,56,61,0.08)] border border-[rgba(114,56,61,0.2)] px-2 py-0.5 text-[9px] font-black uppercase text-primary shrink-0 flex items-center gap-0.5">
-                                      <ShieldCheck className="size-2.5" /> Available
+                                    <span className={`rounded-full border px-2 py-0.5 text-[9px] font-black uppercase shrink-0 flex items-center gap-0.5 ${student.team ? 'border-[rgba(172,156,141,0.55)] bg-[rgba(172,156,141,0.18)] text-body' : 'bg-[rgba(114,56,61,0.08)] border-[rgba(114,56,61,0.2)] text-primary'}`}>
+                                      <ShieldCheck className="size-2.5" /> {student.team ? 'Already in team' : 'Available'}
                                     </span>
                                   </div>
 
@@ -506,6 +514,16 @@ export default function FindTeammatesPage() {
                                     <GraduationCap className="size-3.5 shrink-0 text-primary" />
                                     <span className="truncate">{student.college}</span>
                                   </div>
+
+                                  {student.team && (
+                                    <div className="rounded-xl border border-[rgba(114,56,61,0.18)] bg-[rgba(114,56,61,0.06)] px-3 py-2 text-xs">
+                                      <span className="font-black text-primary">{student.team.teamCode}</span>
+                                      <span className="text-body"> · {student.team.name}</span>
+                                      {student.team.mentor && (
+                                        <span className="mt-1 block text-caption text-muted">Mentor: {student.team.mentor.name}</span>
+                                      )}
+                                    </div>
+                                  )}
 
                                   {/* Tech skills */}
                                   <div>
@@ -587,13 +605,13 @@ export default function FindTeammatesPage() {
 
                                   <PremiumButton
                                     size="sm"
-                                    variant={state === 'sent' ? 'glass' : 'primary'}
+                                    variant={state === 'sent' || student.team ? 'glass' : 'primary'}
                                     loading={state === 'sending'}
-                                    disabled={Boolean(state)}
+                                    disabled={Boolean(state) || Boolean(student.team)}
                                     magnetic={false}
                                     onClick={() => sendInvite(student)}
                                   >
-                                    {state === 'sent' ? 'Invite sent' : 'Invite'}
+                                    {student.team ? 'Already in team' : state === 'sent' ? 'Invite sent' : 'Invite'}
                                   </PremiumButton>
                                 </div>
                               </article>

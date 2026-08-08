@@ -37,6 +37,7 @@ interface TeamMember {
 
 interface Team {
   id: string;
+  teamCode: string;
   name: string;
   leaderId: string;
   memberCount: number;
@@ -543,6 +544,9 @@ export default function FindTeamsPage() {
                                         <h3 className="truncate text-feature text-foreground font-extrabold">
                                           {team.name}
                                         </h3>
+                                        <span className="mt-0.5 block text-[10px] font-black uppercase tracking-[0.16em] text-primary">
+                                          {team.teamCode}
+                                        </span>
                                         <p className="mt-0.5 flex items-center gap-1.5 text-caption text-primary">
                                           <Briefcase className="size-3 shrink-0" />
                                           <span className="font-bold">{team.track.problemStatementCode}</span>

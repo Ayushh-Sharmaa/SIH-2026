@@ -117,6 +117,7 @@ export async function GET(request: Request) {
         team: firstStudent?.teamId
           ? {
               id: firstStudent.teamId,
+              teamCode: 'SIH100',
               name: 'TechShak',
               status: 'forming',
               leaderId: decoded.userId,
@@ -276,9 +277,17 @@ export async function GET(request: Request) {
 
               return {
                 id: student.team.id,
+                teamCode: student.team.teamCode,
                 name: student.team.name,
                 status: student.team.status,
                 leaderId: student.team.leaderId,
+                mentorId: student.team.mentorId,
+                whatsapp: student.team.whatsapp,
+                logoUrl: student.team.logoUrl,
+                customMentorName: student.team.customMentorName,
+                customMentorDesignation: student.team.customMentorDesignation,
+                customMentorMobile: student.team.customMentorMobile,
+                customMentorEmail: student.team.customMentorEmail,
                 memberCount: student.team.memberCount,
                 skillsCovered: student.team.skillsCovered,
                 skillsNeeded: student.team.skillsNeeded,
@@ -398,6 +407,7 @@ export async function GET(request: Request) {
         },
         teams: mentor.teams.map((t) => ({
           id: t.id,
+          teamCode: t.teamCode,
           name: t.name,
           status: t.status,
           track: t.track,
@@ -410,6 +420,7 @@ export async function GET(request: Request) {
           createdAt: r.createdAt,
           team: {
             id: r.team.id,
+            teamCode: r.team.teamCode,
             name: r.team.name,
             track: r.team.track,
             skillsCovered: r.team.skillsCovered,

@@ -11,9 +11,7 @@ const getCachedStudents = unstable_cache(
   async () => {
     return prisma.studentProfile.findMany({
       where: {
-        teamStatus: 'OPEN',
         isDemo: false,
-        branch: { not: '' },
       },
       select: {
         userId: true,
@@ -28,6 +26,16 @@ const getCachedStudents = unstable_cache(
         linkedinUrl: true,
         avatarUrl: true,
         teamStatus: true,
+        team: {
+          select: {
+            id: true,
+            teamCode: true,
+            name: true,
+            status: true,
+            leaderId: true,
+            mentor: { select: { userId: true, name: true, designation: true, organization: true } },
+          },
+        },
         trackInterest: {
           select: {
             id: true,
@@ -44,7 +52,7 @@ const getCachedStudents = unstable_cache(
       take: 200,
     });
   },
-  ['open-students'],
+  ['student-directory'],
   { revalidate: 900, tags: ['students'] }
 );
 
@@ -80,7 +88,8 @@ export async function GET(request: Request) {
     const yearParam = parsedQuery.data.year?.trim().toLowerCase();
     const search = parsedQuery.data.search?.trim().toLowerCase();
 
-    // Get open student profiles from unstable_cache
+    // Load every real onboarded student. Team membership is surfaced as a
+    // status instead of hiding profiles from the directory.
     let students = await getCachedStudents();
 
     // Exclude oneself
@@ -104,7 +113,9 @@ export async function GET(request: Request) {
       filtered = students.filter((s) => {
         const collegeName = s.user?.college?.toLowerCase() || '';
 
-        if (nameParam && !s.name.toLowerCase().includes(nameParam)) {
+        const teamCode = s.team?.teamCode.toLowerCase() || '';
+        const teamName = s.team?.name.toLowerCase() || '';
+        if (nameParam && !s.name.toLowerCase().includes(nameParam) && !teamCode.includes(nameParam) && !teamName.includes(nameParam)) {
           return false;
         }
         if (collegeParam && !collegeName.includes(collegeParam)) {
@@ -122,6 +133,8 @@ export async function GET(request: Request) {
 
         if (search) {
           const matchesName = s.name.toLowerCase().includes(search);
+          const matchesTeamCode = s.team?.teamCode.toLowerCase().includes(search) || false;
+          const matchesTeamName = s.team?.name.toLowerCase().includes(search) || false;
           const matchesBranch = s.branch.toLowerCase().includes(search);
           const matchesYear = s.year.toLowerCase().includes(search);
           const matchesCollege = collegeName.includes(search);
@@ -134,6 +147,8 @@ export async function GET(request: Request) {
 
           if (
             !matchesName &&
+            !matchesTeamCode &&
+            !matchesTeamName &&
             !matchesBranch &&
             !matchesYear &&
             !matchesCollege &&
@@ -164,6 +179,16 @@ export async function GET(request: Request) {
       linkedinUrl: s.linkedinUrl,
       avatarUrl: s.avatarUrl,
       teamStatus: s.teamStatus,
+      team: s.team
+        ? {
+            id: s.team.id,
+            teamCode: s.team.teamCode,
+            name: s.team.name,
+            status: s.team.status,
+            leaderId: s.team.leaderId,
+            mentor: s.team.mentor,
+          }
+        : null,
       college: s.user?.college || 'GL Bajaj Group of Institutions, Mathura',
       interests: s.trackInterest.map((t) => t.name),
     }));

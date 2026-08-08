@@ -74,6 +74,23 @@ export const createTeamSchema = z.object({
   customPsCategory: z.string().trim().max(40).optional(),
 });
 
+export const updateTeamDetailsSchema = z.object({
+  action: z.literal('update_team_details'),
+  teamId: z.string().trim().min(1).max(100),
+  name: z.string().trim().min(2).max(100),
+  trackId: z.string().trim().min(1).max(100),
+  whatsapp: z.string().trim().max(40).optional(),
+  logoUrl: z.string().max(3_000_000).nullable().optional(),
+  customMentorName: z.string().trim().max(100).optional(),
+  customMentorDesignation: z.string().trim().max(100).optional(),
+  customMentorMobile: z.string().trim().max(40).optional(),
+  customMentorEmail: z.string().trim().email().max(100).or(z.literal('')).optional(),
+});
+
+export const deleteTeamSchema = z.object({
+  teamId: z.string().trim().min(1).max(100),
+});
+
 export const teamInviteSchema = z.object({
   studentId: z.string().trim().min(1).max(100),
 });

@@ -8,6 +8,7 @@ import { recalculateTeamSkills } from '@/lib/derived';
 import { TeamStatus, Prisma } from '@prisma/client';
 import { logger } from '@/lib/logger';
 import { createNotification } from '@/lib/notifications';
+import { revalidateTag } from 'next/cache';
 
 export async function POST(request: Request) {
   try {
@@ -302,6 +303,8 @@ export async function PUT(request: Request) {
     );
 
     await recalculateTeamSkills(invite.teamId);
+    revalidateTag('students', { expire: 0 });
+    revalidateTag('teams', { expire: 0 });
 
     return NextResponse.json({ success: true, message: 'Joined team successfully.' });
   } catch (error) {

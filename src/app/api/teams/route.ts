@@ -375,8 +375,8 @@ export async function DELETE(request: Request) {
         data: { teamId: null, teamStatus: TeamStatus.OPEN, roleInTeam: 'Member' },
       });
       if (team.mentorId) {
-        await tx.mentorProfile.update({
-          where: { userId: team.mentorId },
+        await tx.mentorProfile.updateMany({
+          where: { userId: team.mentorId, currentLoad: { gt: 0 } },
           data: { currentLoad: { decrement: 1 } },
         });
       }

@@ -592,6 +592,29 @@ export default function DashboardPage() {
     }
   };
 
+  const handleTeamDetailsSubmit = async (details: any) => {
+    const res = await fetch('/api/teams', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(details) });
+    const result = await res.json();
+    if (!res.ok) { toast(result.error || 'Failed to update team details.', 'error'); throw new Error(result.error); }
+    toast('Team details updated successfully.', 'success');
+    await fetchDashboard();
+  };
+
+  const handleDeleteTeam = async () => {
+    const currentTeam = data?.team;
+    if (!currentTeam || !confirm(`Delete ${currentTeam.teamCode} (${currentTeam.name})? This will remove every member from the team and cannot be undone.`)) return;
+    setActionLoading('delete-team');
+    try {
+      const res = await fetch('/api/teams', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ teamId: currentTeam.id }) });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Failed to delete team.');
+      toast('Team deleted. All members are available again.', 'success');
+      await fetchDashboard();
+    } catch (error) {
+      toast(error instanceof Error ? error.message : 'Failed to delete team.', 'error');
+    } finally { setActionLoading(null); }
+  };
+
   if (loading) return <DashboardSkeleton />;
 
   const isStudent = data?.role === 'STUDENT';
@@ -942,8 +965,11 @@ export default function DashboardPage() {
                                           team.name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase() || 'NS'
                                         )}
                                       </div>
-                                      <div>
-                                        <h3 className="text-feature text-foreground font-extrabold">{team.name}</h3>
+                                       <div>
+                                         <div className="flex items-center gap-2">
+                                           <h3 className="text-feature text-foreground font-extrabold">{team.name}</h3>
+                                           <span className="rounded-md bg-[rgba(114,56,61,0.08)] px-2 py-0.5 text-[10px] font-black tracking-wider text-primary">{team.teamCode}</span>
+                                         </div>
                                         <p className="mt-0.5 text-xs text-muted">
                                           Track{' '}
                                           <span className="font-bold text-primary">
@@ -954,9 +980,9 @@ export default function DashboardPage() {
                                       </div>
                                     </div>
 
-                                    {/* Team Leader Recruitment Toggle */}
-                                    {isLeader && (
-                                      <div className="flex items-center gap-2">
+                                     {/* Team Leader controls */}
+                                     {isLeader && (
+                                       <div className="flex items-center gap-2">
                                         <span className="text-[10px] text-muted font-bold uppercase">Recruitment Status:</span>
                                         <button
                                           onClick={() => handleRecruitmentToggle(team.id, team.status)}
@@ -975,9 +1001,11 @@ export default function DashboardPage() {
                                               <Lock className="size-3" /> Recruiting Closed
                                             </>
                                           )}
-                                        </button>
-                                      </div>
-                                    )}
+                                         </button>
+                                         <button onClick={() => setEditingTeam(true)} className="rounded-lg border border-[rgba(209,199,189,0.75)] p-2 text-muted transition-colors hover:border-primary hover:text-primary" aria-label="Edit team details" title="Edit team details"><Edit2 className="size-3.5" /></button>
+                                         <button onClick={handleDeleteTeam} disabled={actionLoading === 'delete-team'} className="rounded-lg border border-[rgba(114,56,61,0.3)] p-2 text-primary transition-colors hover:bg-primary/10 disabled:opacity-50" aria-label="Delete team" title="Delete team"><Trash2 className="size-3.5" /></button>
+                                       </div>
+                                     )}
                                   </div>
 
                                   {/* Leader Team Roster List (Rich table view if leader, standard grid if member) */}
@@ -1680,6 +1708,13 @@ export default function DashboardPage() {
             member={editingRoleMember}
             onClose={() => setEditingRoleMember(null)}
             onSubmit={handleEditRoleSubmit}
+          />
+        )}
+        {editingTeam && team && (
+          <TeamEditModal
+            team={team}
+            onClose={() => setEditingTeam(false)}
+            onSubmit={handleTeamDetailsSubmit}
           />
         )}
       </AnimatePresence>

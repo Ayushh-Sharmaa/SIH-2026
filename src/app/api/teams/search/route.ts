@@ -15,6 +15,7 @@ const getCachedTeams = unstable_cache(
       },
       select: {
         id: true,
+        teamCode: true,
         name: true,
         memberCount: true,
         skillsCovered: true,
@@ -76,7 +77,7 @@ export async function GET(request: Request) {
     let teams = await getCachedTeams();
 
     if (nameQuery) {
-      teams = teams.filter((t) => t.name.toLowerCase().includes(nameQuery));
+      teams = teams.filter((t) => t.name.toLowerCase().includes(nameQuery) || t.teamCode.toLowerCase().includes(nameQuery));
     }
     
     if (trackIdQuery) {
@@ -91,6 +92,7 @@ export async function GET(request: Request) {
     const formattedTeams = teams.map(t => {
       return {
         id: t.id,
+        teamCode: t.teamCode,
         name: t.name,
         memberCount: t.memberCount,
         skillsCovered: t.skillsCovered,

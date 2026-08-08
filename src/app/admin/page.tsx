@@ -162,6 +162,7 @@ interface StudentData {
   gender: string;
   isDemo: boolean;
   teamName: string | null;
+  teamCode: string | null;
   teamId: string | null;
   teamStatus: string;
   skills: string[];
@@ -177,6 +178,7 @@ interface StudentData {
 
 interface TeamData {
   id: string;
+  teamCode: string;
   name: string;
   status: string;
   memberCount: number;
@@ -450,7 +452,8 @@ export default function AdminDashboardPage() {
       s.name.toLowerCase().includes(q) ||
       s.email.toLowerCase().includes(q) ||
       s.rollNo.toLowerCase().includes(q) ||
-      s.branch.toLowerCase().includes(q);
+      s.branch.toLowerCase().includes(q) ||
+      s.teamCode?.toLowerCase().includes(q);
 
     const matchesYear = studentYearFilter === 'ALL' || s.year === studentYearFilter;
     const matchesBranch = studentBranchFilter === 'ALL' || s.branch === studentBranchFilter;
@@ -471,6 +474,7 @@ export default function AdminDashboardPage() {
     const q = teamSearch.toLowerCase();
     const matchesSearch =
       t.name.toLowerCase().includes(q) ||
+      t.teamCode.toLowerCase().includes(q) ||
       t.trackName.toLowerCase().includes(q) ||
       t.leaderName.toLowerCase().includes(q) ||
       t.members.some((m) => m.name.toLowerCase().includes(q));
@@ -884,6 +888,7 @@ export default function AdminDashboardPage() {
                                     <h3 className="text-feature text-foreground">
                                       {team.name}
                                     </h3>
+                                    <Chip tone="primary">{team.teamCode}</Chip>
                                     {team.isAllFemale && <Chip tone="accent">All-female</Chip>}
                                   </div>
                                   <p className="mt-1 text-xs font-bold text-primary">

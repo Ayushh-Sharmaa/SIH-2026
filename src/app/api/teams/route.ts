@@ -343,7 +343,11 @@ export async function PUT(request: Request) {
         },
       });
 
+      await recalculateTeamSkills(teamId);
+
       revalidateTag('teams', { expire: 0 });
+      revalidateTag('students', { expire: 0 });
+      revalidateTag('mentors', { expire: 0 });
 
       return NextResponse.json({ success: true, message: 'Team details updated successfully.' });
     }
@@ -360,6 +364,8 @@ export async function DELETE(request: Request) {
     const token = (await cookies()).get('token')?.value;
     const decoded = token ? verifyToken(token) : null;
     if (!decoded || decoded.role !== 'STUDENT') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const limited = await checkUserRateLimit(request, decoded.userId);
+    if (limited) return limited;
     const parsed = deleteTeamSchema.safeParse(await request.json().catch(() => ({})));
     if (!parsed.success) return NextResponse.json({ error: 'Team ID is required.' }, { status: 400 });
 

@@ -245,7 +245,7 @@ export default function CreateTeamPage() {
                     </div>
                     <div className="flex-1 space-y-2 text-center sm:text-left">
                       <p className="text-xs text-muted">
-                        Upload custom logo. Fallback shows team initials text (e.g. "{initials}").
+                        Upload custom logo. Fallback shows team initials text (e.g. &ldquo;{initials}&rdquo;).
                       </p>
                       <div className="flex justify-center gap-2 sm:justify-start">
                         <label className="cursor-pointer rounded-lg border border-[rgba(114,56,61,0.3)] bg-[rgba(114,56,61,0.08)] px-3 py-1.5 text-caption font-bold text-primary hover:bg-[rgba(114,56,61,0.15)] transition-colors">

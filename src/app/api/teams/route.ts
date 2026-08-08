@@ -7,6 +7,7 @@ import { createTeamSchema } from '@/lib/validation';
 import { recalculateTeamSkills } from '@/lib/derived';
 import { TeamStatus, Prisma } from '@prisma/client';
 import { logger } from '@/lib/logger';
+import { revalidateTag } from 'next/cache';
 
 export async function GET(request: Request) {
   try {
@@ -152,7 +153,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid team creation parameters.' }, { status: 400 });
     }
 
-    const { name, trackId, whatsapp } = parsed.data;
+    const {
+      name,
+      trackId,
+      whatsapp,
+      logoUrl,
+      customMentorName,
+      customMentorDesignation,
+      customMentorMobile,
+      customMentorEmail,
+      customPsCode,
+      customPsName,
+      customPsCategory,
+    } = parsed.data;
 
     // Check if the student has a profile and is not already in a team
     const student = await prisma.studentProfile.findUnique({
@@ -167,22 +180,46 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'You are already a member of a team.' }, { status: 400 });
     }
 
-    const track = await prisma.track.findUnique({
-      where: { id: trackId },
-    });
+    let finalTrackId = trackId;
+    if (trackId === 'custom' && customPsCode) {
+      const code = customPsCode.trim().toUpperCase();
+      let track = await prisma.track.findUnique({
+        where: { problemStatementCode: code },
+      });
+      if (!track) {
+        track = await prisma.track.create({
+          data: {
+            problemStatementCode: code,
+            name: customPsName || 'Custom Problem Statement',
+            category: customPsCategory || 'Software',
+            description: 'Created dynamically for team formation.',
+          },
+        });
+      }
+      finalTrackId = track.id;
+    } else {
+      const track = await prisma.track.findUnique({
+        where: { id: trackId },
+      });
 
-    if (!track) {
-      return NextResponse.json({ error: 'Selected Track does not exist.' }, { status: 404 });
+      if (!track) {
+        return NextResponse.json({ error: 'Selected Track does not exist.' }, { status: 404 });
+      }
     }
 
     const newTeam = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const team = await tx.team.create({
         data: {
           name,
-          trackId: trackId,
+          trackId: finalTrackId,
           leaderId: decoded.userId,
           status: 'forming',
           whatsapp: whatsapp || null,
+          logoUrl: logoUrl || null,
+          customMentorName: customMentorName || null,
+          customMentorDesignation: customMentorDesignation || null,
+          customMentorMobile: customMentorMobile || null,
+          customMentorEmail: customMentorEmail || null,
         },
       });
 
@@ -199,6 +236,8 @@ export async function POST(request: Request) {
     });
 
     await recalculateTeamSkills(newTeam.id);
+    revalidateTag('teams', { expire: 0 });
+    revalidateTag('students', { expire: 0 });
 
     return NextResponse.json({
       success: true,
@@ -256,6 +295,8 @@ export async function PUT(request: Request) {
         data: { status },
       });
 
+      revalidateTag('teams', { expire: 0 });
+
       return NextResponse.json({ success: true, message: `Recruitment ${status === 'forming' ? 'opened' : 'closed'}.` });
     }
 
@@ -294,6 +335,8 @@ export async function PUT(request: Request) {
         where: { id: teamId },
         data: updateData,
       });
+
+      revalidateTag('teams', { expire: 0 });
 
       return NextResponse.json({ success: true, message: 'Team details updated successfully.' });
     }

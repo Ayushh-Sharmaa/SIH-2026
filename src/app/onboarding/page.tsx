@@ -211,6 +211,9 @@ export default function OnboardingPage() {
     gender: '',
     rollNo: '',
     section: '',
+    category: '',
+    contact: '',
+    college: '',
     githubUrl: '',
     linkedinUrl: '',
     resumeUrl: '',
@@ -233,6 +236,7 @@ export default function OnboardingPage() {
 
   const [selectedSoftSkills, setSelectedSoftSkills] = useState<string[]>([]);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [showCustomSectionInput, setShowCustomSectionInput] = useState(false);
   const [roleChosen, setRoleChosen] = useState<'STUDENT' | 'MENTOR' | null>(null);
   const [mentorKey, setMentorKey] = useState('');
   const [showMentorKeyInput, setShowMentorKeyInput] = useState(false);
@@ -295,7 +299,11 @@ export default function OnboardingPage() {
 
     const reader = new FileReader();
     reader.onload = () => {
-      setStudentForm((previous) => ({ ...previous, avatarUrl: String(reader.result) }));
+      if (isStudent) {
+        setStudentForm((previous) => ({ ...previous, avatarUrl: String(reader.result) }));
+      } else {
+        setMentorForm((previous) => ({ ...previous, avatarUrl: String(reader.result) }));
+      }
       setError('');
     };
     reader.readAsDataURL(file);
@@ -309,6 +317,8 @@ export default function OnboardingPage() {
     capacity: 2,
     bio: '',
     linkedinUrl: '',
+    avatarUrl: '',
+    college: '',
   });
 
   const softSkillsOptions = [
@@ -358,6 +368,9 @@ export default function OnboardingPage() {
                 gender: prof.gender || '',
                 rollNo: prof.rollNo || '',
                 section: prof.section || '',
+                category: prof.category || '',
+                contact: prof.contact || '',
+                college: meData.user.college || '',
                 githubUrl: prof.githubUrl || '',
                 linkedinUrl: prof.linkedinUrl || '',
                 resumeUrl: prof.resumeUrl || '',
@@ -392,6 +405,8 @@ export default function OnboardingPage() {
                 capacity: prof.capacity || 2,
                 bio: prof.bio || '',
                 linkedinUrl: prof.linkedinUrl || '',
+                avatarUrl: prof.avatarUrl || '',
+                college: meData.user.college || '',
               });
             }
           }
@@ -448,8 +463,20 @@ export default function OnboardingPage() {
       setError('Academic Branch is mandatory. Please select your academic branch.');
       return false;
     }
-    if (!studentForm.section) {
-      setError('Section is mandatory. Please select your section.');
+    if (!studentForm.section.trim()) {
+      setError('Section is mandatory. Please enter or select your section.');
+      return false;
+    }
+    if (!studentForm.category) {
+      setError('Category is mandatory. Please select your category.');
+      return false;
+    }
+    if (!studentForm.contact.trim()) {
+      setError('Contact number is mandatory. Please enter your mobile number.');
+      return false;
+    }
+    if (!studentForm.college) {
+      setError('Campus is mandatory. Please select your campus.');
       return false;
     }
     setError('');
@@ -484,10 +511,6 @@ export default function OnboardingPage() {
   };
 
   const validateStudentStep3 = () => {
-    if (studentForm.trackInterest.length === 0) {
-      setError('Preferred Problem Statements are mandatory. Please select at least one track.');
-      return false;
-    }
     if (!studentForm.githubUrl.trim()) {
       setError('GitHub profile URL is mandatory. Please enter your GitHub link.');
       return false;
@@ -504,6 +527,10 @@ export default function OnboardingPage() {
   const validateMentorStep1 = () => {
     if (!mentorForm.name.trim()) {
       setError('Name is mandatory. Please enter your full name.');
+      return false;
+    }
+    if (!mentorForm.college) {
+      setError('Campus selection is mandatory. Please select your campus.');
       return false;
     }
     if (!mentorForm.designation.trim()) {
@@ -566,6 +593,9 @@ export default function OnboardingPage() {
           gender: studentForm.gender,
           rollNo: studentForm.rollNo.trim(),
           section: studentForm.section,
+          category: studentForm.category,
+          contact: studentForm.contact.trim(),
+          college: studentForm.college,
           skills: finalSkills,
           languages: formattedLanguages,
           softSkills: selectedSoftSkills,
@@ -610,6 +640,8 @@ export default function OnboardingPage() {
           capacity: mentorForm.capacity,
           bio: mentorForm.bio.trim(),
           linkedinUrl: mentorForm.linkedinUrl.trim(),
+          avatarUrl: mentorForm.avatarUrl || null,
+          college: mentorForm.college,
         }),
       });
 
@@ -1209,6 +1241,16 @@ export default function OnboardingPage() {
                     </SelectField>
                   </div>
 
+                  <SelectField
+                    label="Which campus are you from?"
+                    value={studentForm.college}
+                    onChange={(e) => setStudentForm({ ...studentForm, college: e.target.value })}
+                  >
+                    <option value="">Select campus</option>
+                    <option value="GL Bajaj Mathura">GL Bajaj Mathura</option>
+                    <option value="GL Bajaj Noida">GL Bajaj Noida</option>
+                  </SelectField>
+
                   <Field
                     label="University roll number"
                     value={studentForm.rollNo}
@@ -1243,8 +1285,17 @@ export default function OnboardingPage() {
                     </SelectField>
                     <SelectField
                       label="Section"
-                      value={studentForm.section}
-                      onChange={(e) => setStudentForm({ ...studentForm, section: e.target.value })}
+                      value={showCustomSectionInput ? 'Other' : studentForm.section}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === 'Other') {
+                          setShowCustomSectionInput(true);
+                          setStudentForm({ ...studentForm, section: '' });
+                        } else {
+                          setShowCustomSectionInput(false);
+                          setStudentForm({ ...studentForm, section: val });
+                        }
+                      }}
                     >
                       <option value="">Select section</option>
                       {sectionOptions.map((opt) => (
@@ -1252,7 +1303,38 @@ export default function OnboardingPage() {
                           Section {opt}
                         </option>
                       ))}
+                      <option value="Other">Other</option>
                     </SelectField>
+                  </div>
+
+                  {showCustomSectionInput && (
+                    <Field
+                      label="Write your section"
+                      value={studentForm.section}
+                      onChange={(e) => setStudentForm({ ...studentForm, section: e.target.value })}
+                      hint="e.g. J, K, etc."
+                    />
+                  )}
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <SelectField
+                      label="Category"
+                      value={studentForm.category}
+                      onChange={(e) => setStudentForm({ ...studentForm, category: e.target.value })}
+                    >
+                      <option value="">Select category</option>
+                      {['General', 'OBC', 'SC', 'ST'].map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
+                      ))}
+                    </SelectField>
+                    <Field
+                      label="Contact number (Mobile)"
+                      value={studentForm.contact}
+                      onChange={(e) => setStudentForm({ ...studentForm, contact: e.target.value })}
+                      hint="e.g. 9999999999"
+                    />
                   </div>
 
                   <div className="flex justify-end border-t border-[rgba(209,199,189,0.7)] pt-5">
@@ -1766,164 +1848,6 @@ export default function OnboardingPage() {
                 >
                   <SectionHeading eyebrow="Step three" title="Preferences and links" />
 
-                  <div>
-                    <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
-                      <span className="text-label uppercase text-muted">
-                        Preferred problem statements <span className="text-primary">*</span>
-                      </span>
-                      <span className="rounded-full border border-[rgba(114,56,61,0.24)] bg-[rgba(114,56,61,0.08)] px-2.5 py-0.5 text-caption font-bold text-primary">
-                        {studentForm.trackInterest.length} / 2 selected
-                      </span>
-                    </div>
-
-                    <div className="mb-3 flex flex-col gap-2 rounded-2xl border border-[rgba(172,156,141,0.65)] bg-[rgba(172,156,141,0.16)] p-3.5 sm:flex-row sm:items-center sm:justify-between">
-                      <p className="text-caption font-semibold leading-relaxed text-body">
-                        Official SIH 2026 statements are not published yet — these are reference
-                        tracks built from the official themes.
-                      </p>
-                      <a
-                        href="https://sih.gov.in/"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="shrink-0 rounded-lg border border-[rgba(114,56,61,0.3)] bg-[rgba(248,246,242,0.7)] px-2.5 py-1 text-caption font-bold text-primary transition-colors duration-250 hover:bg-[rgba(248,246,242,0.95)]"
-                      >
-                        SIH portal <Icon icon={ArrowUpRight} size="xs" />
-                      </a>
-                    </div>
-
-                    <div className="max-h-60 space-y-2 overflow-y-auto rounded-2xl border border-[rgba(209,199,189,0.75)] bg-[rgba(239,233,225,0.4)] p-3">
-                      {tracks.map((track) => {
-                        const isSelected = studentForm.trackInterest.includes(track.id);
-                        return (
-                          <div
-                            key={track.id}
-                            role="checkbox"
-                            aria-checked={isSelected}
-                            tabIndex={0}
-                            onMouseEnter={() => setHoveredTrack(track)}
-                            onFocus={() => setHoveredTrack(track)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
-                                e.preventDefault();
-                                (e.currentTarget as HTMLDivElement).click();
-                              }
-                            }}
-                            onClick={() => {
-                              if (isSelected) {
-                                setStudentForm({
-                                  ...studentForm,
-                                  trackInterest: studentForm.trackInterest.filter(
-                                    (t) => t !== track.id
-                                  ),
-                                });
-                                setError('');
-                              } else {
-                                if (studentForm.trackInterest.length >= 2) {
-                                  setError('Maximum 2 problem statements can be selected per team.');
-                                  return;
-                                }
-                                setStudentForm({
-                                  ...studentForm,
-                                  trackInterest: [...studentForm.trackInterest, track.id],
-                                });
-                                setError('');
-                              }
-                            }}
-                            className={`flex cursor-pointer flex-col justify-between gap-2 rounded-xl border p-3 transition-colors duration-250 sm:flex-row sm:items-center ${
-                              isSelected
-                                ? 'border-[rgba(114,56,61,0.45)] bg-[rgba(114,56,61,0.07)]'
-                                : 'border-[rgba(209,199,189,0.75)] bg-[rgba(248,246,242,0.55)] hover:border-[rgba(114,56,61,0.3)]'
-                            }`}
-                          >
-                            <div className="flex min-w-0 items-start gap-2.5">
-                              <span
-                                aria-hidden
-                                className={`mt-0.5 grid size-4 shrink-0 place-items-center rounded border transition-colors duration-250 ${
-                                  isSelected
-                                    ? 'border-transparent bg-primary text-on-accent'
-                                    : 'border-[rgba(172,156,141,0.9)] bg-transparent text-transparent'
-                                }`}
-                              >
-                                <Icon icon={Check} size="xs" strokeWidth={3} />
-                              </span>
-                              <div className="min-w-0">
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <span className="rounded border border-[rgba(114,56,61,0.28)] bg-[rgba(114,56,61,0.08)] px-1.5 py-0.5 font-mono text-caption font-bold text-primary">
-                                    {track.problemStatementCode}
-                                  </span>
-                                  <span className="text-xs font-bold text-foreground">
-                                    {track.name}
-                                  </span>
-                                </div>
-                                {track.organization && (
-                                  <p className="mt-0.5 text-caption text-muted">
-                                    {track.organization} · {track.category}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-
-                            {track.sihUrl && (
-                              <a
-                                href={track.sihUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={(e) => e.stopPropagation()}
-                                className="shrink-0 self-end text-caption font-bold text-primary transition-colors duration-250 hover:text-[var(--primary-hover)] sm:self-center"
-                              >
-                                Official <Icon icon={ArrowUpRight} size="xs" />
-                              </a>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    <AnimatePresence mode="wait" initial={false}>
-                      {hoveredTrack && (
-                        <m.div
-                          key={hoveredTrack.id}
-                          initial={{ opacity: 0, y: 8 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -6 }}
-                          transition={{ duration: DURATION.hover, ease: EASE.outExpo }}
-                          className="mt-3 space-y-2 rounded-2xl border border-[rgba(209,199,189,0.85)] bg-[rgba(248,246,242,0.85)] p-4"
-                        >
-                          <div className="flex items-center justify-between gap-3 border-b border-[rgba(209,199,189,0.75)] pb-2">
-                            <span className="font-mono text-caption font-bold text-primary">
-                              {hoveredTrack.problemStatementCode}
-                            </span>
-                            <span className="rounded-full border border-[rgba(172,156,141,0.65)] bg-[rgba(172,156,141,0.2)] px-2 py-0.5 text-caption font-bold text-foreground">
-                              {hoveredTrack.category}
-                            </span>
-                          </div>
-                          <p className="text-xs font-bold text-foreground">{hoveredTrack.name}</p>
-                          <p className="text-xs leading-relaxed text-muted">
-                            {hoveredTrack.description}
-                          </p>
-                          <div className="flex items-center justify-between pt-1 text-caption">
-                            <span className="text-muted">
-                              Ministry ·{' '}
-                              <strong className="font-bold text-foreground">
-                                {hoveredTrack.organization}
-                              </strong>
-                            </span>
-                            {hoveredTrack.sihUrl && (
-                              <a
-                                href={hoveredTrack.sihUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="font-bold text-primary hover:underline"
-                              >
-                                Open SIH portal <Icon icon={ArrowUpRight} size="xs" />
-                              </a>
-                            )}
-                          </div>
-                        </m.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-
                   <div className="grid gap-4 sm:grid-cols-2">
                     <Field
                       label="GitHub profile"
@@ -1980,12 +1904,97 @@ export default function OnboardingPage() {
                 >
                   <SectionHeading eyebrow="Step one" title="Professional information" />
 
+                  {/* profile photo */}
+                  <div className="space-y-2">
+                    <span className="text-label uppercase text-muted">
+                      Profile photo (Optional)
+                    </span>
+
+                    {mentorForm.avatarUrl ? (
+                      <div className="flex flex-col items-center gap-5 rounded-2xl border border-[rgba(209,199,189,0.8)] bg-[rgba(239,233,225,0.5)] p-4 sm:flex-row">
+                        <div className="size-24 shrink-0 overflow-hidden rounded-2xl border-2 border-[rgba(114,56,61,0.5)] shadow-[0_10px_30px_rgba(50,45,41,0.14)]">
+                          <img
+                            src={mentorForm.avatarUrl}
+                            alt="Uploaded profile preview"
+                            className="size-full object-cover"
+                          />
+                        </div>
+                        <div className="flex-1 space-y-2 text-center sm:text-left">
+                          <span className="inline-flex items-center rounded-full border border-[rgba(172,156,141,0.7)] bg-[rgba(172,156,141,0.2)] px-2.5 py-0.5 text-caption font-bold text-foreground">
+                            Photo active
+                          </span>
+                          <p className="text-xs leading-relaxed text-muted">
+                            This photo appears on your card across the mentor directory.
+                          </p>
+                          <div className="flex flex-wrap justify-center gap-2 pt-1 sm:justify-start">
+                            <label className="cursor-pointer rounded-lg border border-[rgba(114,56,61,0.3)] bg-[rgba(114,56,61,0.08)] px-3 py-1.5 text-caption font-bold text-primary transition-colors duration-250 hover:bg-[rgba(114,56,61,0.15)]">
+                              Change photo
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="sr-only"
+                                onChange={(e) => handleAvatarUpload(e.target.files?.[0])}
+                              />
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => setMentorForm({ ...mentorForm, avatarUrl: '' })}
+                              className="rounded-lg border border-[rgba(209,199,189,0.85)] bg-[rgba(248,246,242,0.7)] px-3 py-1.5 text-caption font-bold text-body transition-colors duration-250 hover:text-primary"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <m.label
+                        whileHover={{ y: -3 }}
+                        transition={SPRING.snappy}
+                        className="group flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[rgba(172,156,141,0.75)] bg-[rgba(239,233,225,0.45)] p-8 text-center transition-colors duration-250 hover:border-[rgba(114,56,61,0.5)] hover:bg-[rgba(248,246,242,0.75)]"
+                      >
+                        <span className="mb-3 grid size-12 place-items-center rounded-full bg-[rgba(114,56,61,0.09)] text-primary transition-transform duration-250 group-hover:scale-110">
+                          <svg className="size-5" fill="none" viewBox="0 0 24 24" aria-hidden>
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              stroke="currentColor"
+                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                            />
+                          </svg>
+                        </span>
+                        <span className="text-sm font-bold text-foreground">
+                          Upload your profile photo
+                        </span>
+                        <span className="mt-1 text-caption text-muted">
+                          JPEG, PNG or WEBP up to 1.5 MB
+                        </span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="sr-only"
+                          onChange={(e) => handleAvatarUpload(e.target.files?.[0])}
+                        />
+                      </m.label>
+                    )}
+                  </div>
+
                   <Field
                     label="Full name"
                     autoComplete="name"
                     value={mentorForm.name}
                     onChange={(e) => setMentorForm({ ...mentorForm, name: e.target.value })}
                   />
+
+                  <SelectField
+                    label="Which campus are you from?"
+                    value={mentorForm.college}
+                    onChange={(e) => setMentorForm({ ...mentorForm, college: e.target.value })}
+                  >
+                    <option value="">Select campus</option>
+                    <option value="GL Bajaj Mathura">GL Bajaj Mathura</option>
+                    <option value="GL Bajaj Noida">GL Bajaj Noida</option>
+                  </SelectField>
                   <Field
                     label="Designation or role"
                     value={mentorForm.designation}

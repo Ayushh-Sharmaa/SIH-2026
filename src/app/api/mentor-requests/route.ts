@@ -72,9 +72,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Target mentor is not verified yet by the administrators.' }, { status: 400 });
     }
 
-    if (mentor.currentLoad >= mentor.capacity) {
-      return NextResponse.json({ error: 'Target mentor has reached their full guided capacity.' }, { status: 400 });
-    }
+
 
     // Check duplicate requests
     const existing = await prisma.mentorRequest.findFirst({

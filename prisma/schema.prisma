@@ -43,6 +43,8 @@ model StudentProfile {
   gender      String?    // Collected during onboarding
   rollNo      String?    // College roll number
   section     String?    // Class section (A-I)
+  category    String?    // General, OBC, SC, ST
+  contact     String?    // Mobile number
   isDemo      Boolean    @default(false) // Sandbox/troubleshooting account
   skills      String[]   // Technical skills
   languages   String[]   // Languages spoken (e.g. Hindi, English)
@@ -79,6 +81,7 @@ model MentorProfile {
   verified        Boolean         @default(false)
   bio             String?
   linkedinUrl     String?
+  avatarUrl       String?
   registrationKey String?         // Key used during sign up
   teams           Team[]
   mentorRequests  MentorRequest[]
@@ -88,29 +91,34 @@ model MentorProfile {
 }
 
 model Track {
-  id                   String @id @default(uuid())
+  id                   String           @id @default(uuid())
   name                 String
-  problemStatementCode String @unique // e.g. SIH1234
+  problemStatementCode String           @unique
   description          String
   category             String
 
-  teams    Team[]
-  students StudentProfile[] @relation("StudentTrackInterest")
+  teams                Team[]
+  students             StudentProfile[] @relation("StudentTrackInterest")
 }
 
 model Team {
-  id            String         @id @default(uuid())
-  name          String
-  trackId       String
-  track         Track          @relation(fields: [trackId], references: [id])
-  leaderId      String
-  status        String         @default("forming") // forming, complete, locked
-  mentorId      String?
-  mentor        MentorProfile? @relation(fields: [mentorId], references: [userId], onDelete: SetNull)
-  memberCount   Int            @default(1)
-  skillsCovered String[]
-  skillsNeeded  String[]
-  whatsapp      String?
+  id                      String         @id @default(uuid())
+  name                    String
+  trackId                 String
+  track                   Track          @relation(fields: [trackId], references: [id])
+  leaderId                String
+  status                  String         @default("forming") // forming, complete, locked
+  mentorId                String?
+  mentor                  MentorProfile? @relation(fields: [mentorId], references: [userId], onDelete: SetNull)
+  memberCount             Int            @default(1)
+  skillsCovered           String[]
+  skillsNeeded            String[]
+  whatsapp                String?
+  logoUrl                 String?
+  customMentorName        String?
+  customMentorDesignation String?
+  customMentorMobile      String?
+  customMentorEmail       String?
 
   members        StudentProfile[]
   invites        TeamInvite[]

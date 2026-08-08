@@ -123,6 +123,7 @@ export default function FindTeammatesPage() {
   const [language, setLanguage] = useState('');
   const [trackId, setTrackId] = useState('');
   const [inviteState, setInviteState] = useState<Record<string, 'sending' | 'sent'>>({});
+  const [currentPage, setCurrentPage] = useState(1);
 
   const fetchTeammates = useCallback(
     async (filters?: {
@@ -190,6 +191,16 @@ export default function FindTeammatesPage() {
     e.preventDefault();
     fetchTeammates();
   };
+
+  const itemsPerPage = 20;
+  const totalPages = Math.max(1, Math.ceil(students.length / itemsPerPage));
+  const paginatedTeammates = students.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(1);
+    }
+  }, [students.length, totalPages, currentPage]);
 
   const handleReset = () => {
     setName('');
@@ -440,13 +451,14 @@ export default function FindTeammatesPage() {
                     <div key={i} className="h-64 rounded-3xl skeleton-shimmer" />
                   ))}
                 </div>
-              ) : students.length > 0 ? (
-                <m.div
+              ) : paginatedTeammates.length > 0 ? (
+                <>
+                  <m.div
                   layout
                   className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3"
                 >
                   <AnimatePresence mode="popLayout" initial={false}>
-                    {students.map((student, i) => {
+                    {paginatedTeammates.map((student, i) => {
                       const state = inviteState[student.userId];
                       return (
                         <m.div
@@ -592,7 +604,43 @@ export default function FindTeammatesPage() {
                     })}
                   </AnimatePresence>
                 </m.div>
-              ) : (
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <div className="mt-10 flex items-center justify-center gap-2">
+                    <button
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                      className="rounded-xl border border-[rgba(114,56,61,0.2)] bg-[rgba(248,246,242,0.7)] px-4 py-2 text-caption font-bold text-primary transition-all duration-200 hover:bg-[rgba(114,56,61,0.08)] disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Previous
+                    </button>
+
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`size-10 rounded-xl font-bold transition-all duration-200 flex items-center justify-center ${
+                          currentPage === page
+                            ? 'bg-primary text-on-accent shadow-[0_4px_12px_rgba(114,56,61,0.25)]'
+                            : 'border border-[rgba(114,56,61,0.2)] bg-[rgba(248,246,242,0.7)] text-muted hover:border-primary hover:text-primary'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+
+                    <button
+                      disabled={currentPage === totalPages}
+                      onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                      className="rounded-xl border border-[rgba(114,56,61,0.2)] bg-[rgba(248,246,242,0.7)] px-4 py-2 text-caption font-bold text-primary transition-all duration-200 hover:bg-[rgba(114,56,61,0.08)] disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Next
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : (
                 <EmptyState
                   icon={Users}
                   title="No teammate profiles match these filters."

@@ -899,15 +899,24 @@ export default function DashboardPage() {
                                   action={<Chip tone="primary">{team.status === 'forming' ? 'Open for Recruitment' : 'Recruitment Closed'}</Chip>}
                                 >
                                   <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                    <div>
-                                      <h3 className="text-feature text-foreground font-extrabold">{team.name}</h3>
-                                      <p className="mt-1 text-xs text-muted">
-                                        Track{' '}
-                                        <span className="font-bold text-primary">
-                                          {team.track?.problemStatementCode || 'N/A'}
-                                        </span>{' '}
-                                        — {team.track?.name || 'N/A'}
-                                      </p>
+                                    <div className="flex items-center gap-3">
+                                      <div className="size-12 shrink-0 overflow-hidden rounded-2xl border border-[rgba(114,56,61,0.25)] bg-gradient-to-br from-[rgba(114,56,61,0.08)] to-[rgba(114,56,61,0.02)] flex items-center justify-center font-black text-primary text-sm">
+                                        {team.logoUrl ? (
+                                          <img src={team.logoUrl} alt="Logo" className="size-full object-cover" />
+                                        ) : (
+                                          team.name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase() || 'NS'
+                                        )}
+                                      </div>
+                                      <div>
+                                        <h3 className="text-feature text-foreground font-extrabold">{team.name}</h3>
+                                        <p className="mt-0.5 text-xs text-muted">
+                                          Track{' '}
+                                          <span className="font-bold text-primary">
+                                            {team.track?.problemStatementCode || 'N/A'}
+                                          </span>{' '}
+                                          — {team.track?.name || 'N/A'}
+                                        </p>
+                                      </div>
                                     </div>
 
                                     {/* Team Leader Recruitment Toggle */}
@@ -971,7 +980,7 @@ export default function DashboardPage() {
 
                                             <div className="flex items-center gap-2 shrink-0">
                                               <span className="rounded bg-[rgba(114,56,61,0.08)] border border-[rgba(114,56,61,0.2)] px-2 py-0.5 text-[9px] font-black text-primary">
-                                                {member.roleInTeam || 'Member'}
+                                                {member.userId === team.leaderId ? 'Leader' : (member.roleInTeam || 'Member')}
                                               </span>
 
                                               {/* Actions */}
@@ -1030,7 +1039,7 @@ export default function DashboardPage() {
                                                 {member.name}
                                               </p>
                                               <span className="block text-[8px] uppercase tracking-wider text-primary font-bold">
-                                                {member.roleInTeam || 'Member'}
+                                                {member.userId === team.leaderId ? 'Leader' : (member.roleInTeam || 'Member')}
                                               </span>
                                             </m.div>
                                           ) : (

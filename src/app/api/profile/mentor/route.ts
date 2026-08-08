@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { revalidateTag } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { checkUserRateLimit } from '@/lib/rateLimit';
@@ -9,6 +10,7 @@ import {
   optionalText,
   safeUrl,
   tagArray,
+  avatarDataUri,
 } from '@/lib/validate';
 import { logger } from '@/lib/logger';
 
@@ -48,7 +50,16 @@ export async function PUT(request: Request) {
       capacity,
       bio,
       linkedinUrl,
+      avatarUrl,
+      college,
     } = parsed.data;
+
+    if (college) {
+      await prisma.user.update({
+        where: { id: decoded.userId },
+        data: { college },
+      });
+    }
 
     // Update the MentorProfile
     const updatedProfile = await prisma.mentorProfile.update({
@@ -61,8 +72,12 @@ export async function PUT(request: Request) {
         capacity,
         bio: optionalText(bio, MAX_TEXT),
         linkedinUrl: safeUrl(linkedinUrl),
+        avatarUrl: avatarDataUri(avatarUrl),
       },
     });
+
+    revalidateTag('mentors', { expire: 0 });
+    revalidateTag('teams', { expire: 0 });
 
     return NextResponse.json({ success: true, profile: updatedProfile });
   } catch (error) {

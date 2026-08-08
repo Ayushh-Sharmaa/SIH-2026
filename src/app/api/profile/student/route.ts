@@ -50,6 +50,9 @@ export async function PUT(request: Request) {
       gender,
       rollNo,
       section,
+      category,
+      contact,
+      college,
       skills,
       languages,
       softSkills,
@@ -59,6 +62,13 @@ export async function PUT(request: Request) {
       avatarUrl,
       trackInterest,
     } = parsed.data;
+
+    if (college) {
+      await prisma.user.update({
+        where: { id: decoded.userId },
+        data: { college },
+      });
+    }
 
     // Only ids the platform actually publishes are accepted. Without this an
     // arbitrary string reaches the `trackInterest` relation connect and Prisma
@@ -79,6 +89,8 @@ export async function PUT(request: Request) {
         gender: gender || null,
         rollNo: rollNo || null,
         section: section || null,
+        category: category || null,
+        contact: contact || null,
         skills: tagArray(skills),
         languages: tagArray(languages),
         softSkills: tagArray(softSkills),
@@ -91,6 +103,10 @@ export async function PUT(request: Request) {
         },
       },
     });
+
+    const { revalidateTag } = await import('next/cache');
+    revalidateTag('students', { expire: 0 });
+    revalidateTag('teams', { expire: 0 });
 
     // If user is a team leader, update their team's selected track
     if (updatedProfile.teamId && cleanTrackIds.length > 0) {

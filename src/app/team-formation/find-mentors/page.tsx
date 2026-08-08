@@ -169,6 +169,7 @@ export default function FindMentorsPage() {
   // Modals state
   const [activeRequestMentor, setActiveRequestMentor] = useState<Mentor | null>(null);
   const [requested, setRequested] = useState<Record<string, 'sending' | 'sent'>>({});
+  const [currentPage, setCurrentPage] = useState(1);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [dashboardData, setDashboardData] = useState<any>(null);
 
@@ -223,6 +224,16 @@ export default function FindMentorsPage() {
     e.preventDefault();
     fetchMentors();
   };
+
+  const itemsPerPage = 20;
+  const totalPages = Math.max(1, Math.ceil(mentors.length / itemsPerPage));
+  const paginatedMentors = mentors.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(1);
+    }
+  }, [mentors.length, totalPages, currentPage]);
 
   const handleReset = () => {
     setName('');
@@ -373,10 +384,11 @@ export default function FindMentorsPage() {
                   <div key={i} className="h-40 rounded-3xl skeleton-shimmer" />
                 ))}
               </div>
-            ) : mentors.length > 0 ? (
-              <m.div layout className="space-y-4">
+            ) : paginatedMentors.length > 0 ? (
+              <>
+                <m.div layout className="space-y-4">
                 <AnimatePresence mode="popLayout" initial={false}>
-                  {mentors.map((mentor, i) => {
+                  {paginatedMentors.map((mentor, i) => {
                     const full = mentor.currentLoad >= mentor.capacity;
                     const state = requested[mentor.userId];
                     return (
@@ -472,7 +484,43 @@ export default function FindMentorsPage() {
                   })}
                 </AnimatePresence>
               </m.div>
-            ) : (
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="mt-10 flex items-center justify-center gap-2">
+                  <button
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                    className="rounded-xl border border-[rgba(114,56,61,0.2)] bg-[rgba(248,246,242,0.7)] px-4 py-2 text-caption font-bold text-primary transition-all duration-200 hover:bg-[rgba(114,56,61,0.08)] disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`size-10 rounded-xl font-bold transition-all duration-200 flex items-center justify-center ${
+                        currentPage === page
+                          ? 'bg-primary text-on-accent shadow-[0_4px_12px_rgba(114,56,61,0.25)]'
+                          : 'border border-[rgba(114,56,61,0.2)] bg-[rgba(248,246,242,0.7)] text-muted hover:border-primary hover:text-primary'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+
+                  <button
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                    className="rounded-xl border border-[rgba(114,56,61,0.2)] bg-[rgba(248,246,242,0.7)] px-4 py-2 text-caption font-bold text-primary transition-all duration-200 hover:bg-[rgba(114,56,61,0.08)] disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
+            </>
+          ) : (
               <EmptyState
                 icon={UserX}
                 title="No verified mentors match these criteria."

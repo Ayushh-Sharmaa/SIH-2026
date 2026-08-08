@@ -140,9 +140,7 @@ export async function POST(
       return NextResponse.json({ error: 'Your profile is not verified yet. Verified mentors are required.' }, { status: 400 });
     }
 
-    if (mentorRequest.mentor.currentLoad >= mentorRequest.mentor.capacity) {
-      return NextResponse.json({ error: 'You have reached your mentoring capacity limit.' }, { status: 400 });
-    }
+
 
     await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       await tx.mentorRequest.update({

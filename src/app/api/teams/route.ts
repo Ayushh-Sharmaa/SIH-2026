@@ -269,7 +269,7 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json();
-    const { action, teamId, status, whatsapp, trackId, targetUserId, newRole } = body;
+    const { action, teamId, status, targetUserId, newRole } = body;
 
     const team = await prisma.team.findFirst({
       where: {

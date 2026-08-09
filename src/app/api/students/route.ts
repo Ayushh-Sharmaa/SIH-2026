@@ -92,10 +92,7 @@ export async function GET(request: Request) {
     // status instead of hiding profiles from the directory.
     let students = await getCachedStudents();
 
-    // Exclude oneself
     students = students.filter((s) => s.userId !== decoded.userId);
-
-    // Apply primary filters in memory
     if (softSkillQuery) {
       students = students.filter((s) => s.softSkills.includes(softSkillQuery));
     }

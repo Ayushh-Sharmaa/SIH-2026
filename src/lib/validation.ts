@@ -1,11 +1,48 @@
 import { z } from 'zod';
 
-// Helper for optional URLs or empty strings
-const optionalUrl = z
+const githubUrlSchema = z
   .string()
   .trim()
   .transform((v) => (v === '' ? undefined : v))
-  .pipe(z.string().url().max(255).optional());
+  .pipe(
+    z
+      .string()
+      .url({ message: 'GitHub profile must be a valid GitHub URL' })
+      .refine(
+        (v) => !v || v.toLowerCase().includes('github.com'),
+        { message: 'GitHub profile must be a valid GitHub URL' }
+      )
+      .max(255)
+      .optional()
+  );
+
+const linkedinUrlSchema = z
+  .string()
+  .trim()
+  .transform((v) => (v === '' ? undefined : v))
+  .pipe(
+    z
+      .string()
+      .url({ message: 'LinkedIn profile URL is invalid' })
+      .refine(
+        (v) => !v || v.toLowerCase().includes('linkedin.com'),
+        { message: 'LinkedIn profile URL is invalid' }
+      )
+      .max(255)
+      .optional()
+  );
+
+const resumeUrlSchema = z
+  .string()
+  .trim()
+  .transform((v) => (v === '' ? undefined : v))
+  .pipe(
+    z
+      .string()
+      .url({ message: 'Resume link must be a valid public URL' })
+      .max(255)
+      .optional()
+  );
 
 // 1. Authentication
 export const loginSchema = z.object({
@@ -28,9 +65,9 @@ export const onboardingRoleSchema = z.object({
 
 // 2. Profiles
 export const studentProfileSchema = z.object({
-  name: z.string().trim().min(2).max(100),
-  year: z.string().trim().min(1).max(40),
-  branch: z.string().trim().min(1).max(40),
+  name: z.string().trim().min(2, "Name must be at least 2 characters").max(100),
+  year: z.string().trim().min(1, "Year is required").max(40),
+  branch: z.string().trim().min(1, "Branch is required").max(40),
   gender: z.string().trim().max(40).optional(),
   rollNo: z.string().trim().max(40).optional(),
   section: z.string().trim().max(10).optional(),
@@ -40,11 +77,14 @@ export const studentProfileSchema = z.object({
   skills: z.array(z.string().trim().max(100)).max(30),
   languages: z.array(z.string().trim().max(100)).max(30),
   softSkills: z.array(z.string().trim().max(100)).max(30),
-  resumeUrl: optionalUrl,
-  githubUrl: optionalUrl,
-  linkedinUrl: optionalUrl,
+  resumeUrl: resumeUrlSchema,
+  githubUrl: githubUrlSchema,
+  linkedinUrl: linkedinUrlSchema,
   avatarUrl: z.string().max(3_000_000).optional(),
-  trackInterest: z.array(z.string().trim().max(100)).max(30),
+  trackInterest: z
+    .array(z.string().trim().max(100))
+    .min(1, 'At least one preferred problem statement is required')
+    .max(30),
 });
 
 export const mentorProfileSchema = z.object({
@@ -54,7 +94,7 @@ export const mentorProfileSchema = z.object({
   expertise: z.array(z.string().trim().max(100)).max(30),
   capacity: z.number().int().min(1).max(10),
   bio: z.string().trim().max(2000).optional(),
-  linkedinUrl: optionalUrl,
+  linkedinUrl: linkedinUrlSchema,
   avatarUrl: z.string().max(3_000_000).optional(),
   college: z.string().trim().min(2).max(150).optional(),
 });

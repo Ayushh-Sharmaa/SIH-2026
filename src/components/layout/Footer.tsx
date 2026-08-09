@@ -2,10 +2,12 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
+import { useState } from 'react';
 import { m } from 'framer-motion';
 import Reveal, { RevealGroup, RevealItem } from '@/components/motion/Reveal';
 import { EASE } from '@/components/motion/tokens';
-import { Container } from '@/components/ui';
+import { Container, Modal, useToast } from '@/components/ui';
+import { CONTACTS, Contact } from '@/config/contacts';
 
 const LINK_GROUPS = [
   {
@@ -49,6 +51,14 @@ const SOCIALS = [
 ];
 
 export default function Footer() {
+  const { toast } = useToast();
+  const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
+
+  const handleCopy = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast(`${label} copied to clipboard!`, 'success');
+  };
+
   return (
     <footer className="relative mt-auto overflow-hidden border-t border-[rgba(209,199,189,0.6)] bg-gradient-to-b from-[rgba(217,217,217,0.35)] to-[rgba(239,233,225,0.95)]">
       {/* Floating glow anchored to the footer's top edge */}
@@ -151,6 +161,45 @@ export default function Footer() {
           ))}
         </div>
 
+        {/* Support, Queries & Bug Reports Section */}
+        <Reveal direction="up" delay={0.05} className="mt-16 border-t border-[rgba(209,199,189,0.55)] pt-12 pb-2">
+          <div className="grid gap-8 lg:grid-cols-[1fr_2.5fr] items-start">
+            <div>
+              <h3 className="text-gradient-luxe text-xl font-extrabold tracking-tight">
+                Support, Queries & Bug Reports
+              </h3>
+              <p className="mt-3 text-sm leading-relaxed text-muted max-w-sm">
+                Need help, found a bug, or have a question? Reach out to the project maintainers.
+              </p>
+            </div>
+            
+            <div className="grid gap-4 sm:grid-cols-2">
+              {CONTACTS.map((contact) => (
+                <m.button
+                  key={contact.name}
+                  onClick={() => setSelectedContact(contact)}
+                  whileHover={{ y: -4, scale: 1.01, boxShadow: '0 8px 30px rgba(114, 56, 61, 0.06)' }}
+                  whileTap={{ scale: 0.98 }}
+                  className="flex flex-col items-start rounded-2xl border border-[rgba(209,199,189,0.6)] bg-white/40 p-5 text-left transition-colors duration-250 hover:bg-white/80 hover:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                >
+                  <span className="text-label uppercase text-primary font-bold">
+                    {contact.role}
+                  </span>
+                  <span className="mt-1 text-base font-bold text-foreground">
+                    {contact.name}
+                  </span>
+                  <span className="mt-3 inline-flex items-center gap-1.5 text-xs text-muted font-medium hover:text-primary">
+                    View Contact Info
+                    <svg viewBox="0 0 24 24" fill="none" className="size-3">
+                      <path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </span>
+                </m.button>
+              ))}
+            </div>
+          </div>
+        </Reveal>
+
         <Reveal direction="up" delay={0.1} className="mt-14">
           <div className="h-px w-full bg-gradient-to-r from-transparent via-[rgba(172,156,141,0.55)] to-transparent" />
           <div className="flex flex-col items-center justify-between gap-3 pt-6 sm:flex-row">
@@ -163,6 +212,109 @@ export default function Footer() {
           </div>
         </Reveal>
       </Container>
+
+      {/* Maintainer Contact Modal */}
+      <Modal
+        open={!!selectedContact}
+        onClose={() => setSelectedContact(null)}
+        title="Project Maintainer Contact"
+        size="sm"
+      >
+        {selectedContact && (
+          <div className="flex flex-col gap-5 py-2">
+            <div className="rounded-xl bg-gradient-to-br from-[rgba(239,233,225,0.7)] to-[rgba(217,217,217,0.3)] p-4 border border-[rgba(209,199,189,0.5)]">
+              <h4 className="text-lg font-extrabold text-foreground">{selectedContact.name}</h4>
+              <p className="text-xs uppercase font-medium text-primary mt-1 tracking-wider">{selectedContact.role}</p>
+            </div>
+
+            <div className="space-y-3.5">
+              {/* LinkedIn Button */}
+              <m.a
+                href={selectedContact.linkedin}
+                target="_blank"
+                rel="noopener noreferrer"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="flex w-full items-center justify-between rounded-xl border border-[rgba(209,199,189,0.7)] bg-white p-3.5 text-sm text-foreground transition-all hover:bg-slate-50 hover:border-primary/30 cursor-pointer"
+              >
+                <span className="flex items-center gap-3">
+                  <svg className="size-5 text-primary" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.779-1.75-1.75s.784-1.75 1.75-1.75 1.75.779 1.75 1.75-.784 1.75-1.75 1.75zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                  </svg>
+                  <span className="font-semibold">Connect on LinkedIn</span>
+                </span>
+                <svg viewBox="0 0 24 24" fill="none" className="size-4 text-muted">
+                  <path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </m.a>
+
+              {/* Email Section */}
+              <div className="flex gap-2">
+                <m.a
+                  href={`mailto:${selectedContact.email}`}
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
+                  className="flex flex-1 items-center gap-3 rounded-xl border border-[rgba(209,199,189,0.7)] bg-white p-3.5 text-sm text-foreground hover:bg-slate-50 transition-all cursor-pointer overflow-hidden"
+                >
+                  <svg className="size-5 text-muted shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                  </svg>
+                  <div className="flex flex-col items-start leading-tight min-w-0">
+                    <span className="text-[10px] uppercase font-bold text-muted">Email</span>
+                    <span className="font-semibold text-xs mt-0.5 truncate w-full">
+                      {selectedContact.email}
+                    </span>
+                  </div>
+                </m.a>
+                <m.button
+                  onClick={() => handleCopy(selectedContact.email, 'Email')}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  title="Copy email to clipboard"
+                  className="flex items-center justify-center rounded-xl border border-[rgba(209,199,189,0.7)] bg-white px-4 hover:bg-slate-50 transition-all cursor-pointer"
+                >
+                  <svg className="size-5 text-muted hover:text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>
+                  </svg>
+                </m.button>
+              </div>
+
+              {/* WhatsApp Section */}
+              <div className="flex gap-2">
+                <m.a
+                  href={`https://wa.me/${selectedContact.phone.replace(/[^0-9]/g, '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
+                  className="flex flex-1 items-center gap-3 rounded-xl border border-[rgba(209,199,189,0.7)] bg-white p-3.5 text-sm text-foreground hover:bg-slate-50 transition-all cursor-pointer"
+                >
+                  <svg className="size-5 text-green-600 shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.665.988 3.311 1.488 4.963 1.49 5.48-.002 9.94-4.464 9.943-9.947.002-2.657-1.03-5.155-2.91-7.037a9.882 9.882 0 00-6.993-2.906C6.115 1.758 1.66 6.215 1.657 11.696c-.001 1.8.497 3.559 1.442 5.161l-.993 3.633 3.738-.981a9.868 9.868 0 004.803 1.245z"/>
+                  </svg>
+                  <div className="flex flex-col items-start leading-tight min-w-0">
+                    <span className="text-[10px] uppercase font-bold text-muted">WhatsApp / Phone</span>
+                    <span className="font-semibold text-xs mt-0.5 truncate w-full">
+                      {selectedContact.phone}
+                    </span>
+                  </div>
+                </m.a>
+                <m.button
+                  onClick={() => handleCopy(selectedContact.phone, 'Phone number')}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  title="Copy phone number to clipboard"
+                  className="flex items-center justify-center rounded-xl border border-[rgba(209,199,189,0.7)] bg-white px-4 hover:bg-slate-50 transition-all cursor-pointer"
+                >
+                  <svg className="size-5 text-muted hover:text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>
+                  </svg>
+                </m.button>
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
     </footer>
   );
 }

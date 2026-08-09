@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { AnimatePresence, m, useScroll, useTransform } from 'framer-motion';
 
@@ -22,7 +22,7 @@ import { FaqStructuredData } from '@/components/seo/StructuredData';
 import { Container, Section } from '@/components/ui';
 import MilestoneIcon from '@/components/MilestoneIcon';
 
-const STATS = [
+const TOP_STATS = [
   { value: 18, suffix: '', label: 'Official Themes' },
   { value: 11, suffix: '', label: 'Timeline Phases' },
   { value: 6, suffix: '', label: 'Members per Team' },
@@ -221,6 +221,47 @@ export default function Home() {
   const { status } = useSession();
   const [activeSet, setActiveSet] = useState(0);
   const [activePhase, setActivePhase] = useState(0);
+  const [liveStats, setLiveStats] = useState<{
+    totalParticipants: number;
+    teamsCount: number;
+    maleParticipants: number;
+    femaleParticipants: number;
+    allFemaleTeams: number;
+  } | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [statsError, setStatsError] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    const fetchStats = async () => {
+      try {
+        const res = await fetch('/api/statistics');
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        if (active) {
+          setLiveStats(data);
+          setStatsLoading(false);
+        }
+      } catch {
+        if (active) {
+          setStatsError(true);
+          setStatsLoading(false);
+        }
+      }
+    };
+    fetchStats();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const bottomStats = [
+    { value: liveStats?.totalParticipants ?? 0, suffix: '', label: 'Total Participants Registered' },
+    { value: liveStats?.teamsCount ?? 0, suffix: '', label: 'Teams Registered' },
+    { value: liveStats?.maleParticipants ?? 0, suffix: '', label: 'Male Participants' },
+    { value: liveStats?.femaleParticipants ?? 0, suffix: '', label: 'Female Participants' },
+    { value: liveStats?.allFemaleTeams ?? 0, suffix: '', label: 'All-Female Teams' },
+  ];
   const heroRef = useRef<HTMLElement>(null);
   const reduced = usePrefersReducedMotion();
 
@@ -451,14 +492,44 @@ export default function Home() {
         {/* Compact against the spacious sections either side — the rhythm change
             is what stops the page reading as one long uniform column. */}
         <Section tone="dune" rhythm="compact" className="overflow-hidden">
-          <Container width="wide">
-            <RevealGroup stagger={0.08} className="grid grid-cols-2 gap-y-12 lg:grid-cols-4">
-              {STATS.map((stat) => (
-                <RevealItem key={stat.label} className="text-center">
+          <Container width="wide" className="space-y-12">
+            {/* Top Row: 4 Stats */}
+            <RevealGroup
+              stagger={0.08}
+              className="flex flex-wrap justify-center gap-x-12 gap-y-8 md:gap-x-16"
+            >
+              {TOP_STATS.map((stat) => (
+                <RevealItem key={stat.label} className="w-[45%] sm:w-[20%] text-center min-w-[140px]">
                   <p className="text-4xl font-extrabold tracking-[-0.03em] text-primary sm:text-5xl">
                     <Counter to={stat.value} suffix={stat.suffix} />
                   </p>
-                  <p className="mt-2.5 text-label uppercase text-muted">
+                  <p className="mt-2.5 text-[10px] font-black uppercase tracking-wider text-muted">
+                    {stat.label}
+                  </p>
+                </RevealItem>
+              ))}
+            </RevealGroup>
+
+            {/* Separator Line */}
+            <div className="border-t border-[rgba(114,56,61,0.12)] max-w-4xl mx-auto my-6" />
+
+            {/* Bottom Row: 5 Live Stats */}
+            <RevealGroup
+              stagger={0.08}
+              className="flex flex-wrap justify-center gap-x-10 gap-y-8 md:gap-x-14"
+            >
+              {bottomStats.map((stat) => (
+                <RevealItem key={stat.label} className="w-[45%] sm:w-[16%] text-center min-w-[130px]">
+                  <p className="text-4xl font-extrabold tracking-[-0.03em] text-primary sm:text-5xl flex items-center justify-center min-h-[2.5rem] sm:min-h-[3rem]">
+                    {statsLoading ? (
+                      <span className="h-9 w-16 rounded-xl bg-primary/8 animate-pulse inline-block" />
+                    ) : statsError ? (
+                      <span>N/A</span>
+                    ) : (
+                      <Counter to={stat.value} suffix={stat.suffix} />
+                    )}
+                  </p>
+                  <p className="mt-2.5 text-[10px] font-black uppercase tracking-wider text-muted">
                     {stat.label}
                   </p>
                 </RevealItem>

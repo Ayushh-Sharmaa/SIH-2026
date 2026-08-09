@@ -5,6 +5,59 @@ Companion to `docs/DesignSystem.md`.
 
 ---
 
+## 2026-08-10 latency and data-integrity audit
+
+The audit covered every shipped TypeScript/TSX/CSS file, route handler, auth and
+session path, Prisma model/migration, test, configuration file, and relevant
+Next.js 16.2 documentation. The production database was measured read-only;
+this session did **not** deploy the new migration.
+
+### Measured baseline and request-chain changes
+
+- A cold parallel count batch against the Supabase pooler took about **2454 ms**.
+  A later probe intermittently failed during Prisma initialization, so database
+  reachability/pool startup is a real contributor in addition to application
+  waterfalls.
+- Login previously waited for `POST /api/auth/login`, then an explicit
+  `/api/auth/me`, then a second `/api/auth/me` from the redirect hook before the
+  dashboard navigation. It is now **one auth mutation before navigation**; the
+  returned user hydrates the persistent session provider.
+- The mentor directory previously resolved `/api/auth/me`, then fetched the full
+  personalized `/api/dashboard`, while also fetching mentors. The request action
+  was gated on the largest personalized payload. It is now **one `/api/mentors`
+  request** whose cached directory query and minimal viewer-eligibility query run
+  in parallel. Personalized eligibility is never cached.
+- The team directory recreated its fetch callback for every filter edit, so the
+  mount effect issued a request on every keystroke despite having a Search
+  button. Filter edits now issue **zero requests** until submit/reset, and the
+  team response carries the tiny viewer eligibility projection that previously
+  required a full dashboard request.
+
+These are verified structural/request-count improvements, not claimed
+post-deploy millisecond results. Collect p50/p95 timings after the migration is
+deployed in staging and the database pool is warm.
+
+### Integrity changes
+
+- Removed mentor capacity/load columns and every enforcement path. One mentor
+  may guide any number of teams; counts derive from `Team.mentorId`.
+- Added conditional transactional claims for mentor requests, join requests,
+  invites, team seats, and student membership to prevent double acceptance,
+  overwritten mentors, or team overfill under concurrent requests.
+- Added partial unique indexes for active mentor, join, and invite requests.
+- Added `TeamCodeReservation`, backfilled existing codes, and made reservations
+  immutable with a PostgreSQL trigger. Public IDs come from the existing
+  non-transactional sequence, so failed allocations are burned and deleted team
+  codes remain retired.
+
+> **Deployment required:** back up and validate migration
+> `20260809193000_remove_mentor_capacity_and_retire_team_codes` in staging, then
+> run `prisma migrate deploy` through the normal release process. Do not use
+> `prisma db push`, and do not run application versions that require the ledger
+> before the migration is installed.
+
+---
+
 ## Security findings
 
 ### 1. Forgeable session tokens — CRITICAL, fixed

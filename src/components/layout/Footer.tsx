@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useState } from 'react';
-import { m } from 'framer-motion';
+import { m, type Variants } from 'framer-motion';
 import Reveal, { RevealGroup, RevealItem } from '@/components/motion/Reveal';
 import { EASE } from '@/components/motion/tokens';
 import { Container, Modal, useToast } from '@/components/ui';
@@ -50,7 +50,7 @@ const SOCIALS = [
   },
 ];
 
-const cardVariants: any = {
+const cardVariants: Variants = {
   initial: { y: 0, scale: 1, boxShadow: 'none' },
   hover: {
     y: -4,
@@ -60,7 +60,7 @@ const cardVariants: any = {
   }
 };
 
-const arrowVariants: any = {
+const arrowVariants: Variants = {
   initial: { x: 0 },
   hover: {
     x: 4,

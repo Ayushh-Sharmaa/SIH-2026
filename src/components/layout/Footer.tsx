@@ -50,6 +50,24 @@ const SOCIALS = [
   },
 ];
 
+const cardVariants: any = {
+  initial: { y: 0, scale: 1, boxShadow: 'none' },
+  hover: {
+    y: -4,
+    scale: 1.01,
+    boxShadow: '0 8px 30px rgba(114, 56, 61, 0.06)',
+    transition: { duration: 0.25, ease: 'easeOut' }
+  }
+};
+
+const arrowVariants: any = {
+  initial: { x: 0 },
+  hover: {
+    x: 4,
+    transition: { type: 'spring', stiffness: 300, damping: 20 }
+  }
+};
+
 export default function Footer() {
   const { toast } = useToast();
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
@@ -161,15 +179,15 @@ export default function Footer() {
           ))}
         </div>
 
-        {/* Support, Queries & Bug Reports Section */}
+        {/* Behind the Build Section */}
         <Reveal direction="up" delay={0.05} className="mt-16 border-t border-[rgba(209,199,189,0.55)] pt-12 pb-2">
           <div className="grid gap-8 lg:grid-cols-[1fr_2.5fr] items-start">
             <div>
               <h3 className="text-gradient-luxe text-xl font-extrabold tracking-tight">
-                Support, Queries & Bug Reports
+                Behind the Build
               </h3>
               <p className="mt-3 text-sm leading-relaxed text-muted max-w-sm">
-                Need help, found a bug, or have a question? Reach out to the project maintainers.
+                Have a question about SIH, found an issue, or need help with the portal? Get in touch with the people behind the platform.
               </p>
             </div>
             
@@ -178,7 +196,9 @@ export default function Footer() {
                 <m.button
                   key={contact.name}
                   onClick={() => setSelectedContact(contact)}
-                  whileHover={{ y: -4, scale: 1.01, boxShadow: '0 8px 30px rgba(114, 56, 61, 0.06)' }}
+                  variants={cardVariants}
+                  initial="initial"
+                  whileHover="hover"
                   whileTap={{ scale: 0.98 }}
                   className="flex flex-col items-start rounded-2xl border border-[rgba(209,199,189,0.6)] bg-white/40 p-5 text-left transition-colors duration-250 hover:bg-white/80 hover:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
                 >
@@ -190,9 +210,11 @@ export default function Footer() {
                   </span>
                   <span className="mt-3 inline-flex items-center gap-1.5 text-xs text-muted font-medium hover:text-primary">
                     View Contact Info
-                    <svg viewBox="0 0 24 24" fill="none" className="size-3">
-                      <path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
+                    <m.span variants={arrowVariants} className="inline-flex">
+                      <svg viewBox="0 0 24 24" fill="none" className="size-3">
+                        <path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </m.span>
                   </span>
                 </m.button>
               ))}
@@ -213,11 +235,11 @@ export default function Footer() {
         </Reveal>
       </Container>
 
-      {/* Maintainer Contact Modal */}
+      {/* Coordinator Contact Modal */}
       <Modal
         open={!!selectedContact}
         onClose={() => setSelectedContact(null)}
-        title="Project Maintainer Contact"
+        title="SIH Coordinator Contact"
         size="sm"
       >
         {selectedContact && (

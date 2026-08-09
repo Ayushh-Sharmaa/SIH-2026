@@ -177,6 +177,10 @@ export async function GET(request: Request) {
           team: {
             include: {
               track: true,
+              secondaryTrack: true,
+              recruitmentNotices: {
+                orderBy: { createdAt: 'asc' },
+              },
               members: {
                 select: {
                   userId: true,

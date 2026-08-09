@@ -9,12 +9,13 @@ import { Bell, Check, Inbox, AlertCircle, Calendar, MessageSquare } from 'lucide
 import { EASE, SPRING } from '@/components/motion/tokens';
 import Magnetic from '@/components/motion/Magnetic';
 import { useSession } from '@/lib/session';
+import { useUser } from '@clerk/nextjs';
 
 const NAV_LINKS = [
   { name: 'Dashboard', path: '/dashboard' },
-  { name: 'Find Teams', path: '/team-formation/find-teams' },
-  { name: 'Find Teammates', path: '/team-formation/find-teammates' },
-  { name: 'Find Mentors', path: '/team-formation/find-mentors' },
+  { name: 'Browse Teams', path: '/team-formation/browse-teams' },
+  { name: 'Browse Teammates', path: '/team-formation/browse-teammates' },
+  { name: 'Browse Mentors', path: '/team-formation/browse-mentors' },
   { name: 'Tracks', path: '/tracks' },
 ];
 
@@ -228,7 +229,10 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
   const pathname = usePathname();
 
   const { user, status, clear } = useSession();
-  const loading = status === 'loading';
+  const { isSignedIn, isLoaded: clerkLoaded } = useUser();
+
+  const isAuthenticated = !!user || !!isSignedIn;
+  const isLoading = status === 'loading' && !clerkLoaded;
 
   const visibleLinks = NAV_LINKS.filter((link) => {
     if (user?.role === 'MENTOR') {
@@ -370,7 +374,7 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
           </div>
 
           <div className="flex items-center gap-2">
-            {loading ? (
+            {isLoading ? (
               <div className="flex items-center gap-2.5">
                 <div className="hidden flex-col items-end gap-1.5 sm:flex">
                   <span className="skeleton-shimmer block h-2.5 w-20" />
@@ -378,23 +382,23 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
                 </div>
                 <span className="skeleton-shimmer block size-8 rounded-full" />
               </div>
-            ) : user ? (
+            ) : isAuthenticated ? (
               <div className="flex items-center gap-2.5">
                 {/* Notifications Bell */}
                 <NotificationsMenu />
 
                 <span className="hidden flex-col text-right leading-none sm:flex">
-                  <span className="text-xs font-bold text-foreground">{user.name}</span>
+                  <span className="text-xs font-bold text-foreground">{user?.name || 'User'}</span>
                   <span className="mt-1 text-label uppercase text-muted">
-                    {user.role.toLowerCase()}
+                    {(user?.role || 'STUDENT').toLowerCase()}
                   </span>
                 </span>
                 <Magnetic strength={6} as="span" className="hidden sm:inline-flex">
                   <Link
-                    href={user.isOnboarded ? "/dashboard" : "/onboarding"}
+                    href={user?.isOnboarded ? "/dashboard" : "/onboarding"}
                     className="rounded-lg border border-[rgba(114,56,61,0.22)] bg-[rgba(114,56,61,0.08)] px-3 py-2 text-label uppercase text-primary transition-colors duration-250 hover:bg-[rgba(114,56,61,0.16)]"
                   >
-                    {user.isOnboarded ? "Dashboard" : "Profile"}
+                    {user?.isOnboarded ? "Dashboard" : "Profile"}
                   </Link>
                 </Magnetic>
                 <Magnetic strength={6} as="span" className="inline-flex">
@@ -489,7 +493,7 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
                   </Link>
                 </m.li>
               ))}
-              {!user && (
+              {!isAuthenticated && !isLoading && (
                 <m.li
                   variants={{
                     hidden: { opacity: 0, y: 24 },

@@ -268,13 +268,13 @@ export default function FindTeammatesPage() {
               </Reveal>
               <SplitText
                 as="h1"
-                text="Find teammates"
+                text="Browse teammates"
                 className="mt-3 text-title text-foreground"
                 delay={0.08}
               />
               <Reveal delay={0.28} className="mt-3">
                 <p className="max-w-xl text-sm leading-relaxed text-body">
-                  Browse students looking for SIH teams. Find collaborators by college, branch, year, skills and track interest.
+                  Browse students looking for SIH teams. Browse collaborators by college, branch, year, skills and track interest.
                 </p>
               </Reveal>
             </div>

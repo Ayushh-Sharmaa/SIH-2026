@@ -111,6 +111,26 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+
+  async redirects() {
+    return [
+      {
+        source: '/team-formation/find-teams',
+        destination: '/team-formation/browse-teams',
+        permanent: true,
+      },
+      {
+        source: '/team-formation/find-teammates',
+        destination: '/team-formation/browse-teammates',
+        permanent: true,
+      },
+      {
+        source: '/team-formation/find-mentors',
+        destination: '/team-formation/browse-mentors',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

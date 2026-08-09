@@ -93,7 +93,6 @@ if (!hasDb) {
               designation: 'Staff Software Engineer',
               organization: 'Google',
               verified: true,
-              capacity: 2,
               expertise: ['React', 'Postgres'],
             },
           },
@@ -119,21 +118,20 @@ if (!hasDb) {
 
     test('Team Creation & Member Join Request Flow', async () => {
       // 1. Create a team with the leader
-      const teamCode = await prisma.$transaction(async (tx) => {
-        return nextTeamCode(tx);
-      });
-
-      const team = await prisma.team.create({
-        data: {
-          name: 'Integration Test Team',
-          teamCode,
-          trackId,
-          leaderId: leaderUserId,
-          status: 'forming',
-          members: {
-            connect: { userId: leaderUserId },
+      const team = await prisma.$transaction(async (tx) => {
+        const teamCode = await nextTeamCode(tx);
+        return tx.team.create({
+          data: {
+            name: 'Integration Test Team',
+            teamCode,
+            trackId,
+            leaderId: leaderUserId,
+            status: 'forming',
+            members: {
+              connect: { userId: leaderUserId },
+            },
           },
-        },
+        });
       });
       teamId = team.id;
 
@@ -234,10 +232,6 @@ if (!hasDb) {
           data: { mentorId: mentorUserId },
         });
 
-        await tx.mentorProfile.update({
-          where: { userId: mentorUserId },
-          data: { currentLoad: { increment: 1 } },
-        });
       });
 
       // Assertions after mentor request acceptance
@@ -251,10 +245,50 @@ if (!hasDb) {
       });
       assert.equal(updatedTeam?.mentorId, mentorUserId);
 
-      const mentorProfile = await prisma.mentorProfile.findUnique({
-        where: { userId: mentorUserId },
+      const guidedTeamsCount = await prisma.team.count({
+        where: { mentorId: mentorUserId },
       });
-      assert.equal(mentorProfile?.currentLoad, 1);
+      assert.equal(guidedTeamsCount, 1);
+    });
+
+    test('Deleted team codes remain permanently retired', async () => {
+      const retired = await prisma.$transaction(async (tx) => {
+        const teamCode = await nextTeamCode(tx);
+        return tx.team.create({
+          data: {
+            name: 'Retired Code Test Team',
+            teamCode,
+            trackId,
+            leaderId: leaderUserId,
+          },
+        });
+      });
+
+      await prisma.team.delete({ where: { id: retired.id } });
+
+      const reservation = await prisma.teamCodeReservation.findUnique({
+        where: { code: retired.teamCode },
+      });
+      assert.equal(reservation?.code, retired.teamCode);
+
+      const successor = await prisma.$transaction(async (tx) => {
+        const teamCode = await nextTeamCode(tx);
+        return tx.team.create({
+          data: {
+            name: 'Successor Code Test Team',
+            teamCode,
+            trackId,
+            leaderId: leaderUserId,
+          },
+        });
+      });
+
+      assert.notEqual(successor.teamCode, retired.teamCode);
+      assert.ok(
+        Number(successor.teamCode.slice(3)) > Number(retired.teamCode.slice(3)),
+        'The sequence must advance instead of recycling a deleted team code.'
+      );
+      await prisma.team.delete({ where: { id: successor.id } });
     });
   });
 }

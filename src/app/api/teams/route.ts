@@ -77,7 +77,6 @@ export async function GET(request: Request) {
             },
           },
         },
-        orderBy: { createdAt: 'desc' },
         take: 200,
       }),
       decoded.role === 'STUDENT'

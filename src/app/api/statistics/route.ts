@@ -3,43 +3,38 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   try {
-    // 1. Fetch all onboarded non-demo students
-    const students = await prisma.studentProfile.findMany({
-      where: { isDemo: false },
-      select: {
-        gender: true,
-      },
-    });
-
-    const totalParticipants = students.length;
-    const maleParticipants = students.filter(
-      (s) => s.gender?.trim().toLowerCase() === 'male'
-    ).length;
-    const femaleParticipants = students.filter(
-      (s) => s.gender?.trim().toLowerCase() === 'female'
-    ).length;
-
-    // 2. Fetch all teams and their non-demo members
-    const teams = await prisma.team.findMany({
-      select: {
-        id: true,
-        members: {
-          where: { isDemo: false },
-          select: {
-            gender: true,
+    const [genderGroups, teamsCount, allFemaleTeamsCount] = await Promise.all([
+      prisma.studentProfile.groupBy({
+        by: ['gender'],
+        where: { isDemo: false },
+        _count: { _all: true },
+      }),
+      prisma.team.count({
+        where: { members: { some: { isDemo: false } } },
+      }),
+      prisma.team.count({
+        where: {
+          members: {
+            some: { isDemo: false },
+            none: {
+              isDemo: false,
+              NOT: { gender: { equals: 'female', mode: 'insensitive' } },
+            },
           },
         },
-      },
-    });
+      }),
+    ]);
 
-    // A registered team is one that has at least one registered non-demo member
-    const nonDemoTeams = teams.filter((t) => t.members.length > 0);
-    const teamsCount = nonDemoTeams.length;
-
-    // An all-female team has at least 1 member and every member is female
-    const allFemaleTeamsCount = nonDemoTeams.filter((t) =>
-      t.members.every((m) => m.gender?.trim().toLowerCase() === 'female')
-    ).length;
+    const countGender = (gender: string) =>
+      genderGroups
+        .filter((group) => group.gender?.trim().toLowerCase() === gender)
+        .reduce((total, group) => total + group._count._all, 0);
+    const totalParticipants = genderGroups.reduce(
+      (total, group) => total + group._count._all,
+      0
+    );
+    const maleParticipants = countGender('male');
+    const femaleParticipants = countGender('female');
 
     return NextResponse.json(
       {

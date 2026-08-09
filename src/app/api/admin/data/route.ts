@@ -23,18 +23,24 @@ export async function GET(request: Request) {
     const rateLimitResponse = await checkUserRateLimit(request, decoded.userId);
     if (rateLimitResponse) return rateLimitResponse;
 
-    const adminEmails = await getAdminEmails();
-    const bannedEmails = new Set(await getBannedEmails());
-
-    const allUsers = await prisma.user.findMany();
-    const allStudentProfiles = await prisma.studentProfile.findMany({
-      where: { isDemo: false }
-    });
-    const allMentorProfiles = await prisma.mentorProfile.findMany({
-      where: { isDemo: false }
-    });
-    const allTeams = await prisma.team.findMany();
-    const allTracks = await prisma.track.findMany();
+    const [
+      adminEmails,
+      bannedEmailList,
+      allUsers,
+      allStudentProfiles,
+      allMentorProfiles,
+      allTeams,
+      allTracks,
+    ] = await Promise.all([
+      getAdminEmails(),
+      getBannedEmails(),
+      prisma.user.findMany(),
+      prisma.studentProfile.findMany({ where: { isDemo: false } }),
+      prisma.mentorProfile.findMany({ where: { isDemo: false } }),
+      prisma.team.findMany(),
+      prisma.track.findMany(),
+    ]);
+    const bannedEmails = new Set(bannedEmailList);
 
     const students = allStudentProfiles.map((sp) => {
       const user = allUsers.find((u) => u.id === sp.userId);

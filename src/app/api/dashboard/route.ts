@@ -164,6 +164,7 @@ export async function GET(request: Request) {
               },
             },
             orderBy: { createdAt: 'desc' },
+            take: 50,
           },
           teamInvites: {
             include: {
@@ -172,6 +173,7 @@ export async function GET(request: Request) {
               },
             },
             orderBy: { createdAt: 'desc' },
+            take: 50,
           },
           team: {
             include: {
@@ -213,6 +215,7 @@ export async function GET(request: Request) {
                   },
                 },
                 orderBy: { createdAt: 'desc' },
+                take: 50,
               },
               invites: {
                 include: {
@@ -228,12 +231,14 @@ export async function GET(request: Request) {
                   },
                 },
                 orderBy: { createdAt: 'desc' },
+                take: 50,
               },
               mentorRequests: {
                 include: {
                   mentor: true,
                 },
                 orderBy: { createdAt: 'desc' },
+                take: 50,
               },
             },
           },
@@ -371,6 +376,7 @@ export async function GET(request: Request) {
             include: {
               track: true,
             },
+            take: 100,
           },
           mentorRequests: {
             where: { status: { in: ['pending', 'keep_pending', 'meeting_requested'] } },
@@ -390,6 +396,7 @@ export async function GET(request: Request) {
               },
             },
             orderBy: { createdAt: 'desc' },
+            take: 50,
           },
         },
       });

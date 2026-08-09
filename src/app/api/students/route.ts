@@ -12,6 +12,7 @@ const getCachedStudents = unstable_cache(
     return prisma.studentProfile.findMany({
       where: {
         isDemo: false,
+        teamId: null,
       },
       select: {
         userId: true,
@@ -88,10 +89,11 @@ export async function GET(request: Request) {
     const yearParam = parsedQuery.data.year?.trim().toLowerCase();
     const search = parsedQuery.data.search?.trim().toLowerCase();
 
-    // Load every available student (not yet in a team).
+    // The database query already excludes students who belong to a team, so
+    // the browser-facing search never downloads and discards whole rosters.
     let students = await getCachedStudents();
 
-    students = students.filter((s) => s.userId !== decoded.userId && s.team === null);
+    students = students.filter((s) => s.userId !== decoded.userId);
     if (softSkillQuery) {
       students = students.filter((s) => s.softSkills.includes(softSkillQuery));
     }

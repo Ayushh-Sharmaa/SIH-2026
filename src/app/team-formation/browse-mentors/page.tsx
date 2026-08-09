@@ -34,7 +34,7 @@ interface Mentor {
   teams?: { id: string; teamCode: string; name: string }[];
 }
 
-/** Circular capacity dial — draws its arc on mount. */
+/** Circular guidance-count dial — draws its arc on mount. */
 function GuidanceCount({ count }: { count: number }) {
   return (
     <div className="surface-sunken grid size-16 shrink-0 place-items-center rounded-panel text-center">

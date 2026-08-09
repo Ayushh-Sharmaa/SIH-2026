@@ -330,7 +330,7 @@ function EditRoleModal({ member, onClose, onSubmit }: EditRoleModalProps) {
 function TeamEditModal({ team, onClose, onSubmit }: { team: any; onClose: () => void; onSubmit: (details: any) => Promise<void> }) {
   const [name, setName] = useState(team.name || '');
   const [trackId, setTrackId] = useState(team.trackId || team.track?.id || '');
-  const [secondaryTrackId, setSecondaryTrackId] = useState(team.secondaryTrackId || 'none');
+  const [secondaryTrackId, setSecondaryTrackId] = useState(team.secondaryTrackId || team.secondaryTrack?.id || '');
   const [whatsapp, setWhatsapp] = useState(team.whatsapp || '');
   const [mentorName, setMentorName] = useState(team.customMentorName || '');
   const [mentorDesignation, setMentorDesignation] = useState(team.customMentorDesignation || '');
@@ -338,20 +338,41 @@ function TeamEditModal({ team, onClose, onSubmit }: { team: any; onClose: () => 
   const [mentorEmail, setMentorEmail] = useState(team.customMentorEmail || '');
   const [tracks, setTracks] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
   const [showMentor, setShowMentor] = useState(!!team.customMentorName);
   const panelRef = useFocusTrap<HTMLDivElement>(true);
   useScrollLock(true);
   useEscapeKey(true, onClose);
-  useEffect(() => { fetch('/api/tracks').then((r) => r.json()).then((d) => d.success && setTracks(d.tracks)).catch(() => undefined); }, []);
+  useEffect(() => {
+    fetch('/api/tracks').then((r) => r.json()).then((d) => {
+      if (d.success && d.tracks) {
+        setTracks(d.tracks);
+        if (!secondaryTrackId && d.tracks.length > 1) {
+          const second = d.tracks.find((t: any) => t.id !== (team.trackId || team.track?.id));
+          if (second) setSecondaryTrackId(second.id);
+        }
+      }
+    }).catch(() => undefined);
+  }, []);
   const submit = async (e: FormEvent) => {
-    e.preventDefault(); setSaving(true);
+    e.preventDefault();
+    setError('');
+    if (!secondaryTrackId || secondaryTrackId === 'none') {
+      setError('Both Primary and Secondary Problem Statements are mandatory.');
+      return;
+    }
+    if (trackId === secondaryTrackId) {
+      setError('Primary and Secondary Problem Statements must be different.');
+      return;
+    }
+    setSaving(true);
     try {
       await onSubmit({
         action: 'update_team_details',
         teamId: team.id,
         name,
         trackId,
-        secondaryTrackId: secondaryTrackId === 'none' ? null : secondaryTrackId,
+        secondaryTrackId,
         whatsapp,
         logoUrl: team.logoUrl || null,
         customMentorName: mentorName,
@@ -370,8 +391,9 @@ function TeamEditModal({ team, onClose, onSubmit }: { team: any; onClose: () => 
     <m.div ref={panelRef} role="dialog" aria-modal="true" tabIndex={-1} initial={{ opacity: 0, y: 20, scale: .98 }} animate={{ opacity: 1, y: 0, scale: 1 }} className="surface-overlay relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl p-6 text-foreground sm:p-8">
       <div className="flex items-center justify-between"><div><span className="text-label uppercase text-primary">{team.teamCode}</span><h3 className="mt-1 text-feature font-extrabold">Edit team details</h3></div><button onClick={onClose} aria-label="Close"><X className="size-4 text-muted" /></button></div>
       <form onSubmit={submit} className="mt-6 space-y-4">
+        {error && <div className="rounded-xl border border-[rgba(114,56,61,0.3)] bg-[rgba(114,56,61,0.08)] p-3 text-xs font-bold text-primary">{error}</div>}
         <div className="grid gap-4 sm:grid-cols-2"><label><Label>Team name</Label><input required value={name} onChange={(e) => setName(e.target.value)} className={`${control} mt-1.5`} /></label><label><Label>Leader WhatsApp</Label><input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} className={`${control} mt-1.5`} /></label></div>
-        <div className="grid gap-4 sm:grid-cols-2"><label><Label>Primary Problem Statement</Label><select required value={trackId} onChange={(e) => setTrackId(e.target.value)} className={`${control} mt-1.5`}>{tracks.map((t) => <option key={t.id} value={t.id}>{t.problemStatementCode} — {t.name}</option>)}</select></label><label><Label>Secondary Problem Statement</Label><select value={secondaryTrackId} onChange={(e) => setSecondaryTrackId(e.target.value)} className={`${control} mt-1.5`}><option value="none">None / No Secondary Track</option>{tracks.map((t) => <option key={t.id} value={t.id}>{t.problemStatementCode} — {t.name}</option>)}</select></label></div>
+        <div className="grid gap-4 sm:grid-cols-2"><label><Label>Primary Problem Statement</Label><select required value={trackId} onChange={(e) => setTrackId(e.target.value)} className={`${control} mt-1.5`}>{tracks.map((t) => <option key={t.id} value={t.id}>{t.problemStatementCode} — {t.name}</option>)}</select></label><label><Label>Secondary Problem Statement</Label><select required value={secondaryTrackId} onChange={(e) => setSecondaryTrackId(e.target.value)} className={`${control} mt-1.5`}>{tracks.filter(t => t.id !== trackId).map((t) => <option key={t.id} value={t.id}>{t.problemStatementCode} — {t.name}</option>)}</select></label></div>
         <div className="rounded-2xl border border-[rgba(209,199,189,0.7)] bg-[rgba(239,233,225,0.45)] overflow-hidden">
           <button
             type="button"
@@ -1269,74 +1291,83 @@ export default function DashboardPage() {
                                           </div>
                                         ))}
 
-                                        {/* Empty Seats */}
-                                        {Array.from({ length: Math.max(0, 6 - filledSeats) }).map((_, idx) => {
-                                          const notice = team.recruitmentNotices?.[idx];
-                                          return notice ? (
-                                            <div
-                                              key={`empty-notice-${notice.id}`}
-                                              className="rounded-xl border border-dashed border-[rgba(172,156,141,0.6)] bg-[rgba(239,233,225,0.455)] p-4 text-xs text-muted space-y-2 text-left"
-                                            >
-                                              <div className="flex items-center justify-between font-bold text-foreground">
-                                                <span className="text-[11px] text-primary uppercase font-bold">Open Seat: {notice.role}</span>
-                                                <span className="text-[9px] bg-primary/5 px-2 py-0.5 rounded text-primary">
-                                                  {notice.gender === 'OPEN' ? 'Open' : notice.gender}
-                                                </span>
-                                              </div>
-                                              {notice.abilities.length > 0 && (
-                                                <div className="flex flex-wrap gap-1 mt-1">
-                                                  {notice.abilities.map((a: string) => (
-                                                    <span key={a} className="bg-white/60 text-muted border border-[rgba(172,156,141,0.3)] px-1.5 py-0.2 rounded-md text-[9px]">
-                                                      {a}
-                                                    </span>
-                                                  ))}
-                                                </div>
-                                              )}
-                                              {notice.requirements && (
-                                                <p className="text-muted leading-relaxed mt-1.5 text-[11px]">
-                                                  {notice.requirements}
-                                                </p>
-                                              )}
-                                              {isLeader && (
-                                                <div className="flex justify-end gap-2 pt-2 border-t border-[rgba(172,156,141,0.2)]">
-                                                  <button
-                                                    onClick={() => setActiveNoticeModal({ show: true, notice })}
-                                                    className="p-1 rounded text-primary hover:bg-primary/5 font-semibold text-[10px]"
-                                                  >
-                                                    Edit Notice
-                                                  </button>
-                                                  <button
-                                                    onClick={() => handleDeleteRecruitmentNotice(notice.id)}
-                                                    className="p-1 rounded text-red-600 hover:bg-red-50 font-semibold text-[10px]"
-                                                  >
-                                                    Remove Notice
-                                                  </button>
-                                                </div>
-                                              )}
-                                            </div>
-                                          ) : (
-                                            <div
-                                              key={`empty-${idx}`}
-                                              className="flex items-center justify-between p-3.5 rounded-xl border border-dashed border-[rgba(172,156,141,0.6)] bg-[rgba(239,233,225,0.45)] text-xs text-muted"
-                                            >
-                                              <span>Open Roster Seat</span>
-                                              <div className="flex items-center gap-1.5">
-                                                {isLeader && (
-                                                  <button
-                                                    type="button"
-                                                    onClick={() => setActiveNoticeModal({ show: true, slotIndex: idx })}
-                                                    className="rounded-lg border border-[rgba(114,56,61,0.3)] bg-[rgba(114,56,61,0.08)] px-2.5 py-1.5 text-[10px] font-black text-primary hover:bg-[rgba(114,56,61,0.15)] transition-colors"
-                                                  >
-                                                    Post Notice
-                                                  </button>
-                                                )}
-                                                <PremiumButton href="/team-formation/find-teammates" size="sm" variant="glass">
-                                                  Invite
-                                                </PremiumButton>
-                                              </div>
-                                            </div>
-                                          );
-                                        })}
+                                         {/* Active Recruitment Notices */}
+                                         {team.recruitmentNotices && team.recruitmentNotices.length > 0 && (
+                                           <div className="space-y-2.5 pt-2">
+                                             <Label>Active Recruitment Notices</Label>
+                                             {team.recruitmentNotices.map((notice: any) => (
+                                               <div
+                                                 key={`notice-${notice.id}`}
+                                                 className="rounded-xl border border-[rgba(114,56,61,0.25)] bg-[rgba(114,56,61,0.04)] p-3.5 text-xs text-muted space-y-2 text-left"
+                                               >
+                                                 <div className="flex items-center justify-between font-bold text-foreground">
+                                                   <span className="text-[11px] text-primary uppercase font-bold">Role Seeking: {notice.role}</span>
+                                                   <span className="text-[9px] bg-primary/10 border border-primary/20 px-2 py-0.5 rounded text-primary font-bold">
+                                                     {notice.gender === 'OPEN' ? 'Open to All' : notice.gender}
+                                                   </span>
+                                                 </div>
+                                                 {notice.abilities?.length > 0 && (
+                                                   <div className="flex flex-wrap gap-1 mt-1">
+                                                     {notice.abilities.map((a: string) => (
+                                                       <span key={a} className="bg-white/80 text-foreground border border-[rgba(209,199,189,0.7)] px-1.5 py-0.2 rounded text-[9px] font-medium">
+                                                         {a}
+                                                       </span>
+                                                     ))}
+                                                   </div>
+                                                 )}
+                                                 {notice.requirements && (
+                                                   <p className="text-muted leading-relaxed mt-1 text-[11px]">
+                                                     {notice.requirements}
+                                                   </p>
+                                                 )}
+                                                 {isLeader && (
+                                                   <div className="flex justify-end gap-2 pt-2 border-t border-[rgba(172,156,141,0.2)]">
+                                                     <button
+                                                       onClick={() => setActiveNoticeModal({ show: true, notice })}
+                                                       className="p-1 rounded text-primary hover:bg-primary/5 font-semibold text-[10px]"
+                                                     >
+                                                       Edit Notice
+                                                     </button>
+                                                     <button
+                                                       onClick={() => handleDeleteRecruitmentNotice(notice.id)}
+                                                       className="p-1 rounded text-red-600 hover:bg-red-50 font-semibold text-[10px]"
+                                                     >
+                                                       Remove Notice
+                                                     </button>
+                                                   </div>
+                                                 )}
+                                               </div>
+                                             ))}
+                                           </div>
+                                         )}
+
+                                         {/* Open Seats Callout Bar */}
+                                         {6 - filledSeats > 0 && (
+                                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border border-dashed border-[rgba(172,156,141,0.6)] bg-[rgba(239,233,225,0.45)] mt-3">
+                                             <div>
+                                               <span className="block text-xs font-bold text-foreground">
+                                                 {6 - filledSeats} Open {6 - filledSeats === 1 ? 'Seat' : 'Seats'} Remaining
+                                               </span>
+                                               <span className="block text-[10px] text-muted mt-0.5">
+                                                 Recruit members or invite teammates to complete your roster.
+                                               </span>
+                                             </div>
+                                             <div className="flex items-center gap-2 shrink-0">
+                                               {isLeader && (
+                                                 <button
+                                                   type="button"
+                                                   onClick={() => setActiveNoticeModal({ show: true })}
+                                                   className="rounded-lg border border-[rgba(114,56,61,0.3)] bg-[rgba(114,56,61,0.08)] px-2.5 py-1.5 text-[10px] font-black text-primary hover:bg-[rgba(114,56,61,0.15)] transition-colors"
+                                                 >
+                                                   + Post Notice
+                                                 </button>
+                                               )}
+                                               <PremiumButton href="/team-formation/browse-teammates" size="sm" variant="glass">
+                                                 Invite Teammates
+                                               </PremiumButton>
+                                             </div>
+                                           </div>
+                                         )}
                                       </div>
                                     ) : (
                                       // Standard Grid view for team member

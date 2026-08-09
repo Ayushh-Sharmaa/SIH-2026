@@ -17,7 +17,7 @@ The GL Bajaj Internal SIH Portal is a premium, high-performance platform designe
 * Request to join open teams directly.
 
 ### 3. Mentor Matching
-* Find faculty mentors sorted by expertise, department, and current load capacity.
+* Find verified faculty mentors by expertise, department, and active guidance context.
 * Send mentorship requests directly from the team leader dashboard.
 
 ### 4. Interactive Collaboration Hub

@@ -65,9 +65,9 @@ Not yet decided which approach fits best; being explored through Figma prototypi
 
 ## 4. Component Feel
 
-- Cards (team cards, mentor cards, student cards) are the core repeated UI element — they deserve the most design attention. Should clearly surface: name/team name, key tags (skills or expertise), and status (open/full, capacity) at a glance.
+- Cards (team cards, mentor cards, student cards) are the core repeated UI element — they deserve the most design attention. They surface the name, key skills or expertise, and relevant status at a glance.
 - Buttons: one clear primary style (accent-filled), one secondary (outlined/ghost) — avoid a third tier unless a real need shows up.
-- Status/badges (team_status, verified mentor, capacity) use small pill-shaped tags with the semantic color tokens above.
+- Status/badges (team status and verified mentor) use small pill-shaped tags with the semantic color tokens above. Mentor guidance counts are informational, never a disabled-state threshold.
 - Forms (onboarding, profile edit) should feel low-friction — multi-step with clear progress, not one long scroll of fields.
 
 ---

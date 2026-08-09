@@ -56,7 +56,7 @@ The goal is to surface anomalies for human review, not to auto-ban — false pos
 ### Signals that flag ongoing activity for review
 - A single account hitting rate limits repeatedly across multiple route categories in a short period.
 - A team receiving an unusually high number of join requests from accounts created in the same short window (coordinated fake-team-filling).
-- A mentor account requesting far above its stated capacity in mentor-side actions.
+- A mentor account processing an unusual burst of unrelated requests or repeatedly racing finalized requests.
 - Rapid sequential profile edits that look like probing for validation gaps rather than normal editing.
 
 ### What flagging does

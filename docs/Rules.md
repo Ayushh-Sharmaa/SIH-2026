@@ -20,9 +20,9 @@ These are binding rules for anyone (human or AI) contributing code to this repo.
 ## 2. What to Avoid
 
 - **No unvetted npm packages.** Before adding any new dependency, check: is this solvable with what's already installed? If not, note the addition and the reason in `Memory.md`.
-- **No client-side computation of derived fields.** `skills_covered`, `skills_needed`, `current_load`, `team_status` are always computed server-side in `lib/derived.ts` and read from the database — never recalculated in the frontend from raw data. This is what keeps the single-source-of-truth guarantee from `Architecture.md` intact.
+- **No client-side computation of persisted derived fields.** `skills_covered`, `skills_needed`, `member_count`, and `team_status` are computed server-side and read from the database. Mentor guidance count is derived from `Team.mentor_id`, never maintained as a separate counter.
 - **No `any` types in TypeScript.** If a type is genuinely unknown, define it properly in `types/index.ts` rather than escaping to `any`.
-- **No inline SQL.** All queries go through Prisma.
+- **Prisma by default.** Raw SQL is allowed only for a database primitive Prisma cannot express (currently sequence allocation and row locking), must remain parameterized, and must be covered by an integrity test and migration-level constraint.
 - **No committing secrets.** API keys, DB URLs, etc. live in `.env.local` only, which is gitignored. Never hardcode a key in a route file "temporarily."
 - **No silent schema drift.** If a Prisma model changes, the migration and the `Architecture.md` data model section get updated in the same change.
 

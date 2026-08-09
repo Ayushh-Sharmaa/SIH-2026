@@ -53,30 +53,40 @@ export async function GET(request: Request) {
       }
     }
 
-    const teams = await prisma.team.findMany({
-      where,
-      include: {
-        track: true,
-        secondaryTrack: true,
-        recruitmentNotices: true,
-        members: {
-          select: {
-            userId: true,
-            name: true,
-            branch: true,
-            year: true,
-            avatarUrl: true,
-            skills: true,
-            roleInTeam: true,
-            user: {
-              select: {
-                college: true,
+    const [teams, viewerProfile] = await Promise.all([
+      prisma.team.findMany({
+        where,
+        include: {
+          track: true,
+          secondaryTrack: true,
+          recruitmentNotices: true,
+          members: {
+            select: {
+              userId: true,
+              name: true,
+              branch: true,
+              year: true,
+              avatarUrl: true,
+              skills: true,
+              roleInTeam: true,
+              user: {
+                select: {
+                  college: true,
+                },
               },
             },
           },
         },
-      },
-    });
+        orderBy: { createdAt: 'desc' },
+        take: 200,
+      }),
+      decoded.role === 'STUDENT'
+        ? prisma.studentProfile.findUnique({
+            where: { userId: decoded.userId },
+            select: { teamId: true },
+          })
+        : Promise.resolve(null),
+    ]);
 
     let filtered = teams;
 
@@ -128,6 +138,11 @@ export async function GET(request: Request) {
     return NextResponse.json({
       success: true,
       teams: filtered,
+      viewer: {
+        role: decoded.role,
+        hasTeam: Boolean(viewerProfile?.teamId),
+        canJoin: decoded.role === 'STUDENT' && !viewerProfile?.teamId,
+      },
     });
   } catch (error) {
     logger.error('Search teams error', error);

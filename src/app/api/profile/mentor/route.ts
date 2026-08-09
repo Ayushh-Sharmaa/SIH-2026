@@ -106,6 +106,7 @@ export async function GET(request: Request) {
 
     const mentor = await prisma.mentorProfile.findUnique({
       where: { userId: decoded.userId },
+      include: { _count: { select: { teams: true } } },
     });
 
     if (!mentor) {
@@ -119,7 +120,7 @@ export async function GET(request: Request) {
         designation: mentor.designation,
         organization: mentor.organization,
         expertise: mentor.expertise,
-        guidedTeamsCount: await prisma.team.count({ where: { mentorId: mentor.userId } }),
+        guidedTeamsCount: mentor._count.teams,
         verified: mentor.verified,
         bio: mentor.bio,
         linkedinUrl: mentor.linkedinUrl,

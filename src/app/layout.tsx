@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { ClerkProvider } from '@clerk/nextjs';
+import { Suspense } from 'react';
 import './globals.css';
 
 import ScrollProgress from '@/components/ScrollProgress';
@@ -121,7 +122,9 @@ export default function RootLayout({
           <SessionProvider>
             <ToastProvider>
               <LoadingScreen />
-              <NavigationProgressBar />
+              <Suspense fallback={null}>
+                <NavigationProgressBar />
+              </Suspense>
               <ScrollProgress />
               <PageTransition>{children}</PageTransition>
             </ToastProvider>

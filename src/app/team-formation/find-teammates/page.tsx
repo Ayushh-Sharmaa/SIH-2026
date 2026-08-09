@@ -38,6 +38,14 @@ interface Student {
   avatarUrl?: string | null;
   college: string;
   teamStatus: string;
+  team: {
+    id: string;
+    teamCode: string;
+    name: string;
+    status: string;
+    leaderId: string;
+    mentor?: { userId: string; name: string; designation: string; organization: string } | null;
+  } | null;
   interests: string[];
 }
 
@@ -123,6 +131,7 @@ export default function FindTeammatesPage() {
   const [language, setLanguage] = useState('');
   const [trackId, setTrackId] = useState('');
   const [inviteState, setInviteState] = useState<Record<string, 'sending' | 'sent'>>({});
+  const [currentPage, setCurrentPage] = useState(1);
 
   const fetchTeammates = useCallback(
     async (filters?: {
@@ -150,7 +159,7 @@ export default function FindTeammatesPage() {
 
         const res = await fetch(`/api/students?${queryParams.toString()}`);
         const data = await res.json();
-        if (data.success) setStudents(data.students);
+        if (data.success) { setStudents(data.students); setCurrentPage(1); }
       } catch (err) {
         logger.error('Fetch teammates error', err);
         toast('Could not load students. Check your connection.', 'error');
@@ -190,6 +199,10 @@ export default function FindTeammatesPage() {
     e.preventDefault();
     fetchTeammates();
   };
+
+  const itemsPerPage = 20;
+  const totalPages = Math.max(1, Math.ceil(students.length / itemsPerPage));
+  const paginatedTeammates = students.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const handleReset = () => {
     setName('');
@@ -304,10 +317,10 @@ export default function FindTeammatesPage() {
 
                 <div className="space-y-4">
                   <label className="block">
-                    <FilterLabel>Student Name</FilterLabel>
+                    <FilterLabel>Student or Team ID</FilterLabel>
                     <input
                       type="text"
-                      placeholder="Search name"
+                      placeholder="Name, SIH100, or team name"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       className={CONTROL}
@@ -440,13 +453,14 @@ export default function FindTeammatesPage() {
                     <div key={i} className="h-64 rounded-3xl skeleton-shimmer" />
                   ))}
                 </div>
-              ) : students.length > 0 ? (
-                <m.div
+              ) : paginatedTeammates.length > 0 ? (
+                <>
+                  <m.div
                   layout
                   className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3"
                 >
                   <AnimatePresence mode="popLayout" initial={false}>
-                    {students.map((student, i) => {
+                    {paginatedTeammates.map((student, i) => {
                       const state = inviteState[student.userId];
                       return (
                         <m.div
@@ -484,8 +498,8 @@ export default function FindTeammatesPage() {
                                         </span>
                                       </div>
                                     </div>
-                                    <span className="rounded-full bg-[rgba(114,56,61,0.08)] border border-[rgba(114,56,61,0.2)] px-2 py-0.5 text-[9px] font-black uppercase text-primary shrink-0 flex items-center gap-0.5">
-                                      <ShieldCheck className="size-2.5" /> Available
+                                    <span className={`rounded-full border px-2 py-0.5 text-[9px] font-black uppercase shrink-0 flex items-center gap-0.5 ${student.team ? 'border-[rgba(172,156,141,0.55)] bg-[rgba(172,156,141,0.18)] text-body' : 'bg-[rgba(114,56,61,0.08)] border-[rgba(114,56,61,0.2)] text-primary'}`}>
+                                      <ShieldCheck className="size-2.5" /> {student.team ? 'Already in team' : 'Available'}
                                     </span>
                                   </div>
 
@@ -494,6 +508,16 @@ export default function FindTeammatesPage() {
                                     <GraduationCap className="size-3.5 shrink-0 text-primary" />
                                     <span className="truncate">{student.college}</span>
                                   </div>
+
+                                  {student.team && (
+                                    <div className="rounded-xl border border-[rgba(114,56,61,0.18)] bg-[rgba(114,56,61,0.06)] px-3 py-2 text-xs">
+                                      <span className="font-black text-primary">{student.team.teamCode}</span>
+                                      <span className="text-body"> · {student.team.name}</span>
+                                      {student.team.mentor && (
+                                        <span className="mt-1 block text-caption text-muted">Mentor: {student.team.mentor.name}</span>
+                                      )}
+                                    </div>
+                                  )}
 
                                   {/* Tech skills */}
                                   <div>
@@ -575,13 +599,13 @@ export default function FindTeammatesPage() {
 
                                   <PremiumButton
                                     size="sm"
-                                    variant={state === 'sent' ? 'glass' : 'primary'}
+                                    variant={state === 'sent' || student.team ? 'glass' : 'primary'}
                                     loading={state === 'sending'}
-                                    disabled={Boolean(state)}
+                                    disabled={Boolean(state) || Boolean(student.team)}
                                     magnetic={false}
                                     onClick={() => sendInvite(student)}
                                   >
-                                    {state === 'sent' ? 'Invite sent' : 'Invite'}
+                                    {student.team ? 'Already in team' : state === 'sent' ? 'Invite sent' : 'Invite'}
                                   </PremiumButton>
                                 </div>
                               </article>
@@ -592,7 +616,43 @@ export default function FindTeammatesPage() {
                     })}
                   </AnimatePresence>
                 </m.div>
-              ) : (
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <div className="mt-10 flex items-center justify-center gap-2">
+                    <button
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                      className="rounded-xl border border-[rgba(114,56,61,0.2)] bg-[rgba(248,246,242,0.7)] px-4 py-2 text-caption font-bold text-primary transition-all duration-200 hover:bg-[rgba(114,56,61,0.08)] disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Previous
+                    </button>
+
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`size-10 rounded-xl font-bold transition-all duration-200 flex items-center justify-center ${
+                          currentPage === page
+                            ? 'bg-primary text-on-accent shadow-[0_4px_12px_rgba(114,56,61,0.25)]'
+                            : 'border border-[rgba(114,56,61,0.2)] bg-[rgba(248,246,242,0.7)] text-muted hover:border-primary hover:text-primary'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+
+                    <button
+                      disabled={currentPage === totalPages}
+                      onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                      className="rounded-xl border border-[rgba(114,56,61,0.2)] bg-[rgba(248,246,242,0.7)] px-4 py-2 text-caption font-bold text-primary transition-all duration-200 hover:bg-[rgba(114,56,61,0.08)] disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Next
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : (
                 <EmptyState
                   icon={Users}
                   title="No teammate profiles match these filters."

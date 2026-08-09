@@ -71,6 +71,9 @@ export const studentProfileSchema = z.object({
   gender: z.string().trim().max(40).optional(),
   rollNo: z.string().trim().max(40).optional(),
   section: z.string().trim().max(10).optional(),
+  category: z.string().trim().max(40).optional(),
+  contact: z.string().trim().max(40).optional(),
+  college: z.string().trim().min(2).max(150).optional(),
   skills: z.array(z.string().trim().max(100)).max(30),
   languages: z.array(z.string().trim().max(100)).max(30),
   softSkills: z.array(z.string().trim().max(100)).max(30),
@@ -92,6 +95,8 @@ export const mentorProfileSchema = z.object({
   capacity: z.number().int().min(1).max(10),
   bio: z.string().trim().max(2000).optional(),
   linkedinUrl: linkedinUrlSchema,
+  avatarUrl: z.string().max(3_000_000).optional(),
+  college: z.string().trim().min(2).max(150).optional(),
 });
 
 // 3. Teams & Requests
@@ -99,6 +104,31 @@ export const createTeamSchema = z.object({
   name: z.string().trim().min(2).max(100),
   trackId: z.string().trim().min(1).max(100),
   whatsapp: z.string().trim().max(40).optional(),
+  logoUrl: z.string().optional(),
+  customMentorName: z.string().trim().max(100).optional(),
+  customMentorDesignation: z.string().trim().max(100).optional(),
+  customMentorMobile: z.string().trim().max(40).optional(),
+  customMentorEmail: z.string().trim().max(100).optional(),
+  customPsCode: z.string().trim().max(40).optional(),
+  customPsName: z.string().trim().max(200).optional(),
+  customPsCategory: z.string().trim().max(40).optional(),
+});
+
+export const updateTeamDetailsSchema = z.object({
+  action: z.literal('update_team_details'),
+  teamId: z.string().trim().min(1).max(100),
+  name: z.string().trim().min(2).max(100),
+  trackId: z.string().trim().min(1).max(100),
+  whatsapp: z.string().trim().max(40).optional(),
+  logoUrl: z.string().max(3_000_000).nullable().optional(),
+  customMentorName: z.string().trim().max(100).optional(),
+  customMentorDesignation: z.string().trim().max(100).optional(),
+  customMentorMobile: z.string().trim().max(40).optional(),
+  customMentorEmail: z.string().trim().email().max(100).or(z.literal('')).optional(),
+});
+
+export const deleteTeamSchema = z.object({
+  teamId: z.string().trim().min(1).max(100),
 });
 
 export const teamInviteSchema = z.object({

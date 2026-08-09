@@ -37,6 +37,7 @@ interface TeamMember {
 
 interface Team {
   id: string;
+  teamCode: string;
   name: string;
   leaderId: string;
   memberCount: number;
@@ -44,6 +45,7 @@ interface Team {
   skillsCovered: string[];
   skillsNeeded: string[];
   whatsapp?: string | null;
+  logoUrl?: string | null;
   track: {
     id: string;
     problemStatementCode: string;
@@ -198,6 +200,7 @@ export default function FindTeamsPage() {
   const [leader, setLeader] = useState('');
   const [size, setSize] = useState('');
   const [status, setStatus] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Modals state
   const [activeRequestTeam, setActiveRequestTeam] = useState<Team | null>(null);
@@ -240,6 +243,7 @@ export default function FindTeamsPage() {
         const data = await res.json();
         if (data.success) {
           setTeams(data.teams);
+          setCurrentPage(1);
         }
       } catch (err) {
         logger.error('Fetch teams error', err);
@@ -264,6 +268,10 @@ export default function FindTeamsPage() {
     e.preventDefault();
     fetchTeams();
   };
+
+  const itemsPerPage = 20;
+  const totalPages = Math.max(1, Math.ceil(teams.length / itemsPerPage));
+  const paginatedTeams = teams.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const handleReset = () => {
     setSearch('');
@@ -488,13 +496,14 @@ export default function FindTeamsPage() {
                     <div key={i} className="h-72 rounded-3xl skeleton-shimmer" />
                   ))}
                 </div>
-              ) : teams.length > 0 ? (
-                <m.div
+              ) : paginatedTeams.length > 0 ? (
+                <>
+                  <m.div
                   layout
                   className="grid grid-cols-1 gap-6 md:grid-cols-2"
                 >
                   <AnimatePresence mode="popLayout" initial={false}>
-                    {teams.map((team, i) => {
+                    {paginatedTeams.map((team, i) => {
                       const isClosed = team.status !== 'forming' || team.memberCount >= 6;
                       const leader = team.members.find((m) => m.userId === team.leaderId);
                       const state = submittingRequest[team.id];
@@ -518,15 +527,27 @@ export default function FindTeamsPage() {
                                 <div>
                                   {/* Title & Status */}
                                   <div className="flex items-start justify-between gap-4">
-                                    <div className="min-w-0">
-                                      <h3 className="truncate text-feature text-foreground font-extrabold">
-                                        {team.name}
-                                      </h3>
-                                      <p className="mt-1 flex items-center gap-1.5 text-caption text-primary">
-                                        <Briefcase className="size-3 shrink-0" />
-                                        <span className="font-bold">{team.track.problemStatementCode}</span>
-                                        <span className="truncate">· {team.track.category}</span>
-                                      </p>
+                                    <div className="flex items-center gap-3 min-w-0">
+                                      <div className="size-11 shrink-0 overflow-hidden rounded-xl border border-[rgba(114,56,61,0.25)] bg-gradient-to-br from-[rgba(114,56,61,0.08)] to-[rgba(114,56,61,0.02)] flex items-center justify-center font-black text-primary text-xs">
+                                        {team.logoUrl ? (
+                                          <img src={team.logoUrl} alt="Logo" className="size-full object-cover" />
+                                        ) : (
+                                          team.name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase() || 'NS'
+                                        )}
+                                      </div>
+                                      <div className="min-w-0">
+                                        <h3 className="truncate text-feature text-foreground font-extrabold">
+                                          {team.name}
+                                        </h3>
+                                        <span className="mt-0.5 block text-[10px] font-black uppercase tracking-[0.16em] text-primary">
+                                          {team.teamCode}
+                                        </span>
+                                        <p className="mt-0.5 flex items-center gap-1.5 text-caption text-primary">
+                                          <Briefcase className="size-3 shrink-0" />
+                                          <span className="font-bold">{team.track.problemStatementCode}</span>
+                                          <span className="truncate">· {team.track.category}</span>
+                                        </p>
+                                      </div>
                                     </div>
                                     <span
                                       className={`rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider ${
@@ -543,88 +564,82 @@ export default function FindTeamsPage() {
 
                                   {/* Leader Info */}
                                   <div className="flex items-center gap-3">
-                                    <ProfileAvatar
-                                      avatarUrl={leader?.avatarUrl}
-                                      name={leader?.name || 'Leader'}
-                                      size={8}
-                                    />
-                                    <div className="min-w-0">
-                                      <span className="block text-xs font-bold text-foreground truncate">
-                                        {leader?.name}
-                                      </span>
-                                      <span className="block text-[10px] text-muted">
-                                        Team Leader · {leader?.branch}
-                                      </span>
-                                    </div>
+                                    {leader ? (
+                                      <>
+                                        <ProfileAvatar
+                                          avatarUrl={leader.avatarUrl}
+                                          name={leader.name}
+                                          size={7}
+                                        />
+                                        <div className="min-w-0">
+                                          <span className="block text-caption font-bold text-foreground truncate">
+                                            {leader.name}
+                                          </span>
+                                          <span className="block text-[9px] text-muted uppercase tracking-wider mt-0.5">
+                                            Team Leader
+                                          </span>
+                                        </div>
+                                      </>
+                                    ) : (
+                                      <span className="text-caption text-muted">No leader assigned</span>
+                                    )}
                                   </div>
 
-                                  {/* Members Roster */}
-                                  <div className="mt-4">
-                                    <FilterLabel>Roster</FilterLabel>
-                                    <div className="flex flex-wrap gap-2.5 items-center">
-                                      <div className="flex -space-x-2.5">
-                                        {team.members.map((m) => (
-                                          <div key={m.userId} className="group/avatar relative">
+                                  {/* Member Slots dials */}
+                                  <div className="mt-5">
+                                    <span className="text-[10px] font-black uppercase tracking-wider text-muted">
+                                      Team Roster ({team.memberCount} / 6)
+                                    </span>
+                                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                                      {Array.from({ length: 6 }).map((_, idx) => {
+                                        const mem = team.members[idx];
+                                        return mem ? (
+                                          <m.div
+                                            key={mem.userId}
+                                            whileHover={{ y: -2 }}
+                                            className="group relative"
+                                          >
                                             <ProfileAvatar
-                                              avatarUrl={m.avatarUrl}
-                                              name={m.name}
+                                              avatarUrl={mem.avatarUrl}
+                                              name={mem.name}
                                               size={8}
                                             />
-                                            {/* Minimal Tooltip */}
-                                            <span className="pointer-events-none absolute bottom-full left-1/2 z-10 -translate-x-1/2 translate-y-[-4px] whitespace-nowrap rounded bg-foreground px-2 py-1 text-[9px] font-bold text-background opacity-0 transition-opacity group-hover/avatar:opacity-100 shadow-md">
-                                              {m.name} ({m.roleInTeam})
+                                            {/* Tooltip */}
+                                            <span className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 rounded bg-foreground px-2 py-1 text-[9px] font-black text-background opacity-0 transition-opacity duration-250 group-hover:opacity-100 whitespace-nowrap">
+                                              {mem.name} ({mem.roleInTeam || 'Member'})
                                             </span>
-                                          </div>
-                                        ))}
-                                        {Array.from({ length: Math.max(0, 6 - team.members.length) }).map((_, seatIdx) => (
+                                          </m.div>
+                                        ) : (
                                           <div
-                                            key={`open-${seatIdx}`}
-                                            className="flex size-8 shrink-0 items-center justify-center rounded-xl border border-dashed border-[rgba(172,156,141,0.55)] bg-[rgba(239,233,225,0.45)] text-xs text-muted"
+                                            key={`empty-${idx}`}
+                                            className="size-8 rounded-lg border border-dashed border-[rgba(172,156,141,0.65)] bg-[rgba(172,156,141,0.06)] flex items-center justify-center text-[10px] text-muted font-bold"
+                                            title="Empty slot"
                                           >
                                             +
                                           </div>
-                                        ))}
-                                      </div>
-                                      <span className="text-caption font-semibold text-muted">
-                                        {team.members.length} / 6 members
-                                      </span>
+                                        );
+                                      })}
                                     </div>
                                   </div>
 
-                                  {/* Skills Needed */}
-                                  <div className="mt-4 space-y-2">
-                                    {team.skillsNeeded.length > 0 && (
-                                      <div>
-                                        <FilterLabel>Skills Needed</FilterLabel>
-                                        <div className="flex flex-wrap gap-1">
-                                          {team.skillsNeeded.map((s) => (
-                                            <span
-                                              key={s}
-                                              className="rounded-md border border-[rgba(114,56,61,0.22)] bg-[rgba(114,56,61,0.08)] px-2 py-0.5 text-caption font-semibold text-primary"
-                                            >
-                                              {s}
-                                            </span>
-                                          ))}
-                                        </div>
+                                  {/* Skills cover */}
+                                  {team.skillsCovered.length > 0 && (
+                                    <div className="mt-5">
+                                      <span className="text-[10px] font-black uppercase tracking-wider text-muted">
+                                        Skills covered
+                                      </span>
+                                      <div className="mt-2.5 flex flex-wrap gap-1">
+                                        {team.skillsCovered.map((s) => (
+                                          <span
+                                            key={s}
+                                            className="rounded-md border border-[rgba(172,156,141,0.55)] bg-[rgba(172,156,141,0.18)] px-2 py-0.5 text-caption font-semibold text-foreground"
+                                          >
+                                            {s}
+                                          </span>
+                                        ))}
                                       </div>
-                                    )}
-
-                                    {team.skillsCovered.length > 0 && (
-                                      <div>
-                                        <FilterLabel>Skills Covered</FilterLabel>
-                                        <div className="flex flex-wrap gap-1">
-                                          {team.skillsCovered.map((s) => (
-                                            <span
-                                              key={s}
-                                              className="rounded-md border border-[rgba(172,156,141,0.55)] bg-[rgba(172,156,141,0.18)] px-2 py-0.5 text-caption font-semibold text-foreground"
-                                            >
-                                              {s}
-                                            </span>
-                                          ))}
-                                        </div>
-                                      </div>
-                                    )}
-                                  </div>
+                                    </div>
+                                  )}
                                 </div>
 
                                 {/* Join Actions */}
@@ -656,7 +671,43 @@ export default function FindTeamsPage() {
                       );
                     })}
                   </AnimatePresence>
-                </m.div>
+                  </m.div>
+
+                  {/* Pagination Controls */}
+                  {totalPages > 1 && (
+                    <div className="mt-10 flex items-center justify-center gap-2">
+                      <button
+                        disabled={currentPage === 1}
+                        onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                        className="rounded-xl border border-[rgba(114,56,61,0.2)] bg-[rgba(248,246,242,0.7)] px-4 py-2 text-caption font-bold text-primary transition-all duration-200 hover:bg-[rgba(114,56,61,0.08)] disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Previous
+                      </button>
+
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                        <button
+                          key={page}
+                          onClick={() => setCurrentPage(page)}
+                          className={`size-10 rounded-xl font-bold transition-all duration-200 flex items-center justify-center ${
+                            currentPage === page
+                              ? 'bg-primary text-on-accent shadow-[0_4px_12px_rgba(114,56,61,0.25)]'
+                              : 'border border-[rgba(114,56,61,0.2)] bg-[rgba(248,246,242,0.7)] text-muted hover:border-primary hover:text-primary'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      ))}
+
+                      <button
+                        disabled={currentPage === totalPages}
+                        onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                        className="rounded-xl border border-[rgba(114,56,61,0.2)] bg-[rgba(248,246,242,0.7)] px-4 py-2 text-caption font-bold text-primary transition-all duration-200 hover:bg-[rgba(114,56,61,0.08)] disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  )}
+                </>
               ) : (
                 <EmptyState
                   icon={Users}

@@ -7,6 +7,7 @@ import { teamMemberActionSchema } from '@/lib/validation';
 import { recalculateTeamSkills } from '@/lib/derived';
 import { TeamStatus, Prisma } from '@prisma/client';
 import { logger } from '@/lib/logger';
+import { revalidateTag } from 'next/cache';
 
 export async function POST(request: Request) {
   try {
@@ -99,6 +100,9 @@ export async function POST(request: Request) {
         }
       }
 
+      revalidateTag('students', { expire: 0 });
+      revalidateTag('teams', { expire: 0 });
+
       return NextResponse.json({ success: true, message: 'You have left the team.' });
     }
 
@@ -135,6 +139,9 @@ export async function POST(request: Request) {
         data: { status: 'forming' },
       });
     }
+
+    revalidateTag('students', { expire: 0 });
+    revalidateTag('teams', { expire: 0 });
 
     return NextResponse.json({ success: true, message: 'Member kicked successfully.' });
   } catch (error) {

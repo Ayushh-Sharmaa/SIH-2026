@@ -47,8 +47,8 @@ export async function POST(request: Request) {
     }
 
     let isUsingDbKey = false;
+    let isMentorVerified = false;
     if (role === 'MENTOR') {
-      let isMentorVerified = false;
       if (matchesMentorMasterKey(registrationKey)) {
         isMentorVerified = true;
       } else if (matchesDepartmentMentorKey(registrationKey)) {
@@ -104,6 +104,7 @@ export async function POST(request: Request) {
               name: user.email.split('@')[0] || 'Mentor User',
               designation: '',
               organization: 'GL Bajaj Group of Institutions',
+              verified: isMentorVerified,
             },
           });
         }

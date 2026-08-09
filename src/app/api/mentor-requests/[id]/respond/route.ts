@@ -7,6 +7,7 @@ import { respondMentorRequestSchema } from '@/lib/validation';
 import { Prisma } from '@prisma/client';
 import { logger } from '@/lib/logger';
 import { createNotification } from '@/lib/notifications';
+import { revalidateTag } from 'next/cache';
 
 export async function POST(
   request: Request,
@@ -141,8 +142,10 @@ export async function POST(
     }
 
     if (mentorRequest.mentor.currentLoad >= mentorRequest.mentor.capacity) {
-      return NextResponse.json({ error: 'You have reached your mentoring capacity limit.' }, { status: 400 });
+      return NextResponse.json({ error: 'You are currently at capacity.' }, { status: 400 });
     }
+
+
 
     await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       await tx.mentorRequest.update({
@@ -185,6 +188,10 @@ export async function POST(
         status: 'accepted',
       }
     );
+
+    revalidateTag('mentors', { expire: 0 });
+    revalidateTag('students', { expire: 0 });
+    revalidateTag('teams', { expire: 0 });
 
     return NextResponse.json({ success: true, message: 'Request accepted successfully.' });
   } catch (error) {

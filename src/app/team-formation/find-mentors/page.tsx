@@ -33,6 +33,7 @@ interface Mentor {
   bio?: string;
   linkedinUrl?: string;
   email: string;
+  teams?: { id: string; teamCode: string; name: string }[];
 }
 
 /** Circular capacity dial — draws its arc on mount. */
@@ -169,6 +170,7 @@ export default function FindMentorsPage() {
   // Modals state
   const [activeRequestMentor, setActiveRequestMentor] = useState<Mentor | null>(null);
   const [requested, setRequested] = useState<Record<string, 'sending' | 'sent'>>({});
+  const [currentPage, setCurrentPage] = useState(1);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [dashboardData, setDashboardData] = useState<any>(null);
 
@@ -201,7 +203,7 @@ export default function FindMentorsPage() {
 
         const res = await fetch(`/api/mentors?${queryParams.toString()}`);
         const data = await res.json();
-        if (data.success) setMentors(data.mentors);
+        if (data.success) { setMentors(data.mentors); setCurrentPage(1); }
       } catch (err) {
         logger.error('Fetch mentors failed', err);
         toast('Could not load mentors. Check your connection.', 'error');
@@ -223,6 +225,10 @@ export default function FindMentorsPage() {
     e.preventDefault();
     fetchMentors();
   };
+
+  const itemsPerPage = 20;
+  const totalPages = Math.max(1, Math.ceil(mentors.length / itemsPerPage));
+  const paginatedMentors = mentors.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const handleReset = () => {
     setName('');
@@ -265,8 +271,7 @@ export default function FindMentorsPage() {
   );
 
   const team = dashboardData?.team;
-  const isLeader = team && team.leaderId === dashboardData?.profile?.userId;
-  const hasMentor = team && team.mentorId !== null;
+  const hasMentor = Boolean(team?.mentorId || team?.mentor);
 
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
@@ -310,8 +315,8 @@ export default function FindMentorsPage() {
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Search mentor name..."
-                    aria-label="Search mentor name"
+                    placeholder="Mentor name or Team ID (SIH100)..."
+                    aria-label="Search mentor name or team ID"
                     className="w-full rounded-full border border-[rgba(209,199,189,0.85)] bg-[rgba(248,246,242,0.75)] py-2.5 pl-11 pr-4 text-sm text-foreground outline-none transition-[border-color,box-shadow,background-color] duration-250 focus:border-primary focus:bg-[rgba(248,246,242,0.96)] focus:shadow-[0_0_0_4px_rgba(114,56,61,0.10)]"
                   />
                   <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted" />
@@ -373,10 +378,11 @@ export default function FindMentorsPage() {
                   <div key={i} className="h-40 rounded-3xl skeleton-shimmer" />
                 ))}
               </div>
-            ) : mentors.length > 0 ? (
-              <m.div layout className="space-y-4">
+            ) : paginatedMentors.length > 0 ? (
+              <>
+                <m.div layout className="space-y-4">
                 <AnimatePresence mode="popLayout" initial={false}>
-                  {mentors.map((mentor, i) => {
+                  {paginatedMentors.map((mentor, i) => {
                     const full = mentor.currentLoad >= mentor.capacity;
                     const state = requested[mentor.userId];
                     return (
@@ -421,6 +427,16 @@ export default function FindMentorsPage() {
                                 </span>
                               ))}
                             </div>
+                            {mentor.teams && mentor.teams.length > 0 && (
+                              <div className="mt-3 flex flex-wrap items-center gap-1.5 text-caption text-muted">
+                                <span className="font-bold uppercase tracking-wider">Teams:</span>
+                                {mentor.teams.map((team) => (
+                                  <span key={team.id} className="rounded-md border border-[rgba(114,56,61,0.2)] bg-[rgba(114,56,61,0.06)] px-2 py-0.5 font-black text-primary">
+                                    {team.teamCode}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
                           </div>
 
                           <div className="flex shrink-0 flex-row items-center gap-3 sm:flex-col sm:items-end sm:justify-center">
@@ -431,10 +447,6 @@ export default function FindMentorsPage() {
                             ) : !team ? (
                               <span className="text-xs text-muted flex items-center gap-1">
                                 <ShieldAlert className="size-3.5" /> Join a team first
-                              </span>
-                            ) : !isLeader ? (
-                              <span className="text-xs text-muted flex items-center gap-1">
-                                <ShieldAlert className="size-3.5" /> Leader action only
                               </span>
                             ) : (
                               <PremiumButton
@@ -472,7 +484,43 @@ export default function FindMentorsPage() {
                   })}
                 </AnimatePresence>
               </m.div>
-            ) : (
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="mt-10 flex items-center justify-center gap-2">
+                  <button
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                    className="rounded-xl border border-[rgba(114,56,61,0.2)] bg-[rgba(248,246,242,0.7)] px-4 py-2 text-caption font-bold text-primary transition-all duration-200 hover:bg-[rgba(114,56,61,0.08)] disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`size-10 rounded-xl font-bold transition-all duration-200 flex items-center justify-center ${
+                        currentPage === page
+                          ? 'bg-primary text-on-accent shadow-[0_4px_12px_rgba(114,56,61,0.25)]'
+                          : 'border border-[rgba(114,56,61,0.2)] bg-[rgba(248,246,242,0.7)] text-muted hover:border-primary hover:text-primary'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+
+                  <button
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                    className="rounded-xl border border-[rgba(114,56,61,0.2)] bg-[rgba(248,246,242,0.7)] px-4 py-2 text-caption font-bold text-primary transition-all duration-200 hover:bg-[rgba(114,56,61,0.08)] disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
+            </>
+          ) : (
               <EmptyState
                 icon={UserX}
                 title="No verified mentors match these criteria."

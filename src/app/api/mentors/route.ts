@@ -23,6 +23,10 @@ const getCachedMentors = unstable_cache(
         currentLoad: true,
         bio: true,
         linkedinUrl: true,
+        teams: {
+          select: { id: true, teamCode: true, name: true },
+          orderBy: { teamCode: 'asc' },
+        },
       },
       take: 200,
     });
@@ -63,7 +67,11 @@ export async function GET(request: Request) {
 
     if (search || nameQuery || expertiseQuery) {
       filtered = mentors.filter((m) => {
-        if (nameQuery && !m.name.toLowerCase().includes(nameQuery)) {
+        const matchesTeamLookup = (value: string) => m.teams.some(
+          (team) => team.teamCode.toLowerCase().includes(value) || team.name.toLowerCase().includes(value)
+        );
+
+        if (nameQuery && !m.name.toLowerCase().includes(nameQuery) && !matchesTeamLookup(nameQuery)) {
           return false;
         }
 
@@ -77,8 +85,9 @@ export async function GET(request: Request) {
           const matchesOrg = m.organization.toLowerCase().includes(search);
           const matchesDesig = m.designation.toLowerCase().includes(search);
           const matchesBio = m.bio?.toLowerCase().includes(search) || false;
+          const matchesTeam = matchesTeamLookup(search);
 
-          if (!matchesName && !matchesExpertise && !matchesOrg && !matchesDesig && !matchesBio) {
+          if (!matchesName && !matchesExpertise && !matchesOrg && !matchesDesig && !matchesBio && !matchesTeam) {
             return false;
           }
         }

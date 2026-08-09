@@ -53,6 +53,7 @@ export async function GET(request: Request) {
         gender: sp.gender || 'Not Specified',
         isDemo: sp.isDemo ?? false,
         teamName: team?.name || null,
+        teamCode: team?.teamCode || null,
         teamId: sp.teamId || null,
         teamStatus: sp.teamStatus || 'OPEN',
         skills: sp.skills || [],
@@ -78,6 +79,7 @@ export async function GET(request: Request) {
 
       return {
         id: team.id,
+        teamCode: team.teamCode,
         name: team.name,
         status: team.status || 'forming',
         memberCount: members.length,
@@ -110,6 +112,7 @@ export async function GET(request: Request) {
         teamCount: trackTeams.length,
         teams: trackTeams.map((t) => ({
           id: t.id,
+          teamCode: t.teamCode,
           name: t.name,
           leaderName: t.leaderName,
           memberCount: t.memberCount,

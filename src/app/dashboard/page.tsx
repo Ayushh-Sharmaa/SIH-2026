@@ -23,6 +23,7 @@ import {
   UserX,
   X,
   Edit2,
+  Trash2,
   Lock,
   Unlock,
   ShieldCheck,
@@ -351,6 +352,39 @@ function EditRoleModal({ member, onClose, onSubmit }: EditRoleModalProps) {
   );
 }
 
+function TeamEditModal({ team, onClose, onSubmit }: { team: any; onClose: () => void; onSubmit: (details: any) => Promise<void> }) {
+  const [name, setName] = useState(team.name || '');
+  const [trackId, setTrackId] = useState(team.track?.id || '');
+  const [whatsapp, setWhatsapp] = useState(team.whatsapp || '');
+  const [mentorName, setMentorName] = useState(team.customMentorName || '');
+  const [mentorDesignation, setMentorDesignation] = useState(team.customMentorDesignation || '');
+  const [mentorMobile, setMentorMobile] = useState(team.customMentorMobile || '');
+  const [mentorEmail, setMentorEmail] = useState(team.customMentorEmail || '');
+  const [tracks, setTracks] = useState<any[]>([]);
+  const [saving, setSaving] = useState(false);
+  const panelRef = useFocusTrap<HTMLDivElement>(true);
+  useScrollLock(true);
+  useEscapeKey(true, onClose);
+  useEffect(() => { fetch('/api/tracks').then((r) => r.json()).then((d) => d.success && setTracks(d.tracks)).catch(() => undefined); }, []);
+  const submit = async (e: FormEvent) => {
+    e.preventDefault(); setSaving(true);
+    try { await onSubmit({ action: 'update_team_details', teamId: team.id, name, trackId, whatsapp, logoUrl: team.logoUrl || null, customMentorName: mentorName, customMentorDesignation: mentorDesignation, customMentorMobile: mentorMobile, customMentorEmail: mentorEmail }); onClose(); } finally { setSaving(false); }
+  };
+  const control = 'w-full rounded-xl border border-[rgba(209,199,189,0.8)] bg-[rgba(248,246,242,0.7)] px-3.5 py-2 text-sm text-foreground outline-none focus:border-primary';
+  return <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-modal flex items-center justify-center p-4">
+    <div aria-hidden onClick={onClose} className="absolute inset-0 bg-[rgb(50_45_41/0.34)] backdrop-blur-md" />
+    <m.div ref={panelRef} role="dialog" aria-modal="true" tabIndex={-1} initial={{ opacity: 0, y: 20, scale: .98 }} animate={{ opacity: 1, y: 0, scale: 1 }} className="surface-overlay relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl p-6 text-foreground sm:p-8">
+      <div className="flex items-center justify-between"><div><span className="text-label uppercase text-primary">{team.teamCode}</span><h3 className="mt-1 text-feature font-extrabold">Edit team details</h3></div><button onClick={onClose} aria-label="Close"><X className="size-4 text-muted" /></button></div>
+      <form onSubmit={submit} className="mt-6 space-y-4">
+        <div className="grid gap-4 sm:grid-cols-2"><label><Label>Team name</Label><input required value={name} onChange={(e) => setName(e.target.value)} className={`${control} mt-1.5`} /></label><label><Label>Problem statement</Label><select required value={trackId} onChange={(e) => setTrackId(e.target.value)} className={`${control} mt-1.5`}>{tracks.map((t) => <option key={t.id} value={t.id}>{t.problemStatementCode} — {t.name}</option>)}</select></label></div>
+        <label><Label>Leader WhatsApp</Label><input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} className={`${control} mt-1.5`} /></label>
+        <div className="rounded-2xl border border-[rgba(209,199,189,0.7)] bg-[rgba(239,233,225,0.45)] p-4"><Label>External mentor (optional)</Label><div className="mt-3 grid gap-3 sm:grid-cols-2"><input placeholder="Name" value={mentorName} onChange={(e) => setMentorName(e.target.value)} className={control} /><input placeholder="Designation" value={mentorDesignation} onChange={(e) => setMentorDesignation(e.target.value)} className={control} /><input placeholder="Mobile" value={mentorMobile} onChange={(e) => setMentorMobile(e.target.value)} className={control} /><input type="email" placeholder="Email" value={mentorEmail} onChange={(e) => setMentorEmail(e.target.value)} className={control} /></div></div>
+        <div className="flex justify-end gap-2 pt-2"><PremiumButton type="button" variant="glass" size="sm" onClick={onClose} disabled={saving}>Cancel</PremiumButton><PremiumButton type="submit" size="sm" loading={saving}>Save changes</PremiumButton></div>
+      </form>
+    </m.div>
+  </m.div>;
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const { toast } = useToast();
@@ -364,6 +398,7 @@ export default function DashboardPage() {
 
   // Modal states
   const [editingRoleMember, setEditingRoleMember] = useState<any>(null);
+  const [editingTeam, setEditingTeam] = useState(false);
 
   const fetchDashboard = useCallback(async () => {
     try {
@@ -555,6 +590,29 @@ export default function DashboardPage() {
       logger.error('Edit role failed', err);
       toast('Something went wrong.', 'error');
     }
+  };
+
+  const handleTeamDetailsSubmit = async (details: any) => {
+    const res = await fetch('/api/teams', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(details) });
+    const result = await res.json();
+    if (!res.ok) { toast(result.error || 'Failed to update team details.', 'error'); throw new Error(result.error); }
+    toast('Team details updated successfully.', 'success');
+    await fetchDashboard();
+  };
+
+  const handleDeleteTeam = async () => {
+    const currentTeam = data?.team;
+    if (!currentTeam || !confirm(`Delete ${currentTeam.teamCode} (${currentTeam.name})? This will remove every member from the team and cannot be undone.`)) return;
+    setActionLoading('delete-team');
+    try {
+      const res = await fetch('/api/teams', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ teamId: currentTeam.id }) });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Failed to delete team.');
+      toast('Team deleted. All members are available again.', 'success');
+      await fetchDashboard();
+    } catch (error) {
+      toast(error instanceof Error ? error.message : 'Failed to delete team.', 'error');
+    } finally { setActionLoading(null); }
   };
 
   if (loading) return <DashboardSkeleton />;
@@ -899,20 +957,32 @@ export default function DashboardPage() {
                                   action={<Chip tone="primary">{team.status === 'forming' ? 'Open for Recruitment' : 'Recruitment Closed'}</Chip>}
                                 >
                                   <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                    <div>
-                                      <h3 className="text-feature text-foreground font-extrabold">{team.name}</h3>
-                                      <p className="mt-1 text-xs text-muted">
-                                        Track{' '}
-                                        <span className="font-bold text-primary">
-                                          {team.track?.problemStatementCode || 'N/A'}
-                                        </span>{' '}
-                                        — {team.track?.name || 'N/A'}
-                                      </p>
+                                    <div className="flex items-center gap-3">
+                                      <div className="size-12 shrink-0 overflow-hidden rounded-2xl border border-[rgba(114,56,61,0.25)] bg-gradient-to-br from-[rgba(114,56,61,0.08)] to-[rgba(114,56,61,0.02)] flex items-center justify-center font-black text-primary text-sm">
+                                        {team.logoUrl ? (
+                                          <img src={team.logoUrl} alt="Logo" className="size-full object-cover" />
+                                        ) : (
+                                          team.name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase() || 'NS'
+                                        )}
+                                      </div>
+                                       <div>
+                                         <div className="flex items-center gap-2">
+                                           <h3 className="text-feature text-foreground font-extrabold">{team.name}</h3>
+                                           <span className="rounded-md bg-[rgba(114,56,61,0.08)] px-2 py-0.5 text-[10px] font-black tracking-wider text-primary">{team.teamCode}</span>
+                                         </div>
+                                        <p className="mt-0.5 text-xs text-muted">
+                                          Track{' '}
+                                          <span className="font-bold text-primary">
+                                            {team.track?.problemStatementCode || 'N/A'}
+                                          </span>{' '}
+                                          — {team.track?.name || 'N/A'}
+                                        </p>
+                                      </div>
                                     </div>
 
-                                    {/* Team Leader Recruitment Toggle */}
-                                    {isLeader && (
-                                      <div className="flex items-center gap-2">
+                                     {/* Team Leader controls */}
+                                     {isLeader && (
+                                       <div className="flex items-center gap-2">
                                         <span className="text-[10px] text-muted font-bold uppercase">Recruitment Status:</span>
                                         <button
                                           onClick={() => handleRecruitmentToggle(team.id, team.status)}
@@ -931,9 +1001,11 @@ export default function DashboardPage() {
                                               <Lock className="size-3" /> Recruiting Closed
                                             </>
                                           )}
-                                        </button>
-                                      </div>
-                                    )}
+                                         </button>
+                                         <button onClick={() => setEditingTeam(true)} className="rounded-lg border border-[rgba(209,199,189,0.75)] p-2 text-muted transition-colors hover:border-primary hover:text-primary" aria-label="Edit team details" title="Edit team details"><Edit2 className="size-3.5" /></button>
+                                         <button onClick={handleDeleteTeam} disabled={actionLoading === 'delete-team'} className="rounded-lg border border-[rgba(114,56,61,0.3)] p-2 text-primary transition-colors hover:bg-primary/10 disabled:opacity-50" aria-label="Delete team" title="Delete team"><Trash2 className="size-3.5" /></button>
+                                       </div>
+                                     )}
                                   </div>
 
                                   {/* Leader Team Roster List (Rich table view if leader, standard grid if member) */}
@@ -971,7 +1043,7 @@ export default function DashboardPage() {
 
                                             <div className="flex items-center gap-2 shrink-0">
                                               <span className="rounded bg-[rgba(114,56,61,0.08)] border border-[rgba(114,56,61,0.2)] px-2 py-0.5 text-[9px] font-black text-primary">
-                                                {member.roleInTeam || 'Member'}
+                                                {member.userId === team.leaderId ? 'Leader' : (member.roleInTeam || 'Member')}
                                               </span>
 
                                               {/* Actions */}
@@ -1030,7 +1102,7 @@ export default function DashboardPage() {
                                                 {member.name}
                                               </p>
                                               <span className="block text-[8px] uppercase tracking-wider text-primary font-bold">
-                                                {member.roleInTeam || 'Member'}
+                                                {member.userId === team.leaderId ? 'Leader' : (member.roleInTeam || 'Member')}
                                               </span>
                                             </m.div>
                                           ) : (
@@ -1636,6 +1708,13 @@ export default function DashboardPage() {
             member={editingRoleMember}
             onClose={() => setEditingRoleMember(null)}
             onSubmit={handleEditRoleSubmit}
+          />
+        )}
+        {editingTeam && team && (
+          <TeamEditModal
+            team={team}
+            onClose={() => setEditingTeam(false)}
+            onSubmit={handleTeamDetailsSubmit}
           />
         )}
       </AnimatePresence>

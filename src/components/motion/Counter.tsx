@@ -27,14 +27,9 @@ export default function Counter({
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true, amount: 0.5 });
   const reduced = usePrefersReducedMotion();
-  const [done, setDone] = useState(false);
 
   useEffect(() => {
-    if (!inView || done) return;
-
-    const frameHandle = requestAnimationFrame(() => {
-      setDone(true);
-    });
+    if (!inView) return;
 
     const format = (v: number) =>
       `${prefix}${v.toLocaleString('en-IN', {
@@ -44,7 +39,7 @@ export default function Counter({
 
     if (reduced) {
       if (ref.current) ref.current.textContent = format(to);
-      return () => cancelAnimationFrame(frameHandle);
+      return;
     }
 
     const controls = animate(from, to, {
@@ -56,10 +51,9 @@ export default function Counter({
     });
 
     return () => {
-      cancelAnimationFrame(frameHandle);
       controls.stop();
     };
-  }, [inView, done, from, to, duration, prefix, suffix, decimals, reduced]);
+  }, [inView, from, to, duration, prefix, suffix, decimals, reduced]);
 
   return (
     <span ref={ref} className={className}>

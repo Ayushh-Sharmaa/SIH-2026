@@ -61,47 +61,52 @@ export async function POST(request: Request) {
     }
 
     if (action === 'leave') {
-      const isLeader = team.leaderId === decoded.userId;
+      const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+        await tx.$queryRaw`SELECT id FROM Team WHERE id = ${teamId} FOR UPDATE`;
+        const currentTeam = await tx.team.findUnique({
+          where: { id: teamId },
+          include: { members: { select: { userId: true } } },
+        });
+        if (!currentTeam) throw new Error('TEAM_NOT_FOUND');
 
-      await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-        if (isLeader) {
-          // If they are the only member, delete the team
-          if (team.members.length <= 1) {
-            // Delete team
-            await tx.team.delete({ where: { id: teamId } });
-          } else {
-            // Transfer leadership to the next member
-            const nextLeader = team.members.find((m) => m.userId !== decoded.userId);
-            if (nextLeader) {
-              await tx.team.update({
-                where: { id: teamId },
-                data: { leaderId: nextLeader.userId },
-              });
-              await tx.studentProfile.update({
-                where: { userId: nextLeader.userId },
-                data: { roleInTeam: 'Leader' },
-              });
-            }
-          }
-        }
-
-        // Set student's team to null
-        await tx.studentProfile.update({
-          where: { userId: decoded.userId },
+        const remainingMembers = currentTeam.members.filter(
+          (member) => member.userId !== decoded.userId
+        );
+        const removed = await tx.studentProfile.updateMany({
+          where: { userId: decoded.userId, teamId },
           data: { teamId: null, teamStatus: TeamStatus.OPEN, roleInTeam: 'Member' },
         });
+        if (removed.count !== 1) throw new Error('MEMBERSHIP_CHANGED');
+
+        if (remainingMembers.length === 0) {
+          await tx.team.delete({ where: { id: teamId } });
+          return { deleted: true };
+        }
+
+        const nextLeaderId =
+          currentTeam.leaderId === decoded.userId
+            ? remainingMembers[0].userId
+            : currentTeam.leaderId;
+        await tx.team.update({
+          where: { id: teamId },
+          data: {
+            leaderId: nextLeaderId,
+            memberCount: remainingMembers.length,
+            status: 'forming',
+          },
+        });
+        if (nextLeaderId !== currentTeam.leaderId) {
+          await tx.studentProfile.update({
+            where: { userId: nextLeaderId },
+            data: { roleInTeam: 'Leader' },
+          });
+        }
+        return { deleted: false };
       });
 
       // Recalculate skills for remaining team (if still exists)
-      if (team.members.length > 1) {
+      if (!result.deleted) {
         await recalculateTeamSkills(teamId);
-        // If team was locked, reopen it
-        if (team.status === 'locked' || team.status === 'complete') {
-          await prisma.team.update({
-            where: { id: teamId },
-            data: { status: 'forming' },
-          });
-        }
       }
 
       revalidateTag('students', { expire: 0 });
@@ -128,21 +133,23 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Target user is not a member of your team.' }, { status: 400 });
     }
 
-    await prisma.studentProfile.update({
-      where: { userId: targetUserId },
-      data: { teamId: null, teamStatus: TeamStatus.OPEN, roleInTeam: 'Member' },
+    await prisma.$transaction(async (tx) => {
+      const removed = await tx.studentProfile.updateMany({
+        where: { userId: targetUserId, teamId },
+        data: { teamId: null, teamStatus: TeamStatus.OPEN, roleInTeam: 'Member' },
+      });
+      if (removed.count !== 1) throw new Error('MEMBERSHIP_CHANGED');
+      await tx.team.update({
+        where: { id: teamId },
+        data: {
+          memberCount: Math.max(1, team.members.length - 1),
+          status: 'forming',
+        },
+      });
     });
 
     // Recalculate skills
     await recalculateTeamSkills(teamId);
-
-    // Reopen team status if locked
-    if (team.status === 'locked' || team.status === 'complete') {
-      await prisma.team.update({
-        where: { id: teamId },
-        data: { status: 'forming' },
-      });
-    }
 
     revalidateTag('students', { expire: 0 });
     revalidateTag('teams', { expire: 0 });

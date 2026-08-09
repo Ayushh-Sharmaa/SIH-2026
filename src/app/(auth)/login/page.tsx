@@ -24,7 +24,7 @@ import { userFacingMessage } from '@/lib/errors';
 
 const HIGHLIGHTS = [
   { title: 'Find teammates by skill', copy: 'Filter by stack, soft skills and language.' },
-  { title: 'Request verified mentors', copy: 'Faculty and industry guides with live capacity.' },
+  { title: 'Request verified mentors', copy: 'Faculty and industry guides with active mentorship context.' },
   { title: 'Track your roster live', copy: 'Six seats, one leader, zero spreadsheets.' },
 ];
 

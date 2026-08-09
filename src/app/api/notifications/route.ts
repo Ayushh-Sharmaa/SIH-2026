@@ -31,13 +31,65 @@ export async function GET() {
     }
 
     const notifications: NotificationResponse[] = [];
-
-    // 1. Fetch DB notifications
-    const dbNotifications = await prisma.notification.findMany({
+    const dbNotificationsPromise = prisma.notification.findMany({
       where: { userId: decoded.userId },
       orderBy: { createdAt: 'desc' },
       take: 50,
     });
+
+    const actionablePromise =
+      decoded.role === 'MENTOR'
+        ? prisma.mentorRequest
+            .findMany({
+              where: { mentorId: decoded.userId, status: 'pending' },
+              select: {
+                id: true,
+                message: true,
+                createdAt: true,
+                team: {
+                  select: {
+                    name: true,
+                    track: { select: { problemStatementCode: true } },
+                  },
+                },
+              },
+              take: 50,
+            })
+            .then((mentorRequests) => ({ mentorRequests, invites: [], joinRequests: [] }))
+        : Promise.all([
+            prisma.teamInvite.findMany({
+              where: { studentId: decoded.userId, status: 'pending' },
+              select: {
+                id: true,
+                createdAt: true,
+                team: {
+                  select: {
+                    name: true,
+                    track: { select: { problemStatementCode: true } },
+                  },
+                },
+              },
+              take: 50,
+            }),
+            prisma.joinRequest.findMany({
+              where: {
+                status: 'pending',
+                team: { leaderId: decoded.userId },
+              },
+              select: {
+                id: true,
+                message: true,
+                createdAt: true,
+                student: { select: { name: true, branch: true, year: true } },
+              },
+              take: 50,
+            }),
+          ]).then(([invites, joinRequests]) => ({ mentorRequests: [], invites, joinRequests }));
+
+    const [dbNotifications, actionable] = await Promise.all([
+      dbNotificationsPromise,
+      actionablePromise,
+    ]);
 
     dbNotifications.forEach((n) => {
       const payload = n.payload as Record<string, unknown>;
@@ -54,21 +106,8 @@ export async function GET() {
       });
     });
 
-    // 2. Fetch pending Actionable requests based on role
     if (decoded.role === 'MENTOR') {
-      const requests = await prisma.mentorRequest.findMany({
-        where: {
-          mentorId: decoded.userId,
-          status: 'pending',
-        },
-        include: {
-          team: {
-            include: { track: true },
-          },
-        },
-      });
-
-      requests.forEach((r) => {
+      actionable.mentorRequests.forEach((r) => {
         notifications.push({
           id: r.id,
           type: 'mentor_request',
@@ -81,21 +120,7 @@ export async function GET() {
         });
       });
     } else {
-      // Role is STUDENT
-      // Find invites for this student
-      const invites = await prisma.teamInvite.findMany({
-        where: {
-          studentId: decoded.userId,
-          status: 'pending',
-        },
-        include: {
-          team: {
-            include: { track: true },
-          },
-        },
-      });
-
-      invites.forEach((inv) => {
+      actionable.invites.forEach((inv) => {
         notifications.push({
           id: inv.id,
           type: 'team_invite',
@@ -106,24 +131,7 @@ export async function GET() {
         });
       });
 
-      // Check if user is a team leader to query incoming join requests
-      const profile = await prisma.studentProfile.findUnique({
-        where: { userId: decoded.userId },
-        include: { team: true },
-      });
-
-      if (profile?.teamId && profile.team?.leaderId === decoded.userId) {
-        const joinRequests = await prisma.joinRequest.findMany({
-          where: {
-            teamId: profile.teamId,
-            status: 'pending',
-          },
-          include: {
-            student: true,
-          },
-        });
-
-        joinRequests.forEach((req) => {
+      actionable.joinRequests.forEach((req) => {
           notifications.push({
             id: req.id,
             type: 'join_request',
@@ -133,8 +141,7 @@ export async function GET() {
             read: false,
             createdAt: req.createdAt,
           });
-        });
-      }
+      });
     }
 
     // Sort all merged notifications by createdAt descending

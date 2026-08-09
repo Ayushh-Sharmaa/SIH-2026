@@ -116,6 +116,8 @@ export default function LoginPage() {
 function ClerkLoginPage() {
   const goAuthenticated = useAuthenticatedRedirect();
   const clerk = useClerk();
+  const clerkUser = clerk.user;
+  const clerkSignOut = clerk.signOut;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -126,10 +128,10 @@ function ClerkLoginPage() {
   // but Clerk thinks they are still signed in (from a ghost session before our logout fix),
   // instantly drop the Clerk session to sync state.
   useEffect(() => {
-    if (clerk.user) {
-      clerk.signOut();
+    if (clerkUser) {
+      clerkSignOut();
     }
-  }, [clerk.user, clerk.signOut]);
+  }, [clerkUser, clerkSignOut]);
 
   const handleGoogleSignIn = async () => {
     setError('');

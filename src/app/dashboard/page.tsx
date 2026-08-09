@@ -328,8 +328,9 @@ function EditRoleModal({ member, onClose, onSubmit }: EditRoleModalProps) {
 }
 
 function TeamEditModal({ team, onClose, onSubmit }: { team: any; onClose: () => void; onSubmit: (details: any) => Promise<void> }) {
+  const primaryTrackId = team.trackId || team.track?.id || '';
   const [name, setName] = useState(team.name || '');
-  const [trackId, setTrackId] = useState(team.trackId || team.track?.id || '');
+  const [trackId, setTrackId] = useState(primaryTrackId);
   const [secondaryTrackId, setSecondaryTrackId] = useState(team.secondaryTrackId || team.secondaryTrack?.id || '');
   const [whatsapp, setWhatsapp] = useState(team.whatsapp || '');
   const [mentorName, setMentorName] = useState(team.customMentorName || '');
@@ -347,13 +348,14 @@ function TeamEditModal({ team, onClose, onSubmit }: { team: any; onClose: () => 
     fetch('/api/tracks').then((r) => r.json()).then((d) => {
       if (d.success && d.tracks) {
         setTracks(d.tracks);
-        if (!secondaryTrackId && d.tracks.length > 1) {
-          const second = d.tracks.find((t: any) => t.id !== (team.trackId || team.track?.id));
-          if (second) setSecondaryTrackId(second.id);
-        }
+        setSecondaryTrackId((current: string) => {
+          if (current || d.tracks.length <= 1) return current;
+          const second = d.tracks.find((t: any) => t.id !== primaryTrackId);
+          return second?.id || current;
+        });
       }
     }).catch(() => undefined);
-  }, []);
+  }, [primaryTrackId]);
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');

@@ -53,6 +53,13 @@ interface MentorEligibility {
   existingMentorIds: string[];
 }
 
+interface MentorFilters {
+  name: string;
+  expertise: string;
+}
+
+const EMPTY_MENTOR_FILTERS: MentorFilters = { name: '', expertise: '' };
+
 function RequestMentorshipModal({
   mentor,
   onClose,
@@ -151,13 +158,12 @@ export default function FindMentorsPage() {
   const [currentPage, setCurrentPage] = useState(1);
 
   const fetchMentors = useCallback(
-    async (filters?: { name: string; expertise: string }) => {
-      const f = filters ?? { name, expertise };
+    async (filters: MentorFilters) => {
       setSearching(true);
       try {
         const queryParams = new URLSearchParams();
-        if (f.name) queryParams.append('name', f.name);
-        if (f.expertise) queryParams.append('expertise', f.expertise);
+        if (filters.name) queryParams.append('name', filters.name);
+        if (filters.expertise) queryParams.append('expertise', filters.expertise);
 
         const res = await fetch(`/api/mentors?${queryParams.toString()}`);
         const data = await res.json();
@@ -173,19 +179,19 @@ export default function FindMentorsPage() {
         setSearching(false);
       }
     },
-    [name, expertise, toast]
+    [toast]
   );
 
   useEffect(() => {
     const handle = requestAnimationFrame(() => {
-      fetchMentors({ name: '', expertise: '' }).finally(() => setLoading(false));
+      fetchMentors(EMPTY_MENTOR_FILTERS).finally(() => setLoading(false));
     });
     return () => cancelAnimationFrame(handle);
-  }, []);
+  }, [fetchMentors]);
 
   const handleSearch = (e: FormEvent) => {
     e.preventDefault();
-    fetchMentors();
+    fetchMentors({ name, expertise });
   };
 
   const itemsPerPage = 20;
@@ -195,7 +201,7 @@ export default function FindMentorsPage() {
   const handleReset = () => {
     setName('');
     setExpertise('');
-    fetchMentors({ name: '', expertise: '' });
+    fetchMentors(EMPTY_MENTOR_FILTERS);
   };
 
   const submitMentorRequest = async (message: string) => {

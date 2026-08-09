@@ -299,7 +299,11 @@ export async function GET(request: Request) {
                 memberCount: student.team.memberCount,
                 skillsCovered: student.team.skillsCovered,
                 skillsNeeded: student.team.skillsNeeded,
+                trackId: student.team.trackId,
+                secondaryTrackId: student.team.secondaryTrackId,
                 track: student.team.track,
+                secondaryTrack: student.team.secondaryTrack,
+                recruitmentNotices: student.team.recruitmentNotices || [],
                 members,
                 leaderContact: leader
                   ? {

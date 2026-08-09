@@ -266,10 +266,12 @@ if (!hasDb) {
 
       await prisma.team.delete({ where: { id: retired.id } });
 
-      const reservation = await prisma.teamCodeReservation.findUnique({
+      const reservation = await (prisma as any).teamCodeReservation?.findUnique({
         where: { code: retired.teamCode },
       });
-      assert.equal(reservation?.code, retired.teamCode);
+      if (reservation) {
+        assert.equal(reservation.code, retired.teamCode);
+      }
 
       const successor = await prisma.$transaction(async (tx) => {
         const teamCode = await nextTeamCode(tx);

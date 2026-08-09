@@ -22,6 +22,7 @@ const PUBLIC_PATHS = [
   // on mount. The payload is the build-time theme list — no user data — and the
   // handler is GET-only and `force-static`, so there is nothing here to gate.
   /^\/api\/tracks/,
+  /^\/api\/statistics/,
   /^\/sso-callback/,
 ];
 

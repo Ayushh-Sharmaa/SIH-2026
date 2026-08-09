@@ -6,7 +6,8 @@ import { useRouter } from 'next/navigation';
 import { AnimatePresence, m } from 'framer-motion';
 import { ArrowUpRight, Check } from 'lucide-react';
 import Icon from '@/components/ui/Icon';
-import { Container } from '@/components/ui';
+import Navbar from '@/components/layout/Navbar';
+import { Container, OnboardingSkeleton } from '@/components/ui';
 import {
   Aurora,
   Field,
@@ -236,13 +237,15 @@ export default function OnboardingPage() {
 
   const [selectedSoftSkills, setSelectedSoftSkills] = useState<string[]>([]);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [showCustomSectionInput, setShowCustomSectionInput] = useState(false);
-  const [roleChosen, setRoleChosen] = useState<'STUDENT' | 'MENTOR' | null>(null);
+  const [showCustomSectionInput, setShowCustomSectionInput] = useState(false);  const [roleChosen, setRoleChosen] = useState<'STUDENT' | 'MENTOR' | null>(null);
   const [mentorKey, setMentorKey] = useState('');
   const [showMentorKeyInput, setShowMentorKeyInput] = useState(false);
   const [showKeyErrorPopup, setShowKeyErrorPopup] = useState(false);
+  const [clickedRole, setClickedRole] = useState<'STUDENT' | 'MENTOR' | null>(null);
 
   const handleSelectStudent = async () => {
+    if (clickedRole) return;
+    setClickedRole('STUDENT');
     setError('');
     setSubmitting(true);
     try {
@@ -257,12 +260,15 @@ export default function OnboardingPage() {
       setSession((prev) => prev ? { ...prev, user: prev.user ? { ...prev.user, role: 'STUDENT' } : null } : null);
     } catch (err) {
       setError('Failed to select role. Please try again.');
+      setClickedRole(null);
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleVerifyMentorKey = async () => {
+    if (clickedRole) return;
+    setClickedRole('MENTOR');
     setError('');
     setSubmitting(true);
     try {
@@ -274,6 +280,7 @@ export default function OnboardingPage() {
       
       if (!res.ok) {
         setShowKeyErrorPopup(true);
+        setClickedRole(null);
         return;
       }
       
@@ -281,6 +288,7 @@ export default function OnboardingPage() {
       setSession((prev) => prev ? { ...prev, user: prev.user ? { ...prev.user, role: 'MENTOR' } : null } : null);
     } catch (err) {
       setError('Verification failed. Please try again.');
+      setClickedRole(null);
     } finally {
       setSubmitting(false);
     }
@@ -832,12 +840,11 @@ export default function OnboardingPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Container width="narrow" className="space-y-6 py-16">
-          <div className="h-14 w-56 rounded-2xl skeleton-shimmer" />
-          <div className="h-14 rounded-2xl skeleton-shimmer" />
-          <div className="h-[28rem] rounded-3xl skeleton-shimmer" />
-        </Container>
+      <div className="min-h-screen bg-background text-foreground flex flex-col justify-between">
+        <Navbar />
+        <main className="flex-1">
+          <OnboardingSkeleton />
+        </main>
       </div>
     );
   }
@@ -896,10 +903,16 @@ export default function OnboardingPage() {
             <div className="grid gap-6 sm:grid-cols-2">
               {/* Student Card */}
               <m.div
-                whileHover={{ y: -4 }}
+                whileHover={clickedRole ? undefined : { y: -4 }}
+                whileTap={clickedRole ? undefined : { scale: 0.97 }}
+                animate={clickedRole === 'STUDENT' ? { scale: 0.96, borderColor: 'var(--primary, #72383D)' } : {}}
                 transition={SPRING.snappy}
-                onClick={handleSelectStudent}
-                className="surface-raised cursor-pointer rounded-3xl p-6 border border-[rgba(209,199,189,0.7)] hover:border-primary transition-colors duration-250 flex flex-col justify-between"
+                onClick={clickedRole ? undefined : handleSelectStudent}
+                className={`surface-raised rounded-3xl p-6 border flex flex-col justify-between transition-colors duration-250 ${
+                  clickedRole === 'STUDENT'
+                    ? 'border-primary shadow-[0_0_15px_rgba(114,56,61,0.15)] pointer-events-none'
+                    : 'border-[rgba(209,199,189,0.7)] hover:border-primary cursor-pointer'
+                }`}
               >
                 <div>
                   <div className="size-12 rounded-2xl bg-[rgba(114,56,61,0.08)] text-primary flex items-center justify-center mb-4">
@@ -913,20 +926,38 @@ export default function OnboardingPage() {
                     Build or join a team, view the problem statements index, and request mentors for guidance.
                   </p>
                 </div>
-                <div className="mt-6 flex items-center gap-2 text-sm font-bold text-primary">
-                  <span>Start Student Onboarding</span>
-                  <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
+                <div className="mt-6 flex items-center gap-2.5 text-sm font-bold text-primary">
+                  {clickedRole === 'STUDENT' ? (
+                    <>
+                      <span className="animate-pulse">Opening Student Onboarding...</span>
+                      <span className="relative flex size-4 items-center justify-center">
+                        <span className="absolute size-full rounded-full border-2 border-primary/20" />
+                        <span className="absolute size-full rounded-full border-2 border-t-primary animate-spin" />
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Start Student Onboarding</span>
+                      <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </>
+                  )}
                 </div>
               </m.div>
 
               {/* Mentor Card */}
               <m.div
-                whileHover={{ y: -4 }}
+                whileHover={clickedRole ? undefined : { y: -4 }}
+                whileTap={clickedRole ? undefined : { scale: 0.97 }}
+                animate={clickedRole === 'MENTOR' ? { scale: 0.96, borderColor: 'var(--primary, #72383D)' } : {}}
                 transition={SPRING.snappy}
-                onClick={() => setShowMentorKeyInput(true)}
-                className="surface-raised cursor-pointer rounded-3xl p-6 border border-[rgba(209,199,189,0.7)] hover:border-primary transition-colors duration-250 flex flex-col justify-between"
+                onClick={clickedRole ? undefined : () => setShowMentorKeyInput(true)}
+                className={`surface-raised rounded-3xl p-6 border flex flex-col justify-between transition-colors duration-250 ${
+                  clickedRole === 'MENTOR'
+                    ? 'border-primary shadow-[0_0_15px_rgba(114,56,61,0.15)] pointer-events-none'
+                    : 'border-[rgba(209,199,189,0.7)] hover:border-primary cursor-pointer'
+                }`}
               >
                 <div>
                   <div className="size-12 rounded-2xl bg-[rgba(114,56,61,0.08)] text-primary flex items-center justify-center mb-4">
@@ -939,11 +970,23 @@ export default function OnboardingPage() {
                     Guide student teams, review project descriptions, and manage mentorship requests.
                   </p>
                 </div>
-                <div className="mt-6 flex items-center gap-2 text-sm font-bold text-primary">
-                  <span>Register as Mentor</span>
-                  <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
+                <div className="mt-6 flex items-center gap-2.5 text-sm font-bold text-primary">
+                  {clickedRole === 'MENTOR' ? (
+                    <>
+                      <span className="animate-pulse">Opening Mentor Registration...</span>
+                      <span className="relative flex size-4 items-center justify-center">
+                        <span className="absolute size-full rounded-full border-2 border-primary/20" />
+                        <span className="absolute size-full rounded-full border-2 border-t-primary animate-spin" />
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Register as Mentor</span>
+                      <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </>
+                  )}
                 </div>
               </m.div>
             </div>

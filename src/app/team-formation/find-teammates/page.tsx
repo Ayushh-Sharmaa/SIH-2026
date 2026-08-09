@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, m } from 'framer-motion';
 import { ArrowUpRight, Users, BookOpen, GraduationCap, Calendar, Compass, ShieldCheck } from 'lucide-react';
-import { Container, EmptyState } from '@/components/ui';
+import { Container, EmptyState, StudentCardSkeleton } from '@/components/ui';
 import Icon from '@/components/ui/Icon';
 import { useToast } from '@/components/ui/Toast';
 import Image from 'next/image';
@@ -450,7 +450,7 @@ export default function FindTeammatesPage() {
               {loading ? (
                 <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
                   {Array.from({ length: 6 }, (_, i) => (
-                    <div key={i} className="h-64 rounded-3xl skeleton-shimmer" />
+                    <StudentCardSkeleton key={i} />
                   ))}
                 </div>
               ) : paginatedTeammates.length > 0 ? (
@@ -478,10 +478,12 @@ export default function FindTeammatesPage() {
                           <TiltCard intensity={5} className="h-full">
                             <SpotlightCard className="h-full rounded-3xl" intensity={0.08}>
                               <article className="surface-raised flex h-full flex-col justify-between rounded-3xl p-5 sm:p-6">
-                                <div
-                                  onClick={() => router.push(`/profile/${student.userId}`)}
-                                  className="space-y-4 cursor-pointer group/card"
-                                >
+                                 <m.div
+                                   whileTap={{ scale: 0.98 }}
+                                   transition={SPRING.snappy}
+                                   onClick={() => router.push(`/profile/${student.userId}`)}
+                                   className="space-y-4 cursor-pointer group/card"
+                                 >
                                   <div className="flex items-start justify-between gap-3">
                                     <div className="flex items-center gap-3 min-w-0">
                                       <ProfileAvatar
@@ -580,7 +582,7 @@ export default function FindTeammatesPage() {
                                       ))}
                                     </div>
                                   </div>
-                                </div>
+                                </m.div>
 
                                 <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-[rgba(209,199,189,0.6)] pt-4">
                                   <div className="flex flex-wrap gap-1.5">

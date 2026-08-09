@@ -30,7 +30,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import Icon from '@/components/ui/Icon';
-import { Container, EmptyState } from '@/components/ui';
+import { Container, EmptyState, DashboardSkeleton } from '@/components/ui';
 import { useToast } from '@/components/ui/Toast';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -238,34 +238,7 @@ function Panel({
   );
 }
 
-function DashboardSkeleton() {
-  return (
-    <div className="min-h-screen bg-background text-foreground">
-      <Navbar />
-      <Container width="wide" className="py-10">
-        <div className="flex items-center gap-5">
-          <div className="size-20 rounded-2xl skeleton-shimmer" />
-          <div className="flex-1 space-y-3">
-            <div className="h-6 w-64 max-w-full rounded-lg skeleton-shimmer" />
-            <div className="h-3.5 w-80 max-w-full rounded skeleton-shimmer" />
-          </div>
-        </div>
-        <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="h-20 rounded-2xl skeleton-shimmer" />
-          ))}
-        </div>
-        <div className="mt-10 grid grid-cols-1 gap-6 lg:grid-cols-5">
-          <div className="h-96 rounded-3xl skeleton-shimmer lg:col-span-2" />
-          <div className="space-y-6 lg:col-span-3">
-            <div className="h-56 rounded-3xl skeleton-shimmer" />
-            <div className="h-40 rounded-3xl skeleton-shimmer" />
-          </div>
-        </div>
-      </Container>
-    </div>
-  );
-}
+
 
 interface EditRoleModalProps {
   member: any;
@@ -615,7 +588,17 @@ export default function DashboardPage() {
     } finally { setActionLoading(null); }
   };
 
-  if (loading) return <DashboardSkeleton />;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background text-foreground flex flex-col justify-between">
+        <Navbar />
+        <main className="flex-1">
+          <DashboardSkeleton />
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   const isStudent = data?.role === 'STUDENT';
   const profile = data?.profile;

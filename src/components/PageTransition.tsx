@@ -71,7 +71,7 @@ export default function PageTransition({ children }: { children: React.ReactNode
       // delayed by this wrapper on a cold load.
       initial={animateEntrance ? { opacity: 0 } : false}
       animate={{ opacity: 1 }}
-      transition={{ duration: DURATION.page, ease: EASE.outExpo }}
+      transition={{ duration: 0.22, ease: EASE.outExpo }}
       // `dvh`, not `vh`: on mobile browsers `100vh` is the viewport with the URL
       // bar hidden, so a `min-h-screen` column overflows by the height of the
       // bar and produces a spurious scrollbar on every page.

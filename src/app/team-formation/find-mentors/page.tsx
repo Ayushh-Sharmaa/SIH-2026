@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { AnimatePresence, m } from 'framer-motion';
 import { ArrowUpRight, UserX, Search, MessageSquare, ShieldAlert } from 'lucide-react';
-import { Container, EmptyState } from '@/components/ui';
+import { Container, EmptyState, MentorCardSkeleton } from '@/components/ui';
 import Icon from '@/components/ui/Icon';
 import { useToast } from '@/components/ui/Toast';
 import Navbar from '@/components/layout/Navbar';
@@ -375,7 +375,7 @@ export default function FindMentorsPage() {
             {loading ? (
               <div className="space-y-4">
                 {Array.from({ length: 4 }, (_, i) => (
-                  <div key={i} className="h-40 rounded-3xl skeleton-shimmer" />
+                  <MentorCardSkeleton key={i} />
                 ))}
               </div>
             ) : paginatedMentors.length > 0 ? (

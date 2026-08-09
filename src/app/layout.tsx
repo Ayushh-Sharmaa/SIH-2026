@@ -6,6 +6,7 @@ import './globals.css';
 import ScrollProgress from '@/components/ScrollProgress';
 import PageTransition from '@/components/PageTransition';
 import LoadingScreen from '@/components/LoadingScreen';
+import NavigationProgressBar from '@/components/layout/NavigationProgressBar';
 import MotionProvider from '@/components/motion/MotionProvider';
 import { SessionProvider } from '@/lib/session';
 import { ToastProvider } from '@/components/ui/Toast';
@@ -120,6 +121,7 @@ export default function RootLayout({
           <SessionProvider>
             <ToastProvider>
               <LoadingScreen />
+              <NavigationProgressBar />
               <ScrollProgress />
               <PageTransition>{children}</PageTransition>
             </ToastProvider>

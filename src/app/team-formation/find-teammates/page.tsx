@@ -46,7 +46,7 @@ interface Student {
     leaderId: string;
     mentor?: { userId: string; name: string; designation: string; organization: string } | null;
   } | null;
-  interests: string[];
+  interests: Array<{ code: string; name: string }>;
 }
 
 interface Track {
@@ -503,6 +503,30 @@ export default function FindTeammatesPage() {
                                     </span>
                                   </div>
 
+                                  {/* Track Interests (Header placement for high prominence) */}
+                                  {student.interests && student.interests.length > 0 && (
+                                    <div className="rounded-2xl border border-[rgba(114,56,61,0.2)] bg-gradient-to-br from-[rgba(114,56,61,0.06)] to-[rgba(114,56,61,0.01)] p-3 space-y-1.5">
+                                      <span className="block text-[9px] font-black uppercase tracking-wider text-primary">
+                                        Track Interests
+                                      </span>
+                                      <div className="flex flex-wrap gap-1">
+                                        {student.interests.map((theme) => (
+                                          <div
+                                            key={theme.code}
+                                            className="inline-flex items-center gap-1.5 rounded-lg border border-[rgba(114,56,61,0.18)] bg-white/80 px-2 py-0.5 text-[10px] font-bold text-primary shadow-sm"
+                                          >
+                                            <span className="font-extrabold tracking-wider bg-[rgba(114,56,61,0.09)] px-1.5 py-0.5 rounded text-[9px]">
+                                              {theme.code}
+                                            </span>
+                                            <span className="max-w-[140px] truncate text-foreground/90 font-bold">
+                                              {theme.name}
+                                            </span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+
                                   {/* College info */}
                                   <div className="text-[11px] text-muted flex items-center gap-1 border-t border-b border-[rgba(209,199,189,0.4)] py-1.5">
                                     <GraduationCap className="size-3.5 shrink-0 text-primary" />
@@ -533,24 +557,6 @@ export default function FindTeammatesPage() {
                                       ))}
                                     </div>
                                   </div>
-
-                                  {/* Interests (trackInterest) */}
-                                  {student.interests && student.interests.length > 0 && (
-                                    <div>
-                                      <FilterLabel>Track Interests</FilterLabel>
-                                      <div className="flex flex-wrap gap-1.5">
-                                        {student.interests.map((theme) => (
-                                          <span
-                                            key={theme}
-                                            className="rounded-md border border-[rgba(209,199,189,0.7)] bg-[rgba(239,233,225,0.4)] px-2 py-0.5 text-caption font-semibold text-muted flex items-center gap-1"
-                                          >
-                                            <Compass className="size-3 text-primary shrink-0" />
-                                            <span className="max-w-[120px] truncate">{theme}</span>
-                                          </span>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  )}
 
                                   {/* Soft skills */}
                                   <div>

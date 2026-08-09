@@ -88,11 +88,10 @@ export async function GET(request: Request) {
     const yearParam = parsedQuery.data.year?.trim().toLowerCase();
     const search = parsedQuery.data.search?.trim().toLowerCase();
 
-    // Load every real onboarded student. Team membership is surfaced as a
-    // status instead of hiding profiles from the directory.
+    // Load every available student (not yet in a team).
     let students = await getCachedStudents();
 
-    students = students.filter((s) => s.userId !== decoded.userId);
+    students = students.filter((s) => s.userId !== decoded.userId && s.team === null);
     if (softSkillQuery) {
       students = students.filter((s) => s.softSkills.includes(softSkillQuery));
     }
@@ -187,7 +186,10 @@ export async function GET(request: Request) {
           }
         : null,
       college: s.user?.college || 'GL Bajaj Group of Institutions, Mathura',
-      interests: s.trackInterest.map((t) => t.name),
+      interests: s.trackInterest.map((t) => ({
+        code: t.problemStatementCode,
+        name: t.name,
+      })),
     }));
 
     return NextResponse.json({

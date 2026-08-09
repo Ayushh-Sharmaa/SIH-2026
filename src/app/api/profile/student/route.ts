@@ -189,6 +189,7 @@ export async function GET(request: Request) {
       name: student.name,
       year: student.year,
       branch: student.branch,
+      gender: student.gender,
       rollNo: student.rollNo,
       section: student.section,
       skills: student.skills,
@@ -204,9 +205,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       success: true,
-      // `gender` is self-only. It is collected for the owner's own record and
-      // the public viewer has no product reason to receive it for a stranger.
-      profile: isSelf ? { ...shared, gender: student.gender } : shared,
+      profile: shared,
     });
   } catch (error) {
     logger.error('Get student profile error', error);

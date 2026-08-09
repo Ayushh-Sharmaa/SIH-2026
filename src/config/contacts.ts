@@ -9,14 +9,14 @@ export interface Contact {
 export const CONTACTS: Contact[] = [
   {
     name: 'Tanishk Bansal',
-    role: 'Project Maintainer',
+    role: 'SIH Coordinator',
     linkedin: 'https://www.linkedin.com/in/tanishk-bansal-',
     email: 'tanishk.bansal2025@glbajajgroup.org',
     phone: '+91 8534998412',
   },
   {
     name: 'Ayush Sharma',
-    role: 'Project Maintainer',
+    role: 'SIH Coordinator',
     linkedin: 'https://www.linkedin.com/in/ayushh-sharmaa/',
     email: 'ayush.sharma2025@glbajajgroup.org',
     phone: '+91 89239995135',

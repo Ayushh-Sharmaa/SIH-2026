@@ -33,6 +33,8 @@ interface StudentProfile {
   linkedinUrl?: string;
   avatarUrl?: string | null;
   tracksDetailed?: Track[];
+  email: string;
+  contact?: string | null;
 }
 
 const AVATAR_PRESETS: Record<string, { icon: LucideIcon; wash: string }> = {
@@ -406,10 +408,10 @@ export default function StudentProfilePage() {
                 </div>
               </SpotlightCard>
 
-              {/* Preferences & Links */}
+              {/* Preferences & Contact */}
               <SpotlightCard className="rounded-3xl">
                 <div className="surface-raised rounded-3xl p-6 sm:p-7 space-y-6">
-                  <h2 className="text-feature text-foreground">Preferences &amp; Links</h2>
+                  <h2 className="text-feature text-foreground">Preferences &amp; Contact</h2>
                   <div className="h-px bg-gradient-to-r from-[rgba(172,156,141,0.55)] via-[rgba(209,199,189,0.35)] to-transparent" />
                   
                   <div className="space-y-5">
@@ -438,32 +440,101 @@ export default function StudentProfilePage() {
                     )}
 
                     <div>
-                      <span className="block text-label uppercase text-muted text-xs mb-2">Professional Profiles</span>
-                      <div className="flex flex-wrap gap-3">
-                        {[
-                          { url: profile.githubUrl, label: 'GitHub' },
-                          { url: profile.linkedinUrl, label: 'LinkedIn' },
-                          { url: profile.resumeUrl, label: 'Résumé' },
-                        ].filter((l) => l.url).length === 0 ? (
-                          <p className="text-sm text-muted">No links shared yet.</p>
-                        ) : (
-                          [
-                            { url: profile.githubUrl, label: 'GitHub' },
-                            { url: profile.linkedinUrl, label: 'LinkedIn' },
-                            { url: profile.resumeUrl, label: 'Résumé' },
-                          ]
-                            .filter((l) => l.url)
-                            .map((l) => (
-                              <a
-                                key={l.label}
-                                href={l.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1.5 rounded-lg border border-[rgba(209,199,189,0.7)] bg-white/50 px-4 py-2 text-xs font-bold text-foreground hover:border-[rgba(114,56,61,0.3)] hover:text-primary transition-all hover:-translate-y-0.5"
-                              >
-                                {l.label} <ArrowUpRight className="size-3.5" />
-                              </a>
-                            ))
+                      <span className="block text-label uppercase text-muted text-xs mb-3">Contact Details &amp; Professional Profiles</span>
+                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        {/* Email Card/Button */}
+                        <a
+                          href={`mailto:${profile.email}`}
+                          className="flex items-center gap-3 rounded-xl border border-[rgba(209,199,189,0.6)] bg-white/50 p-3 hover:border-primary/40 hover:text-primary transition-all duration-200"
+                        >
+                          <div className="size-8 rounded-lg bg-[rgba(114,56,61,0.08)] text-primary flex items-center justify-center shrink-0">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="size-4">
+                              <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <span className="block text-[9px] font-black uppercase text-muted tracking-wider">Email Address</span>
+                            <span className="block text-xs font-bold text-foreground truncate">{profile.email}</span>
+                          </div>
+                        </a>
+
+                        {/* Phone Card/Button (if provided) */}
+                        {profile.contact && (
+                          <a
+                            href={`tel:${profile.contact}`}
+                            className="flex items-center gap-3 rounded-xl border border-[rgba(209,199,189,0.6)] bg-white/50 p-3 hover:border-primary/40 hover:text-primary transition-all duration-200"
+                          >
+                            <div className="size-8 rounded-lg bg-[rgba(114,56,61,0.08)] text-primary flex items-center justify-center shrink-0">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="size-4">
+                                <path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <span className="block text-[9px] font-black uppercase text-muted tracking-wider">Phone Number</span>
+                              <span className="block text-xs font-bold text-foreground truncate">{profile.contact}</span>
+                            </div>
+                          </a>
+                        )}
+
+                        {/* GitHub Button */}
+                        {profile.githubUrl && (
+                          <a
+                            href={profile.githubUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-3 rounded-xl border border-[rgba(209,199,189,0.6)] bg-white/50 p-3 hover:border-primary/40 hover:text-primary transition-all duration-200"
+                          >
+                            <div className="size-8 rounded-lg bg-[rgba(114,56,61,0.08)] text-primary flex items-center justify-center shrink-0">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="size-4">
+                                <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <span className="block text-[9px] font-black uppercase text-muted tracking-wider">GitHub Profile</span>
+                              <span className="block text-xs font-bold text-foreground truncate">View GitHub</span>
+                            </div>
+                          </a>
+                        )}
+
+                        {/* LinkedIn Button */}
+                        {profile.linkedinUrl && (
+                          <a
+                            href={profile.linkedinUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-3 rounded-xl border border-[rgba(209,199,189,0.6)] bg-white/50 p-3 hover:border-primary/40 hover:text-primary transition-all duration-200"
+                          >
+                            <div className="size-8 rounded-lg bg-[rgba(114,56,61,0.08)] text-primary flex items-center justify-center shrink-0">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="size-4">
+                                <path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2zM4 2a2 2 0 110 4 2 2 0 010-4z" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <span className="block text-[9px] font-black uppercase text-muted tracking-wider">LinkedIn Profile</span>
+                              <span className="block text-xs font-bold text-foreground truncate">View LinkedIn</span>
+                            </div>
+                          </a>
+                        )}
+
+                        {/* Résumé Button */}
+                        {profile.resumeUrl && (
+                          <a
+                            href={profile.resumeUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-3 rounded-xl border border-[rgba(209,199,189,0.6)] bg-white/50 p-3 hover:border-primary/40 hover:text-primary transition-all duration-200"
+                          >
+                            <div className="size-8 rounded-lg bg-[rgba(114,56,61,0.08)] text-primary flex items-center justify-center shrink-0">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="size-4">
+                                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" strokeLinecap="round" strokeLinejoin="round" />
+                                <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <span className="block text-[9px] font-black uppercase text-muted tracking-wider">Student Résumé</span>
+                              <span className="block text-xs font-bold text-foreground truncate">View Résumé</span>
+                            </div>
+                          </a>
                         )}
                       </div>
                     </div>

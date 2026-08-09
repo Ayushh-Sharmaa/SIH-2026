@@ -169,6 +169,7 @@ export async function GET(request: Request) {
       where: { userId: queryId },
       include: {
         trackInterest: { select: { id: true, name: true, problemStatementCode: true } },
+        user: { select: { email: true } },
       },
     });
 
@@ -200,6 +201,8 @@ export async function GET(request: Request) {
       githubUrl: student.githubUrl,
       linkedinUrl: student.linkedinUrl,
       avatarUrl: student.avatarUrl,
+      email: student.user.email,
+      contact: student.contact,
       trackInterest,
       tracksDetailed,
     };

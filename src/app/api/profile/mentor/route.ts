@@ -49,33 +49,28 @@ export async function PUT(request: Request) {
       designation,
       organization,
       expertise,
-      capacity,
       bio,
       linkedinUrl,
       avatarUrl,
       college,
     } = parsed.data;
 
-    if (college) {
-      await prisma.user.update({
-        where: { id: decoded.userId },
-        data: { college },
+    const updatedProfile = await prisma.$transaction(async (tx) => {
+      if (college) {
+        await tx.user.update({ where: { id: decoded.userId }, data: { college } });
+      }
+      return tx.mentorProfile.update({
+        where: { userId: decoded.userId },
+        data: {
+          name,
+          designation,
+          organization,
+          expertise: tagArray(expertise),
+          bio: optionalText(bio, MAX_TEXT),
+          linkedinUrl: safeUrl(linkedinUrl),
+          avatarUrl: avatarDataUri(avatarUrl),
+        },
       });
-    }
-
-    // Update the MentorProfile
-    const updatedProfile = await prisma.mentorProfile.update({
-      where: { userId: decoded.userId },
-      data: {
-        name,
-        designation,
-        organization,
-        expertise: tagArray(expertise),
-        capacity,
-        bio: optionalText(bio, MAX_TEXT),
-        linkedinUrl: safeUrl(linkedinUrl),
-        avatarUrl: avatarDataUri(avatarUrl),
-      },
     });
 
     revalidateTag('mentors', { expire: 0 });
@@ -124,8 +119,7 @@ export async function GET(request: Request) {
         designation: mentor.designation,
         organization: mentor.organization,
         expertise: mentor.expertise,
-        capacity: mentor.capacity,
-        currentLoad: mentor.currentLoad,
+        guidedTeamsCount: await prisma.team.count({ where: { mentorId: mentor.userId } }),
         verified: mentor.verified,
         bio: mentor.bio,
         linkedinUrl: mentor.linkedinUrl,

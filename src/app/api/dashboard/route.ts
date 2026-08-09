@@ -35,19 +35,18 @@ export async function GET(request: Request) {
     // Admin Role Preview Switcher Mode
     if (decoded.role === 'ADMIN') {
       if (roleOverride === 'MENTOR') {
-        const mentors = await prisma.mentorProfile.findMany();
+        const [mentors, allTeams] = await Promise.all([
+          prisma.mentorProfile.findMany({ take: 1 }),
+          prisma.team.findMany(),
+        ]);
         const mentor = mentors[0] || {
           name: 'Faculty Mentor Preview',
           designation: 'Associate Professor & Mentor',
           organization: 'GL Bajaj Group of Institutions',
           expertise: ['AI/ML', 'Full Stack Development', 'System Architecture'],
-          capacity: 3,
-          currentLoad: 1,
           verified: true,
           bio: 'Admin Preview Mode: Exploring Faculty Mentor Dashboard Features.',
         };
-        const allTeams = await prisma.team.findMany();
-
         return NextResponse.json({
           success: true,
           role: 'MENTOR',
@@ -57,8 +56,8 @@ export async function GET(request: Request) {
             designation: mentor.designation,
             organization: mentor.organization,
             expertise: mentor.expertise,
-            capacity: mentor.capacity,
-            currentLoad: mentor.currentLoad,
+            guidedTeamsCount:
+              'userId' in mentor ? allTeams.filter((team) => team.mentorId === mentor.userId).length : 0,
             verified: mentor.verified,
             bio: mentor.bio,
             linkedinUrl: mentor.linkedinUrl || 'https://linkedin.com',
@@ -399,8 +398,7 @@ export async function GET(request: Request) {
           designation: mentor.designation,
           organization: mentor.organization,
           expertise: mentor.expertise,
-          capacity: mentor.capacity,
-          currentLoad: mentor.currentLoad,
+          guidedTeamsCount: mentor.teams.length,
           verified: mentor.verified,
           bio: mentor.bio,
           linkedinUrl: mentor.linkedinUrl,

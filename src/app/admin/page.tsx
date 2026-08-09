@@ -34,7 +34,7 @@ const TABS: { key: TabKey; label: string; blurb: string }[] = [
   { key: 'teams', label: 'Teams', blurb: 'Roster, status and disband controls' },
   { key: 'students', label: 'Students', blurb: 'Directory with multi-attribute filters' },
   { key: 'ps_tracks', label: 'Participation', blurb: 'Theme-by-theme team distribution' },
-  { key: 'mentors', label: 'Mentors', blurb: 'Faculty capacity and verification' },
+  { key: 'mentors', label: 'Mentors', blurb: 'Faculty guidance and verification' },
 ];
 
 const SUPER_ADMIN = 'tanishk.bansal2025@glbajajgroup.org';
@@ -221,8 +221,7 @@ interface MentorData {
   email: string;
   designation: string;
   organization: string;
-  capacity: number;
-  currentLoad: number;
+  guidedTeamsCount: number;
   verified: boolean;
   isDemo: boolean;
   isBanned: boolean;
@@ -1304,9 +1303,9 @@ export default function AdminDashboardPage() {
 
                               <div>
                                 <div className="mb-1.5 flex justify-between text-label uppercase text-muted">
-                                  <span>Capacity</span>
+                                  <span>Teams guided</span>
                                   <span>
-                                    {mentor.currentLoad} / {mentor.capacity}
+                                    {mentor.guidedTeamsCount}
                                   </span>
                                 </div>
                                 <div className="h-1.5 overflow-hidden rounded-full bg-[rgba(209,199,189,0.7)]">
@@ -1314,9 +1313,7 @@ export default function AdminDashboardPage() {
                                     initial={{ scaleX: 0 }}
                                     whileInView={{
                                       scaleX:
-                                        mentor.capacity > 0
-                                          ? Math.min(1, mentor.currentLoad / mentor.capacity)
-                                          : 0,
+                                        mentor.guidedTeamsCount > 0 ? 1 : 0,
                                     }}
                                     viewport={{ once: true, amount: 0.6 }}
                                     transition={{ duration: 0.9, ease: EASE.outExpo, delay: 0.15 }}

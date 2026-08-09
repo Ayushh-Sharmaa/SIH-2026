@@ -163,7 +163,7 @@ function ClerkSignupPage() {
         throw new Error(data.error || 'Registration failed');
       }
 
-      await goAuthenticated('/onboarding');
+      await goAuthenticated('/onboarding', data.user);
     } catch (err) {
       setLoading(false);
       if (errorMessageIncludes(err, 'already exists')) {
@@ -232,7 +232,7 @@ function CustomSignupPage() {
         throw new Error(data.error || 'Registration failed');
       }
 
-      await goAuthenticated('/onboarding');
+      await goAuthenticated('/onboarding', data.user);
     } catch (err) {
       setLoading(false);
       if (errorMessageIncludes(err, 'already exists')) {

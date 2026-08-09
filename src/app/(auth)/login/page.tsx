@@ -171,25 +171,16 @@ function ClerkLoginPage() {
       }
 
       if (data.redirectUrl) {
-        await goAuthenticated(data.redirectUrl);
+        await goAuthenticated(data.redirectUrl, data.user);
         return;
       }
 
       if (data.user?.role === 'ADMIN') {
-        await goAuthenticated('/admin');
+        await goAuthenticated('/admin', data.user);
         return;
       }
 
-      const meRes = await fetch('/api/auth/me');
-      const meData = await meRes.json();
-
-      if (meData.authenticated && meData.user?.role === 'ADMIN') {
-        await goAuthenticated('/admin');
-      } else if (meData.authenticated && meData.user?.isOnboarded) {
-        await goAuthenticated('/dashboard');
-      } else {
-        await goAuthenticated('/onboarding');
-      }
+      await goAuthenticated(data.user?.isOnboarded ? '/dashboard' : '/onboarding', data.user);
     } catch (err) {
       setLoading(false);
       setError(err instanceof Error ? err.message : 'Something went wrong');
@@ -242,25 +233,16 @@ function CustomLoginPage() {
       }
 
       if (data.redirectUrl) {
-        await goAuthenticated(data.redirectUrl);
+        await goAuthenticated(data.redirectUrl, data.user);
         return;
       }
 
       if (data.user?.role === 'ADMIN') {
-        await goAuthenticated('/admin');
+        await goAuthenticated('/admin', data.user);
         return;
       }
 
-      const meRes = await fetch('/api/auth/me');
-      const meData = await meRes.json();
-
-      if (meData.authenticated && meData.user?.role === 'ADMIN') {
-        await goAuthenticated('/admin');
-      } else if (meData.authenticated && meData.user?.isOnboarded) {
-        await goAuthenticated('/dashboard');
-      } else {
-        await goAuthenticated('/onboarding');
-      }
+      await goAuthenticated(data.user?.isOnboarded ? '/dashboard' : '/onboarding', data.user);
     } catch (err) {
       setLoading(false);
       setError(err instanceof Error ? err.message : 'Something went wrong');

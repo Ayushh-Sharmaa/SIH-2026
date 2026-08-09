@@ -45,10 +45,21 @@ const resumeUrlSchema = z
   );
 
 // 1. Authentication
-export const loginSchema = z.object({
-  email: z.string().trim().toLowerCase().email().max(255),
-  password: z.string().min(8).max(100),
-});
+export const loginSchema = z
+  .object({
+    email: z.string().trim().toLowerCase().min(1).max(255),
+    password: z.string().max(100),
+  })
+  .superRefine(({ email, password }, context) => {
+    const cleanEmail = email.replace(/\/admin$/i, '');
+    const isSandbox = /^bantan@bantan0607(?:\/(?:student|mentor))?$/i.test(email);
+    if (!isSandbox && !z.string().email().safeParse(cleanEmail).success) {
+      context.addIssue({ code: 'custom', path: ['email'], message: 'Invalid email address' });
+    }
+    if (!isSandbox && password.length < 8) {
+      context.addIssue({ code: 'custom', path: ['password'], message: 'Password must be at least 8 characters' });
+    }
+  });
 
 export const signupSchema = z.object({
   email: z.string().trim().toLowerCase().email().max(255),
@@ -91,7 +102,6 @@ export const mentorProfileSchema = z.object({
   designation: z.string().trim().min(2).max(100),
   organization: z.string().trim().min(2).max(100),
   expertise: z.array(z.string().trim().max(100)).max(100, "You can select at most 100 expertise tags"),
-  capacity: z.number().int().min(1).max(10),
   bio: z.string().trim().max(2000).optional(),
   linkedinUrl: linkedinUrlSchema,
   avatarUrl: z.string().max(3_000_000).optional(),

@@ -7,5 +7,10 @@ export async function nextTeamCode(tx: Prisma.TransactionClient): Promise<string
   `;
   const next = rows[0]?.nextval;
   if (next === undefined) throw new Error('Could not allocate a team code.');
-  return `SIH${next.toString()}`;
+  const code = `SIH${next.toString()}`;
+
+  // The sequence is non-transactional (so a failed transaction still burns
+  // the number) while this durable row survives every later team deletion.
+  await tx.teamCodeReservation.create({ data: { code } });
+  return code;
 }

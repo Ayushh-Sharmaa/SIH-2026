@@ -11,7 +11,6 @@ import Image from 'next/image';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { useEscapeKey, useFocusTrap, useScrollLock } from '@/hooks/useFocusTrap';
-import { useSession } from '@/lib/session';
 import {
   Aurora,
   Counter,
@@ -54,6 +53,30 @@ interface Team {
   };
   members: TeamMember[];
 }
+
+interface TeamFilters {
+  search: string;
+  domain: string;
+  skill: string;
+  leader: string;
+  size: string;
+  status: string;
+}
+
+interface TeamViewer {
+  role: string;
+  hasTeam: boolean;
+  canJoin: boolean;
+}
+
+const EMPTY_FILTERS: TeamFilters = {
+  search: '',
+  domain: '',
+  skill: '',
+  leader: '',
+  size: '',
+  status: '',
+};
 
 const AVATAR_WASHES = [
   'from-[#AC9C8D] to-[#D1C7BD]',
@@ -187,9 +210,9 @@ function JoinRequestModal({
 
 export default function FindTeamsPage() {
   const { toast } = useToast();
-  const { user } = useSession();
 
   const [teams, setTeams] = useState<Team[]>([]);
+  const [viewer, setViewer] = useState<TeamViewer | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -205,44 +228,24 @@ export default function FindTeamsPage() {
   // Modals state
   const [activeRequestTeam, setActiveRequestTeam] = useState<Team | null>(null);
   const [submittingRequest, setSubmittingRequest] = useState<Record<string, 'sending' | 'sent'>>({});
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [userProfile, setUserProfile] = useState<any>(null);
-
-  // Fetch current user profile to see if they already have a team
-  useEffect(() => {
-    async function loadProfile() {
-      try {
-        const res = await fetch('/api/dashboard');
-        const data = await res.json();
-        if (data.success) {
-          setUserProfile(data);
-        }
-      } catch (err) {
-        logger.error('Fetch dashboard profile failed', err);
-      }
-    }
-    if (user) {
-      loadProfile();
-    }
-  }, [user]);
 
   const fetchTeams = useCallback(
-    async (filters?: { search: string; domain: string; skill: string; leader: string; size: string; status: string }) => {
-      const f = filters ?? { search, domain, skill, leader, size, status };
+    async (filters: TeamFilters) => {
       setRefreshing(true);
       try {
         const queryParams = new URLSearchParams();
-        if (f.search) queryParams.append('search', f.search);
-        if (f.domain) queryParams.append('domain', f.domain);
-        if (f.skill) queryParams.append('skill', f.skill);
-        if (f.leader) queryParams.append('leader', f.leader);
-        if (f.size) queryParams.append('size', f.size);
-        if (f.status) queryParams.append('status', f.status);
+        if (filters.search) queryParams.append('search', filters.search);
+        if (filters.domain) queryParams.append('domain', filters.domain);
+        if (filters.skill) queryParams.append('skill', filters.skill);
+        if (filters.leader) queryParams.append('leader', filters.leader);
+        if (filters.size) queryParams.append('size', filters.size);
+        if (filters.status) queryParams.append('status', filters.status);
 
         const res = await fetch(`/api/teams?${queryParams.toString()}`);
         const data = await res.json();
         if (data.success) {
           setTeams(data.teams);
+          setViewer(data.viewer);
           setCurrentPage(1);
         }
       } catch (err) {
@@ -252,12 +255,12 @@ export default function FindTeamsPage() {
         setRefreshing(false);
       }
     },
-    [search, domain, skill, leader, size, status, toast]
+    [toast]
   );
 
   useEffect(() => {
     const handle = requestAnimationFrame(() => {
-      fetchTeams({ search: '', domain: '', skill: '', leader: '', size: '', status: '' }).finally(() => {
+      fetchTeams(EMPTY_FILTERS).finally(() => {
         setLoading(false);
       });
     });
@@ -266,7 +269,7 @@ export default function FindTeamsPage() {
 
   const handleSearchSubmit = (e: FormEvent) => {
     e.preventDefault();
-    fetchTeams();
+    fetchTeams({ search, domain, skill, leader, size, status });
   };
 
   const itemsPerPage = 20;
@@ -280,7 +283,7 @@ export default function FindTeamsPage() {
     setLeader('');
     setSize('');
     setStatus('');
-    fetchTeams({ search: '', domain: '', skill: '', leader: '', size: '', status: '' });
+    fetchTeams(EMPTY_FILTERS);
   };
 
   const submitJoinRequest = async (message: string) => {
@@ -313,7 +316,7 @@ export default function FindTeamsPage() {
   };
 
   const activeFilters = [search, domain, skill, leader, size, status].filter(Boolean).length;
-  const userHasTeam = userProfile?.team !== null;
+  const userHasTeam = viewer?.hasTeam ?? false;
 
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">

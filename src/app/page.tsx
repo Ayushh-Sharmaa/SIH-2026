@@ -112,7 +112,7 @@ function HeroVisual() {
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 1, delay: 0.35, ease: EASE.outExpo }}
-        className="relative flex size-40 items-center justify-center rounded-[2rem] border border-[rgba(209,199,189,0.7)] bg-[rgba(255,255,255,0.68)] shadow-[0_20px_60px_rgba(50,45,41,0.16),inset_0_1px_0_rgba(255,255,255,0.9)] backdrop-blur-xl"
+        className="relative flex size-40 items-center justify-center surface-spatial"
       >
         <m.div
           animate={reduced ? undefined : { y: [0, -8, 0] }}
@@ -141,7 +141,7 @@ function HeroVisual() {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 0.7, delay: chip.delay, ease: EASE.outExpo }}
           style={{ top: chip.top, left: chip.left }}
-          className="absolute -translate-x-1/2 rounded-full border border-[rgba(209,199,189,0.8)] bg-[rgba(255,255,255,0.82)] px-3.5 py-1.5 text-label uppercase text-primary shadow-[0_6px_20px_rgba(50,45,41,0.12),inset_0_1px_0_rgba(255,255,255,0.8)] backdrop-blur-md"
+          className="absolute -translate-x-1/2 px-3.5 py-1.5 text-label uppercase text-primary surface-glassmorphic"
         >
           <m.span
             className="block"
@@ -177,11 +177,7 @@ function FaqItem({ q, a, index }: { q: string; a: string; index: number }) {
   return (
     <RevealItem>
       <div
-        className={`gradient-border overflow-hidden rounded-2xl border transition-colors duration-300 ${
-          open
-            ? 'border-[rgba(114,56,61,0.28)] bg-[rgba(255,255,255,0.7)]'
-            : 'border-[rgba(209,199,189,0.6)] bg-[rgba(255,255,255,0.42)] hover:border-[rgba(172,156,141,0.9)]'
-        }`}
+        className={`overflow-hidden transition-colors duration-300 surface-minimalist`}
       >
         <button
           onClick={() => setOpen((v) => !v)}
@@ -446,7 +442,7 @@ export default function Home() {
                     <SpotlightCard className="h-full rounded-3xl">
                       <a
                         href={item.href}
-                        className="surface-raised group relative flex h-full flex-col gap-4 overflow-hidden rounded-3xl p-5 sm:p-7 transition-shadow duration-400 hover:shadow-[0_22px_60px_rgba(50,45,41,0.13)]"
+                        className="surface-claymorphic group relative flex h-full flex-col gap-4 overflow-hidden p-5 sm:p-7 transition-shadow duration-400"
                       >
                         <span className="flex size-12 items-center justify-center rounded-2xl border border-[rgba(114,56,61,0.18)] bg-[rgba(114,56,61,0.07)] text-primary transition-transform duration-400 group-hover:scale-105">
                           <svg viewBox="0 0 24 24" fill="none" className="size-5">
@@ -511,7 +507,7 @@ export default function Home() {
             </RevealGroup>
 
             {/* Separator Line */}
-            <div className="border-t border-[rgba(114,56,61,0.12)] max-w-4xl mx-auto my-6" />
+            <div className="surface-maximalist max-w-4xl mx-auto my-6" />
 
             {/* Bottom Row: 5 Live Stats */}
             <RevealGroup
@@ -570,7 +566,7 @@ export default function Home() {
                           <m.span
                             layoutId="phasePill"
                             transition={SPRING.snappy}
-                            className="absolute inset-0 rounded-xl border border-[rgba(114,56,61,0.24)] bg-[rgba(255,255,255,0.75)] shadow-[0_6px_20px_rgba(50,45,41,0.08)]"
+                            className="absolute inset-0 surface-skeuomorphic"
                           />
                         )}
                         <span
@@ -601,7 +597,7 @@ export default function Home() {
               </Reveal>
 
               <Reveal direction="left" delay={0.1} className="lg:col-span-7">
-                <div className="surface-raised relative min-h-[19rem] overflow-hidden rounded-3xl p-5 sm:p-8">
+                <div className="surface-liquid-glass relative min-h-[19rem] overflow-hidden p-5 sm:p-8">
                   <AnimatePresence mode="wait">
                     <m.div
                       key={phase.id}
@@ -680,11 +676,7 @@ export default function Home() {
                       key={set.id}
                       onClick={() => setActiveSet(i)}
                       aria-current={isActive}
-                      className={`group relative flex items-center justify-between gap-3 overflow-hidden rounded-2xl border px-5 py-4 text-left transition-all duration-300 ${
-                        isActive
-                          ? 'border-[rgba(114,56,61,0.28)] bg-[rgba(255,255,255,0.78)] shadow-[0_8px_28px_rgba(50,45,41,0.09)]'
-                          : 'border-[rgba(209,199,189,0.6)] bg-[rgba(255,255,255,0.34)] hover:border-[rgba(172,156,141,0.9)] hover:bg-[rgba(255,255,255,0.6)]'
-                      }`}
+                      className={`group relative flex items-center justify-between gap-3 overflow-hidden text-left transition-all duration-300 surface-brutalist`}
                     >
                       <span
                         className={`truncate text-sm font-bold transition-colors ${
@@ -732,7 +724,7 @@ export default function Home() {
                       >
                         <TiltCard className="h-full" intensity={5}>
                           <SpotlightCard className="h-full rounded-2xl">
-                            <div className="surface-taupe flex h-full min-h-[13rem] flex-col justify-between overflow-hidden rounded-2xl p-5 sm:p-6 backdrop-blur-md">
+                            <div className="surface-liquid-glass flex h-full min-h-[13rem] flex-col justify-between overflow-hidden p-5 sm:p-6">
                               <div>
                                 <span className="font-mono text-label uppercase text-primary">
                                   Theme {String(i + 1).padStart(2, '0')}

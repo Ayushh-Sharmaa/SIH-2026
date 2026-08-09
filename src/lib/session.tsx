@@ -57,6 +57,8 @@ interface SessionValue {
   isViewingAs: boolean;
   /** Re-reads the session from the server. Call after a successful sign-in. */
   refresh: () => Promise<void>;
+  /** Hydrates identity already returned by a successful auth mutation. */
+  establish: (user: SessionUser) => void;
   /** Drops to anonymous without a round trip. Call after sign-out. */
   clear: () => void;
 }
@@ -85,6 +87,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     return 'loading';
   });
   const [isViewingAs, setIsViewingAs] = useState(false);
+
+  const establish = useCallback((nextUser: SessionUser) => {
+    setUser(nextUser);
+    setStatus('authenticated');
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('sih_user_session', JSON.stringify(nextUser));
+    }
+  }, []);
 
   // Guards against setting state after unmount, and against a stale response
   // from an earlier request overwriting a newer one.
@@ -154,11 +164,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         role: typeof raw.role === 'string' ? raw.role : '',
         isOnboarded: typeof raw.isOnboarded === 'boolean' ? raw.isOnboarded : false,
       };
-      setUser(sessionUser);
-      setStatus('authenticated');
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('sih_user_session', JSON.stringify(sessionUser));
-      }
+      establish(sessionUser);
       // Sent by /api/auth/me when an admin's own session is parked in
       // `admin_token`. Read defensively: it is absent for every normal user.
       setIsViewingAs(
@@ -178,7 +184,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem('sih_user_session');
       }
     }
-  }, []);
+  }, [establish]);
 
   useEffect(() => {
     const handle = requestAnimationFrame(() => {
@@ -201,8 +207,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   // Memoised so consumers do not re-render on every provider render merely
   // because the context object identity changed.
   const value = useMemo<SessionValue>(
-    () => ({ user, status, isViewingAs, refresh: load, clear }),
-    [user, status, isViewingAs, load, clear],
+    () => ({ user, status, isViewingAs, refresh: load, establish, clear }),
+    [user, status, isViewingAs, load, establish, clear],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
@@ -243,13 +249,17 @@ export function useSession(): SessionValue {
  */
 export function useAuthenticatedRedirect() {
   const router = useRouter();
-  const { refresh } = useSession();
+  const { refresh, establish } = useSession();
 
   return useCallback(
-    async (destination: string) => {
-      await refresh();
+    async (destination: string, authenticatedUser?: SessionUser) => {
+      if (authenticatedUser) {
+        establish(authenticatedUser);
+      } else {
+        await refresh();
+      }
       router.push(destination);
     },
-    [refresh, router],
+    [establish, refresh, router],
   );
 }

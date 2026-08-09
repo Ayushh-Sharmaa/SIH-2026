@@ -6,6 +6,7 @@ import { checkUserRateLimit } from '@/lib/rateLimit';
 import { adminTeamActionSchema } from '@/lib/validation';
 import { isAuthorizedAdminEmail } from '@/lib/admin';
 import { logger } from '@/lib/logger';
+import { revalidateTag } from 'next/cache';
 
 export async function POST(request: Request) {
   try {
@@ -49,13 +50,16 @@ export async function POST(request: Request) {
     }
 
     if (action === 'delete') {
-      await prisma.studentProfile.updateMany({
-        where: { teamId },
-        data: { teamId: null, teamStatus: 'OPEN' },
+      await prisma.$transaction(async (tx) => {
+        await tx.studentProfile.updateMany({
+          where: { teamId },
+          data: { teamId: null, teamStatus: 'OPEN', roleInTeam: 'Member' },
+        });
+        await tx.team.delete({ where: { id: teamId } });
       });
-      await prisma.team.delete({
-        where: { id: teamId },
-      });
+      revalidateTag('teams', { expire: 0 });
+      revalidateTag('students', { expire: 0 });
+      revalidateTag('mentors', { expire: 0 });
       return NextResponse.json({ success: true, message: 'Team disbanded successfully' });
     }
 

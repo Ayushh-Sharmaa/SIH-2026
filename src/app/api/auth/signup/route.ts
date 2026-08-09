@@ -171,6 +171,7 @@ export async function POST(request: Request) {
         email: newUser.email,
         role: newUser.role,
         name,
+        isOnboarded: false,
       },
     });
 

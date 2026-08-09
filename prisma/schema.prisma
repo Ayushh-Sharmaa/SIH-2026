@@ -76,8 +76,6 @@ model MentorProfile {
   organization    String
   isDemo          Boolean         @default(false) // Sandbox/troubleshooting account
   expertise       String[]        // Expertise tags
-  capacity        Int             @default(2) // Max teams they can mentor
-  currentLoad     Int             @default(0) // Auto-counted current load
   verified        Boolean         @default(false)
   bio             String?
   linkedinUrl     String?
@@ -105,6 +103,7 @@ model Track {
 model Team {
   id                      String         @id @default(uuid())
   teamCode                String         @unique
+  codeReservation         TeamCodeReservation @relation(fields: [teamCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
   name                    String
   trackId                 String
   track                   Track          @relation(fields: [trackId], references: [id])
@@ -135,6 +134,15 @@ model Team {
   @@index([secondaryTrackId])
   @@index([leaderId])
   @@index([mentorId])
+  @@index([status, memberCount])
+}
+
+// Immutable allocation ledger for public SIH identifiers. A Team row may be
+// deleted, but its reservation remains forever so the code can never be reused.
+model TeamCodeReservation {
+  code        String   @id
+  allocatedAt DateTime @default(now())
+  team        Team?
 }
 
 model RecruitmentNotice {

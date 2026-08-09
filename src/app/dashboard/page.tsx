@@ -926,13 +926,10 @@ export default function DashboardPage() {
                 </>
               ) : (
                 <>
-                  <DeckStat value={profile?.currentLoad ?? 0} label="Teams mentored" />
-                  <DeckStat value={profile?.capacity ?? 0} label="Total capacity" />
+                  <DeckStat value={profile?.guidedTeamsCount ?? 0} label="Teams mentored" />
                   <DeckStat value={data?.pendingRequests?.length ?? 0} label="Pending requests" />
-                  <DeckStat
-                    value={Math.max(0, (profile?.capacity ?? 0) - (profile?.currentLoad ?? 0))}
-                    label="Slots free"
-                  />
+                  <DeckStat value={profile?.expertise?.length ?? 0} label="Expertise areas" />
+                  <DeckStat text={profile?.verified ? 'Yes' : 'Pending'} label="Verified" />
                 </>
               )}
             </RevealGroup>
@@ -1822,32 +1819,18 @@ export default function DashboardPage() {
                   // Faculty Mentor Dashboard View
                   <>
                     <Reveal direction="left">
-                      <Panel title="Mentoring capacity">
+                      <Panel title="Mentoring activity">
                         <div className="mb-3 flex items-baseline justify-between gap-4">
                           <span className="text-3xl font-extrabold tracking-tight text-foreground">
-                            <Counter to={profile?.currentLoad ?? 0} duration={1.2} />
-                            <span className="text-lg font-bold text-muted">
-                              {' '}
-                              / {profile?.capacity ?? 0}
-                            </span>
+                            <Counter to={profile?.guidedTeamsCount ?? 0} duration={1.2} />
                           </span>
                           <span className="text-label uppercase text-muted">
                             teams
                           </span>
                         </div>
-                        <div className="h-3 overflow-hidden rounded-full border border-[rgba(209,199,189,0.7)] bg-[rgba(217,217,217,0.6)]">
-                          <m.div
-                            initial={{ scaleX: 0 }}
-                            animate={{
-                              scaleX: profile?.capacity
-                                ? Math.min(1, (profile.currentLoad ?? 0) / profile.capacity)
-                                : 0,
-                            }}
-                            transition={{ duration: 1, ease: EASE.outExpo, delay: 0.25 }}
-                            style={{ transformOrigin: 'left' }}
-                            className="h-full rounded-full bg-gradient-to-r from-[#AC9C8D] via-[#8A444A] to-primary"
-                          />
-                        </div>
+                        <p className="text-sm leading-relaxed text-body">
+                          There is no platform-imposed maximum. You can accept additional teams whenever you choose.
+                        </p>
                       </Panel>
                     </Reveal>
 

@@ -2,13 +2,12 @@
 
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { AnimatePresence, m } from 'framer-motion';
-import { ArrowUpRight, UserX, Search, MessageSquare, ShieldAlert } from 'lucide-react';
+import { ArrowUpRight, UserX, Search, ShieldAlert, UsersRound } from 'lucide-react';
 import { Container, EmptyState, MentorCardSkeleton } from '@/components/ui';
 import Icon from '@/components/ui/Icon';
 import { useToast } from '@/components/ui/Toast';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
-import { useSession } from '@/lib/session';
 import { useEscapeKey, useFocusTrap, useScrollLock } from '@/hooks/useFocusTrap';
 import {
   Aurora,
@@ -28,8 +27,7 @@ interface Mentor {
   designation: string;
   organization: string;
   expertise: string[];
-  capacity: number;
-  currentLoad: number;
+  guidedTeamsCount: number;
   bio?: string;
   linkedinUrl?: string;
   email: string;
@@ -37,42 +35,22 @@ interface Mentor {
 }
 
 /** Circular capacity dial — draws its arc on mount. */
-function CapacityDial({ load, capacity }: { load: number; capacity: number }) {
-  const pct = capacity > 0 ? Math.min(1, load / capacity) : 0;
-  const r = 22;
-  const circumference = 2 * Math.PI * r;
-
+function GuidanceCount({ count }: { count: number }) {
   return (
-    <div className="relative grid size-16 shrink-0 place-items-center">
-      <svg className="size-16 -rotate-90" viewBox="0 0 56 56" aria-hidden>
-        <circle
-          cx="28"
-          cy="28"
-          r={r}
-          fill="none"
-          stroke="rgba(209,199,189,0.7)"
-          strokeWidth="4"
-        />
-        <m.circle
-          cx="28"
-          cy="28"
-          r={r}
-          fill="none"
-          stroke="var(--primary)"
-          strokeWidth="4"
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          initial={{ strokeDashoffset: circumference }}
-          whileInView={{ strokeDashoffset: circumference * (1 - pct) }}
-          viewport={{ once: true, amount: 0.6 }}
-          transition={{ duration: 1, ease: EASE.outExpo, delay: 0.15 }}
-        />
-      </svg>
-      <span className="absolute text-caption font-black tracking-tight text-foreground">
-        {load}/{capacity}
-      </span>
+    <div className="surface-sunken grid size-16 shrink-0 place-items-center rounded-panel text-center">
+      <div>
+        <UsersRound className="mx-auto size-4 text-primary" aria-hidden />
+        <span className="mt-1 block text-caption font-black tabular-nums text-foreground">{count}</span>
+      </div>
     </div>
   );
+}
+
+interface MentorEligibility {
+  role: string;
+  canRequest: boolean;
+  reason: string | null;
+  existingMentorIds: string[];
 }
 
 function RequestMentorshipModal({
@@ -158,8 +136,8 @@ function RequestMentorshipModal({
 
 export default function FindMentorsPage() {
   const { toast } = useToast();
-  const { user } = useSession();
   const [mentors, setMentors] = useState<Mentor[]>([]);
+  const [eligibility, setEligibility] = useState<MentorEligibility | null>(null);
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
 
@@ -171,26 +149,6 @@ export default function FindMentorsPage() {
   const [activeRequestMentor, setActiveRequestMentor] = useState<Mentor | null>(null);
   const [requested, setRequested] = useState<Record<string, 'sending' | 'sent'>>({});
   const [currentPage, setCurrentPage] = useState(1);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [dashboardData, setDashboardData] = useState<any>(null);
-
-  // Fetch student profile & team info
-  useEffect(() => {
-    async function loadDashboard() {
-      try {
-        const res = await fetch('/api/dashboard');
-        const data = await res.json();
-        if (data.success) {
-          setDashboardData(data);
-        }
-      } catch (err) {
-        logger.error('Failed to load dashboard profile', err);
-      }
-    }
-    if (user && user.role === 'STUDENT') {
-      loadDashboard();
-    }
-  }, [user]);
 
   const fetchMentors = useCallback(
     async (filters?: { name: string; expertise: string }) => {
@@ -203,7 +161,11 @@ export default function FindMentorsPage() {
 
         const res = await fetch(`/api/mentors?${queryParams.toString()}`);
         const data = await res.json();
-        if (data.success) { setMentors(data.mentors); setCurrentPage(1); }
+        if (data.success) {
+          setMentors(data.mentors);
+          setEligibility(data.eligibility);
+          setCurrentPage(1);
+        }
       } catch (err) {
         logger.error('Fetch mentors failed', err);
         toast('Could not load mentors. Check your connection.', 'error');
@@ -265,13 +227,7 @@ export default function FindMentorsPage() {
     }
   };
 
-  const openSlots = mentors.reduce(
-    (sum, m) => sum + Math.max(0, m.capacity - m.currentLoad),
-    0
-  );
-
-  const team = dashboardData?.team;
-  const hasMentor = Boolean(team?.mentorId || team?.mentor);
+  const activeMentorships = mentors.reduce((sum, mentor) => sum + mentor.guidedTeamsCount, 0);
 
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
@@ -358,10 +314,10 @@ export default function FindMentorsPage() {
                 <div className="h-8 w-px bg-[rgba(172,156,141,0.5)]" />
                 <div>
                   <div className="text-2xl font-extrabold tracking-tight text-foreground">
-                    <Counter to={openSlots} duration={1.2} />
+                    <Counter to={activeMentorships} duration={1.2} />
                   </div>
                   <div className="text-label uppercase text-muted">
-                    open slots
+                    active teams
                   </div>
                 </div>
               </div>
@@ -383,8 +339,8 @@ export default function FindMentorsPage() {
                 <m.div layout className="space-y-4">
                 <AnimatePresence mode="popLayout" initial={false}>
                   {paginatedMentors.map((mentor, i) => {
-                    const full = mentor.currentLoad >= mentor.capacity;
-                    const state = requested[mentor.userId];
+                    const state = requested[mentor.userId] ??
+                      (eligibility?.existingMentorIds.includes(mentor.userId) ? 'sent' : undefined);
                     return (
                       <m.article
                         key={mentor.userId}
@@ -401,7 +357,7 @@ export default function FindMentorsPage() {
                         className="surface-raised overflow-hidden rounded-3xl transition-colors duration-250"
                       >
                         <div className="flex flex-col gap-6 p-5 sm:p-7 sm:flex-row">
-                          <CapacityDial load={mentor.currentLoad} capacity={mentor.capacity} />
+                          <GuidanceCount count={mentor.guidedTeamsCount} />
 
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -440,23 +396,19 @@ export default function FindMentorsPage() {
                           </div>
 
                           <div className="flex shrink-0 flex-row items-center gap-3 sm:flex-col sm:items-end sm:justify-center">
-                            {hasMentor ? (
+                            {!eligibility?.canRequest ? (
                               <span className="text-xs text-muted flex items-center gap-1">
-                                <ShieldAlert className="size-3.5" /> Mentor assigned
-                              </span>
-                            ) : !team ? (
-                              <span className="text-xs text-muted flex items-center gap-1">
-                                <ShieldAlert className="size-3.5" /> Join a team first
+                                <ShieldAlert className="size-3.5" /> {eligibility?.reason ?? 'Checking eligibility'}
                               </span>
                             ) : (
                               <PremiumButton
                                 size="sm"
                                 variant={state === 'sent' ? 'glass' : 'primary'}
-                                disabled={full || Boolean(state)}
+                                disabled={Boolean(state)}
                                 magnetic={false}
                                 onClick={() => setActiveRequestMentor(mentor)}
                               >
-                                {full ? 'At capacity' : state === 'sent' ? 'Request sent' : 'Request'}
+                                {state === 'sent' ? 'Request sent' : 'Request'}
                               </PremiumButton>
                             )}
 

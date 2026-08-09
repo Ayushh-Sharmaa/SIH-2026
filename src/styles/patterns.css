@@ -213,13 +213,13 @@
 }
 
 .aurora-warm .aurora-blob-1 {
-  background: radial-gradient(circle, rgb(172 156 141 / 0.55), transparent 68%);
+  background: radial-gradient(circle, rgb(194 154 118 / 0.65), transparent 68%);
 }
 .aurora-warm .aurora-blob-2 {
-  background: radial-gradient(circle, rgb(114 56 61 / 0.2), transparent 68%);
+  background: radial-gradient(circle, rgb(138 68 74 / 0.35), transparent 68%);
 }
 .aurora-warm .aurora-blob-3 {
-  background: radial-gradient(circle, rgb(209 199 189 / 0.6), transparent 68%);
+  background: radial-gradient(circle, rgb(219 204 186 / 0.7), transparent 68%);
 }
 
 .aurora-cool .aurora-blob-1 {

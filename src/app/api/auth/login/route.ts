@@ -55,15 +55,25 @@ export async function POST(request: Request) {
       return rateLimitResponse;
     }
 
-    if (await isUserBanned(cleanEmail)) {
+    const [banned, isAuthorizedAdmin, user] = await Promise.all([
+      isUserBanned(cleanEmail),
+      isAdminIntent ? isAuthorizedAdminEmail(cleanEmail) : Promise.resolve(false),
+      prisma.user.findUnique({
+        where: { email: normalizeEmail(cleanEmail) },
+        include: {
+          studentProfile: { select: { name: true, branch: true } },
+          mentorProfile: { select: { name: true, designation: true } },
+        },
+      }),
+    ]);
+
+    if (banned) {
       recordAuthFailure(request, cleanEmail);
       return NextResponse.json(
         { error: 'Account Suspended: Your access has been revoked by the system administrator.' },
         { status: 403 }
       );
     }
-
-    const isAuthorizedAdmin = await isAuthorizedAdminEmail(cleanEmail);
 
     if (isAdminIntent) {
       if (!isAuthorizedAdmin) {
@@ -73,14 +83,6 @@ export async function POST(request: Request) {
           { status: 403 }
         );
       }
-
-      const user = await prisma.user.findUnique({
-        where: { email: cleanEmail },
-        include: {
-          studentProfile: { select: { name: true } },
-          mentorProfile: { select: { name: true } },
-        },
-      });
 
       if (!user) {
         await comparePassword(password, DUMMY_HASH);
@@ -107,6 +109,7 @@ export async function POST(request: Request) {
             id: user.id,
             email: cleanEmail,
             role: 'ADMIN',
+            isOnboarded: true,
             name:
               user.studentProfile?.name ||
               user.mentorProfile?.name ||
@@ -116,14 +119,6 @@ export async function POST(request: Request) {
         token
       );
     }
-
-    const user = await prisma.user.findUnique({
-      where: { email: normalizeEmail(cleanEmail) },
-      include: {
-        studentProfile: { select: { name: true } },
-        mentorProfile: { select: { name: true } },
-      },
-    });
 
     if (!user) {
       await comparePassword(password, DUMMY_HASH);
@@ -142,12 +137,16 @@ export async function POST(request: Request) {
 
     const name = user.studentProfile?.name || user.mentorProfile?.name || 'User';
     const userRole = user.role === 'ADMIN' ? 'STUDENT' : user.role;
+    const isOnboarded =
+      userRole === 'STUDENT'
+        ? Boolean(user.studentProfile?.branch)
+        : Boolean(user.mentorProfile?.designation);
     const token = signToken({ userId: user.id, email: user.email, role: userRole });
 
     return setTokenCookie(
       NextResponse.json({
         success: true,
-        user: { id: user.id, email: user.email, role: userRole, name },
+        user: { id: user.id, email: user.email, role: userRole, name, isOnboarded },
       }),
       token
     );

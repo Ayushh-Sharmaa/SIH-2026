@@ -6,7 +6,7 @@ import { checkUserRateLimit } from '@/lib/rateLimit';
 import { respondMentorRequestSchema } from '@/lib/validation';
 import { Prisma } from '@prisma/client';
 import { logger } from '@/lib/logger';
-import { createNotification } from '@/lib/notifications';
+import { queueNotification } from '@/lib/notifications';
 import { revalidateTag } from 'next/cache';
 
 export async function POST(
@@ -71,7 +71,7 @@ export async function POST(
       });
 
       // Notify team leader
-      await createNotification(
+      queueNotification(
         mentorRequest.team.leaderId,
         'mentor_response',
         {
@@ -95,7 +95,7 @@ export async function POST(
       });
 
       // Notify team leader
-      await createNotification(
+      queueNotification(
         mentorRequest.team.leaderId,
         'mentor_response',
         {
@@ -119,7 +119,7 @@ export async function POST(
       });
 
       // Notify team leader
-      await createNotification(
+      queueNotification(
         mentorRequest.team.leaderId,
         'mentor_response',
         {
@@ -141,27 +141,26 @@ export async function POST(
       return NextResponse.json({ error: 'Your profile is not verified yet. Verified mentors are required.' }, { status: 400 });
     }
 
-    if (mentorRequest.mentor.currentLoad >= mentorRequest.mentor.capacity) {
-      return NextResponse.json({ error: 'You are currently at capacity.' }, { status: 400 });
-    }
+    const ALREADY_ASSIGNED = 'TEAM_ALREADY_HAS_MENTOR';
+    const ALREADY_PROCESSED = 'MENTOR_REQUEST_ALREADY_PROCESSED';
 
+    try {
+      await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+        const accepted = await tx.mentorRequest.updateMany({
+          where: {
+            id,
+            mentorId: decoded.userId,
+            status: { in: ['pending', 'keep_pending', 'meeting_requested'] },
+          },
+          data: { status: 'accepted' },
+        });
+        if (accepted.count !== 1) throw new Error(ALREADY_PROCESSED);
 
-
-    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      await tx.mentorRequest.update({
-        where: { id },
-        data: { status: 'accepted' },
-      });
-
-      await tx.team.update({
-        where: { id: mentorRequest.teamId },
-        data: { mentorId: decoded.userId },
-      });
-
-      await tx.mentorProfile.update({
-        where: { userId: decoded.userId },
-        data: { currentLoad: { increment: 1 } },
-      });
+        const assigned = await tx.team.updateMany({
+          where: { id: mentorRequest.teamId, mentorId: null },
+          data: { mentorId: decoded.userId },
+        });
+        if (assigned.count !== 1) throw new Error(ALREADY_ASSIGNED);
 
       // Decline other pending mentor requests for this team
       await tx.mentorRequest.updateMany({
@@ -172,10 +171,19 @@ export async function POST(
         },
         data: { status: 'declined' },
       });
-    });
+      });
+    } catch (error) {
+      if (error instanceof Error && error.message === ALREADY_ASSIGNED) {
+        return NextResponse.json({ error: 'This team already has an assigned mentor.' }, { status: 409 });
+      }
+      if (error instanceof Error && error.message === ALREADY_PROCESSED) {
+        return NextResponse.json({ error: 'This request has already been finalized.' }, { status: 409 });
+      }
+      throw error;
+    }
 
     // Notify team leader of acceptance
-    await createNotification(
+    queueNotification(
       mentorRequest.team.leaderId,
       'mentor_response',
       {

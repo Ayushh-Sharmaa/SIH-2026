@@ -5,7 +5,8 @@ import { verifyToken } from '@/lib/auth';
 import { checkUserRateLimit } from '@/lib/rateLimit';
 import { mentorRequestSchema } from '@/lib/validation';
 import { logger } from '@/lib/logger';
-import { createNotification } from '@/lib/notifications';
+import { queueNotification } from '@/lib/notifications';
+import { Prisma } from '@prisma/client';
 
 export async function POST(request: Request) {
   try {
@@ -39,10 +40,16 @@ export async function POST(request: Request) {
 
     // Any student in a formed team can start the mentor conversation. Duplicate
     // team-level requests are still blocked below.
-    const caller = await prisma.studentProfile.findUnique({
-      where: { userId: decoded.userId },
-      include: { team: { include: { track: true } } },
-    });
+    const [caller, mentor] = await Promise.all([
+      prisma.studentProfile.findUnique({
+        where: { userId: decoded.userId },
+        include: { team: { include: { track: true } } },
+      }),
+      prisma.mentorProfile.findUnique({
+        where: { userId: mentorId },
+        select: { userId: true, verified: true },
+      }),
+    ]);
 
     if (!caller || !caller.teamId) {
       return NextResponse.json({ error: 'You are not in a team.' }, { status: 400 });
@@ -56,11 +63,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Your team already has an assigned mentor.' }, { status: 400 });
     }
 
-    // Verify mentor details
-    const mentor = await prisma.mentorProfile.findUnique({
-      where: { userId: mentorId },
-    });
-
     if (!mentor) {
       return NextResponse.json({ error: 'Target mentor not found.' }, { status: 404 });
     }
@@ -69,36 +71,36 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Target mentor is not verified yet by the administrators.' }, { status: 400 });
     }
 
-    if (mentor.currentLoad >= mentor.capacity) {
-      return NextResponse.json({ error: 'This mentor is currently at capacity.' }, { status: 400 });
+    let newRequest;
+    try {
+      newRequest = await prisma.$transaction(async (tx) => {
+        const claimableTeam = await tx.team.findFirst({
+          where: { id: team.id, mentorId: null },
+          select: { id: true },
+        });
+        if (!claimableTeam) throw new Error('TEAM_ALREADY_HAS_MENTOR');
+
+        return tx.mentorRequest.create({
+          data: {
+            teamId: team.id,
+            mentorId,
+            message: message || null,
+            status: 'pending',
+          },
+        });
+      });
+    } catch (error) {
+      if (error instanceof Error && error.message === 'TEAM_ALREADY_HAS_MENTOR') {
+        return NextResponse.json({ error: 'Your team already has an assigned mentor.' }, { status: 409 });
+      }
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        return NextResponse.json({ error: 'A request has already been sent to this mentor.' }, { status: 409 });
+      }
+      throw error;
     }
-
-
-
-    // Check duplicate requests
-    const existing = await prisma.mentorRequest.findFirst({
-      where: {
-        teamId: team.id,
-        mentorId: mentorId,
-        status: { in: ['pending', 'keep_pending', 'meeting_requested'] },
-      },
-    });
-
-    if (existing) {
-      return NextResponse.json({ error: 'A request has already been sent to this mentor.' }, { status: 400 });
-    }
-
-    const newRequest = await prisma.mentorRequest.create({
-      data: {
-        teamId: team.id,
-        mentorId: mentorId,
-        message: message || null,
-        status: 'pending',
-      },
-    });
 
     // Notify mentor
-    await createNotification(
+    queueNotification(
       mentorId,
       'mentor_request_received',
       {

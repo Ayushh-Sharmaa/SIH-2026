@@ -77,6 +77,10 @@ export async function POST(request: Request) {
                 where: { id: teamId },
                 data: { leaderId: nextLeader.userId },
               });
+              await tx.studentProfile.update({
+                where: { userId: nextLeader.userId },
+                data: { roleInTeam: 'Leader' },
+              });
             }
           }
         }
@@ -84,7 +88,7 @@ export async function POST(request: Request) {
         // Set student's team to null
         await tx.studentProfile.update({
           where: { userId: decoded.userId },
-          data: { teamId: null, teamStatus: TeamStatus.OPEN },
+          data: { teamId: null, teamStatus: TeamStatus.OPEN, roleInTeam: 'Member' },
         });
       });
 
@@ -126,7 +130,7 @@ export async function POST(request: Request) {
 
     await prisma.studentProfile.update({
       where: { userId: targetUserId },
-      data: { teamId: null, teamStatus: TeamStatus.OPEN },
+      data: { teamId: null, teamStatus: TeamStatus.OPEN, roleInTeam: 'Member' },
     });
 
     // Recalculate skills

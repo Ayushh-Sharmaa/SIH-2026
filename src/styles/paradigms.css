@@ -1,0 +1,125 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   MULTI-PARADIGM UI STYLES
+   Per the user request to implement 9 distinct design paradigms.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* 1. SKEUOMORPHISM */
+.surface-skeuomorphic {
+  background: linear-gradient(180deg, #f9f9f9 0%, #e0e0e0 100%);
+  border: 1px solid #bcbcbc;
+  border-top: 1px solid #ffffff;
+  border-bottom: 1px solid #999999;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 1), 0 2px 4px rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  color: #333333;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+/* 2. NEUMORPHISM */
+.surface-neumorphic {
+  background: #efe9e1; /* Using canvas color */
+  border-radius: 20px;
+  box-shadow:  9px 9px 18px #d5c8c1,
+              -9px -9px 18px #ffffff;
+  border: none;
+}
+
+/* 3. GLASSMORPHISM */
+.surface-glassmorphic {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+  border-radius: 16px;
+}
+
+/* 4. CLAYMORPHISM */
+.surface-claymorphic {
+  background: #efe9e1;
+  border-radius: 32px;
+  box-shadow: 
+    inset -8px -8px 16px rgba(172, 156, 141, 0.5),
+    inset 8px 8px 16px rgba(255, 255, 255, 0.8),
+    8px 16px 24px rgba(50, 45, 41, 0.1);
+  border: none;
+}
+
+/* 5. MINIMALISM */
+.surface-minimalist {
+  background: transparent;
+  border: 1px solid var(--color-line);
+  border-radius: 0;
+  box-shadow: none;
+  padding: 2rem;
+}
+
+/* 6. MAXIMALISM */
+.surface-maximalist {
+  background: linear-gradient(45deg, #ff00ff, #00ffff, #ffff00);
+  background-size: 200% 200%;
+  animation: maximalistGlow 5s ease infinite;
+  border: 4px dashed #000;
+  box-shadow: 10px 10px 0px #000;
+  border-radius: 0;
+  color: #000;
+  font-weight: 900;
+}
+
+@keyframes maximalistGlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* 7. BRUTALISM */
+.surface-brutalist {
+  background: #ffffff;
+  border: 3px solid #000000;
+  box-shadow: 6px 6px 0px #000000;
+  border-radius: 0;
+  font-family: monospace;
+  color: #000000;
+  padding: 1rem;
+}
+
+/* 8. LIQUID GLASS */
+.surface-liquid-glass {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 
+    0 10px 30px rgba(0, 0, 0, 0.1),
+    inset 0 0 20px rgba(255, 255, 255, 0.5);
+  border-radius: 50px;
+  position: relative;
+  overflow: hidden;
+}
+
+.surface-liquid-glass::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, transparent 60%);
+  transform: rotate(45deg);
+  opacity: 0.3;
+}
+
+/* 9. SPATIAL UI (VisionOS Style) */
+.surface-spatial {
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(40px) brightness(1.2);
+  -webkit-backdrop-filter: blur(40px) brightness(1.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 
+    0 30px 60px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+  border-radius: 24px;
+  transform: translateZ(20px);
+  transform-style: preserve-3d;
+}

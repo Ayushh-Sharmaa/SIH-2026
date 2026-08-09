@@ -7,7 +7,7 @@ import { joinRequestSchema, respondJoinRequestSchema } from '@/lib/validation';
 import { recalculateTeamSkills } from '@/lib/derived';
 import { TeamStatus, Prisma } from '@prisma/client';
 import { logger } from '@/lib/logger';
-import { createNotification } from '@/lib/notifications';
+import { queueNotification } from '@/lib/notifications';
 import { revalidateTag } from 'next/cache';
 
 export async function POST(request: Request) {
@@ -73,17 +73,25 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'You have already submitted a pending request to this team.' }, { status: 400 });
     }
 
-    const newRequest = await prisma.joinRequest.create({
-      data: {
-        teamId: teamId,
-        studentId: decoded.userId,
-        message: message || null,
-        status: 'pending',
-      },
-    });
+    let newRequest;
+    try {
+      newRequest = await prisma.joinRequest.create({
+        data: {
+          teamId,
+          studentId: decoded.userId,
+          message: message || null,
+          status: 'pending',
+        },
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        return NextResponse.json({ error: 'You already have an active request for this team.' }, { status: 409 });
+      }
+      throw error;
+    }
 
     // Notify Team Leader
-    await createNotification(
+    queueNotification(
       team.leaderId,
       'join_request_received',
       {
@@ -159,7 +167,7 @@ export async function PUT(request: Request) {
       });
 
       // Notify Student of Decline
-      await createNotification(
+      queueNotification(
         joinRequest.studentId,
         'join_request_response',
         {
@@ -181,7 +189,7 @@ export async function PUT(request: Request) {
       });
 
       // Notify Student of Hold
-      await createNotification(
+      queueNotification(
         joinRequest.studentId,
         'join_request_response',
         {
@@ -203,7 +211,7 @@ export async function PUT(request: Request) {
       });
 
       // Notify Student of Meeting request
-      await createNotification(
+      queueNotification(
         joinRequest.studentId,
         'join_request_response',
         {
@@ -288,7 +296,7 @@ export async function PUT(request: Request) {
       });
 
       // Notify Student of Acceptance
-      await createNotification(
+      queueNotification(
         joinRequest.studentId,
         'join_request_response',
         {

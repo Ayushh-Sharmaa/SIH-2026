@@ -7,7 +7,7 @@ import { teamInviteSchema, respondTeamInviteSchema } from '@/lib/validation';
 import { recalculateTeamSkills } from '@/lib/derived';
 import { TeamStatus, Prisma } from '@prisma/client';
 import { logger } from '@/lib/logger';
-import { createNotification } from '@/lib/notifications';
+import { queueNotification } from '@/lib/notifications';
 import { revalidateTag } from 'next/cache';
 
 export async function POST(request: Request) {
@@ -86,16 +86,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'An invitation is already pending for this student.' }, { status: 400 });
     }
 
-    const invite = await prisma.teamInvite.create({
-      data: {
-        teamId: team.id,
-        studentId: studentId,
-        status: 'pending',
-      },
-    });
+    let invite;
+    try {
+      invite = await prisma.teamInvite.create({
+        data: {
+          teamId: team.id,
+          studentId,
+          status: 'pending',
+        },
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        return NextResponse.json({ error: 'An invitation is already active for this student.' }, { status: 409 });
+      }
+      throw error;
+    }
 
     // Notify target student
-    await createNotification(
+    queueNotification(
       studentId,
       'team_invite_received',
       {
@@ -172,7 +180,7 @@ export async function PUT(request: Request) {
       });
 
       // Notify team leader
-      await createNotification(
+      queueNotification(
         invite.team.leaderId,
         'invite_response',
         {
@@ -196,7 +204,7 @@ export async function PUT(request: Request) {
       });
 
       // Notify team leader
-      await createNotification(
+      queueNotification(
         invite.team.leaderId,
         'invite_response',
         {
@@ -220,7 +228,7 @@ export async function PUT(request: Request) {
       });
 
       // Notify team leader
-      await createNotification(
+      queueNotification(
         invite.team.leaderId,
         'invite_response',
         {
@@ -246,26 +254,39 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Target team is full.' }, { status: 400 });
     }
 
-    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      // 1. Accept invite
-      await tx.teamInvite.update({
-        where: { id: inviteId },
-        data: { status: 'accepted' },
-      });
+    const TEAM_FULL = 'TEAM_FULL';
+    const ALREADY_PROCESSED = 'INVITE_ALREADY_PROCESSED';
+    const STUDENT_IN_TEAM = 'STUDENT_IN_TEAM';
 
-      // 2. Add member
-      await tx.studentProfile.update({
-        where: { userId: decoded.userId },
-        data: { teamId: invite.teamId, teamStatus: TeamStatus.IN_TEAM, roleInTeam: 'Member' },
-      });
-
-      // If team reaches 6 members, lock it
-      if (invite.team.members.length + 1 >= 6) {
-        await tx.team.update({
-          where: { id: invite.teamId },
-          data: { status: 'locked' },
+    try {
+      await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+        const accepted = await tx.teamInvite.updateMany({
+          where: { id: inviteId, status: { in: ['pending', 'on_hold', 'waitlist'] } },
+          data: { status: 'accepted' },
         });
-      }
+        if (accepted.count !== 1) throw new Error(ALREADY_PROCESSED);
+
+        // Claiming the seat and incrementing the stored count in one guarded
+        // update prevents simultaneous invite accepts from overfilling a team.
+        const seat = await tx.team.updateMany({
+          where: { id: invite.teamId, status: 'forming', memberCount: { lt: 6 } },
+          data: { memberCount: { increment: 1 } },
+        });
+        if (seat.count !== 1) throw new Error(TEAM_FULL);
+
+        const joined = await tx.studentProfile.updateMany({
+          where: { userId: decoded.userId, teamId: null },
+          data: { teamId: invite.teamId, teamStatus: TeamStatus.IN_TEAM, roleInTeam: 'Member' },
+        });
+        if (joined.count !== 1) throw new Error(STUDENT_IN_TEAM);
+
+        const updatedTeam = await tx.team.findUniqueOrThrow({
+          where: { id: invite.teamId },
+          select: { memberCount: true },
+        });
+        if (updatedTeam.memberCount >= 6) {
+          await tx.team.update({ where: { id: invite.teamId }, data: { status: 'locked' } });
+        }
 
       // Decline all other pending join requests for this student
       await tx.joinRequest.updateMany({
@@ -285,10 +306,22 @@ export async function PUT(request: Request) {
         },
         data: { status: 'declined' },
       });
-    });
+      });
+    } catch (error) {
+      if (error instanceof Error && error.message === TEAM_FULL) {
+        return NextResponse.json({ error: 'Target team is full or recruitment is closed.' }, { status: 409 });
+      }
+      if (error instanceof Error && error.message === ALREADY_PROCESSED) {
+        return NextResponse.json({ error: 'Invitation has already been finalized.' }, { status: 409 });
+      }
+      if (error instanceof Error && error.message === STUDENT_IN_TEAM) {
+        return NextResponse.json({ error: 'You have already joined another team.' }, { status: 409 });
+      }
+      throw error;
+    }
 
     // Notify team leader of acceptance
-    await createNotification(
+    queueNotification(
       invite.team.leaderId,
       'invite_response',
       {

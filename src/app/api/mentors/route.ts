@@ -19,10 +19,9 @@ const getCachedMentors = unstable_cache(
         designation: true,
         organization: true,
         expertise: true,
-        capacity: true,
-        currentLoad: true,
         bio: true,
         linkedinUrl: true,
+        _count: { select: { teams: true } },
         teams: {
           select: { id: true, teamCode: true, name: true },
           orderBy: { teamCode: 'asc' },
@@ -61,7 +60,26 @@ export async function GET(request: Request) {
     const expertiseQuery = parsedQuery.data.expertise?.trim().toLowerCase();
     const search = parsedQuery.data.search?.trim().toLowerCase();
 
-    const mentors = await getCachedMentors();
+    const [mentors, viewer] = await Promise.all([
+      getCachedMentors(),
+      decoded.role === 'STUDENT'
+        ? prisma.studentProfile.findUnique({
+            where: { userId: decoded.userId },
+            select: {
+              teamId: true,
+              team: {
+                select: {
+                  mentorId: true,
+                  mentorRequests: {
+                    where: { status: { in: ['pending', 'keep_pending', 'meeting_requested'] } },
+                    select: { mentorId: true },
+                  },
+                },
+              },
+            },
+          })
+        : Promise.resolve(null),
+    ]);
 
     let filtered = mentors;
 
@@ -98,7 +116,23 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       success: true,
-      mentors: filtered,
+      mentors: filtered.map(({ _count, ...mentor }) => ({
+        ...mentor,
+        guidedTeamsCount: _count.teams,
+      })),
+      eligibility: {
+        role: decoded.role,
+        canRequest: decoded.role === 'STUDENT' && Boolean(viewer?.teamId) && !viewer?.team?.mentorId,
+        reason:
+          decoded.role !== 'STUDENT'
+            ? 'Only students can request mentorship.'
+            : !viewer?.teamId
+              ? 'Join or create a team first.'
+              : viewer.team?.mentorId
+                ? 'Your team already has an assigned mentor.'
+                : null,
+        existingMentorIds: viewer?.team?.mentorRequests.map((request) => request.mentorId) ?? [],
+      },
     });
   } catch (error) {
     logger.error('Search mentors error', error);

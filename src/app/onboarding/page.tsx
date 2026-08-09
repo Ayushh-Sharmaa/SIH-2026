@@ -324,7 +324,6 @@ export default function OnboardingPage() {
     designation: '',
     organization: 'GL Bajaj Group of Institutions',
     expertiseInput: '',
-    capacity: 2,
     bio: '',
     linkedinUrl: '',
     avatarUrl: '',
@@ -412,7 +411,6 @@ export default function OnboardingPage() {
                 designation: prof.designation || '',
                 organization: prof.organization || 'GL Bajaj Group of Institutions',
                 expertiseInput: Array.isArray(prof.expertise) ? prof.expertise.join(', ') : '',
-                capacity: prof.capacity || 2,
                 bio: prof.bio || '',
                 linkedinUrl: prof.linkedinUrl || '',
                 avatarUrl: prof.avatarUrl || '',
@@ -588,10 +586,6 @@ export default function OnboardingPage() {
       setError('You can select at most 100 expertise tags.');
       return false;
     }
-    if (!mentorForm.capacity || mentorForm.capacity < 1) {
-      setError('Mentoring capacity is mandatory.');
-      return false;
-    }
     if (!mentorForm.bio.trim()) {
       setError('Short biography is mandatory. Please enter a brief bio.');
       return false;
@@ -676,7 +670,6 @@ export default function OnboardingPage() {
           designation: mentorForm.designation.trim(),
           organization: mentorForm.organization.trim(),
           expertise,
-          capacity: mentorForm.capacity,
           bio: mentorForm.bio.trim(),
           linkedinUrl: mentorForm.linkedinUrl.trim(),
           avatarUrl: mentorForm.avatarUrl || null,
@@ -872,7 +865,7 @@ export default function OnboardingPage() {
       ]
     : [
         { n: 1, label: 'Professional', caption: 'Name, role, department' },
-        { n: 2, label: 'Expertise & bio', caption: 'Domains, capacity, links' },
+        { n: 2, label: 'Expertise & bio', caption: 'Domains, biography, links' },
       ];
 
   const lastStep = STEPS[STEPS.length - 1].n;
@@ -2263,7 +2256,7 @@ export default function OnboardingPage() {
                   transition={{ duration: DURATION.card, ease: EASE.outExpo }}
                   className="space-y-5"
                 >
-                  <SectionHeading eyebrow="Step two" title="Expertise and capacity" />
+                  <SectionHeading eyebrow="Step two" title="Expertise and biography" />
 
                   <Field
                     label="Expertise tags"
@@ -2272,17 +2265,6 @@ export default function OnboardingPage() {
                       setMentorForm({ ...mentorForm, expertiseInput: e.target.value })
                     }
                     hint="Comma separated — Machine Learning, Blockchain, IoT"
-                  />
-
-                  <Field
-                    label="Max teams you can mentor"
-                    type="number"
-                    min={1}
-                    max={10}
-                    value={mentorForm.capacity}
-                    onChange={(e) =>
-                      setMentorForm({ ...mentorForm, capacity: parseInt(e.target.value) || 2 })
-                    }
                   />
 
                   <Labelled label="Short biography">

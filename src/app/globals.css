@@ -27,6 +27,7 @@
 @import '../styles/surfaces.css' layer(components);
 @import '../styles/patterns.css' layer(components);
 @import '../styles/motion.css' layer(components);
+@import '../styles/paradigms.css' layer(components);
 
 /* Fonts arrive as CSS variables from next/font at runtime, so these must stay
    `inline` — Tailwind emits the var() reference rather than resolving it at

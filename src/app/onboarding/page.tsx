@@ -494,15 +494,27 @@ export default function OnboardingPage() {
       setError('Technical skills are mandatory. Please select or add at least one skill.');
       return false;
     }
+    if (totalSkills.length > 100) {
+      setError('You can select at most 100 technical skills.');
+      return false;
+    }
 
     const selectedLangs = Object.entries(languages).filter(([, lvl]) => lvl !== null);
     if (selectedLangs.length === 0) {
       setError('Language fluency is mandatory. Please specify fluency for at least one language.');
       return false;
     }
+    if (selectedLangs.length > 30) {
+      setError('You can select at most 30 languages.');
+      return false;
+    }
 
     if (selectedSoftSkills.length === 0) {
       setError('Presenting / Soft skills are mandatory. Please select at least one skill.');
+      return false;
+    }
+    if (selectedSoftSkills.length > 30) {
+      setError('You can select at most 30 soft skills.');
       return false;
     }
 
@@ -548,6 +560,14 @@ export default function OnboardingPage() {
   const validateMentorStep2 = () => {
     if (!mentorForm.expertiseInput.trim()) {
       setError('Expertise tags are mandatory. Please enter your areas of expertise.');
+      return false;
+    }
+    const expertise = mentorForm.expertiseInput
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => s !== '');
+    if (expertise.length > 100) {
+      setError('You can select at most 100 expertise tags.');
       return false;
     }
     if (!mentorForm.capacity || mentorForm.capacity < 1) {

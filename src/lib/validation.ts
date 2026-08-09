@@ -74,9 +74,9 @@ export const studentProfileSchema = z.object({
   category: z.string().trim().max(40).optional(),
   contact: z.string().trim().max(40).optional(),
   college: z.string().trim().min(2).max(150).optional(),
-  skills: z.array(z.string().trim().max(100)).max(30),
-  languages: z.array(z.string().trim().max(100)).max(30),
-  softSkills: z.array(z.string().trim().max(100)).max(30),
+  skills: z.array(z.string().trim().max(100)).max(100, "You can select at most 100 technical skills"),
+  languages: z.array(z.string().trim().max(100)).max(30, "You can select at most 30 languages"),
+  softSkills: z.array(z.string().trim().max(100)).max(30, "You can select at most 30 soft skills"),
   resumeUrl: resumeUrlSchema,
   githubUrl: githubUrlSchema,
   linkedinUrl: linkedinUrlSchema,
@@ -84,14 +84,14 @@ export const studentProfileSchema = z.object({
   trackInterest: z
     .array(z.string().trim().max(100))
     .min(1, 'At least one preferred problem statement is required')
-    .max(30),
+    .max(30, "You can select at most 30 preferred problem statements"),
 });
 
 export const mentorProfileSchema = z.object({
   name: z.string().trim().min(2).max(100),
   designation: z.string().trim().min(2).max(100),
   organization: z.string().trim().min(2).max(100),
-  expertise: z.array(z.string().trim().max(100)).max(30),
+  expertise: z.array(z.string().trim().max(100)).max(100, "You can select at most 100 expertise tags"),
   capacity: z.number().int().min(1).max(10),
   bio: z.string().trim().max(2000).optional(),
   linkedinUrl: linkedinUrlSchema,

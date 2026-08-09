@@ -52,6 +52,19 @@ interface Team {
     name: string;
     category: string;
   };
+  secondaryTrack?: {
+    id: string;
+    problemStatementCode: string;
+    name: string;
+    category: string;
+  } | null;
+  recruitmentNotices?: {
+    id: string;
+    role: string;
+    gender: string;
+    abilities: string[];
+    requirements?: string | null;
+  }[];
   members: TeamMember[];
 }
 
@@ -332,7 +345,7 @@ export default function FindTeamsPage() {
               </Reveal>
               <SplitText
                 as="h1"
-                text="Find teams"
+                text="Browse teams"
                 className="mt-3 text-title text-foreground"
                 delay={0.08}
               />
@@ -542,11 +555,26 @@ export default function FindTeamsPage() {
                                         <span className="mt-0.5 block text-[10px] font-black uppercase tracking-[0.16em] text-primary">
                                           {team.teamCode}
                                         </span>
-                                        <p className="mt-0.5 flex items-center gap-1.5 text-caption text-primary">
-                                          <Briefcase className="size-3 shrink-0" />
-                                          <span className="font-bold">{team.track.problemStatementCode}</span>
-                                          <span className="truncate">· {team.track.category}</span>
-                                        </p>
+                                        <div className="mt-2 space-y-1">
+                                          <p className="flex items-center gap-1.5 text-caption text-primary font-bold">
+                                            <Briefcase className="size-3 shrink-0" />
+                                            <span>Primary PS:</span>
+                                            <span className="bg-primary/10 px-1.5 py-0.5 rounded text-[10px]">{team.track.problemStatementCode}</span>
+                                            <span className="truncate font-normal text-body">{team.track.name}</span>
+                                          </p>
+                                          <p className="flex items-center gap-1.5 text-caption text-muted font-bold">
+                                            <Briefcase className="size-3 shrink-0 opacity-60" />
+                                            <span>Secondary PS:</span>
+                                            {team.secondaryTrack ? (
+                                              <>
+                                                <span className="bg-muted/20 px-1.5 py-0.5 rounded text-[10px] text-body">{team.secondaryTrack.problemStatementCode}</span>
+                                                <span className="truncate font-normal text-muted">{team.secondaryTrack.name}</span>
+                                              </>
+                                            ) : (
+                                              <span className="font-normal text-muted">None</span>
+                                            )}
+                                          </p>
+                                        </div>
                                       </div>
                                     </div>
                                     <span
@@ -636,6 +664,44 @@ export default function FindTeamsPage() {
                                           >
                                             {s}
                                           </span>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Recruitment Notices */}
+                                  {team.recruitmentNotices && team.recruitmentNotices.length > 0 && (
+                                    <div className="mt-5">
+                                      <span className="text-[10px] font-black uppercase tracking-wider text-primary">
+                                        We are recruiting
+                                      </span>
+                                      <div className="mt-2 space-y-2">
+                                        {team.recruitmentNotices.map((notice: any) => (
+                                          <div
+                                            key={notice.id}
+                                            className="rounded-2xl border border-[rgba(209,199,189,0.6)] bg-[rgba(239,233,225,0.3)] p-3 text-[11px]"
+                                          >
+                                            <div className="flex items-center justify-between font-bold text-foreground">
+                                              <span>{notice.role}</span>
+                                              <span className="text-[9px] uppercase tracking-wider text-primary bg-primary/5 px-1.5 py-0.5 rounded">
+                                                {notice.gender === 'OPEN' ? 'Open' : notice.gender}
+                                              </span>
+                                            </div>
+                                            {notice.abilities.length > 0 && (
+                                              <div className="mt-1.5 flex flex-wrap gap-1">
+                                                {notice.abilities.map((a: string) => (
+                                                  <span key={a} className="bg-white/60 text-muted border border-[rgba(172,156,141,0.3)] px-1.5 py-0.2 rounded-md text-[9px]">
+                                                    {a}
+                                                  </span>
+                                                ))}
+                                              </div>
+                                            )}
+                                            {notice.requirements && (
+                                              <p className="mt-1.5 text-muted leading-relaxed">
+                                                {notice.requirements}
+                                              </p>
+                                            )}
+                                          </div>
                                         ))}
                                       </div>
                                     </div>

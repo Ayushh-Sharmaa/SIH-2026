@@ -15,9 +15,9 @@ const LINK_GROUPS = [
     links: [
       { label: 'Dashboard', href: '/dashboard' },
       { label: 'Problem Tracks', href: '/tracks' },
-      { label: 'Find Teammates', href: '/team-formation/find-teammates' },
-      { label: 'Find Teams', href: '/team-formation/find-teams' },
-      { label: 'Find Mentors', href: '/team-formation/find-mentors' },
+      { label: 'Browse Teammates', href: '/team-formation/browse-teammates' },
+      { label: 'Browse Teams', href: '/team-formation/browse-teams' },
+      { label: 'Browse Mentors', href: '/team-formation/browse-mentors' },
     ],
   },
   {

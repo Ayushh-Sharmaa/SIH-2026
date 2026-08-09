@@ -243,7 +243,7 @@ export default function StudentProfilePage() {
                     <dl className="grid grid-cols-2 gap-4 text-sm">
                       {[
                         ['Year of study', profile.year || 'N/A'],
-                        ['Academic branch', profile.branch || 'N/A'],
+                        ['Course', profile.branch || 'N/A'],
                         profile.rollNo ? ['Roll number', profile.rollNo] : null,
                         ['Section', profile.section ? `Section ${profile.section}` : 'N/A'],
                         ['Gender', profile.gender || 'N/A'],

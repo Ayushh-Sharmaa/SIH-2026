@@ -169,7 +169,7 @@ export async function GET(request: Request) {
       where: { userId: queryId },
       include: {
         trackInterest: { select: { id: true, name: true, problemStatementCode: true } },
-        user: { select: { email: true } },
+        user: { select: { email: true, college: true } },
       },
     });
 
@@ -194,6 +194,8 @@ export async function GET(request: Request) {
       gender: student.gender,
       rollNo: hasRollNoAccess ? student.rollNo : null,
       section: student.section,
+      category: student.category,
+      college: student.user.college,
       skills: student.skills,
       languages: student.languages,
       softSkills: student.softSkills,

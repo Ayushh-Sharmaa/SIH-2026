@@ -912,7 +912,7 @@ export default function DashboardPage() {
                             : 'border-transparent text-muted hover:text-foreground'
                         }`}
                       >
-                        Collaboration Hub
+                        Requests & Invites
                         {data?.receivedInvites?.length > 0 && (
                           <span className="inline-block px-1.5 py-0.2 rounded-full bg-primary text-[8px] text-on-accent font-black">
                             {data.receivedInvites.length}
@@ -1351,8 +1351,8 @@ export default function DashboardPage() {
                                     <PremiumButton href="/team-formation/create-team">
                                       Create a team
                                     </PremiumButton>
-                                    <PremiumButton variant="glass" href="/team-formation/find-teammates">
-                                      Find teammates
+                                    <PremiumButton variant="glass" href="/team-formation/find-teams">
+                                      Join a team
                                     </PremiumButton>
                                   </div>
                                 </div>

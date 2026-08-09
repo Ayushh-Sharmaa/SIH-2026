@@ -7,6 +7,7 @@ import { AnimatePresence, m } from 'framer-motion';
 import { ArrowUpRight, Check } from 'lucide-react';
 import Icon from '@/components/ui/Icon';
 import Navbar from '@/components/layout/Navbar';
+import { useSession } from '@/lib/session';
 import { Container, OnboardingSkeleton } from '@/components/ui';
 import {
   Aurora,
@@ -195,6 +196,7 @@ function Labelled({
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const { refresh } = useSession();
   const [session, setSession] = useState<{
     user: { name: string; role: string; email?: string } | null;
     status: string;
@@ -337,7 +339,7 @@ export default function OnboardingPage() {
     'Video Editing',
     'Management',
   ];
-  const branchOptions = ['CSE', 'CSE (AI/ML)', 'CS'];
+  const branchOptions = ['B.Tech CSE', 'B.Tech CSE (AI/ML)', 'B.Tech CS', 'MBA'];
   const yearOptions = ['1st Year', '2nd Year', '3rd Year', '4th Year'];
   const genderOptions = ['Male', 'Female', 'Other', 'Prefer not to say'];
   const sectionOptions = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'];
@@ -452,23 +454,27 @@ export default function OnboardingPage() {
       return false;
     }
     if (!studentForm.name.trim()) {
-      setError('Name is mandatory. Please enter your full name.');
+      setError('Full name is mandatory. Please enter your name.');
       return false;
     }
     if (!studentForm.gender) {
-      setError('Gender is mandatory. Please select your gender.');
+      setError('Gender selection is mandatory. Please select your gender.');
+      return false;
+    }
+    if (!studentForm.college) {
+      setError('Campus is mandatory. Please select your campus.');
       return false;
     }
     if (!studentForm.rollNo.trim()) {
-      setError('University Roll Number is mandatory. Please enter your roll number.');
+      setError('University roll number is mandatory. Please enter your roll number.');
       return false;
     }
     if (!studentForm.year) {
-      setError('Year of Study is mandatory. Please select your year of study.');
+      setError('Year of study is mandatory. Please select your year of study.');
       return false;
     }
     if (!studentForm.branch) {
-      setError('Academic Branch is mandatory. Please select your academic branch.');
+      setError('Course is mandatory. Please select your course.');
       return false;
     }
     if (!studentForm.section.trim()) {
@@ -642,6 +648,7 @@ export default function OnboardingPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to save profile');
 
+      await refresh();
       router.push('/dashboard');
     } catch (err) {
       setError(userFacingMessage(err, 'An error occurred while saving profile.'));
@@ -680,6 +687,7 @@ export default function OnboardingPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to save profile');
 
+      await refresh();
       router.push('/dashboard');
     } catch (err) {
       setError(userFacingMessage(err, 'An error occurred while saving profile.'));
@@ -1339,11 +1347,11 @@ export default function OnboardingPage() {
                       ))}
                     </SelectField>
                     <SelectField
-                      label="Academic branch"
+                      label="Course"
                       value={studentForm.branch}
                       onChange={(e) => setStudentForm({ ...studentForm, branch: e.target.value })}
                     >
-                      <option value="">Select branch</option>
+                      <option value="">Select course</option>
                       {branchOptions.map((opt) => (
                         <option key={opt} value={opt}>
                           {opt}

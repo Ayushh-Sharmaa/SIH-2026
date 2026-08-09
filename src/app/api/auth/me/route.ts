@@ -34,7 +34,13 @@ export async function GET(request: Request) {
     // not have the side effect of creating one.
 
     if (!decoded) {
-      return NextResponse.json({ authenticated: false }, { status: 200 });
+      return NextResponse.json(
+        { authenticated: false },
+        {
+          status: 200,
+          headers: { 'Cache-Control': 'no-store, max-age=0, must-revalidate' },
+        }
+      );
     }
 
     const user = await prisma.user.findUnique({
@@ -75,18 +81,23 @@ export async function GET(request: Request) {
       isOnboarded = true;
     }
 
-    return NextResponse.json({
-      authenticated: true,
-      isViewingAs,
-      user: {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-        name,
-        isOnboarded,
-        verified: user.mentorProfile?.verified ?? true,
+    return NextResponse.json(
+      {
+        authenticated: true,
+        isViewingAs,
+        user: {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          name,
+          isOnboarded,
+          verified: user.mentorProfile?.verified ?? true,
+        },
       },
-    });
+      {
+        headers: { 'Cache-Control': 'no-store, max-age=0, must-revalidate' },
+      }
+    );
   } catch (error) {
     logger.error('Session check error', error);
     return NextResponse.json({ error: 'Failed to verify session' }, { status: 500 });

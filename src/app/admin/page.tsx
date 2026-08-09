@@ -1020,13 +1020,14 @@ export default function AdminDashboardPage() {
                           <select
                             value={studentBranchFilter}
                             onChange={(e) => setStudentBranchFilter(e.target.value)}
-                            aria-label="Branch"
+                            aria-label="Course"
                             className={CONTROL}
                           >
-                            <option value="ALL">All branches</option>
-                            <option value="CSE">CSE</option>
-                            <option value="CSE (AI/ML)">CSE (AI/ML)</option>
-                            <option value="CS">CS</option>
+                            <option value="ALL">All courses</option>
+                            <option value="B.Tech CSE">B.Tech CSE</option>
+                            <option value="B.Tech CSE (AI/ML)">B.Tech CSE (AI/ML)</option>
+                            <option value="B.Tech CS">B.Tech CS</option>
+                            <option value="MBA">MBA</option>
                           </select>
                           <select
                             value={studentSectionFilter}

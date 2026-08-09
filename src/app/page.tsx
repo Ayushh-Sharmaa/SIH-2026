@@ -34,14 +34,14 @@ const HIGHLIGHTS = [
     title: 'Form the right team',
     desc: 'Browse students by track and skill, spot the gaps in your roster, and invite the people who close them.',
     href: '/team-formation/find-teammates',
-    cta: 'Find teammates',
+    cta: 'Browse teammates',
     path: 'M17 20h5v-2a3 3 0 0 0-5.36-1.9M17 20H7m10 0v-2c0-.7-.12-1.36-.36-1.9m0 0A5 5 0 0 0 7.36 16.1M7 20H2v-2a3 3 0 0 1 5.36-1.9M7 20v-2c0-.7.12-1.36.36-1.9m0 0a5 5 0 0 1 9.28 0M15 7a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2 2 0 1 1-4 0 2 2 0 0 1 4 0ZM7 10a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z',
   },
   {
     title: 'Match with mentors',
     desc: 'Verified faculty mentors, filterable by domain. Send a request and track its status from your dashboard.',
     href: '/team-formation/find-mentors',
-    cta: 'Find mentors',
+    cta: 'Browse mentors',
     path: 'M12 14l9-5-9-5-9 5 9 5Zm0 0 6.16-3.42a12.08 12.08 0 0 1 .66 6.48A11.95 11.95 0 0 0 12 20.05a11.95 11.95 0 0 0-6.82-3A12.08 12.08 0 0 1 5.84 10.6L12 14Z',
   },
   {

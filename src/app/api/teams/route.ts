@@ -57,6 +57,8 @@ export async function GET(request: Request) {
       where,
       include: {
         track: true,
+        secondaryTrack: true,
+        recruitmentNotices: true,
         members: {
           select: {
             userId: true,
@@ -102,7 +104,13 @@ export async function GET(request: Request) {
           const matchesName = t.name.toLowerCase().includes(search);
           const matchesTeamCode = t.teamCode.toLowerCase().includes(search);
           const matchesLeader = teamLeader ? teamLeader.name.toLowerCase().includes(search) : false;
-          const matchesTrack = t.track.name.toLowerCase().includes(search) || t.track.problemStatementCode.toLowerCase().includes(search);
+          const matchesTrack =
+            t.track.name.toLowerCase().includes(search) ||
+            t.track.problemStatementCode.toLowerCase().includes(search) ||
+            (t.secondaryTrack && (
+              t.secondaryTrack.name.toLowerCase().includes(search) ||
+              t.secondaryTrack.problemStatementCode.toLowerCase().includes(search)
+            ));
           const matchesDomain = t.track.category.toLowerCase().includes(search);
           const matchesSkills = t.skillsCovered.some((s) => s.toLowerCase().includes(search)) || t.skillsNeeded.some((s) => s.toLowerCase().includes(search));
           const matchesMembers = t.members.some((m) => m.name.toLowerCase().includes(search));
@@ -158,6 +166,7 @@ export async function POST(request: Request) {
     const {
       name,
       trackId,
+      secondaryTrackId,
       whatsapp,
       logoUrl,
       customMentorName,
@@ -167,6 +176,9 @@ export async function POST(request: Request) {
       customPsCode,
       customPsName,
       customPsCategory,
+      customSecondaryPsCode,
+      customSecondaryPsName,
+      customSecondaryPsCategory,
     } = parsed.data;
 
     // Check if the student has a profile and is not already in a team
@@ -209,12 +221,41 @@ export async function POST(request: Request) {
       }
     }
 
+    let finalSecondaryTrackId: string | null = null;
+    if (secondaryTrackId && secondaryTrackId !== 'none') {
+      if (secondaryTrackId === 'custom' && customSecondaryPsCode) {
+        const code = customSecondaryPsCode.trim().toUpperCase();
+        let track = await prisma.track.findUnique({
+          where: { problemStatementCode: code },
+        });
+        if (!track) {
+          track = await prisma.track.create({
+            data: {
+              problemStatementCode: code,
+              name: customSecondaryPsName || 'Custom Problem Statement',
+              category: customSecondaryPsCategory || 'Software',
+              description: 'Created dynamically for team formation.',
+            },
+          });
+        }
+        finalSecondaryTrackId = track.id;
+      } else {
+        const track = await prisma.track.findUnique({
+          where: { id: secondaryTrackId },
+        });
+        if (track) {
+          finalSecondaryTrackId = track.id;
+        }
+      }
+    }
+
     const newTeam = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const team = await tx.team.create({
         data: {
           teamCode: await nextTeamCode(tx),
           name,
           trackId: finalTrackId,
+          secondaryTrackId: finalSecondaryTrackId,
           leaderId: decoded.userId,
           status: 'forming',
           whatsapp: whatsapp || null,
@@ -329,11 +370,40 @@ export async function PUT(request: Request) {
       const track = await prisma.track.findUnique({ where: { id: details.trackId } });
       if (!track) return NextResponse.json({ error: 'Invalid track ID.' }, { status: 400 });
 
+      let finalSecondaryTrackId: string | null = null;
+      if (details.secondaryTrackId && details.secondaryTrackId !== 'none') {
+        if (details.secondaryTrackId === 'custom' && details.customSecondaryPsCode) {
+          const code = details.customSecondaryPsCode.trim().toUpperCase();
+          let track = await prisma.track.findUnique({
+            where: { problemStatementCode: code },
+          });
+          if (!track) {
+            track = await prisma.track.create({
+              data: {
+                problemStatementCode: code,
+                name: details.customSecondaryPsName || 'Custom Problem Statement',
+                category: details.customSecondaryPsCategory || 'Software',
+                description: 'Created dynamically for team formation.',
+              },
+            });
+          }
+          finalSecondaryTrackId = track.id;
+        } else {
+          const track = await prisma.track.findUnique({
+            where: { id: details.secondaryTrackId },
+          });
+          if (track) {
+            finalSecondaryTrackId = track.id;
+          }
+        }
+      }
+
       await prisma.team.update({
         where: { id: teamId },
         data: {
           name: details.name,
-          track: { connect: { id: details.trackId } },
+          trackId: details.trackId,
+          secondaryTrackId: finalSecondaryTrackId,
           whatsapp: details.whatsapp?.trim() || null,
           logoUrl: details.logoUrl?.trim() || null,
           customMentorName: details.customMentorName?.trim() || null,

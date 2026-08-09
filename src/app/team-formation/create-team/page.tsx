@@ -3,7 +3,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { m } from 'framer-motion';
-import { Check, Upload } from 'lucide-react';
+import { Check, Upload, ChevronDown, ChevronUp } from 'lucide-react';
 import Icon from '@/components/ui/Icon';
 import { useToast } from '@/components/ui/Toast';
 import Navbar from '@/components/layout/Navbar';
@@ -42,6 +42,7 @@ export default function CreateTeamPage() {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [name, setName] = useState('');
   const [trackId, setTrackId] = useState('');
+  const [secondaryTrackId, setSecondaryTrackId] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
   const [loading, setLoading] = useState(false);
@@ -52,11 +53,17 @@ export default function CreateTeamPage() {
   const [customPsName, setCustomPsName] = useState('');
   const [customPsCategory, setCustomPsCategory] = useState('Software');
 
+  // Custom secondary problem statement state
+  const [customSecondaryPsCode, setCustomSecondaryPsCode] = useState('');
+  const [customSecondaryPsName, setCustomSecondaryPsName] = useState('');
+  const [customSecondaryPsCategory, setCustomSecondaryPsCategory] = useState('Software');
+
   // Custom mentor state
   const [customMentorName, setCustomMentorName] = useState('');
   const [customMentorDesignation, setCustomMentorDesignation] = useState('');
   const [customMentorMobile, setCustomMentorMobile] = useState('');
   const [customMentorEmail, setCustomMentorEmail] = useState('');
+  const [showExternalMentor, setShowExternalMentor] = useState(false);
 
   useEffect(() => {
     async function fetchTracks() {
@@ -65,7 +72,12 @@ export default function CreateTeamPage() {
         const data = await res.json();
         if (data.success) {
           setTracks(data.tracks);
-          if (data.tracks.length > 0) setTrackId(data.tracks[0].id);
+          if (data.tracks.length > 0) {
+            setTrackId(data.tracks[0].id);
+            if (data.tracks.length > 1) {
+              setSecondaryTrackId(data.tracks[1].id);
+            }
+          }
         }
       } catch (err) {
         logger.error('Fetch tracks failed', err);
@@ -93,16 +105,45 @@ export default function CreateTeamPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (!trackId) {
+      setError('Primary Problem Statement Track is mandatory. Please select a primary PS.');
+      return;
+    }
+
+    if (!secondaryTrackId || secondaryTrackId === 'none') {
+      setError('Secondary Problem Statement Track is mandatory. Please select a secondary PS.');
+      return;
+    }
+
+    if (trackId === secondaryTrackId && trackId !== 'custom') {
+      setError('Primary and Secondary Problem Statements must be different tracks.');
+      return;
+    }
+
     setLoading(true);
 
     if (trackId === 'custom') {
       if (!customPsCode.trim()) {
-        setError('Problem Statement ID (PS ID) is required for custom statements.');
+        setError('Primary Problem Statement ID (PS ID) is required for custom statements.');
         setLoading(false);
         return;
       }
       if (!customPsName.trim()) {
-        setError('Problem Statement Theme is required for custom statements.');
+        setError('Primary Problem Statement Theme is required for custom statements.');
+        setLoading(false);
+        return;
+      }
+    }
+
+    if (secondaryTrackId === 'custom') {
+      if (!customSecondaryPsCode.trim()) {
+        setError('Secondary Problem Statement ID (PS ID) is required for custom statements.');
+        setLoading(false);
+        return;
+      }
+      if (!customSecondaryPsName.trim()) {
+        setError('Secondary Problem Statement Theme is required for custom statements.');
         setLoading(false);
         return;
       }
@@ -115,11 +156,15 @@ export default function CreateTeamPage() {
         body: JSON.stringify({
           name: name.trim(),
           trackId,
+          secondaryTrackId: secondaryTrackId === 'none' ? undefined : secondaryTrackId,
           whatsapp: whatsapp.trim(),
           logoUrl: logoUrl || undefined,
           customPsCode: trackId === 'custom' ? customPsCode.trim() : undefined,
           customPsName: trackId === 'custom' ? customPsName.trim() : undefined,
           customPsCategory: trackId === 'custom' ? customPsCategory : undefined,
+          customSecondaryPsCode: secondaryTrackId === 'custom' ? customSecondaryPsCode.trim() : undefined,
+          customSecondaryPsName: secondaryTrackId === 'custom' ? customSecondaryPsName.trim() : undefined,
+          customSecondaryPsCategory: secondaryTrackId === 'custom' ? customSecondaryPsCategory : undefined,
           customMentorName: customMentorName.trim() || undefined,
           customMentorDesignation: customMentorDesignation.trim() || undefined,
           customMentorMobile: customMentorMobile.trim() || undefined,
@@ -274,7 +319,7 @@ export default function CreateTeamPage() {
                 {/* Problem Statement Track */}
                 <div className="space-y-4">
                   <SelectField
-                    label="Problem statement track"
+                    label="Primary Problem Statement Track"
                     value={trackId}
                     onChange={(e) => setTrackId(e.target.value)}
                   >
@@ -292,7 +337,7 @@ export default function CreateTeamPage() {
                       animate={{ opacity: 1, y: 0 }}
                       className="space-y-4 rounded-2xl border border-[rgba(209,199,189,0.8)] bg-[rgba(239,233,225,0.45)] p-4"
                     >
-                      <h3 className="text-xs font-bold uppercase text-muted tracking-wider">Custom Problem Statement Details</h3>
+                      <h3 className="text-xs font-bold uppercase text-muted tracking-wider">Primary Custom Problem Statement Details</h3>
                       <Field
                         label="Problem Statement ID (PS ID)"
                         required
@@ -318,6 +363,52 @@ export default function CreateTeamPage() {
                       </SelectField>
                     </m.div>
                   )}
+
+                  <SelectField
+                    label="Secondary Problem Statement Track"
+                    value={secondaryTrackId}
+                    onChange={(e) => setSecondaryTrackId(e.target.value)}
+                  >
+                    {tracks.map((track) => (
+                      <option key={track.id} value={track.id}>
+                        {track.problemStatementCode} — {track.name}
+                      </option>
+                    ))}
+                    <option value="custom">Other / Custom Problem Statement</option>
+                  </SelectField>
+
+                  {secondaryTrackId === 'custom' && (
+                    <m.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="space-y-4 rounded-2xl border border-[rgba(209,199,189,0.8)] bg-[rgba(239,233,225,0.45)] p-4"
+                    >
+                      <h3 className="text-xs font-bold uppercase text-muted tracking-wider">Secondary Custom Problem Statement Details</h3>
+                      <Field
+                        label="Problem Statement ID (PS ID)"
+                        required
+                        value={customSecondaryPsCode}
+                        onChange={(e) => setCustomSecondaryPsCode(e.target.value)}
+                        hint="e.g. SIH1541"
+                      />
+                      <Field
+                        label="Problem Statement Theme"
+                        required
+                        value={customSecondaryPsName}
+                        onChange={(e) => setCustomSecondaryPsName(e.target.value)}
+                        hint="e.g. Nexa Secondary Solutions"
+                      />
+                      <SelectField
+                        label="Problem Statement Type"
+                        value={customSecondaryPsCategory}
+                        onChange={(e) => setCustomSecondaryPsCategory(e.target.value)}
+                      >
+                        <option value="Software">Software</option>
+                        <option value="Hardware">Hardware</option>
+                        <option value="Software/Hardware">Software/Hardware</option>
+                      </SelectField>
+                    </m.div>
+                  )}
                 </div>
 
                 {/* Team Contact */}
@@ -331,36 +422,52 @@ export default function CreateTeamPage() {
                 />
 
                 {/* External Mentor (Optional) */}
-                <div className="space-y-4 rounded-2xl border border-[rgba(209,199,189,0.8)] bg-[rgba(239,233,225,0.45)] p-4">
-                  <h3 className="text-xs font-bold uppercase text-muted tracking-wider">External Mentor Details (Optional)</h3>
-                  <Field
-                    label="Mentor Name"
-                    value={customMentorName}
-                    onChange={(e) => setCustomMentorName(e.target.value)}
-                    hint="e.g. Dr. Jane Doe"
-                  />
-                  <Field
-                    label="Mentor Designation"
-                    value={customMentorDesignation}
-                    onChange={(e) => setCustomMentorDesignation(e.target.value)}
-                    hint="e.g. Technical Director"
-                  />
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <Field
-                      label="Mentor Mobile No"
-                      type="tel"
-                      value={customMentorMobile}
-                      onChange={(e) => setCustomMentorMobile(e.target.value)}
-                      hint="e.g. 9999988888"
-                    />
-                    <Field
-                      label="Mentor Email"
-                      type="email"
-                      value={customMentorEmail}
-                      onChange={(e) => setCustomMentorEmail(e.target.value)}
-                      hint="e.g. mentor@domain.com"
-                    />
-                  </div>
+                <div className="rounded-2xl border border-[rgba(209,199,189,0.8)] bg-[rgba(239,233,225,0.45)] overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setShowExternalMentor(!showExternalMentor)}
+                    className="flex w-full items-center justify-between p-4 text-left outline-none hover:bg-[rgba(209,199,189,0.1)] transition-colors"
+                  >
+                    <span className="text-xs font-bold uppercase text-muted tracking-wider">External Mentor Details (Optional)</span>
+                    <Icon icon={showExternalMentor ? ChevronUp : ChevronDown} size="sm" className="text-muted" />
+                  </button>
+
+                  {showExternalMentor && (
+                    <m.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      className="p-4 pt-0 space-y-4 border-t border-[rgba(209,199,189,0.3)]"
+                    >
+                      <Field
+                        label="Mentor Name"
+                        value={customMentorName}
+                        onChange={(e) => setCustomMentorName(e.target.value)}
+                        hint="e.g. Dr. Jane Doe"
+                      />
+                      <Field
+                        label="Mentor Designation"
+                        value={customMentorDesignation}
+                        onChange={(e) => setCustomMentorDesignation(e.target.value)}
+                        hint="e.g. Technical Director"
+                      />
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <Field
+                          label="Mentor Mobile No"
+                          type="tel"
+                          value={customMentorMobile}
+                          onChange={(e) => setCustomMentorMobile(e.target.value)}
+                          hint="e.g. 9999988888"
+                        />
+                        <Field
+                          label="Mentor Email"
+                          type="email"
+                          value={customMentorEmail}
+                          onChange={(e) => setCustomMentorEmail(e.target.value)}
+                          hint="e.g. mentor@domain.com"
+                        />
+                      </div>
+                    </m.div>
+                  )}
                 </div>
 
                 {error && (

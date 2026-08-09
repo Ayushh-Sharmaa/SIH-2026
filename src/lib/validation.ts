@@ -112,6 +112,7 @@ export const mentorProfileSchema = z.object({
 export const createTeamSchema = z.object({
   name: z.string().trim().min(2).max(100),
   trackId: z.string().trim().min(1).max(100),
+  secondaryTrackId: z.string().trim().max(100).nullable().optional(),
   whatsapp: z.string().trim().max(40).optional(),
   logoUrl: z.string().optional(),
   customMentorName: z.string().trim().max(100).optional(),
@@ -121,6 +122,9 @@ export const createTeamSchema = z.object({
   customPsCode: z.string().trim().max(40).optional(),
   customPsName: z.string().trim().max(200).optional(),
   customPsCategory: z.string().trim().max(40).optional(),
+  customSecondaryPsCode: z.string().trim().max(40).optional(),
+  customSecondaryPsName: z.string().trim().max(200).optional(),
+  customSecondaryPsCategory: z.string().trim().max(40).optional(),
 });
 
 export const updateTeamDetailsSchema = z.object({
@@ -128,12 +132,16 @@ export const updateTeamDetailsSchema = z.object({
   teamId: z.string().trim().min(1).max(100),
   name: z.string().trim().min(2).max(100),
   trackId: z.string().trim().min(1).max(100),
+  secondaryTrackId: z.string().trim().max(100).nullable().optional(),
   whatsapp: z.string().trim().max(40).optional(),
   logoUrl: z.string().max(3_000_000).nullable().optional(),
   customMentorName: z.string().trim().max(100).optional(),
   customMentorDesignation: z.string().trim().max(100).optional(),
   customMentorMobile: z.string().trim().max(40).optional(),
   customMentorEmail: z.string().trim().email().max(100).or(z.literal('')).optional(),
+  customSecondaryPsCode: z.string().trim().max(40).optional(),
+  customSecondaryPsName: z.string().trim().max(200).optional(),
+  customSecondaryPsCategory: z.string().trim().max(40).optional(),
 });
 
 export const deleteTeamSchema = z.object({

@@ -379,7 +379,7 @@ export default function OnboardingPage() {
                 section: prof.section || '',
                 category: prof.category || '',
                 contact: prof.contact || '',
-                college: meData.user.college || '',
+                college: prof.college || meData.user.college || '',
                 githubUrl: prof.githubUrl || '',
                 linkedinUrl: prof.linkedinUrl || '',
                 resumeUrl: prof.resumeUrl || '',
@@ -897,7 +897,7 @@ export default function OnboardingPage() {
             />
             <Reveal delay={0.3} className="mt-3">
               <p className="mx-auto max-w-md text-sm leading-relaxed text-muted">
-                Select your role to configure your workspace. Students can find teams and mentors, while mentors can guide and evaluate teams.
+                Select your role to configure your workspace. Students can browse teams and mentors, while mentors can guide and evaluate teams.
               </p>
             </Reveal>
           </Container>

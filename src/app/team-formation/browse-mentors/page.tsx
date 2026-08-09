@@ -248,7 +248,7 @@ export default function FindMentorsPage() {
 
             <SplitText
               as="h1"
-              text="Find your mentor."
+              text="Browse mentors."
               className="mt-5 text-title text-foreground"
               delay={0.1}
             />

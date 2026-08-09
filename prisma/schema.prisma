@@ -96,6 +96,7 @@ model Track {
   category             String
 
   teams                Team[]
+  secondaryTeams       Team[]           @relation("SecondaryTrack")
   students             StudentProfile[] @relation("StudentTrackInterest")
 }
 
@@ -106,6 +107,8 @@ model Team {
   name                    String
   trackId                 String
   track                   Track          @relation(fields: [trackId], references: [id])
+  secondaryTrackId        String?
+  secondaryTrack          Track?         @relation("SecondaryTrack", fields: [secondaryTrackId], references: [id], onDelete: SetNull)
   leaderId                String
   status                  String         @default("forming") // forming, complete, locked
   mentorId                String?
@@ -120,13 +123,15 @@ model Team {
   customMentorMobile      String?
   customMentorEmail       String?
 
-  members        StudentProfile[]
-  invites        TeamInvite[]
-  joinRequests   JoinRequest[]
-  mentorRequests MentorRequest[]
-  messages       Message[]
+  members            StudentProfile[]
+  invites            TeamInvite[]
+  joinRequests       JoinRequest[]
+  mentorRequests     MentorRequest[]
+  messages           Message[]
+  recruitmentNotices RecruitmentNotice[]
 
   @@index([trackId])
+  @@index([secondaryTrackId])
   @@index([leaderId])
   @@index([mentorId])
   @@index([status, memberCount])
@@ -138,6 +143,19 @@ model TeamCodeReservation {
   code        String   @id
   allocatedAt DateTime @default(now())
   team        Team?
+}
+
+model RecruitmentNotice {
+  id           String   @id @default(uuid())
+  teamId       String
+  team         Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  role         String
+  gender       String   // "MALE" | "FEMALE" | "OPEN"
+  abilities    String[]
+  requirements String?  @db.Text
+  createdAt    DateTime @default(now())
+
+  @@index([teamId])
 }
 
 model TeamInvite {

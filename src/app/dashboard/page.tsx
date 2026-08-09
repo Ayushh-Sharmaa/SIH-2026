@@ -27,6 +27,8 @@ import {
   Lock,
   Unlock,
   ShieldCheck,
+  ChevronDown,
+  ChevronUp,
   type LucideIcon,
 } from 'lucide-react';
 import Icon from '@/components/ui/Icon';
@@ -327,7 +329,8 @@ function EditRoleModal({ member, onClose, onSubmit }: EditRoleModalProps) {
 
 function TeamEditModal({ team, onClose, onSubmit }: { team: any; onClose: () => void; onSubmit: (details: any) => Promise<void> }) {
   const [name, setName] = useState(team.name || '');
-  const [trackId, setTrackId] = useState(team.track?.id || '');
+  const [trackId, setTrackId] = useState(team.trackId || team.track?.id || '');
+  const [secondaryTrackId, setSecondaryTrackId] = useState(team.secondaryTrackId || 'none');
   const [whatsapp, setWhatsapp] = useState(team.whatsapp || '');
   const [mentorName, setMentorName] = useState(team.customMentorName || '');
   const [mentorDesignation, setMentorDesignation] = useState(team.customMentorDesignation || '');
@@ -335,13 +338,31 @@ function TeamEditModal({ team, onClose, onSubmit }: { team: any; onClose: () => 
   const [mentorEmail, setMentorEmail] = useState(team.customMentorEmail || '');
   const [tracks, setTracks] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
+  const [showMentor, setShowMentor] = useState(!!team.customMentorName);
   const panelRef = useFocusTrap<HTMLDivElement>(true);
   useScrollLock(true);
   useEscapeKey(true, onClose);
   useEffect(() => { fetch('/api/tracks').then((r) => r.json()).then((d) => d.success && setTracks(d.tracks)).catch(() => undefined); }, []);
   const submit = async (e: FormEvent) => {
     e.preventDefault(); setSaving(true);
-    try { await onSubmit({ action: 'update_team_details', teamId: team.id, name, trackId, whatsapp, logoUrl: team.logoUrl || null, customMentorName: mentorName, customMentorDesignation: mentorDesignation, customMentorMobile: mentorMobile, customMentorEmail: mentorEmail }); onClose(); } finally { setSaving(false); }
+    try {
+      await onSubmit({
+        action: 'update_team_details',
+        teamId: team.id,
+        name,
+        trackId,
+        secondaryTrackId: secondaryTrackId === 'none' ? null : secondaryTrackId,
+        whatsapp,
+        logoUrl: team.logoUrl || null,
+        customMentorName: mentorName,
+        customMentorDesignation: mentorDesignation,
+        customMentorMobile: mentorMobile,
+        customMentorEmail: mentorEmail
+      });
+      onClose();
+    } finally {
+      setSaving(false);
+    }
   };
   const control = 'w-full rounded-xl border border-[rgba(209,199,189,0.8)] bg-[rgba(248,246,242,0.7)] px-3.5 py-2 text-sm text-foreground outline-none focus:border-primary';
   return <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-modal flex items-center justify-center p-4">
@@ -349,13 +370,155 @@ function TeamEditModal({ team, onClose, onSubmit }: { team: any; onClose: () => 
     <m.div ref={panelRef} role="dialog" aria-modal="true" tabIndex={-1} initial={{ opacity: 0, y: 20, scale: .98 }} animate={{ opacity: 1, y: 0, scale: 1 }} className="surface-overlay relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl p-6 text-foreground sm:p-8">
       <div className="flex items-center justify-between"><div><span className="text-label uppercase text-primary">{team.teamCode}</span><h3 className="mt-1 text-feature font-extrabold">Edit team details</h3></div><button onClick={onClose} aria-label="Close"><X className="size-4 text-muted" /></button></div>
       <form onSubmit={submit} className="mt-6 space-y-4">
-        <div className="grid gap-4 sm:grid-cols-2"><label><Label>Team name</Label><input required value={name} onChange={(e) => setName(e.target.value)} className={`${control} mt-1.5`} /></label><label><Label>Problem statement</Label><select required value={trackId} onChange={(e) => setTrackId(e.target.value)} className={`${control} mt-1.5`}>{tracks.map((t) => <option key={t.id} value={t.id}>{t.problemStatementCode} — {t.name}</option>)}</select></label></div>
-        <label><Label>Leader WhatsApp</Label><input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} className={`${control} mt-1.5`} /></label>
-        <div className="rounded-2xl border border-[rgba(209,199,189,0.7)] bg-[rgba(239,233,225,0.45)] p-4"><Label>External mentor (optional)</Label><div className="mt-3 grid gap-3 sm:grid-cols-2"><input placeholder="Name" value={mentorName} onChange={(e) => setMentorName(e.target.value)} className={control} /><input placeholder="Designation" value={mentorDesignation} onChange={(e) => setMentorDesignation(e.target.value)} className={control} /><input placeholder="Mobile" value={mentorMobile} onChange={(e) => setMentorMobile(e.target.value)} className={control} /><input type="email" placeholder="Email" value={mentorEmail} onChange={(e) => setMentorEmail(e.target.value)} className={control} /></div></div>
+        <div className="grid gap-4 sm:grid-cols-2"><label><Label>Team name</Label><input required value={name} onChange={(e) => setName(e.target.value)} className={`${control} mt-1.5`} /></label><label><Label>Leader WhatsApp</Label><input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} className={`${control} mt-1.5`} /></label></div>
+        <div className="grid gap-4 sm:grid-cols-2"><label><Label>Primary Problem Statement</Label><select required value={trackId} onChange={(e) => setTrackId(e.target.value)} className={`${control} mt-1.5`}>{tracks.map((t) => <option key={t.id} value={t.id}>{t.problemStatementCode} — {t.name}</option>)}</select></label><label><Label>Secondary Problem Statement</Label><select value={secondaryTrackId} onChange={(e) => setSecondaryTrackId(e.target.value)} className={`${control} mt-1.5`}><option value="none">None / No Secondary Track</option>{tracks.map((t) => <option key={t.id} value={t.id}>{t.problemStatementCode} — {t.name}</option>)}</select></label></div>
+        <div className="rounded-2xl border border-[rgba(209,199,189,0.7)] bg-[rgba(239,233,225,0.45)] overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setShowMentor(!showMentor)}
+            className="flex w-full items-center justify-between p-4 text-left outline-none hover:bg-[rgba(209,199,189,0.1)] transition-colors"
+          >
+            <Label>External mentor (optional)</Label>
+            <Icon icon={showMentor ? ChevronUp : ChevronDown} size="sm" className="text-muted" />
+          </button>
+          {showMentor && (
+            <div className="p-4 pt-0 border-t border-[rgba(209,199,189,0.2)] mt-0 grid gap-3 sm:grid-cols-2">
+              <input placeholder="Name" value={mentorName} onChange={(e) => setMentorName(e.target.value)} className={control} />
+              <input placeholder="Designation" value={mentorDesignation} onChange={(e) => setMentorDesignation(e.target.value)} className={control} />
+              <input placeholder="Mobile" value={mentorMobile} onChange={(e) => setMentorMobile(e.target.value)} className={control} />
+              <input type="email" placeholder="Email" value={mentorEmail} onChange={(e) => setMentorEmail(e.target.value)} className={control} />
+            </div>
+          )}
+        </div>
         <div className="flex justify-end gap-2 pt-2"><PremiumButton type="button" variant="glass" size="sm" onClick={onClose} disabled={saving}>Cancel</PremiumButton><PremiumButton type="submit" size="sm" loading={saving}>Save changes</PremiumButton></div>
       </form>
     </m.div>
   </m.div>;
+}
+
+function RecruitmentNoticeModal({
+  notice,
+  teamId,
+  onClose,
+  onSubmit,
+}: {
+  notice?: any;
+  teamId: string;
+  onClose: () => void;
+  onSubmit: (payload: any) => Promise<void>;
+}) {
+  const [role, setRole] = useState(notice?.role || '');
+  const [gender, setGender] = useState(notice?.gender || 'OPEN');
+  const [abilitiesInput, setAbilitiesInput] = useState(notice?.abilities?.join(', ') || '');
+  const [requirements, setRequirements] = useState(notice?.requirements || '');
+  const [saving, setSaving] = useState(false);
+  const panelRef = useFocusTrap<HTMLDivElement>(true);
+  useScrollLock(true);
+  useEscapeKey(true, onClose);
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!role.trim()) return;
+    setSaving(true);
+    try {
+      const abilities = abilitiesInput.split(',').map((s: string) => s.trim()).filter(Boolean);
+      const payload = notice
+        ? { noticeId: notice.id, role, gender, abilities, requirements }
+        : { teamId, role, gender, abilities, requirements };
+      await onSubmit(payload);
+      onClose();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const control = 'w-full rounded-xl border border-[rgba(209,199,189,0.8)] bg-[rgba(248,246,242,0.7)] px-3.5 py-2 text-sm text-foreground outline-none focus:border-primary';
+
+  return (
+    <m.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-modal flex items-center justify-center p-4"
+    >
+      <div aria-hidden onClick={onClose} className="absolute inset-0 bg-[rgb(50_45_41/0.34)] backdrop-blur-md" />
+      <m.div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        tabIndex={-1}
+        initial={{ opacity: 0, y: 20, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        className="surface-overlay relative max-h-[90vh] w-full max-w-md overflow-y-auto rounded-3xl p-6 text-foreground sm:p-8"
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <span className="text-label uppercase text-primary">Seat Posting</span>
+            <h3 className="mt-1 text-feature font-extrabold">{notice ? 'Edit recruitment notice' : 'Post recruitment notice'}</h3>
+          </div>
+          <button onClick={onClose} aria-label="Close">
+            <X className="size-4 text-muted" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+          <label className="block">
+            <Label>Role description</Label>
+            <input
+              required
+              placeholder="e.g. Frontend Specialist"
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              className={`${control} mt-1.5`}
+            />
+          </label>
+
+          <label className="block">
+            <Label>Gender preference</Label>
+            <select
+              value={gender}
+              onChange={(e) => setGender(e.target.value)}
+              className={`${control} mt-1.5`}
+            >
+              <option value="OPEN">Open to anyone</option>
+              <option value="MALE">Male preferred</option>
+              <option value="FEMALE">Female preferred</option>
+            </select>
+          </label>
+
+          <label className="block">
+            <Label>Required skills (comma-separated)</Label>
+            <input
+              placeholder="e.g. React, Tailwind, TypeScript"
+              value={abilitiesInput}
+              onChange={(e) => setAbilitiesInput(e.target.value)}
+              className={`${control} mt-1.5`}
+            />
+          </label>
+
+          <label className="block">
+            <Label>Additional requirements / details</Label>
+            <textarea
+              rows={3}
+              placeholder="Describe what they will work on..."
+              value={requirements}
+              onChange={(e) => setRequirements(e.target.value)}
+              className={`${control} mt-1.5 resize-none`}
+            />
+          </label>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <PremiumButton type="button" variant="glass" size="sm" onClick={onClose} disabled={saving}>
+              Cancel
+            </PremiumButton>
+            <PremiumButton type="submit" size="sm" loading={saving}>
+              {notice ? 'Save changes' : 'Post notice'}
+            </PremiumButton>
+          </div>
+        </form>
+      </m.div>
+    </m.div>
+  );
 }
 
 export default function DashboardPage() {
@@ -372,6 +535,45 @@ export default function DashboardPage() {
   // Modal states
   const [editingRoleMember, setEditingRoleMember] = useState<any>(null);
   const [editingTeam, setEditingTeam] = useState(false);
+  const [activeNoticeModal, setActiveNoticeModal] = useState<{
+    show: boolean;
+    notice?: any;
+    slotIndex?: number;
+  }>({ show: false });
+
+  const handleSaveRecruitmentNotice = async (payload: any) => {
+    try {
+      const method = payload.noticeId ? 'PUT' : 'POST';
+      const res = await fetch('/api/teams/recruitment-notice', {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Failed to save recruitment notice.');
+      toast(result.message || 'Recruitment notice saved successfully.', 'success');
+      fetchDashboard();
+    } catch (err: any) {
+      toast(err.message || 'Something went wrong', 'error');
+    }
+  };
+
+  const handleDeleteRecruitmentNotice = async (noticeId: string) => {
+    if (!confirm('Are you sure you want to delete this recruitment notice?')) return;
+    try {
+      const res = await fetch('/api/teams/recruitment-notice', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ noticeId }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Failed to delete recruitment notice.');
+      toast(result.message || 'Recruitment notice deleted.', 'success');
+      fetchDashboard();
+    } catch (err: any) {
+      toast(err.message || 'Something went wrong', 'error');
+    }
+  };
 
   const fetchDashboard = useCallback(async () => {
     try {
@@ -950,13 +1152,28 @@ export default function DashboardPage() {
                                            <h3 className="text-feature text-foreground font-extrabold">{team.name}</h3>
                                            <span className="rounded-md bg-[rgba(114,56,61,0.08)] px-2 py-0.5 text-[10px] font-black tracking-wider text-primary">{team.teamCode}</span>
                                          </div>
-                                        <p className="mt-0.5 text-xs text-muted">
-                                          Track{' '}
-                                          <span className="font-bold text-primary">
-                                            {team.track?.problemStatementCode || 'N/A'}
-                                          </span>{' '}
-                                          — {team.track?.name || 'N/A'}
-                                        </p>
+                                        <div className="mt-1 space-y-1">
+                                          <p className="text-xs text-muted">
+                                            Primary PS:{' '}
+                                            <span className="font-bold text-primary">
+                                              {team.track?.problemStatementCode || 'N/A'}
+                                            </span>{' '}
+                                            — {team.track?.name || 'N/A'}
+                                          </p>
+                                          <p className="text-xs text-muted">
+                                            Secondary PS:{' '}
+                                            {team.secondaryTrack ? (
+                                              <>
+                                                <span className="font-bold text-body bg-muted/20 px-1 py-0.2 rounded text-[10px]">
+                                                  {team.secondaryTrack.problemStatementCode}
+                                                </span>{' '}
+                                                — {team.secondaryTrack.name}
+                                              </>
+                                            ) : (
+                                              <span className="text-muted italic">None</span>
+                                            )}
+                                          </p>
+                                        </div>
                                       </div>
                                     </div>
 
@@ -1050,17 +1267,73 @@ export default function DashboardPage() {
                                         ))}
 
                                         {/* Empty Seats */}
-                                        {Array.from({ length: Math.max(0, 6 - filledSeats) }).map((_, idx) => (
-                                          <div
-                                            key={`empty-${idx}`}
-                                            className="flex items-center justify-between p-3.5 rounded-xl border border-dashed border-[rgba(172,156,141,0.6)] bg-[rgba(239,233,225,0.45)] text-xs text-muted"
-                                          >
-                                            <span>Open Roster Seat</span>
-                                            <PremiumButton href="/team-formation/find-teammates" size="sm" variant="glass">
-                                              Invite
-                                            </PremiumButton>
-                                          </div>
-                                        ))}
+                                        {Array.from({ length: Math.max(0, 6 - filledSeats) }).map((_, idx) => {
+                                          const notice = team.recruitmentNotices?.[idx];
+                                          return notice ? (
+                                            <div
+                                              key={`empty-notice-${notice.id}`}
+                                              className="rounded-xl border border-dashed border-[rgba(172,156,141,0.6)] bg-[rgba(239,233,225,0.455)] p-4 text-xs text-muted space-y-2 text-left"
+                                            >
+                                              <div className="flex items-center justify-between font-bold text-foreground">
+                                                <span className="text-[11px] text-primary uppercase font-bold">Open Seat: {notice.role}</span>
+                                                <span className="text-[9px] bg-primary/5 px-2 py-0.5 rounded text-primary">
+                                                  {notice.gender === 'OPEN' ? 'Open' : notice.gender}
+                                                </span>
+                                              </div>
+                                              {notice.abilities.length > 0 && (
+                                                <div className="flex flex-wrap gap-1 mt-1">
+                                                  {notice.abilities.map((a: string) => (
+                                                    <span key={a} className="bg-white/60 text-muted border border-[rgba(172,156,141,0.3)] px-1.5 py-0.2 rounded-md text-[9px]">
+                                                      {a}
+                                                    </span>
+                                                  ))}
+                                                </div>
+                                              )}
+                                              {notice.requirements && (
+                                                <p className="text-muted leading-relaxed mt-1.5 text-[11px]">
+                                                  {notice.requirements}
+                                                </p>
+                                              )}
+                                              {isLeader && (
+                                                <div className="flex justify-end gap-2 pt-2 border-t border-[rgba(172,156,141,0.2)]">
+                                                  <button
+                                                    onClick={() => setActiveNoticeModal({ show: true, notice })}
+                                                    className="p-1 rounded text-primary hover:bg-primary/5 font-semibold text-[10px]"
+                                                  >
+                                                    Edit Notice
+                                                  </button>
+                                                  <button
+                                                    onClick={() => handleDeleteRecruitmentNotice(notice.id)}
+                                                    className="p-1 rounded text-red-600 hover:bg-red-50 font-semibold text-[10px]"
+                                                  >
+                                                    Remove Notice
+                                                  </button>
+                                                </div>
+                                              )}
+                                            </div>
+                                          ) : (
+                                            <div
+                                              key={`empty-${idx}`}
+                                              className="flex items-center justify-between p-3.5 rounded-xl border border-dashed border-[rgba(172,156,141,0.6)] bg-[rgba(239,233,225,0.45)] text-xs text-muted"
+                                            >
+                                              <span>Open Roster Seat</span>
+                                              <div className="flex items-center gap-1.5">
+                                                {isLeader && (
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => setActiveNoticeModal({ show: true, slotIndex: idx })}
+                                                    className="rounded-lg border border-[rgba(114,56,61,0.3)] bg-[rgba(114,56,61,0.08)] px-2.5 py-1.5 text-[10px] font-black text-primary hover:bg-[rgba(114,56,61,0.15)] transition-colors"
+                                                  >
+                                                    Post Notice
+                                                  </button>
+                                                )}
+                                                <PremiumButton href="/team-formation/find-teammates" size="sm" variant="glass">
+                                                  Invite
+                                                </PremiumButton>
+                                              </div>
+                                            </div>
+                                          );
+                                        })}
                                       </div>
                                     ) : (
                                       // Standard Grid view for team member
@@ -1278,7 +1551,7 @@ export default function DashboardPage() {
                                     </div>
                                     {!team.mentor && isLeader && (
                                       <PremiumButton size="sm" href="/team-formation/find-mentors">
-                                        Find mentors
+                                        Browse mentors
                                       </PremiumButton>
                                     )}
                                   </div>
@@ -1397,9 +1670,21 @@ export default function DashboardPage() {
                                             {inv.status}
                                           </span>
                                         </div>
-                                        <span className="block text-[10px] text-muted mt-1 leading-relaxed">
-                                          Problem Statement: <strong>{inv.team.track.problemStatementCode}</strong> — {inv.team.track.name}
-                                        </span>
+                                        <div className="mt-1 space-y-0.5 text-[10px] text-muted">
+                                          <span className="block leading-tight">
+                                            Primary PS: <strong>{inv.team.track.problemStatementCode}</strong> — {inv.team.track.name}
+                                          </span>
+                                          <span className="block leading-tight">
+                                            Secondary PS:{' '}
+                                            {inv.team.secondaryTrack ? (
+                                              <>
+                                                <strong>{inv.team.secondaryTrack.problemStatementCode}</strong> — {inv.team.secondaryTrack.name}
+                                              </>
+                                            ) : (
+                                              <span className="italic text-[9px]">None</span>
+                                            )}
+                                          </span>
+                                        </div>
                                       </div>
 
                                       {inv.status !== 'accepted' && inv.status !== 'declined' && (
@@ -1461,9 +1746,17 @@ export default function DashboardPage() {
                                       <span className="block text-xs font-bold text-foreground">
                                         Request to join: {req.team.name}
                                       </span>
-                                      <span className="block text-[10px] text-muted mt-0.5">
-                                        Track: {req.team.track.problemStatementCode}
-                                      </span>
+                                      <div className="mt-0.5 space-y-0.5 text-[10px] text-muted">
+                                        <span className="block leading-tight">Primary PS: {req.team.track.problemStatementCode}</span>
+                                        <span className="block leading-tight">
+                                          Secondary PS:{' '}
+                                          {req.team.secondaryTrack ? (
+                                            req.team.secondaryTrack.problemStatementCode
+                                          ) : (
+                                            <span className="italic text-[9px]">None</span>
+                                          )}
+                                        </span>
+                                      </div>
                                     </div>
                                     <span
                                       className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase border ${
@@ -1581,9 +1874,19 @@ export default function DashboardPage() {
                                         {req.status.replace('_', ' ')}
                                       </span>
                                     </div>
-                                    <span className="mt-0.5 block text-xs text-muted">
-                                      Track: {req.team.track.name} ({req.team.track.problemStatementCode})
-                                    </span>
+                                    <div className="mt-1 space-y-0.5 text-xs text-muted">
+                                      <span className="block leading-tight">
+                                        Primary PS: {req.team.track.name} ({req.team.track.problemStatementCode})
+                                      </span>
+                                      <span className="block leading-tight">
+                                        Secondary PS:{' '}
+                                        {req.team.secondaryTrack ? (
+                                          `${req.team.secondaryTrack.name} (${req.team.secondaryTrack.problemStatementCode})`
+                                        ) : (
+                                          <span className="italic text-[10px]">None</span>
+                                        )}
+                                      </span>
+                                    </div>
 
                                     {/* Team Members List */}
                                     <div className="mt-3 flex items-center gap-1.5">
@@ -1681,6 +1984,14 @@ export default function DashboardPage() {
             team={team}
             onClose={() => setEditingTeam(false)}
             onSubmit={handleTeamDetailsSubmit}
+          />
+        )}
+        {activeNoticeModal.show && team && (
+          <RecruitmentNoticeModal
+            notice={activeNoticeModal.notice}
+            teamId={team.id}
+            onClose={() => setActiveNoticeModal({ show: false })}
+            onSubmit={handleSaveRecruitmentNotice}
           />
         )}
       </AnimatePresence>

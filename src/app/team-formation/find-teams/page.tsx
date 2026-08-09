@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, m } from 'framer-motion';
 import { ArrowUpRight, Users, User, Briefcase, Plus, Search, Filter, ShieldAlert } from 'lucide-react';
-import { Container, EmptyState } from '@/components/ui';
+import { Container, EmptyState, TeamCardSkeleton } from '@/components/ui';
 import Icon from '@/components/ui/Icon';
 import { useToast } from '@/components/ui/Toast';
 import Image from 'next/image';
@@ -493,7 +493,7 @@ export default function FindTeamsPage() {
               {loading ? (
                 <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                   {Array.from({ length: 4 }, (_, i) => (
-                    <div key={i} className="h-72 rounded-3xl skeleton-shimmer" />
+                    <TeamCardSkeleton key={i} />
                   ))}
                 </div>
               ) : paginatedTeams.length > 0 ? (

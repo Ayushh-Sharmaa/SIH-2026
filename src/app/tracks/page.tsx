@@ -5,7 +5,7 @@ import { AnimatePresence, m } from 'framer-motion';
 import { ArrowUpRight } from 'lucide-react';
 import Icon from '@/components/ui/Icon';
 import { useToast } from '@/components/ui/Toast';
-import { Container, Section } from '@/components/ui';
+import { Container, Section, TracksSkeleton } from '@/components/ui';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import {
@@ -32,27 +32,7 @@ interface Track {
 
 const ALL = 'All themes';
 
-function TracksSkeleton() {
-  return (
-    <div className="min-h-screen bg-background text-foreground">
-      <Navbar />
-      <Container width="content" className="py-12">
-        <div className="h-10 w-96 max-w-full rounded-xl skeleton-shimmer" />
-        <div className="mt-4 h-4 w-[28rem] max-w-full rounded skeleton-shimmer" />
-        <div className="mt-10 flex flex-wrap gap-2">
-          {Array.from({ length: 6 }, (_, i) => (
-            <div key={i} className="h-8 w-28 rounded-full skeleton-shimmer" />
-          ))}
-        </div>
-        <div className="mt-8 space-y-3">
-          {Array.from({ length: 6 }, (_, i) => (
-            <div key={i} className="h-24 rounded-2xl skeleton-shimmer" />
-          ))}
-        </div>
-      </Container>
-    </div>
-  );
-}
+
 
 export default function TracksPage() {
   const { toast } = useToast();
@@ -98,7 +78,16 @@ export default function TracksPage() {
     });
   }, [tracks, category, query]);
 
-  if (loading) return <TracksSkeleton />;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background text-foreground flex flex-col justify-between">
+        <Navbar />
+        <main className="flex-1">
+          <TracksSkeleton />
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">

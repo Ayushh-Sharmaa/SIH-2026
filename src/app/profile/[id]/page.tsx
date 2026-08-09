@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, ArrowUpRight, Code2, Crown, FlaskConical, Palette, PenLine, Terminal, type LucideIcon } from 'lucide-react';
 import Icon from '@/components/ui/Icon';
-import { Container } from '@/components/ui';
+import { Container, ProfileSkeleton } from '@/components/ui';
 import { useToast } from '@/components/ui/Toast';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -170,13 +170,11 @@ export default function StudentProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background text-foreground">
+      <div className="min-h-screen bg-background text-foreground flex flex-col justify-between">
         <Navbar />
-        <Container width="narrow" className="py-16 space-y-6">
-          <div className="h-10 w-44 rounded-2xl skeleton-shimmer" />
-          <div className="h-40 rounded-3xl skeleton-shimmer" />
-          <div className="h-96 rounded-3xl skeleton-shimmer" />
-        </Container>
+        <main className="flex-1">
+          <ProfileSkeleton />
+        </main>
         <Footer />
       </div>
     );

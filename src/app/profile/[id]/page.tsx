@@ -23,7 +23,7 @@ interface StudentProfile {
   year: string;
   branch: string;
   gender: string;
-  rollNo: string;
+  rollNo?: string | null;
   section: string;
   skills: string[];
   languages: string[];
@@ -244,10 +244,10 @@ export default function StudentProfilePage() {
                       {[
                         ['Year of study', profile.year || 'N/A'],
                         ['Academic branch', profile.branch || 'N/A'],
-                        ['Roll number', profile.rollNo || 'N/A'],
+                        profile.rollNo ? ['Roll number', profile.rollNo] : null,
                         ['Section', profile.section ? `Section ${profile.section}` : 'N/A'],
                         ['Gender', profile.gender || 'N/A'],
-                      ].map(([k, v]) => (
+                      ].filter((x): x is [string, string] => x !== null).map(([k, v]) => (
                         <div key={k}>
                           <dt className="text-label uppercase text-muted text-xs">{k}</dt>
                           <dd className="mt-1 font-bold text-foreground text-sm">{v}</dd>

@@ -162,6 +162,7 @@ export async function GET(request: Request) {
     // — but it means the response must depend on who is asking, not just on who
     // was asked for.
     const isSelf = !targetUserId || targetUserId === decoded.userId;
+    const hasRollNoAccess = isSelf || decoded.role === 'ADMIN' || decoded.role === 'MENTOR';
     const queryId = targetUserId || decoded.userId;
 
     const student = await prisma.studentProfile.findUnique({
@@ -190,7 +191,7 @@ export async function GET(request: Request) {
       year: student.year,
       branch: student.branch,
       gender: student.gender,
-      rollNo: student.rollNo,
+      rollNo: hasRollNoAccess ? student.rollNo : null,
       section: student.section,
       skills: student.skills,
       languages: student.languages,

@@ -186,5 +186,14 @@ export const SIH_OFFICIAL_18_THEMES: SihTheme[] = [
     description: 'Ideas focused on the intelligent use of resources for transforming and advancements of technology with combining the artificial intelligence to explore more various sources and get valuable insights.',
     sihUrl: 'https://sih.gov.in/',
   },
+  {
+    id: 'sih-theme-19',
+    problemStatementCode: 'PS-OPEN-INNOVATION',
+    name: 'Open Innovation',
+    organization: 'Ministry of Education / AICTE',
+    category: 'Open Category',
+    description: 'Submit any innovative idea that doesn\'t fit into the other official categories.',
+    sihUrl: 'https://sih.gov.in/',
+  },
 ];
 

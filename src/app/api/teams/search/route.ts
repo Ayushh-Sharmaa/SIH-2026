@@ -70,14 +70,20 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Invalid search filters.' }, { status: 400 });
     }
 
-    const nameQuery = parsedQuery.data.name?.toLowerCase();
-    const skillQuery = parsedQuery.data.skill?.toLowerCase();
+    const nameQuery = parsedQuery.data.name?.trim().toLowerCase();
+    const skillQuery = parsedQuery.data.skill?.trim().toLowerCase();
     const trackIdQuery = parsedQuery.data.trackId;
 
     let teams = await getCachedTeams();
 
     if (nameQuery) {
-      teams = teams.filter((t) => t.name.toLowerCase().includes(nameQuery) || t.teamCode.toLowerCase().includes(nameQuery));
+      teams = teams.filter(
+        (t) =>
+          t.name.toLowerCase().includes(nameQuery) ||
+          t.teamCode.toLowerCase().includes(nameQuery) ||
+          t.track.name.toLowerCase().includes(nameQuery) ||
+          t.track.problemStatementCode.toLowerCase().includes(nameQuery)
+      );
     }
     
     if (trackIdQuery) {
@@ -85,7 +91,11 @@ export async function GET(request: Request) {
     }
 
     if (skillQuery) {
-      teams = teams.filter((t) => t.skillsNeeded.some((sk) => sk.toLowerCase().includes(skillQuery)));
+      teams = teams.filter(
+        (t) =>
+          t.skillsNeeded.some((sk) => sk.toLowerCase().includes(skillQuery)) ||
+          t.skillsCovered.some((sk) => sk.toLowerCase().includes(skillQuery))
+      );
     }
 
     // Format the response so the frontend knows if the current user has already requested to join

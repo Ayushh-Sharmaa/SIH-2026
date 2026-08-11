@@ -96,10 +96,12 @@ export async function GET(request: Request) {
 
     students = students.filter((s) => s.userId !== decoded.userId);
     if (softSkillQuery) {
-      students = students.filter((s) => s.softSkills.includes(softSkillQuery));
+      const lower = softSkillQuery.trim().toLowerCase();
+      students = students.filter((s) => s.softSkills.some((sk) => sk.toLowerCase().includes(lower)));
     }
     if (languageQuery) {
-      students = students.filter((s) => s.languages.includes(languageQuery));
+      const lower = languageQuery.trim().toLowerCase();
+      students = students.filter((s) => s.languages.some((lang) => lang.toLowerCase().includes(lower)));
     }
     if (trackIdQuery) {
       students = students.filter((s) => s.trackInterest?.some((t) => t.id === trackIdQuery));

@@ -454,9 +454,15 @@ export default function AdminDashboardPage() {
       s.branch.toLowerCase().includes(q) ||
       s.teamCode?.toLowerCase().includes(q);
 
-    const matchesYear = studentYearFilter === 'ALL' || s.year === studentYearFilter;
-    const matchesBranch = studentBranchFilter === 'ALL' || s.branch === studentBranchFilter;
-    const matchesSection = studentSectionFilter === 'ALL' || s.section === studentSectionFilter;
+    const matchesYear =
+      studentYearFilter === 'ALL' ||
+      s.year?.trim().toLowerCase() === studentYearFilter.trim().toLowerCase();
+    const matchesBranch =
+      studentBranchFilter === 'ALL' ||
+      s.branch?.trim().toLowerCase() === studentBranchFilter.trim().toLowerCase();
+    const matchesSection =
+      studentSectionFilter === 'ALL' ||
+      s.section?.trim().toLowerCase() === studentSectionFilter.trim().toLowerCase();
     const matchesGender =
       studentGenderFilter === 'ALL' ||
       s.gender?.toLowerCase() === studentGenderFilter.toLowerCase();

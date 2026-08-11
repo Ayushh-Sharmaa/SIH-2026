@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useRouter } from 'next/navigation';
 import { AnimatePresence, m } from 'framer-motion';
 import { ArrowUpRight, UserX, Search, ShieldAlert, UsersRound } from 'lucide-react';
 import { Container, EmptyState, MentorCardSkeleton } from '@/components/ui';
@@ -142,6 +143,7 @@ function RequestMentorshipModal({
 }
 
 export default function FindMentorsPage() {
+  const router = useRouter();
   const { toast } = useToast();
   const [mentors, setMentors] = useState<Mentor[]>([]);
   const [eligibility, setEligibility] = useState<MentorEligibility | null>(null);
@@ -367,7 +369,10 @@ export default function FindMentorsPage() {
 
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                              <h2 className="text-feature text-foreground font-extrabold">
+                              <h2
+                                onClick={() => router.push(`/mentors/${mentor.userId}`)}
+                                className="text-feature text-foreground font-extrabold cursor-pointer hover:text-primary transition-colors"
+                              >
                                 {mentor.name}
                               </h2>
                               <span className="text-xs text-muted">
@@ -393,7 +398,11 @@ export default function FindMentorsPage() {
                               <div className="mt-3 flex flex-wrap items-center gap-1.5 text-caption text-muted">
                                 <span className="font-bold uppercase tracking-wider">Teams:</span>
                                 {mentor.teams.map((team) => (
-                                  <span key={team.id} className="rounded-md border border-[rgba(114,56,61,0.2)] bg-[rgba(114,56,61,0.06)] px-2 py-0.5 font-black text-primary">
+                                  <span
+                                    key={team.id}
+                                    onClick={() => router.push(`/teams/${team.id}`)}
+                                    className="cursor-pointer rounded-md border border-[rgba(114,56,61,0.2)] bg-[rgba(114,56,61,0.06)] px-2 py-0.5 font-black text-primary hover:border-primary transition-colors"
+                                  >
                                     {team.teamCode}
                                   </span>
                                 ))}
@@ -402,6 +411,14 @@ export default function FindMentorsPage() {
                           </div>
 
                           <div className="flex shrink-0 flex-row items-center gap-3 sm:flex-col sm:items-end sm:justify-center">
+                            <PremiumButton
+                              size="sm"
+                              variant="glass"
+                              onClick={() => router.push(`/mentors/${mentor.userId}`)}
+                            >
+                              View Profile
+                            </PremiumButton>
+
                             {!eligibility?.canRequest ? (
                               <span className="text-xs text-muted flex items-center gap-1">
                                 <ShieldAlert className="size-3.5" /> {eligibility?.reason ?? 'Checking eligibility'}

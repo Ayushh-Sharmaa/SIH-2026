@@ -474,144 +474,138 @@ export default function FindTeammatesPage() {
                           <TiltCard intensity={5} className="h-full">
                             <SpotlightCard className="h-full rounded-3xl" intensity={0.08}>
                               <article className="surface-raised flex h-full flex-col justify-between rounded-3xl p-5 sm:p-6">
-                                 <m.div
-                                   whileTap={{ scale: 0.98 }}
-                                   transition={SPRING.snappy}
-                                   onClick={() => router.push(`/profile/${student.userId}`)}
-                                   className="space-y-4 cursor-pointer group/card"
-                                 >
-                                  <div className="flex items-start justify-between gap-3">
-                                    <div className="flex items-center gap-3 min-w-0">
-                                      <ProfileAvatar
-                                        avatarUrl={student.avatarUrl}
-                                        name={student.name}
-                                      />
-                                      <div className="min-w-0">
-                                        <h3 className="truncate text-feature text-foreground group-hover/card:text-primary transition-colors duration-200 font-extrabold">
-                                          {student.name}
-                                        </h3>
-                                        <span className="mt-0.5 block truncate text-caption text-muted flex items-center gap-1">
-                                          <BookOpen className="size-3 shrink-0" />
-                                          {student.branch} · {student.year}
-                                        </span>
+                                  <m.div
+                                    whileTap={{ scale: 0.99 }}
+                                    transition={SPRING.snappy}
+                                    onClick={() => router.push(`/students/${student.userId}`)}
+                                    className="space-y-4 cursor-pointer group/card"
+                                  >
+                                    <div className="flex items-start justify-between gap-3">
+                                      <div className="flex items-center gap-3 min-w-0">
+                                        <ProfileAvatar
+                                          avatarUrl={student.avatarUrl}
+                                          name={student.name}
+                                        />
+                                        <div className="min-w-0">
+                                          <h3 className="truncate text-feature text-foreground group-hover/card:text-primary transition-colors duration-200 font-extrabold">
+                                            {student.name}
+                                          </h3>
+                                          <span className="mt-0.5 block truncate text-caption text-muted flex items-center gap-1">
+                                            <BookOpen className="size-3 shrink-0" />
+                                            {student.branch} · {student.year}
+                                          </span>
+                                        </div>
                                       </div>
-                                    </div>
-                                    <span className={`rounded-full border px-2 py-0.5 text-[9px] font-black uppercase shrink-0 flex items-center gap-0.5 ${student.team ? 'border-[rgba(172,156,141,0.55)] bg-[rgba(172,156,141,0.18)] text-body' : 'bg-[rgba(114,56,61,0.08)] border-[rgba(114,56,61,0.2)] text-primary'}`}>
-                                      <ShieldCheck className="size-2.5" /> {student.team ? 'Already in team' : 'Available'}
-                                    </span>
-                                  </div>
-
-                                  {/* Track Interests (Header placement for high prominence) */}
-                                  {student.interests && student.interests.length > 0 && (
-                                    <div className="rounded-2xl border border-[rgba(114,56,61,0.2)] bg-gradient-to-br from-[rgba(114,56,61,0.06)] to-[rgba(114,56,61,0.01)] p-3 space-y-1.5">
-                                      <span className="block text-[9px] font-black uppercase tracking-wider text-primary">
-                                        Track Interests
+                                      <span className={`rounded-full border px-2 py-0.5 text-[9px] font-black uppercase shrink-0 flex items-center gap-0.5 ${student.team ? 'border-[rgba(172,156,141,0.55)] bg-[rgba(172,156,141,0.18)] text-body' : 'bg-[rgba(114,56,61,0.08)] border-[rgba(114,56,61,0.2)] text-primary'}`}>
+                                        <ShieldCheck className="size-2.5" /> {student.team ? 'Already in team' : 'Available'}
                                       </span>
-                                      <div className="flex flex-wrap gap-1">
-                                        {student.interests.map((theme) => (
-                                          <div
-                                            key={theme.code}
-                                            className="inline-flex items-center gap-1.5 rounded-lg border border-[rgba(114,56,61,0.18)] bg-white/80 px-2 py-0.5 text-[10px] font-bold text-primary shadow-sm"
+                                    </div>
+
+                                    {/* Track Interests (Header placement for high prominence) */}
+                                    {student.interests && student.interests.length > 0 && (
+                                      <div className="rounded-2xl border border-[rgba(114,56,61,0.2)] bg-gradient-to-br from-[rgba(114,56,61,0.06)] to-[rgba(114,56,61,0.01)] p-3 space-y-1.5">
+                                        <span className="block text-[9px] font-black uppercase tracking-wider text-primary">
+                                          Track Interests
+                                        </span>
+                                        <div className="flex flex-wrap gap-1">
+                                          {student.interests.map((theme) => (
+                                            <div
+                                              key={theme.code}
+                                              className="inline-flex items-center gap-1.5 rounded-lg border border-[rgba(114,56,61,0.18)] bg-white/80 px-2 py-0.5 text-[10px] font-bold text-primary shadow-sm"
+                                            >
+                                              <span className="font-extrabold tracking-wider bg-[rgba(114,56,61,0.09)] px-1.5 py-0.5 rounded text-[9px]">
+                                                {theme.code}
+                                              </span>
+                                              <span className="max-w-[140px] truncate text-foreground/90 font-bold">
+                                                {theme.name}
+                                              </span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {/* College info */}
+                                    <div className="text-[11px] text-muted flex items-center gap-1 border-t border-b border-[rgba(209,199,189,0.4)] py-1.5">
+                                      <GraduationCap className="size-3.5 shrink-0 text-primary" />
+                                      <span className="truncate">{student.college}</span>
+                                    </div>
+
+                                    {student.team && (
+                                      <div className="rounded-xl border border-[rgba(114,56,61,0.18)] bg-[rgba(114,56,61,0.06)] px-3 py-2 text-xs">
+                                        <span className="font-black text-primary">{student.team.teamCode}</span>
+                                        <span className="text-body"> · {student.team.name}</span>
+                                        {student.team.mentor && (
+                                          <span className="mt-1 block text-caption text-muted">Mentor: {student.team.mentor.name}</span>
+                                        )}
+                                      </div>
+                                    )}
+
+                                    {/* Tech skills */}
+                                    <div>
+                                      <FilterLabel>Tech skills</FilterLabel>
+                                      <div className="flex flex-wrap gap-1.5">
+                                        {student.skills.map((sk) => (
+                                          <span
+                                            key={sk}
+                                            className="rounded-md border border-[rgba(114,56,61,0.22)] bg-[rgba(114,56,61,0.08)] px-2 py-0.5 text-caption font-semibold text-primary"
                                           >
-                                            <span className="font-extrabold tracking-wider bg-[rgba(114,56,61,0.09)] px-1.5 py-0.5 rounded text-[9px]">
-                                              {theme.code}
-                                            </span>
-                                            <span className="max-w-[140px] truncate text-foreground/90 font-bold">
-                                              {theme.name}
-                                            </span>
-                                          </div>
+                                            {sk}
+                                          </span>
                                         ))}
                                       </div>
                                     </div>
-                                  )}
 
-                                  {/* College info */}
-                                  <div className="text-[11px] text-muted flex items-center gap-1 border-t border-b border-[rgba(209,199,189,0.4)] py-1.5">
-                                    <GraduationCap className="size-3.5 shrink-0 text-primary" />
-                                    <span className="truncate">{student.college}</span>
-                                  </div>
-
-                                  {student.team && (
-                                    <div className="rounded-xl border border-[rgba(114,56,61,0.18)] bg-[rgba(114,56,61,0.06)] px-3 py-2 text-xs">
-                                      <span className="font-black text-primary">{student.team.teamCode}</span>
-                                      <span className="text-body"> · {student.team.name}</span>
-                                      {student.team.mentor && (
-                                        <span className="mt-1 block text-caption text-muted">Mentor: {student.team.mentor.name}</span>
-                                      )}
+                                    {/* Soft skills */}
+                                    <div>
+                                      <FilterLabel>Soft skills &amp; language</FilterLabel>
+                                      <div className="flex flex-wrap gap-1.5">
+                                        {student.softSkills.map((sk) => (
+                                          <span
+                                            key={sk}
+                                            className="rounded-md border border-[rgba(172,156,141,0.55)] bg-[rgba(172,156,141,0.18)] px-2 py-0.5 text-caption font-semibold text-foreground"
+                                          >
+                                            {sk}
+                                          </span>
+                                        ))}
+                                        {student.languages.map((ln) => (
+                                          <span
+                                            key={ln}
+                                            className="rounded-md border border-[rgba(209,199,189,0.7)] bg-[rgba(239,233,225,0.8)] px-2 py-0.5 text-caption font-semibold text-body"
+                                          >
+                                            {ln}
+                                          </span>
+                                        ))}
+                                      </div>
                                     </div>
-                                  )}
+                                  </m.div>
 
-                                  {/* Tech skills */}
-                                  <div>
-                                    <FilterLabel>Tech skills</FilterLabel>
-                                    <div className="flex flex-wrap gap-1.5">
-                                      {student.skills.map((sk) => (
-                                        <span
-                                          key={sk}
-                                          className="rounded-md border border-[rgba(114,56,61,0.22)] bg-[rgba(114,56,61,0.08)] px-2 py-0.5 text-caption font-semibold text-primary"
-                                        >
-                                          {sk}
-                                        </span>
-                                      ))}
-                                    </div>
+                                  <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-[rgba(209,199,189,0.6)] pt-4">
+                                    <PremiumButton
+                                      size="sm"
+                                      variant="glass"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        router.push(`/students/${student.userId}`);
+                                      }}
+                                    >
+                                      View Profile
+                                    </PremiumButton>
+
+                                    <PremiumButton
+                                      size="sm"
+                                      variant={state === 'sent' || student.team ? 'glass' : 'primary'}
+                                      loading={state === 'sending'}
+                                      disabled={Boolean(state) || Boolean(student.team)}
+                                      magnetic={false}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        sendInvite(student);
+                                      }}
+                                    >
+                                      {student.team ? 'Already in team' : state === 'sent' ? 'Invite sent' : 'Invite'}
+                                    </PremiumButton>
                                   </div>
-
-                                  {/* Soft skills */}
-                                  <div>
-                                    <FilterLabel>Soft skills &amp; language</FilterLabel>
-                                    <div className="flex flex-wrap gap-1.5">
-                                      {student.softSkills.map((sk) => (
-                                        <span
-                                          key={sk}
-                                          className="rounded-md border border-[rgba(172,156,141,0.55)] bg-[rgba(172,156,141,0.18)] px-2 py-0.5 text-caption font-semibold text-foreground"
-                                        >
-                                          {sk}
-                                        </span>
-                                      ))}
-                                      {student.languages.map((ln) => (
-                                        <span
-                                          key={ln}
-                                          className="rounded-md border border-[rgba(209,199,189,0.7)] bg-[rgba(239,233,225,0.8)] px-2 py-0.5 text-caption font-semibold text-body"
-                                        >
-                                          {ln}
-                                        </span>
-                                      ))}
-                                    </div>
-                                  </div>
-                                </m.div>
-
-                                <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-[rgba(209,199,189,0.6)] pt-4">
-                                  <div className="flex flex-wrap gap-1.5">
-                                    {[
-                                      { url: student.githubUrl, label: 'GitHub' },
-                                      { url: student.linkedinUrl, label: 'LinkedIn' },
-                                      { url: student.resumeUrl, label: 'Résumé' },
-                                    ]
-                                      .filter((l) => l.url)
-                                      .map((l) => (
-                                        <a
-                                          key={l.label}
-                                          href={l.url}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="rounded-md border border-[rgba(209,199,189,0.75)] bg-[rgba(239,233,225,0.7)] px-2 py-1 text-caption font-bold text-foreground transition-colors duration-250 hover:border-[rgba(114,56,61,0.3)] hover:text-primary"
-                                        >
-                                          {l.label} <Icon icon={ArrowUpRight} size="xs" />
-                                        </a>
-                                      ))}
-                                  </div>
-
-                                  <PremiumButton
-                                    size="sm"
-                                    variant={state === 'sent' || student.team ? 'glass' : 'primary'}
-                                    loading={state === 'sending'}
-                                    disabled={Boolean(state) || Boolean(student.team)}
-                                    magnetic={false}
-                                    onClick={() => sendInvite(student)}
-                                  >
-                                    {student.team ? 'Already in team' : state === 'sent' ? 'Invite sent' : 'Invite'}
-                                  </PremiumButton>
-                                </div>
                               </article>
                             </SpotlightCard>
                           </TiltCard>

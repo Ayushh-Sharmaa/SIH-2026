@@ -375,6 +375,17 @@ export async function GET(request: Request) {
           teams: {
             include: {
               track: true,
+              secondaryTrack: true,
+              members: {
+                select: {
+                  userId: true,
+                  name: true,
+                  branch: true,
+                  year: true,
+                  avatarUrl: true,
+                  roleInTeam: true,
+                },
+              },
             },
             take: 100,
           },
@@ -384,6 +395,7 @@ export async function GET(request: Request) {
               team: {
                 include: {
                   track: true,
+                  secondaryTrack: true,
                   members: {
                     select: {
                       name: true,
@@ -418,14 +430,21 @@ export async function GET(request: Request) {
           bio: mentor.bio,
           linkedinUrl: mentor.linkedinUrl,
         },
-        teams: mentor.teams.map((t) => ({
-          id: t.id,
-          teamCode: t.teamCode,
-          name: t.name,
-          status: t.status,
-          track: t.track,
-          memberCount: t.memberCount,
-        })),
+        teams: mentor.teams.map((t) => {
+          const leader = t.members.find((m) => m.userId === t.leaderId) || t.members[0];
+          return {
+            id: t.id,
+            teamCode: t.teamCode,
+            name: t.name,
+            status: t.status,
+            track: t.track,
+            secondaryTrack: t.secondaryTrack,
+            memberCount: t.memberCount,
+            leaderId: t.leaderId,
+            leaderName: leader?.name || 'N/A',
+            members: t.members,
+          };
+        }),
         pendingRequests: mentor.mentorRequests.map((r) => ({
           id: r.id,
           message: r.message,
@@ -436,6 +455,7 @@ export async function GET(request: Request) {
             teamCode: r.team.teamCode,
             name: r.team.name,
             track: r.team.track,
+            secondaryTrack: r.team.secondaryTrack,
             skillsCovered: r.team.skillsCovered,
             members: r.team.members,
           },

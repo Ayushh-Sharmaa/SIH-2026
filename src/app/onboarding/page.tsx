@@ -209,6 +209,7 @@ export default function OnboardingPage() {
 
   const [studentForm, setStudentForm] = useState({
     name: '',
+    email: '',
     year: '',
     branch: '',
     gender: '',
@@ -373,6 +374,7 @@ export default function OnboardingPage() {
             if (meData.user.role === 'STUDENT') {
               setStudentForm({
                 name: prof.name || meData.user.name || '',
+                email: meData.user.email || '',
                 year: prof.year || '',
                 branch: prof.branch || '',
                 gender: prof.gender || '',
@@ -472,6 +474,25 @@ export default function OnboardingPage() {
     if (!studentForm.year) {
       setError('Year of study is mandatory. Please select your year of study.');
       return false;
+    }
+    if (!studentForm.email.trim()) {
+      setError('Email address is mandatory. Please enter your email address.');
+      return false;
+    }
+
+    const emailLower = studentForm.email.trim().toLowerCase();
+    const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailLower);
+    if (!isEmailValid) {
+      setError('Please enter a valid email address.');
+      return false;
+    }
+
+    if (studentForm.year !== '1st Year') {
+      const isCollegeEmail = emailLower.endsWith('@glbajajgroup.org') || emailLower.endsWith('@glbajaj.org');
+      if (!isCollegeEmail) {
+        setError('Students in 2nd, 3rd, or 4th year must use an official college email ending with @glbajajgroup.org or @glbajaj.org. Personal emails (e.g. @gmail.com) are not allowed.');
+        return false;
+      }
     }
     if (!studentForm.branch) {
       setError('Course is mandatory. Please select your course.');
@@ -1390,6 +1411,32 @@ export default function OnboardingPage() {
                       <option value="Other">Other</option>
                     </SelectField>
                   </div>
+
+                  {studentForm.year && (
+                    <m.div
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="rounded-2xl border border-[rgba(209,199,189,0.85)] bg-[rgba(239,233,225,0.5)] p-4 space-y-2"
+                    >
+                      <Field
+                        label="Student Email Address *"
+                        type="email"
+                        required
+                        value={studentForm.email}
+                        onChange={(e) => setStudentForm({ ...studentForm, email: e.target.value })}
+                        placeholder={
+                          studentForm.year === '1st Year'
+                            ? 'e.g. student@gmail.com or student@glbajajgroup.org'
+                            : 'e.g. rollnumber@glbajajgroup.org or name@glbajaj.org'
+                        }
+                        hint={
+                          studentForm.year === '1st Year'
+                            ? '✓ 1st Year Students: You may use any email address (Personal or College email, e.g., @gmail.com or @glbajajgroup.org).'
+                            : '⚠️ 2nd, 3rd & 4th Year Students: MUST provide your official college email ending with @glbajajgroup.org or @glbajaj.org. Personal emails (@gmail.com) are not allowed.'
+                        }
+                      />
+                    </m.div>
+                  )}
 
                   {showCustomSectionInput && (
                     <Field

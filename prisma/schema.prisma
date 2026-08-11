@@ -119,6 +119,8 @@ model Team {
   skillsNeeded            String[]
   whatsapp                String?
   logoUrl                 String?
+  primaryPsType           String?             @default("Software") // "Software" | "Hardware"
+  secondaryPsType         String?             @default("Software") // "Software" | "Hardware"
   customMentorName        String?
   customMentorDesignation String?
   customMentorMobile      String?

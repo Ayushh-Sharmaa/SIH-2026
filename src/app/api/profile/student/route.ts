@@ -65,10 +65,14 @@ export async function PUT(request: Request) {
       trackInterest,
     } = parsed.data;
 
-    if (college) {
+    const userUpdateData: { college?: string; email?: string } = {};
+    if (college) userUpdateData.college = college;
+    if (parsed.data.email) userUpdateData.email = parsed.data.email.trim().toLowerCase();
+
+    if (Object.keys(userUpdateData).length > 0) {
       await prisma.user.update({
         where: { id: decoded.userId },
-        data: { college },
+        data: userUpdateData,
       });
     }
 

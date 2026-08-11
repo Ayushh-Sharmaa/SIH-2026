@@ -43,6 +43,8 @@ export default function CreateTeamPage() {
   const [name, setName] = useState('');
   const [trackId, setTrackId] = useState('');
   const [secondaryTrackId, setSecondaryTrackId] = useState('');
+  const [primaryPsType, setPrimaryPsType] = useState('Software');
+  const [secondaryPsType, setSecondaryPsType] = useState('Software');
   const [whatsapp, setWhatsapp] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
   const [loading, setLoading] = useState(false);
@@ -157,6 +159,8 @@ export default function CreateTeamPage() {
           name: name.trim(),
           trackId,
           secondaryTrackId: secondaryTrackId === 'none' ? undefined : secondaryTrackId,
+          primaryPsType: trackId === 'custom' ? customPsCategory : primaryPsType,
+          secondaryPsType: secondaryTrackId === 'custom' ? customSecondaryPsCategory : secondaryPsType,
           whatsapp: whatsapp.trim(),
           logoUrl: logoUrl || undefined,
           customPsCode: trackId === 'custom' ? customPsCode.trim() : undefined,
@@ -316,20 +320,35 @@ export default function CreateTeamPage() {
                   </div>
                 </div>
 
-                {/* Problem Statement Track */}
-                <div className="space-y-4">
-                  <SelectField
-                    label="Primary Problem Statement Track"
-                    value={trackId}
-                    onChange={(e) => setTrackId(e.target.value)}
-                  >
-                    {tracks.map((track) => (
-                      <option key={track.id} value={track.id}>
-                        {track.problemStatementCode} — {track.name}
-                      </option>
-                    ))}
-                    <option value="custom">Other / Custom Problem Statement</option>
-                  </SelectField>
+                {/* Problem Statement Tracks & Types */}
+                <div className="space-y-5">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <SelectField
+                      label="Primary Problem Statement Track *"
+                      value={trackId}
+                      onChange={(e) => setTrackId(e.target.value)}
+                    >
+                      {tracks.map((track) => (
+                        <option key={track.id} value={track.id}>
+                          {track.problemStatementCode} — {track.name}
+                        </option>
+                      ))}
+                      <option value="custom">Other / Custom Problem Statement</option>
+                    </SelectField>
+
+                    <SelectField
+                      label="Primary PS Category / Type *"
+                      value={trackId === 'custom' ? customPsCategory : primaryPsType}
+                      onChange={(e) => {
+                        setPrimaryPsType(e.target.value);
+                        if (trackId === 'custom') setCustomPsCategory(e.target.value);
+                      }}
+                    >
+                      <option value="Software">Software Edition</option>
+                      <option value="Hardware">Hardware Edition</option>
+                      <option value="Software/Hardware">Software &amp; Hardware</option>
+                    </SelectField>
+                  </div>
 
                   {trackId === 'custom' && (
                     <m.div
@@ -352,30 +371,36 @@ export default function CreateTeamPage() {
                         onChange={(e) => setCustomPsName(e.target.value)}
                         hint="e.g. Nexa Smart Solutions"
                       />
-                      <SelectField
-                        label="Problem Statement Type"
-                        value={customPsCategory}
-                        onChange={(e) => setCustomPsCategory(e.target.value)}
-                      >
-                        <option value="Software">Software</option>
-                        <option value="Hardware">Hardware</option>
-                        <option value="Software/Hardware">Software/Hardware</option>
-                      </SelectField>
                     </m.div>
                   )}
 
-                  <SelectField
-                    label="Secondary Problem Statement Track"
-                    value={secondaryTrackId}
-                    onChange={(e) => setSecondaryTrackId(e.target.value)}
-                  >
-                    {tracks.map((track) => (
-                      <option key={track.id} value={track.id}>
-                        {track.problemStatementCode} — {track.name}
-                      </option>
-                    ))}
-                    <option value="custom">Other / Custom Problem Statement</option>
-                  </SelectField>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <SelectField
+                      label="Secondary Problem Statement Track *"
+                      value={secondaryTrackId}
+                      onChange={(e) => setSecondaryTrackId(e.target.value)}
+                    >
+                      {tracks.map((track) => (
+                        <option key={track.id} value={track.id}>
+                          {track.problemStatementCode} — {track.name}
+                        </option>
+                      ))}
+                      <option value="custom">Other / Custom Problem Statement</option>
+                    </SelectField>
+
+                    <SelectField
+                      label="Secondary PS Category / Type *"
+                      value={secondaryTrackId === 'custom' ? customSecondaryPsCategory : secondaryPsType}
+                      onChange={(e) => {
+                        setSecondaryPsType(e.target.value);
+                        if (secondaryTrackId === 'custom') setCustomSecondaryPsCategory(e.target.value);
+                      }}
+                    >
+                      <option value="Software">Software Edition</option>
+                      <option value="Hardware">Hardware Edition</option>
+                      <option value="Software/Hardware">Software &amp; Hardware</option>
+                    </SelectField>
+                  </div>
 
                   {secondaryTrackId === 'custom' && (
                     <m.div
@@ -398,15 +423,6 @@ export default function CreateTeamPage() {
                         onChange={(e) => setCustomSecondaryPsName(e.target.value)}
                         hint="e.g. Nexa Secondary Solutions"
                       />
-                      <SelectField
-                        label="Problem Statement Type"
-                        value={customSecondaryPsCategory}
-                        onChange={(e) => setCustomSecondaryPsCategory(e.target.value)}
-                      >
-                        <option value="Software">Software</option>
-                        <option value="Hardware">Hardware</option>
-                        <option value="Software/Hardware">Software/Hardware</option>
-                      </SelectField>
                     </m.div>
                   )}
                 </div>

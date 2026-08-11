@@ -75,27 +75,41 @@ export const onboardingRoleSchema = z.object({
 });
 
 // 2. Profiles
-export const studentProfileSchema = z.object({
-  name: z.string().trim().min(2, "Name must be at least 2 characters").max(100),
-  year: z.string().trim().min(1, "Year is required").max(40),
-  branch: z.string().trim().min(1, "Branch is required").max(40),
-  gender: z.string().trim().max(40).optional(),
-  rollNo: z.string().trim().max(40).optional(),
-  section: z.string().trim().max(10).optional(),
-  category: z.string().trim().max(40).optional(),
-  contact: z.string().trim().max(40).optional(),
-  college: z.string().trim().min(2).max(150).optional(),
-  skills: z.array(z.string().trim().max(100)).max(100, "You can select at most 100 technical skills"),
-  languages: z.array(z.string().trim().max(100)).max(30, "You can select at most 30 languages"),
-  softSkills: z.array(z.string().trim().max(100)).max(30, "You can select at most 30 soft skills"),
-  resumeUrl: resumeUrlSchema,
-  githubUrl: githubUrlSchema,
-  linkedinUrl: linkedinUrlSchema,
-  avatarUrl: z.string().max(3_000_000).optional(),
-  trackInterest: z
-    .array(z.string().trim().max(100))
-    .length(2, "Exactly 2 preferred problem statements are required"),
-});
+export const studentProfileSchema = z
+  .object({
+    name: z.string().trim().min(2, "Name must be at least 2 characters").max(100),
+    email: z.string().trim().toLowerCase().email().optional(),
+    year: z.string().trim().min(1, "Year is required").max(40),
+    branch: z.string().trim().min(1, "Branch is required").max(40),
+    gender: z.string().trim().max(40).optional(),
+    rollNo: z.string().trim().max(40).optional(),
+    section: z.string().trim().max(10).optional(),
+    category: z.string().trim().max(40).optional(),
+    contact: z.string().trim().max(40).optional(),
+    college: z.string().trim().min(2).max(150).optional(),
+    skills: z.array(z.string().trim().max(100)).max(100, "You can select at most 100 technical skills"),
+    languages: z.array(z.string().trim().max(100)).max(30, "You can select at most 30 languages"),
+    softSkills: z.array(z.string().trim().max(100)).max(30, "You can select at most 30 soft skills"),
+    resumeUrl: resumeUrlSchema,
+    githubUrl: githubUrlSchema,
+    linkedinUrl: linkedinUrlSchema,
+    avatarUrl: z.string().max(3_000_000).optional(),
+    trackInterest: z
+      .array(z.string().trim().max(100))
+      .length(2, "Exactly 2 preferred problem statements are required"),
+  })
+  .superRefine(({ email, year }, ctx) => {
+    if (email && year && year !== '1st Year') {
+      const lower = email.trim().toLowerCase();
+      if (!lower.endsWith('@glbajajgroup.org') && !lower.endsWith('@glbajaj.org')) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['email'],
+          message: '2nd, 3rd, and 4th year students must use an official college email ending with @glbajajgroup.org or @glbajaj.org.',
+        });
+      }
+    }
+  });
 
 export const mentorProfileSchema = z.object({
   name: z.string().trim().min(2).max(100),
@@ -114,6 +128,8 @@ export const createTeamSchema = z.object({
   name: z.string().trim().min(2).max(100),
   trackId: z.string().trim().min(1).max(100),
   secondaryTrackId: z.string().trim().max(100).nullable().optional(),
+  primaryPsType: z.string().trim().max(40).optional(),
+  secondaryPsType: z.string().trim().max(40).optional(),
   whatsapp: z.string().trim().max(40).optional(),
   logoUrl: z.string().optional(),
   customMentorName: z.string().trim().max(100).optional(),
@@ -134,6 +150,8 @@ export const updateTeamDetailsSchema = z.object({
   name: z.string().trim().min(2).max(100),
   trackId: z.string().trim().min(1).max(100),
   secondaryTrackId: z.string().trim().max(100).nullable().optional(),
+  primaryPsType: z.string().trim().max(40).optional(),
+  secondaryPsType: z.string().trim().max(40).optional(),
   whatsapp: z.string().trim().max(40).optional(),
   logoUrl: z.string().max(3_000_000).nullable().optional(),
   customMentorName: z.string().trim().max(100).optional(),

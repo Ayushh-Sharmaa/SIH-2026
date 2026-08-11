@@ -97,7 +97,7 @@ function describedBy(error: string | undefined, hint: string | undefined, errorI
   return ids.length ? ids.join(' ') : undefined;
 }
 
-export interface FieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'placeholder'> {
+export interface FieldProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string;
   error?: string;
   hint?: string;

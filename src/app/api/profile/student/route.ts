@@ -170,6 +170,7 @@ export async function GET(request: Request) {
       include: {
         trackInterest: { select: { id: true, name: true, problemStatementCode: true } },
         user: { select: { email: true, college: true } },
+        team: { select: { id: true, name: true, teamCode: true, mentorId: true } },
       },
     });
 
@@ -184,10 +185,8 @@ export async function GET(request: Request) {
       code: t.problemStatementCode,
     }));
 
-    // Fields the teammate viewer renders for everyone. Keeping this list
-    // explicit — rather than spreading the row and deleting keys — means a
-    // column added to StudentProfile later is private by default.
     const shared = {
+      userId: student.userId,
       name: student.name,
       year: student.year,
       branch: student.branch,
@@ -205,6 +204,16 @@ export async function GET(request: Request) {
       avatarUrl: student.avatarUrl,
       email: student.user.email,
       contact: student.contact,
+      teamStatus: student.teamStatus,
+      roleInTeam: student.roleInTeam,
+      team: student.team
+        ? {
+            id: student.team.id,
+            teamCode: student.team.teamCode,
+            name: student.team.name,
+            mentorId: student.team.mentorId,
+          }
+        : null,
       trackInterest,
       tracksDetailed,
     };

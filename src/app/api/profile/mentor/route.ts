@@ -94,7 +94,7 @@ export async function GET(request: Request) {
     }
 
     const decoded = verifyToken(token);
-    if (!decoded || decoded.role !== 'MENTOR') {
+    if (!decoded) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -104,9 +104,26 @@ export async function GET(request: Request) {
       return rateLimitResponse;
     }
 
+    const { searchParams } = new URL(request.url);
+    const targetUserId = searchParams.get('userId')?.trim();
+    const queryId = targetUserId || decoded.userId;
+
     const mentor = await prisma.mentorProfile.findUnique({
-      where: { userId: decoded.userId },
-      include: { _count: { select: { teams: true } } },
+      where: { userId: queryId },
+      include: {
+        _count: { select: { teams: true } },
+        user: { select: { email: true, college: true } },
+        teams: {
+          select: {
+            id: true,
+            teamCode: true,
+            name: true,
+            status: true,
+            memberCount: true,
+            track: { select: { name: true, problemStatementCode: true } },
+          },
+        },
+      },
     });
 
     if (!mentor) {
@@ -116,14 +133,19 @@ export async function GET(request: Request) {
     return NextResponse.json({
       success: true,
       profile: {
+        userId: mentor.userId,
         name: mentor.name,
         designation: mentor.designation,
         organization: mentor.organization,
+        college: mentor.user?.college || mentor.organization,
+        email: mentor.user?.email || null,
         expertise: mentor.expertise,
         guidedTeamsCount: mentor._count.teams,
         verified: mentor.verified,
         bio: mentor.bio,
         linkedinUrl: mentor.linkedinUrl,
+        avatarUrl: mentor.avatarUrl,
+        teams: mentor.teams,
       },
     });
   } catch (error) {

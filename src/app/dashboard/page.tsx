@@ -1812,7 +1812,7 @@ export default function DashboardPage() {
                   // Faculty Mentor Dashboard View
                   <>
                     <Reveal direction="left">
-                      <Panel title="Mentoring activity">
+                      <Panel title="Mentoring Activity">
                         <div className="mb-3 flex items-baseline justify-between gap-4">
                           <span className="text-3xl font-extrabold tracking-tight text-foreground">
                             <Counter to={profile?.guidedTeamsCount ?? 0} duration={1.2} />
@@ -1828,28 +1828,79 @@ export default function DashboardPage() {
                     </Reveal>
 
                     <Reveal direction="left" delay={0.06}>
-                      <Panel title="Teams I guide">
+                      <Panel title="Teams I'm Mentoring">
                         {(data?.teams || []).length > 0 ? (
-                          <RevealGroup className="space-y-3" stagger={0.06} amount={0.1}>
-                            {(data?.teams || []).map((t: any) => (
-                              <RevealItem key={t.id}>
-                                <m.div
-                                  whileHover={{ y: -3 }}
-                                  transition={SPRING.snappy}
-                                  className="flex items-center justify-between gap-4 rounded-2xl border border-[rgba(209,199,189,0.65)] bg-[rgba(248,246,242,0.7)] p-4 transition-colors hover:border-[rgba(114,56,61,0.24)]"
-                                >
-                                  <div className="min-w-0">
-                                    <span className="block truncate text-sm font-bold text-foreground">
-                                      {t.name}
-                                    </span>
-                                    <span className="mt-0.5 block truncate text-xs text-muted">
-                                      Track: {t.track?.name || 'N/A'}
-                                    </span>
-                                  </div>
-                                  <Chip tone="accent">{t.memberCount} / 6</Chip>
-                                </m.div>
-                              </RevealItem>
-                            ))}
+                          <RevealGroup className="space-y-4" stagger={0.06} amount={0.1}>
+                            {(data?.teams || []).map((t: any) => {
+                              const isRecruitmentOpen = t.status === 'forming' && t.memberCount < 6;
+                              return (
+                                <RevealItem key={t.id}>
+                                  <m.div
+                                    whileHover={{ y: -3 }}
+                                    whileTap={{ scale: 0.99 }}
+                                    transition={SPRING.snappy}
+                                    onClick={() => router.push(`/teams/${t.id}`)}
+                                    className="group cursor-pointer rounded-2xl border border-[rgba(209,199,189,0.7)] bg-[rgba(248,246,242,0.85)] p-5 transition-all hover:border-[rgba(114,56,61,0.35)] hover:shadow-md"
+                                  >
+                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                      <div>
+                                        <div className="flex items-center gap-2">
+                                          <h3 className="text-base font-extrabold text-foreground group-hover:text-primary transition-colors">
+                                            {t.name}
+                                          </h3>
+                                          <span className="rounded-md border border-[rgba(114,56,61,0.22)] bg-[rgba(114,56,61,0.08)] px-2 py-0.5 text-[10px] font-extrabold text-primary uppercase">
+                                            {t.teamCode}
+                                          </span>
+                                        </div>
+                                        <p className="mt-1 text-xs text-muted">
+                                          Leader: <span className="font-bold text-foreground">{t.leaderName || 'N/A'}</span>
+                                        </p>
+                                      </div>
+
+                                      <div className="flex items-center gap-2 shrink-0">
+                                        <span
+                                          className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase border ${
+                                            isRecruitmentOpen
+                                              ? 'border-emerald-600/30 bg-emerald-500/10 text-emerald-700'
+                                              : 'border-[rgba(172,156,141,0.5)] bg-[rgba(172,156,141,0.15)] text-foreground'
+                                          }`}
+                                        >
+                                          {isRecruitmentOpen ? 'Recruitment Open' : 'Recruitment Closed'}
+                                        </span>
+                                        <Chip tone="accent">{t.memberCount} / 6 members</Chip>
+                                      </div>
+                                    </div>
+
+                                    {/* Problem Statements */}
+                                    <div className="mt-3.5 space-y-1 rounded-xl border border-[rgba(209,199,189,0.5)] bg-white/50 p-3 text-xs">
+                                      {t.track && (
+                                        <div>
+                                          <span className="font-bold text-primary">Primary PS: </span>
+                                          <span className="font-semibold text-foreground">{t.track.problemStatementCode}</span>
+                                          <span className="text-muted"> ({t.track.name})</span>
+                                        </div>
+                                      )}
+                                      {t.secondaryTrack && (
+                                        <div>
+                                          <span className="font-bold text-muted">Secondary PS: </span>
+                                          <span className="font-semibold text-foreground">{t.secondaryTrack.problemStatementCode}</span>
+                                          <span className="text-muted"> ({t.secondaryTrack.name})</span>
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    <div className="mt-4 flex items-center justify-between border-t border-[rgba(209,199,189,0.35)] pt-3 text-xs">
+                                      <span className="inline-flex items-center gap-1 font-bold text-emerald-700">
+                                        Mentoring Active
+                                      </span>
+                                      <span className="font-bold text-primary group-hover:underline inline-flex items-center gap-1">
+                                        View Team →
+                                      </span>
+                                    </div>
+                                  </m.div>
+                                </RevealItem>
+                              );
+                            })}
                           </RevealGroup>
                         ) : (
                           <p className="py-8 text-center text-sm text-muted">
@@ -1862,7 +1913,7 @@ export default function DashboardPage() {
                     {/* Mentor Requests List */}
                     <Reveal direction="left" delay={0.12}>
                       <Panel
-                        title="Incoming Mentorship Requests"
+                        title="Mentorship Requests"
                         action={
                           (data?.pendingRequests || []).length > 0 ? (
                             <Chip tone="primary">{(data?.pendingRequests || []).length} waiting</Chip>

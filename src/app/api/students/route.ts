@@ -13,6 +13,7 @@ const getCachedStudents = unstable_cache(
       where: {
         isDemo: false,
         teamId: null,
+        user: { role: 'STUDENT' },
       },
       select: {
         userId: true,

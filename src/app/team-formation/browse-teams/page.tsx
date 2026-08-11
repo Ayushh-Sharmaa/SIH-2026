@@ -222,6 +222,7 @@ function JoinRequestModal({
 }
 
 export default function FindTeamsPage() {
+  const router = useRouter();
   const { toast } = useToast();
 
   const [teams, setTeams] = useState<Team[]>([]);
@@ -544,7 +545,10 @@ export default function FindTeamsPage() {
                                   {/* Title & Status */}
                                   <div className="flex items-start justify-between gap-4">
                                     <div className="flex items-center gap-3 min-w-0">
-                                      <div className="size-11 shrink-0 overflow-hidden rounded-xl border border-[rgba(114,56,61,0.25)] bg-gradient-to-br from-[rgba(114,56,61,0.08)] to-[rgba(114,56,61,0.02)] flex items-center justify-center font-black text-primary text-xs">
+                                      <div
+                                        onClick={() => router.push(`/teams/${team.id}`)}
+                                        className="size-11 shrink-0 overflow-hidden rounded-xl border border-[rgba(114,56,61,0.25)] bg-gradient-to-br from-[rgba(114,56,61,0.08)] to-[rgba(114,56,61,0.02)] flex items-center justify-center font-black text-primary text-xs cursor-pointer hover:border-primary transition-colors"
+                                      >
                                         {team.logoUrl ? (
                                           <img src={team.logoUrl} alt="Logo" className="size-full object-cover" />
                                         ) : (
@@ -552,7 +556,10 @@ export default function FindTeamsPage() {
                                         )}
                                       </div>
                                       <div className="min-w-0">
-                                        <h3 className="truncate text-feature text-foreground font-extrabold">
+                                        <h3
+                                          onClick={() => router.push(`/teams/${team.id}`)}
+                                          className="truncate text-feature text-foreground font-extrabold cursor-pointer hover:text-primary transition-colors"
+                                        >
                                           {team.name}
                                         </h3>
                                         <span className="mt-0.5 block text-[10px] font-black uppercase tracking-[0.16em] text-primary">
@@ -596,21 +603,24 @@ export default function FindTeamsPage() {
                                   {/* Leader Info */}
                                   <div className="flex items-center gap-3">
                                     {leader ? (
-                                      <>
+                                      <div
+                                        onClick={() => router.push(`/students/${leader.userId}`)}
+                                        className="flex items-center gap-3 cursor-pointer group/leader"
+                                      >
                                         <ProfileAvatar
                                           avatarUrl={leader.avatarUrl}
                                           name={leader.name}
                                           size={7}
                                         />
                                         <div className="min-w-0">
-                                          <span className="block text-caption font-bold text-foreground truncate">
+                                          <span className="block text-caption font-bold text-foreground truncate group-hover/leader:text-primary transition-colors">
                                             {leader.name}
                                           </span>
                                           <span className="block text-[9px] text-muted uppercase tracking-wider mt-0.5">
                                             Team Leader
                                           </span>
                                         </div>
-                                      </>
+                                      </div>
                                     ) : (
                                       <span className="text-caption text-muted">No leader assigned</span>
                                     )}
@@ -628,7 +638,8 @@ export default function FindTeamsPage() {
                                           <m.div
                                             key={mem.userId}
                                             whileHover={{ y: -2 }}
-                                            className="group relative"
+                                            onClick={() => router.push(`/students/${mem.userId}`)}
+                                            className="group relative cursor-pointer"
                                           >
                                             <ProfileAvatar
                                               avatarUrl={mem.avatarUrl}
@@ -712,10 +723,14 @@ export default function FindTeamsPage() {
                                 </div>
 
                                 {/* Join Actions */}
-                                <div className="mt-6 border-t border-[rgba(209,199,189,0.6)] pt-4 flex items-center justify-between">
-                                  <span className="text-[10px] text-muted truncate max-w-[140px]">
-                                    Project: {team.track.name}
-                                  </span>
+                                <div className="mt-6 border-t border-[rgba(209,199,189,0.6)] pt-4 flex items-center justify-between gap-2">
+                                  <PremiumButton
+                                    size="sm"
+                                    variant="glass"
+                                    onClick={() => router.push(`/teams/${team.id}`)}
+                                  >
+                                    View Team
+                                  </PremiumButton>
 
                                   {userHasTeam ? (
                                     <span className="text-xs font-semibold text-muted flex items-center gap-1">

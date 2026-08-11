@@ -3,14 +3,15 @@ import assert from 'node:assert/strict';
 import { prisma } from '../src/lib/prisma';
 import { nextTeamCode } from '../src/lib/teamCode';
 
-const hasDb = process.env.DATABASE_URL &&
+const hasDb = process.env.RUN_DB_INTEGRATION_TESTS === '1' &&
+  process.env.DATABASE_URL &&
   !process.env.DATABASE_URL.includes('<project-ref>') &&
   !process.env.DATABASE_URL.includes('[PROJECT-ID]');
 
 if (!hasDb) {
-  describe('Integration flows (DATABASE_URL not configured)', () => {
+  describe('Integration flows (database mutation tests not enabled)', () => {
     test('skip tests', () => {
-      console.log('Skipping integration tests: DATABASE_URL not set in environment.');
+      console.log('Skipping integration tests: set RUN_DB_INTEGRATION_TESTS=1 against an isolated test database.');
     });
   });
 } else {
@@ -266,12 +267,10 @@ if (!hasDb) {
 
       await prisma.team.delete({ where: { id: retired.id } });
 
-      const reservation = await (prisma as any).teamCodeReservation?.findUnique({
+      const reservation = await prisma.teamCodeReservation.findUnique({
         where: { code: retired.teamCode },
       });
-      if (reservation) {
-        assert.equal(reservation.code, retired.teamCode);
-      }
+      assert.equal(reservation?.code, retired.teamCode);
 
       const successor = await prisma.$transaction(async (tx) => {
         const teamCode = await nextTeamCode(tx);

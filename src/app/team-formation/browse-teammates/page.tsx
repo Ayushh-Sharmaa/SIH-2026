@@ -55,6 +55,28 @@ interface Track {
   name: string;
 }
 
+interface TeammateFilters {
+  name: string;
+  college: string;
+  branch: string;
+  year: string;
+  skill: string;
+  softSkill: string;
+  language: string;
+  trackId: string;
+}
+
+const EMPTY_TEAMMATE_FILTERS: TeammateFilters = {
+  name: '',
+  college: '',
+  branch: '',
+  year: '',
+  skill: '',
+  softSkill: '',
+  language: '',
+  trackId: '',
+};
+
 const AVATAR_WASHES = [
   'from-[#AC9C8D] to-[#D1C7BD]',
   'from-[#D1C7BD] to-[#D9D9D9]',
@@ -134,28 +156,18 @@ export default function FindTeammatesPage() {
   const [currentPage, setCurrentPage] = useState(1);
 
   const fetchTeammates = useCallback(
-    async (filters?: {
-      name: string;
-      college: string;
-      branch: string;
-      year: string;
-      skill: string;
-      softSkill: string;
-      language: string;
-      trackId: string;
-    }) => {
-      const f = filters ?? { name, college, branch, year, skill, softSkill, language, trackId };
+    async (filters: TeammateFilters) => {
       setRefreshing(true);
       try {
         const queryParams = new URLSearchParams();
-        if (f.name) queryParams.append('name', f.name);
-        if (f.college) queryParams.append('college', f.college);
-        if (f.branch) queryParams.append('branch', f.branch);
-        if (f.year) queryParams.append('year', f.year);
-        if (f.skill) queryParams.append('skill', f.skill);
-        if (f.softSkill) queryParams.append('softSkill', f.softSkill);
-        if (f.language) queryParams.append('language', f.language);
-        if (f.trackId) queryParams.append('trackId', f.trackId);
+        if (filters.name) queryParams.append('name', filters.name);
+        if (filters.college) queryParams.append('college', filters.college);
+        if (filters.branch) queryParams.append('branch', filters.branch);
+        if (filters.year) queryParams.append('year', filters.year);
+        if (filters.skill) queryParams.append('skill', filters.skill);
+        if (filters.softSkill) queryParams.append('softSkill', filters.softSkill);
+        if (filters.language) queryParams.append('language', filters.language);
+        if (filters.trackId) queryParams.append('trackId', filters.trackId);
 
         const res = await fetch(`/api/students?${queryParams.toString()}`);
         const data = await res.json();
@@ -167,37 +179,30 @@ export default function FindTeammatesPage() {
         setRefreshing(false);
       }
     },
-    [name, college, branch, year, skill, softSkill, language, trackId, toast]
+    [toast]
   );
 
   useEffect(() => {
     async function initPage() {
-      try {
+      const loadTracks = async () => {
+        try {
         const res = await fetch('/api/tracks');
         const data = await res.json();
         if (data.success) setTracks(data.tracks);
-      } catch (err) {
-        logger.error('Fetch tracks failed', err);
-        toast('Could not load track filters. Please refresh.', 'error');
-      }
-      await fetchTeammates({
-        name: '',
-        college: '',
-        branch: '',
-        year: '',
-        skill: '',
-        softSkill: '',
-        language: '',
-        trackId: '',
-      });
+        } catch (err) {
+          logger.error('Fetch tracks failed', err);
+          toast('Could not load track filters. Please refresh.', 'error');
+        }
+      };
+      await Promise.all([loadTracks(), fetchTeammates(EMPTY_TEAMMATE_FILTERS)]);
       setLoading(false);
     }
     initPage();
-  }, []);
+  }, [fetchTeammates, toast]);
 
   const handleSearch = (e: FormEvent) => {
     e.preventDefault();
-    fetchTeammates();
+    fetchTeammates({ name, college, branch, year, skill, softSkill, language, trackId });
   };
 
   const itemsPerPage = 20;
@@ -213,16 +218,7 @@ export default function FindTeammatesPage() {
     setSoftSkill('');
     setLanguage('');
     setTrackId('');
-    fetchTeammates({
-      name: '',
-      college: '',
-      branch: '',
-      year: '',
-      skill: '',
-      softSkill: '',
-      language: '',
-      trackId: '',
-    });
+    fetchTeammates(EMPTY_TEAMMATE_FILTERS);
   };
 
   const sendInvite = async (student: Student) => {

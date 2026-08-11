@@ -690,7 +690,7 @@ export default function FindTeamsPage() {
                                         We are recruiting
                                       </span>
                                       <div className="mt-2 space-y-2">
-                                        {team.recruitmentNotices.map((notice: any) => (
+                                        {team.recruitmentNotices.map((notice) => (
                                           <div
                                             key={notice.id}
                                             className="rounded-2xl border border-[rgba(209,199,189,0.6)] bg-[rgba(239,233,225,0.3)] p-3 text-[11px]"

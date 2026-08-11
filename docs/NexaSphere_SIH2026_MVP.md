@@ -19,7 +19,7 @@ NexaSphere solves this with one platform: a searchable directory of students and
 | Role | Description |
 |---|---|
 | **Student** | Creates a profile with skills, track interest, and team status. Can search for teammates, request to join a team, or create one. |
-| **Mentor** | Creates a profile with domain expertise, track(s) they can mentor, and available capacity (e.g. max 3 teams). Teams send mentor requests. |
+| **Mentor** | Creates a profile with domain expertise and supported track(s). Teams send mentor requests; the mentor chooses how many teams to guide without a platform maximum. |
 | **Admin (you / SIH nodal team)** | Verifies mentors, manages tracks/problem statements, monitors team formation, handles disputes/removals. |
 
 A single login can hold only one active role at a time (chosen at signup: Student or Mentor). Role is stored on the `User` record and drives which dashboard/data model loads.
@@ -63,7 +63,7 @@ MentorProfile (1:1 with User)
  ├─ user_id, name, designation, organization
  ├─ expertise[] (skill/domain tags)
  ├─ tracks_supported[] (references Track)
- ├─ capacity (max teams), current_load (auto-counted)
+ ├─ guided teams (derived from Team.mentor_id; no stored limit or load counter)
  ├─ verified (bool, set by admin), bio, linkedin_url
 
 Track
@@ -91,7 +91,7 @@ Message  (for in-team chat)
  ├─ id, team_id, sender_id, content, created_at
 ```
 
-Key design point: **profile data is the single source of truth.** `StudentProfile.team_status`, `MentorProfile.current_load`, and `Team.skills_covered` are all derived fields recalculated on every join/leave/accept event — this is what gives you the "auto-updated on website" behavior you asked for, no manual refresh needed.
+Key design point: **profile and relationship data are the source of truth.** `StudentProfile.team_status` and `Team.skills_covered` are recalculated on roster changes. Mentor guidance count is queried from `Team.mentor_id`, so it cannot drift from actual assignments.
 
 ---
 
@@ -102,8 +102,8 @@ Key design point: **profile data is the single source of truth.** `StudentProfil
 3. A student can **create a team** (becomes leader) or **request to join** an existing forming team.
 4. Team leader/system computes `skills_needed` = required skills for that track's problem statement minus `skills_covered` by current members. This list drives what the "looking for" banner on the team card shows.
 5. Once team hits 6 members or leader locks it, `Team.status = complete`.
-6. Team then browses `/find-mentors`, filtered by track + expertise + open capacity, and sends a `MentorRequest`.
-7. Mentor accepts → `Team.mentor_id` set, `MentorProfile.current_load += 1`, both parties notified.
+6. Team browses `/team-formation/browse-mentors`, filtered by track and expertise, and sends a `MentorRequest`.
+7. Mentor accepts → `Team.mentor_id` is claimed atomically and both parties are notified. No mentor load counter is mutated.
 8. If a member leaves, `skills_covered` recalculates automatically and the team reopens on the teammate search until full again.
 
 ---
@@ -118,7 +118,7 @@ These aren't gimmicks — each agent should be a small backend service calling a
 | **Mentor Matching Agent** | Team requests mentor list | Ranks mentors by fit to the team's track + skill gaps + mentor's stated interest areas, not just raw filters. |
 | **Skill-Gap Agent** | On every team roster change | Reads the track's problem statement description + current member skills, outputs a structured list of missing skill categories to show on the team card ("Looking for: Backend, UI/UX"). |
 | **Profile Assistant** | During onboarding | Conversational helper that asks a few questions and auto-fills structured skill tags from a free-text answer like "I've built a couple of React apps and know some Python" → tags: `["React","JavaScript","Python"]`. |
-| **Team Health Agent** | Periodic / on-demand from `/my-team` | Flags risks: team has no one covering a required skill, mentor capacity full elsewhere, no activity in N days — sends a notification nudge. |
+| **Team Health Agent** | Periodic / on-demand from `/my-team` | Flags risks: team has no one covering a required skill, no assigned mentor, no activity in N days — sends a notification nudge. |
 
 All agents run as backend functions calling `POST /v1/messages` with a system prompt constraining output to JSON, so the frontend can render it directly (see the structured-output pattern in the appendix).
 

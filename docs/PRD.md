@@ -33,20 +33,20 @@ A single login holds exactly one active role (Student or Mentor), chosen at sign
 
 ### 3.1 Profiles
 - Student profile: skills (tagged), track interest, year/branch, resume/GitHub/LinkedIn links, live team status.
-- Mentor profile: expertise tags, tracks supported, capacity (max teams), current load, verification status.
+- Mentor profile: expertise tags, tracks supported, verification status, and a guidance count derived from assigned teams. There is no platform-imposed mentor limit.
 - Profile edits auto-propagate to search results and listings — no separate "publish" step.
 
 ### 3.2 Team Formation
 - `/find-teammates`: filter students by track, skill, college, and open availability; send invites.
-- `/find-mentors`: filter mentors by track, expertise, and open capacity; send requests.
+- `/team-formation/browse-mentors`: filter verified mentors by track and expertise; send requests.
 - Create a team (become leader) or request to join an existing forming team.
 - Auto-computed `skills_needed` per team: track's required skills minus what current members already cover. Drives a "Looking for: Backend, UI/UX" banner on the team card.
 - Team locks at 6 members or when the leader manually locks it.
 - If a member leaves, skill coverage recalculates and the team automatically reopens to new matches.
 
 ### 3.3 Mentor Matching
-- Teams browse and request mentors filtered by track, expertise, and open capacity.
-- Mentor acceptance sets the team's mentor and increments the mentor's current load.
+- Teams browse and request verified mentors filtered by track and expertise.
+- Mentor acceptance atomically claims an unassigned team. A mentor may accept any number of teams; the visible guidance count is derived from assignments.
 - Both parties get notified on accept/decline.
 
 ### 3.4 AI Agents (Claude-powered)
@@ -56,7 +56,7 @@ A single login holds exactly one active role (Student or Mentor), chosen at sign
 | Mentor Matching Agent | Team requests mentor list | Ranks mentors by fit to track + skill gaps + mentor's stated interest areas. |
 | Skill-Gap Agent | Every team roster change | Reads the track's problem statement + current member skills, returns missing skill categories for the team card. |
 | Profile Assistant | Onboarding | Converts free-text ("I've built a couple of React apps and know some Python") into structured skill tags. |
-| Team Health Agent | Periodic / on-demand | Flags risk: uncovered required skill, mentor fully booked, no team activity in N days. |
+| Team Health Agent | Periodic / on-demand | Flags risk: uncovered required skill, no assigned mentor, no team activity in N days. |
 
 ### 3.5 Supporting Features
 - Notifications: invites, join requests, mentor responses, team updates.

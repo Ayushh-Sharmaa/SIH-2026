@@ -11,14 +11,19 @@ export default function NavigationProgressBar() {
   const [navigating, setNavigating] = useState(false);
 
   useEffect(() => {
-    // Navigation completed
-    setProgress(100);
-    const timeout = setTimeout(() => {
-      setVisible(false);
-      setProgress(0);
-      setNavigating(false);
-    }, 200);
-    return () => clearTimeout(timeout);
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    const frame = requestAnimationFrame(() => {
+      setProgress(100);
+      timeout = setTimeout(() => {
+        setVisible(false);
+        setProgress(0);
+        setNavigating(false);
+      }, 200);
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+      if (timeout) clearTimeout(timeout);
+    };
   }, [pathname, searchParams]);
 
   useEffect(() => {

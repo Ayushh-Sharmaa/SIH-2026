@@ -19,7 +19,7 @@ Each phase should be functionally usable end-to-end before moving to the next �
 
 - Auth: signup/login, role selection (Student/Mentor), college-email verification.
 - Student profile creation/edit (skills, track interest, resume/GitHub/LinkedIn).
-- Mentor profile creation/edit (expertise, tracks supported, capacity, bio).
+- Mentor profile creation/edit (expertise, tracks supported, verification, bio).
 - Track listing page (`/tracks`) with basic team counts.
 - Basic search/filter on `/find-teammates` and `/find-mentors` — **no AI yet**, plain filter logic only.
 - Team creation + join requests (no skill-gap calculation yet).
@@ -31,7 +31,7 @@ Each phase should be functionally usable end-to-end before moving to the next �
 ## Phase 2 — Team Formation Logic
 
 - `skills_covered` / `skills_needed` auto-calculation (`lib/derived.ts`), recalculated on every roster change.
-- Mentor request flow: team → mentor request → accept/decline → `current_load` updates.
+- Mentor request flow: team → mentor request → accept/decline → `Team.mentor_id` assignment. One mentor may guide any number of teams they choose.
 - Notifications system: invites, join requests, mentor responses, team updates.
 - Team locking at 6 members or manual lock by leader.
 - Team reopening logic when a member leaves.

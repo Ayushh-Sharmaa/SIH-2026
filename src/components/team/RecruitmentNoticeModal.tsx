@@ -68,8 +68,8 @@ export default function RecruitmentNoticeModal({
       setRequirements('');
       onSuccess();
       onClose();
-    } catch (err: any) {
-      setError(err.message || 'An error occurred while posting recruitment notice.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'An error occurred while posting recruitment notice.');
     } finally {
       setSubmitting(false);
     }

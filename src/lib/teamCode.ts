@@ -11,6 +11,6 @@ export async function nextTeamCode(tx: Prisma.TransactionClient): Promise<string
 
   // The sequence is non-transactional (so a failed transaction still burns
   // the number) while this durable row survives every later team deletion.
-  await (tx as any).teamCodeReservation?.create?.({ data: { code } });
+  await tx.teamCodeReservation.create({ data: { code } });
   return code;
 }

@@ -13,7 +13,7 @@ Signup/Login  ──►  choose role: Student or Mentor
    ▼
 Onboarding (multi-step profile builder)
    │  Student: skills, track interest, resume/GitHub/LinkedIn
-   │  Mentor: expertise, tracks supported, capacity, bio
+   │  Mentor: expertise, tracks supported, verification, bio
    ▼
 Dashboard (role-specific)
    │  Student → team status / recommendations
@@ -32,7 +32,7 @@ Notifications drive every state change:
    → mentor request sent → accepted → team locked
 ```
 
-**Core principle:** profile data is the single source of truth. Derived fields (`team_status`, `current_load`, `skills_covered`, `skills_needed`) are recalculated on every join/leave/accept event server-side — the frontend never computes or caches these independently.
+**Core principle:** profile and relationship data are the source of truth. Derived fields (`team_status`, `skills_covered`, `skills_needed`) are recalculated on roster changes server-side. A mentor's guidance count is derived from `Team.mentor_id`; it is never stored as a mutable load counter.
 
 ---
 
@@ -127,13 +127,13 @@ nexasphere/
 │   ├── ui/              # shared, reusable primitives (button, card, input, badge)
 │   ├── profile/          # profile forms, skill-tag input
 │   ├── team/              # team card, roster list, skill-gap banner
-│   ├── mentor/            # mentor card, capacity indicator
+│   ├── mentor/            # mentor card, verification and guidance count
 │   └── layout/           # navbar, sidebar, notification bell
 ├── lib/
 │   ├── prisma.ts          # Prisma client singleton
 │   ├── supabase.ts        # Supabase client (auth/storage/realtime)
 │   ├── claude.ts          # Anthropic API wrapper for agents
-│   └── derived.ts         # skills_covered / skills_needed / current_load logic
+│   └── derived.ts         # skills_covered / skills_needed / member_count logic
 ├── prisma/
 │   └── schema.prisma
 ├── types/
@@ -164,17 +164,21 @@ StudentProfile (1:1 with User)
 MentorProfile (1:1 with User)
  ├─ user_id, name, designation, organization
  ├─ expertise[], tracks_supported[]
- ├─ capacity, current_load (auto-counted)
+ ├─ guided teams (derived from Team.mentor_id; no platform maximum)
  ├─ verified (bool), bio, linkedin_url
 
 Track
  ├─ id, name, problem_statement_code, description, category
 
 Team
- ├─ id, name, track_id, leader_id, status (forming|complete|locked)
+ ├─ id, team_code, name, track_id, leader_id, status (forming|complete|locked)
  ├─ mentor_id (nullable)
  ├─ member_count (auto, max 6)
  ├─ skills_covered[], skills_needed[] (derived)
+
+TeamCodeReservation
+ ├─ code (immutable primary key), allocated_at
+ └─ survives Team deletion so public SIH codes are permanently retired
 
 TeamInvite      ├─ id, team_id, invited_user_id, status, created_at
 JoinRequest     ├─ id, team_id, student_id, status

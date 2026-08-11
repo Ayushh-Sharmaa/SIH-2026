@@ -156,14 +156,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Invalid profile query.' }, { status: 400 });
     }
 
-    const targetUserId = parsedQuery.data.userId;
-    // `userId` is a direct object reference: any authenticated caller can name
-    // any other user. That is intentional — /profile/[id] is the teammate viewer
-    // — but it means the response must depend on who is asking, not just on who
-    // was asked for.
-    const isSelf = !targetUserId || targetUserId === decoded.userId;
-    const hasRollNoAccess = isSelf || decoded.role === 'ADMIN' || decoded.role === 'MENTOR';
-    const queryId = targetUserId || decoded.userId;
+    const queryId = parsedQuery.data.userId || decoded.userId;
 
     const student = await prisma.studentProfile.findUnique({
       where: { userId: queryId },
@@ -178,6 +171,35 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Student profile not found.' }, { status: 404 });
     }
 
+    const isSelf = queryId === decoded.userId;
+    const isAdmin = decoded.role === 'ADMIN';
+    const isTeamMentor = decoded.role === 'MENTOR' && Boolean(student.team?.mentorId && student.team.mentorId === decoded.userId);
+
+    let isAcceptedMeeting = false;
+    if (!isSelf && !isAdmin && !isTeamMentor) {
+      if (decoded.role === 'MENTOR') {
+        const req = await prisma.mentorRequest.findFirst({
+          where: {
+            mentorId: decoded.userId,
+            teamId: student.teamId || undefined,
+            status: { in: ['accepted', 'meeting_requested'] },
+          },
+        });
+        if (req) isAcceptedMeeting = true;
+      } else if (decoded.role === 'STUDENT' && student.teamId) {
+        const joinReq = await prisma.joinRequest.findFirst({
+          where: {
+            teamId: student.teamId,
+            studentId: decoded.userId,
+            status: { in: ['accepted', 'meeting_requested'] },
+          },
+        });
+        if (joinReq) isAcceptedMeeting = true;
+      }
+    }
+
+    const hasPrivateAccess = isSelf || isAdmin || isTeamMentor || isAcceptedMeeting;
+
     const trackInterest = student.trackInterest.map((t) => t.id);
     const tracksDetailed = student.trackInterest.map((t) => ({
       id: t.id,
@@ -191,9 +213,6 @@ export async function GET(request: Request) {
       year: student.year,
       branch: student.branch,
       gender: student.gender,
-      rollNo: hasRollNoAccess ? student.rollNo : null,
-      section: student.section,
-      category: student.category,
       college: student.user.college,
       skills: student.skills,
       languages: student.languages,
@@ -202,8 +221,6 @@ export async function GET(request: Request) {
       githubUrl: student.githubUrl,
       linkedinUrl: student.linkedinUrl,
       avatarUrl: student.avatarUrl,
-      email: student.user.email,
-      contact: student.contact,
       teamStatus: student.teamStatus,
       roleInTeam: student.roleInTeam,
       team: student.team
@@ -216,6 +233,13 @@ export async function GET(request: Request) {
         : null,
       trackInterest,
       tracksDetailed,
+
+      // Private fields: null unless authenticated user has explicit permission
+      rollNo: hasPrivateAccess ? student.rollNo : null,
+      section: hasPrivateAccess ? student.section : null,
+      category: hasPrivateAccess ? student.category : null,
+      email: hasPrivateAccess ? student.user.email : null,
+      contact: hasPrivateAccess ? student.contact : null,
     };
 
     return NextResponse.json({

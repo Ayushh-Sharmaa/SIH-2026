@@ -235,7 +235,11 @@ export async function GET(request: Request) {
               },
               mentorRequests: {
                 include: {
-                  mentor: true,
+                  mentor: {
+                    include: {
+                      user: { select: { email: true } },
+                    },
+                  },
                 },
                 orderBy: { createdAt: 'desc' },
                 take: 50,
@@ -330,18 +334,23 @@ export async function GET(request: Request) {
                       student: i.student,
                     }))
                   : [],
-                mentorRequests: student.team.mentorRequests.map((r) => ({
-                  id: r.id,
-                  status: r.status,
-                  message: r.message,
-                  createdAt: r.createdAt,
-                  mentor: {
-                    userId: r.mentor.userId,
-                    name: r.mentor.name,
-                    designation: r.mentor.designation,
-                    organization: r.mentor.organization,
-                  },
-                })),
+                mentorRequests: student.team.mentorRequests.map((r) => {
+                  const isAccepted = r.status === 'accepted' || r.status === 'meeting_requested';
+                  return {
+                    id: r.id,
+                    status: r.status,
+                    message: r.message,
+                    createdAt: r.createdAt,
+                    mentor: {
+                      userId: r.mentor.userId,
+                      name: r.mentor.name,
+                      designation: r.mentor.designation,
+                      organization: r.mentor.organization,
+                      // Contact info revealed ONLY when mutually accepted
+                      email: isAccepted ? r.mentor.user?.email || null : null,
+                    },
+                  };
+                }),
               };
             })()
           : null,
@@ -368,10 +377,11 @@ export async function GET(request: Request) {
         })),
       });
     } else {
-      // Fetch mentor profile, mentored teams, and pending requests
+      // Fetch mentor profile, mentored teams, and requests
       const mentor = await prisma.mentorProfile.findUnique({
         where: { userId: decoded.userId },
         include: {
+          user: { select: { email: true } },
           teams: {
             include: {
               track: true,
@@ -384,13 +394,15 @@ export async function GET(request: Request) {
                   year: true,
                   avatarUrl: true,
                   roleInTeam: true,
+                  contact: true,
+                  user: { select: { email: true } },
                 },
               },
             },
             take: 100,
           },
           mentorRequests: {
-            where: { status: { in: ['pending', 'keep_pending', 'meeting_requested'] } },
+            where: { status: { in: ['pending', 'keep_pending', 'meeting_requested', 'accepted'] } },
             include: {
               team: {
                 include: {
@@ -398,10 +410,13 @@ export async function GET(request: Request) {
                   secondaryTrack: true,
                   members: {
                     select: {
+                      userId: true,
                       name: true,
                       branch: true,
                       year: true,
                       avatarUrl: true,
+                      contact: true,
+                      user: { select: { email: true } },
                     },
                   },
                 },
@@ -429,6 +444,7 @@ export async function GET(request: Request) {
           verified: mentor.verified,
           bio: mentor.bio,
           linkedinUrl: mentor.linkedinUrl,
+          email: mentor.user?.email || null,
         },
         teams: mentor.teams.map((t) => {
           const leader = t.members.find((m) => m.userId === t.leaderId) || t.members[0];
@@ -442,24 +458,39 @@ export async function GET(request: Request) {
             memberCount: t.memberCount,
             leaderId: t.leaderId,
             leaderName: leader?.name || 'N/A',
+            leaderContact: leader ? {
+              name: leader.name,
+              email: leader.user?.email || null,
+              contact: leader.contact || null,
+            } : null,
             members: t.members,
           };
         }),
-        pendingRequests: mentor.mentorRequests.map((r) => ({
-          id: r.id,
-          message: r.message,
-          status: r.status,
-          createdAt: r.createdAt,
-          team: {
-            id: r.team.id,
-            teamCode: r.team.teamCode,
-            name: r.team.name,
-            track: r.team.track,
-            secondaryTrack: r.team.secondaryTrack,
-            skillsCovered: r.team.skillsCovered,
-            members: r.team.members,
-          },
-        })),
+        pendingRequests: mentor.mentorRequests.map((r) => {
+          const isAccepted = r.status === 'accepted' || r.status === 'meeting_requested';
+          const leader = r.team.members.find((m) => m.userId === r.team.leaderId) || r.team.members[0];
+          return {
+            id: r.id,
+            message: r.message,
+            status: r.status,
+            createdAt: r.createdAt,
+            team: {
+              id: r.team.id,
+              teamCode: r.team.teamCode,
+              name: r.team.name,
+              track: r.team.track,
+              secondaryTrack: r.team.secondaryTrack,
+              skillsCovered: r.team.skillsCovered,
+              members: r.team.members,
+              // Contact details revealed ONLY when mutually accepted
+              leaderContact: (isAccepted && leader) ? {
+                name: leader.name,
+                email: leader.user?.email || null,
+                contact: leader.contact || null,
+              } : null,
+            },
+          };
+        }),
       });
     }
   } catch (error) {

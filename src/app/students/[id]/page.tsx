@@ -6,7 +6,9 @@ import Image from 'next/image';
 import {
   ArrowLeft,
   ArrowUpRight,
+  Check,
   Code2,
+  Copy,
   Crown,
   FileText,
   FlaskConical,
@@ -138,6 +140,14 @@ export default function StudentProfilePage() {
   const { toast } = useToast();
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  const handleCopy = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedField(label);
+    toast(`${label} copied`, 'info');
+    setTimeout(() => setCopiedField(null), 2000);
+  };
 
   useEffect(() => {
     async function loadProfile() {
@@ -275,10 +285,12 @@ export default function StudentProfilePage() {
                           <dd className="mt-1 font-bold text-foreground">{profile.rollNo}</dd>
                         </div>
                       )}
-                      <div>
-                        <dt className="text-label uppercase text-muted text-xs">Class Section</dt>
-                        <dd className="mt-1 font-bold text-foreground">{profile.section ? `Section ${profile.section}` : 'N/A'}</dd>
-                      </div>
+                      {profile.section && (
+                        <div>
+                          <dt className="text-label uppercase text-muted text-xs">Class Section</dt>
+                          <dd className="mt-1 font-bold text-foreground">Section {profile.section}</dd>
+                        </div>
+                      )}
                       <div>
                         <dt className="text-label uppercase text-muted text-xs">Gender</dt>
                         <dd className="mt-1 font-bold text-foreground">{profile.gender || 'N/A'}</dd>
@@ -340,7 +352,7 @@ export default function StudentProfilePage() {
                           <div className="flex items-center justify-between">
                             <span className="flex items-center gap-1.5 text-muted">
                               <span className="size-2 rounded-full" style={{ backgroundColor: DOMAIN_COLOR.Communication }} />
-                              Communication
+                              Communication &amp; Soft Skills
                             </span>
                             <span className="font-bold text-foreground">{comm} ({commPct}%)</span>
                           </div>
@@ -351,48 +363,48 @@ export default function StudentProfilePage() {
                 )}
               </div>
 
-              {/* Technical & Soft Skills */}
+              {/* Technical Stack */}
               <SpotlightCard className="rounded-3xl">
-                <div className="surface-raised rounded-3xl p-6 sm:p-7 space-y-6">
-                  <h2 className="text-feature text-foreground">Skills &amp; Capabilities</h2>
+                <div className="surface-raised rounded-3xl p-6 sm:p-7 space-y-5">
+                  <h2 className="text-feature text-foreground">Technical Stack &amp; Skills</h2>
                   <div className="h-px bg-gradient-to-r from-[rgba(172,156,141,0.55)] via-[rgba(209,199,189,0.35)] to-transparent" />
 
-                  <div className="space-y-5">
-                    {profile.skills.length > 0 && (
+                  <div className="space-y-4">
+                    {profile.skills && profile.skills.length > 0 && (
                       <div>
                         <span className="block text-label uppercase text-muted text-xs mb-2">Technical Skills</span>
                         <div className="flex flex-wrap gap-1.5">
-                          {profile.skills.map((sk) => (
+                          {profile.skills.map((s) => (
                             <span
-                              key={sk}
-                              className="rounded-md border border-[rgba(114,56,61,0.22)] bg-[rgba(114,56,61,0.08)] px-2.5 py-1 text-xs font-semibold text-primary"
+                              key={s}
+                              className="rounded-md border border-[rgba(114,56,61,0.2)] bg-[rgba(114,56,61,0.08)] px-2.5 py-1 text-xs font-semibold text-primary"
                             >
-                              {sk}
+                              {s}
                             </span>
                           ))}
                         </div>
                       </div>
                     )}
 
-                    {profile.softSkills.length > 0 && (
+                    {profile.softSkills && profile.softSkills.length > 0 && (
                       <div>
-                        <span className="block text-label uppercase text-muted text-xs mb-2">Soft Skills</span>
+                        <span className="block text-label uppercase text-muted text-xs mb-2">Soft Skills &amp; Strengths</span>
                         <div className="flex flex-wrap gap-1.5">
-                          {profile.softSkills.map((sk) => (
+                          {profile.softSkills.map((ss) => (
                             <span
-                              key={sk}
-                              className="rounded-md border border-[rgba(172,156,141,0.55)] bg-[rgba(172,156,141,0.18)] px-2.5 py-1 text-xs font-semibold text-foreground"
+                              key={ss}
+                              className="rounded-md border border-[rgba(172,156,141,0.4)] bg-[rgba(172,156,141,0.15)] px-2.5 py-1 text-xs font-semibold text-foreground"
                             >
-                              {sk}
+                              {ss}
                             </span>
                           ))}
                         </div>
                       </div>
                     )}
 
-                    {profile.languages.length > 0 && (
+                    {profile.languages && profile.languages.length > 0 && (
                       <div>
-                        <span className="block text-label uppercase text-muted text-xs mb-2">Languages Spoken</span>
+                        <span className="block text-label uppercase text-muted text-xs mb-2">Languages</span>
                         <div className="flex flex-wrap gap-1.5">
                           {profile.languages.map((ln) => (
                             <span
@@ -436,34 +448,64 @@ export default function StudentProfilePage() {
                     <div>
                       <span className="block text-label uppercase text-muted text-xs mb-3">Actionable Contact &amp; Professional Links</span>
                       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                        {/* Mailto Action */}
-                        <a
-                          href={`mailto:${profile.email}`}
-                          className="flex items-center gap-3 rounded-xl border border-[rgba(209,199,189,0.6)] bg-white/50 p-3 hover:border-primary/40 hover:text-primary transition-all"
-                        >
-                          <div className="size-8 rounded-lg bg-[rgba(114,56,61,0.08)] text-primary flex items-center justify-center shrink-0">
-                            <Mail className="size-4" />
+                        {/* Copy-only Email Card */}
+                        {profile.email && (
+                          <div className="flex items-center justify-between gap-3 rounded-xl border border-[rgba(209,199,189,0.6)] bg-white/50 p-3">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="size-8 rounded-lg bg-[rgba(114,56,61,0.08)] text-primary flex items-center justify-center shrink-0">
+                                <Mail className="size-4" />
+                              </div>
+                              <div className="min-w-0">
+                                <span className="block text-[9px] font-black uppercase text-muted tracking-wider">Email Address</span>
+                                <span className="block text-xs font-bold text-foreground truncate">{profile.email}</span>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleCopy(profile.email!, 'Email')}
+                              className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-[rgba(114,56,61,0.2)] bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary hover:bg-primary/20 transition-colors"
+                            >
+                              {copiedField === 'Email' ? (
+                                <span className="flex items-center gap-1 text-emerald-700">
+                                  <Check className="size-3" /> Copied
+                                </span>
+                              ) : (
+                                <>
+                                  <Copy className="size-3" /> Copy
+                                </>
+                              )}
+                            </button>
                           </div>
-                          <div className="min-w-0 flex-1">
-                            <span className="block text-[9px] font-black uppercase text-muted tracking-wider">Email Address</span>
-                            <span className="block text-xs font-bold text-foreground truncate">{profile.email}</span>
-                          </div>
-                        </a>
+                        )}
 
-                        {/* Phone Action */}
+                        {/* Copy-only Phone Card */}
                         {profile.contact && (
-                          <a
-                            href={`tel:${profile.contact}`}
-                            className="flex items-center gap-3 rounded-xl border border-[rgba(209,199,189,0.6)] bg-white/50 p-3 hover:border-primary/40 hover:text-primary transition-all"
-                          >
-                            <div className="size-8 rounded-lg bg-[rgba(114,56,61,0.08)] text-primary flex items-center justify-center shrink-0">
-                              <Phone className="size-4" />
+                          <div className="flex items-center justify-between gap-3 rounded-xl border border-[rgba(209,199,189,0.6)] bg-white/50 p-3">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="size-8 rounded-lg bg-[rgba(114,56,61,0.08)] text-primary flex items-center justify-center shrink-0">
+                                <Phone className="size-4" />
+                              </div>
+                              <div className="min-w-0">
+                                <span className="block text-[9px] font-black uppercase text-muted tracking-wider">Phone Number</span>
+                                <span className="block text-xs font-bold text-foreground truncate">{profile.contact}</span>
+                              </div>
                             </div>
-                            <div className="min-w-0 flex-1">
-                              <span className="block text-[9px] font-black uppercase text-muted tracking-wider">Phone Number</span>
-                              <span className="block text-xs font-bold text-foreground truncate">{profile.contact}</span>
-                            </div>
-                          </a>
+                            <button
+                              type="button"
+                              onClick={() => handleCopy(profile.contact!, 'Phone number')}
+                              className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-[rgba(114,56,61,0.2)] bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary hover:bg-primary/20 transition-colors"
+                            >
+                              {copiedField === 'Phone number' ? (
+                                <span className="flex items-center gap-1 text-emerald-700">
+                                  <Check className="size-3" /> Copied
+                                </span>
+                              ) : (
+                                <>
+                                  <Copy className="size-3" /> Copy
+                                </>
+                              )}
+                            </button>
+                          </div>
                         )}
 
                         {/* GitHub Profile */}

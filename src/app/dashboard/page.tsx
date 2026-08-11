@@ -1585,36 +1585,86 @@ export default function DashboardPage() {
                                {/* Mentor Request responses history */}
                                {team.mentorRequests && team.mentorRequests.length > 0 && (
                                  <Reveal direction="left" delay={0.12}>
-                                   <Panel title="Mentor Requests Status">
+                                   <Panel title="Mentorship & Meeting Status">
                                       <div className="space-y-3">
-                                        {team.mentorRequests.map((req: any) => (
-                                          <div
-                                            key={req.id}
-                                            className="p-3.5 rounded-xl border border-[rgba(209,199,189,0.6)] bg-[rgba(248,246,242,0.7)] flex justify-between items-center"
-                                          >
-                                            <div>
-                                              <span className="block text-xs font-bold text-foreground">
-                                                {req.mentor.name}
-                                              </span>
-                                              <span className="block text-[10px] text-muted">
-                                                {req.mentor.designation} at {req.mentor.organization}
-                                              </span>
-                                            </div>
-                                            <span
-                                              className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase border ${
-                                                req.status === 'accepted'
-                                                  ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
-                                                  : req.status === 'declined'
-                                                  ? 'bg-rose-500/10 text-rose-600 border-rose-500/20'
-                                                  : req.status === 'meeting_requested'
-                                                  ? 'bg-purple-500/10 text-purple-600 border-purple-500/20'
-                                                  : 'bg-amber-500/10 text-amber-600 border-amber-500/20'
-                                              }`}
+                                        {team.mentorRequests.map((req: any) => {
+                                          const isAccepted = req.status === 'accepted' || req.status === 'meeting_requested';
+                                          return (
+                                            <div
+                                              key={req.id}
+                                              className="p-4 rounded-xl border border-[rgba(209,199,189,0.6)] bg-[rgba(248,246,242,0.7)] space-y-3"
                                             >
-                                              {req.status.replace('_', ' ')}
-                                            </span>
-                                          </div>
-                                        ))}
+                                              <div className="flex justify-between items-center gap-3">
+                                                <div>
+                                                  <span className="block text-xs font-bold text-foreground">
+                                                    {req.mentor.name}
+                                                  </span>
+                                                  <span className="block text-[10px] text-muted">
+                                                    {req.mentor.designation} at {req.mentor.organization}
+                                                  </span>
+                                                </div>
+                                                <span
+                                                  className={`rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider border ${
+                                                    isAccepted
+                                                      ? 'bg-emerald-500/10 text-emerald-700 border-emerald-500/20'
+                                                      : req.status === 'declined'
+                                                      ? 'bg-rose-500/10 text-rose-600 border-rose-500/20'
+                                                      : 'bg-amber-500/10 text-amber-700 border-amber-500/20'
+                                                  }`}
+                                                >
+                                                  {isAccepted ? 'Ready to Meet' : 'Meeting Pending'}
+                                                </span>
+                                              </div>
+
+                                              {/* Contact info revealed ONLY after mutual acceptance */}
+                                              {isAccepted && (req.mentor.email || req.mentor.contact) && (
+                                                <div className="pt-2 border-t border-[rgba(209,199,189,0.4)] space-y-2">
+                                                  <span className="block text-[9px] font-black uppercase tracking-wider text-primary">
+                                                    Contact Details
+                                                  </span>
+                                                  <div className="grid gap-2 sm:grid-cols-2">
+                                                    {req.mentor.email && (
+                                                      <div className="flex items-center justify-between gap-2 rounded-lg border border-[rgba(209,199,189,0.5)] bg-white/70 px-2.5 py-1.5 text-xs">
+                                                        <div className="min-w-0">
+                                                          <span className="block text-[8px] uppercase tracking-wider text-muted font-bold">Email</span>
+                                                          <span className="truncate font-semibold text-foreground block max-w-[140px]">{req.mentor.email}</span>
+                                                        </div>
+                                                        <button
+                                                          type="button"
+                                                          onClick={() => {
+                                                            navigator.clipboard.writeText(req.mentor.email);
+                                                            toast('Email copied', 'info');
+                                                          }}
+                                                          className="inline-flex shrink-0 items-center gap-1 rounded border border-[rgba(114,56,61,0.2)] bg-primary/10 px-2 py-0.5 text-[9px] font-bold text-primary hover:bg-primary/20 transition-colors"
+                                                        >
+                                                          Copy
+                                                        </button>
+                                                      </div>
+                                                    )}
+                                                    {req.mentor.contact && (
+                                                      <div className="flex items-center justify-between gap-2 rounded-lg border border-[rgba(209,199,189,0.5)] bg-white/70 px-2.5 py-1.5 text-xs">
+                                                        <div className="min-w-0">
+                                                          <span className="block text-[8px] uppercase tracking-wider text-muted font-bold">Phone</span>
+                                                          <span className="truncate font-semibold text-foreground block max-w-[120px]">{req.mentor.contact}</span>
+                                                        </div>
+                                                        <button
+                                                          type="button"
+                                                          onClick={() => {
+                                                            navigator.clipboard.writeText(req.mentor.contact);
+                                                            toast('Phone number copied', 'info');
+                                                          }}
+                                                          className="inline-flex shrink-0 items-center gap-1 rounded border border-[rgba(114,56,61,0.2)] bg-primary/10 px-2 py-0.5 text-[9px] font-bold text-primary hover:bg-primary/20 transition-colors"
+                                                        >
+                                                          Copy
+                                                        </button>
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                </div>
+                                              )}
+                                            </div>
+                                          );
+                                        })}
                                       </div>
                                     </Panel>
                                   </Reveal>
@@ -1988,6 +2038,47 @@ export default function DashboardPage() {
                                       <p className="mt-3.5 rounded-xl border-l-2 border-primary/35 bg-[rgba(239,233,225,0.7)] px-3 py-2 text-xs italic leading-relaxed text-body">
                                         &ldquo;{req.message}&rdquo;
                                       </p>
+                                    )}
+
+                                    {/* Contact info revealed ONLY after mutual acceptance */}
+                                    {(req.status === 'accepted' || req.status === 'meeting_requested') && req.team.leaderContact && (
+                                      <div className="mt-3 rounded-xl border border-[rgba(209,199,189,0.5)] bg-white/70 p-3 space-y-2">
+                                        <span className="block text-[9px] font-black uppercase tracking-wider text-primary">
+                                          Team Leader Contact Details
+                                        </span>
+                                        <div className="grid gap-2 sm:grid-cols-2">
+                                          {req.team.leaderContact.email && (
+                                            <div className="flex items-center justify-between gap-2 text-xs">
+                                              <span className="truncate text-foreground font-semibold">{req.team.leaderContact.email}</span>
+                                              <button
+                                                type="button"
+                                                onClick={() => {
+                                                  navigator.clipboard.writeText(req.team.leaderContact.email);
+                                                  toast('Email copied', 'info');
+                                                }}
+                                                className="rounded border border-[rgba(114,56,61,0.2)] bg-primary/10 px-2 py-0.5 text-[9px] font-bold text-primary hover:bg-primary/20"
+                                              >
+                                                Copy
+                                              </button>
+                                            </div>
+                                          )}
+                                          {req.team.leaderContact.contact && (
+                                            <div className="flex items-center justify-between gap-2 text-xs">
+                                              <span className="truncate text-foreground font-semibold">{req.team.leaderContact.contact}</span>
+                                              <button
+                                                type="button"
+                                                onClick={() => {
+                                                  navigator.clipboard.writeText(req.team.leaderContact.contact);
+                                                  toast('Phone number copied', 'info');
+                                                }}
+                                                className="rounded border border-[rgba(114,56,61,0.2)] bg-primary/10 px-2 py-0.5 text-[9px] font-bold text-primary hover:bg-primary/20"
+                                              >
+                                                Copy
+                                              </button>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
                                     )}
                                   </div>
 

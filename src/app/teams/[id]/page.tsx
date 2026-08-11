@@ -8,8 +8,10 @@ import {
   ArrowUpRight,
   Award,
   BookOpen,
+  Check,
   CheckCircle2,
   Code2,
+  Copy,
   Crown,
   FlaskConical,
   GraduationCap,
@@ -85,6 +87,11 @@ interface TeamDetails {
   status: string;
   leaderId: string;
   leaderName: string;
+  leaderContact?: {
+    name: string;
+    email?: string | null;
+    contact?: string | null;
+  } | null;
   memberCount: number;
   capacity: number;
   whatsapp?: string | null;
@@ -171,6 +178,14 @@ export default function TeamDetailsPage() {
   const [team, setTeam] = useState<TeamDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  const handleCopy = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedField(label);
+    toast(`${label} copied`, 'info');
+    setTimeout(() => setCopiedField(null), 2000);
+  };
 
   useEffect(() => {
     async function loadTeam() {
@@ -271,18 +286,64 @@ export default function TeamDetailsPage() {
                 </p>
               </div>
 
-              {team.whatsapp && (
-                <div className="shrink-0">
-                  <a
-                    href={team.whatsapp.startsWith('http') ? team.whatsapp : `https://wa.me/${team.whatsapp.replace(/\D/g, '')}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <PremiumButton size="sm" variant="glass" className="gap-2">
-                      <MessageSquare className="size-4 text-emerald-600" />
-                      Team WhatsApp
-                    </PremiumButton>
-                  </a>
+              {team.leaderContact && (
+                <div className="mt-6 sm:mt-0 shrink-0 w-full sm:w-auto">
+                  <div className="rounded-2xl border border-[rgba(209,199,189,0.7)] bg-[rgba(248,246,242,0.8)] p-4 shadow-sm space-y-2.5">
+                    <span className="block text-[10px] font-black uppercase tracking-wider text-muted">
+                      Team Leader Contact
+                    </span>
+                    <p className="text-sm font-bold text-foreground">{team.leaderContact.name}</p>
+
+                    <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                      {team.leaderContact.email && (
+                        <div className="flex items-center justify-between gap-3 rounded-xl border border-[rgba(209,199,189,0.6)] bg-white/80 px-3 py-1.5 text-xs">
+                          <div className="min-w-0">
+                            <span className="block text-[9px] uppercase tracking-wider text-muted font-bold">Email</span>
+                            <span className="truncate font-semibold text-foreground block max-w-[160px]">{team.leaderContact.email}</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(team.leaderContact!.email!, 'Email')}
+                            className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-[rgba(114,56,61,0.2)] bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary hover:bg-primary/20 transition-colors"
+                          >
+                            {copiedField === 'Email' ? (
+                              <span className="flex items-center gap-1 text-emerald-700">
+                                <Check className="size-3" /> Copied
+                              </span>
+                            ) : (
+                              <>
+                                <Copy className="size-3" /> Copy
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      )}
+
+                      {team.leaderContact.contact && (
+                        <div className="flex items-center justify-between gap-3 rounded-xl border border-[rgba(209,199,189,0.6)] bg-white/80 px-3 py-1.5 text-xs">
+                          <div className="min-w-0">
+                            <span className="block text-[9px] uppercase tracking-wider text-muted font-bold">Phone</span>
+                            <span className="truncate font-semibold text-foreground block max-w-[140px]">{team.leaderContact.contact}</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(team.leaderContact!.contact!, 'Phone number')}
+                            className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-[rgba(114,56,61,0.2)] bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary hover:bg-primary/20 transition-colors"
+                          >
+                            {copiedField === 'Phone number' ? (
+                              <span className="flex items-center gap-1 text-emerald-700">
+                                <Check className="size-3" /> Copied
+                              </span>
+                            ) : (
+                              <>
+                                <Copy className="size-3" /> Copy
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

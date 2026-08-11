@@ -87,30 +87,42 @@ export async function GET(
     const isMemberOfTeam = team.members.some((m) => m.userId === decoded.userId);
     const isMentorOfTeam = team.mentorId === decoded.userId;
     const isAdmin = decoded.role === 'ADMIN';
-    const hasDetailedAccess = isMemberOfTeam || isMentorOfTeam || isAdmin;
 
     const leader = team.members.find((m) => m.userId === team.leaderId) || team.members[0];
 
-    const formattedMembers = team.members.map((m) => ({
-      userId: m.userId,
-      name: m.name,
-      year: m.year,
-      branch: m.branch,
-      section: m.section,
-      gender: m.gender,
-      rollNo: hasDetailedAccess ? m.rollNo : null,
-      skills: m.skills,
-      languages: m.languages,
-      softSkills: m.softSkills,
-      avatarUrl: m.avatarUrl,
-      roleInTeam: m.roleInTeam,
-      college: m.user.college,
-      email: hasDetailedAccess ? m.user.email : null,
-      contact: hasDetailedAccess ? m.contact : null,
-      githubUrl: m.githubUrl,
-      linkedinUrl: m.linkedinUrl,
-      resumeUrl: m.resumeUrl,
-    }));
+    const formattedMembers = team.members.map((m) => {
+      const isSelf = m.userId === decoded.userId;
+      const canViewPrivate = isSelf || isMentorOfTeam || isAdmin;
+
+      return {
+        userId: m.userId,
+        name: m.name,
+        year: m.year,
+        branch: m.branch,
+        gender: m.gender,
+        skills: m.skills,
+        languages: m.languages,
+        softSkills: m.softSkills,
+        avatarUrl: m.avatarUrl,
+        roleInTeam: m.roleInTeam,
+        college: m.user.college,
+        githubUrl: m.githubUrl,
+        linkedinUrl: m.linkedinUrl,
+        resumeUrl: m.resumeUrl,
+
+        // Private fields restricted per Access Matrix
+        rollNo: canViewPrivate ? m.rollNo : null,
+        section: canViewPrivate ? m.section : null,
+        email: canViewPrivate ? m.user.email : null,
+        contact: canViewPrivate ? m.contact : null,
+      };
+    });
+
+    const leaderContact = leader ? {
+      name: leader.name,
+      email: leader.user.email,
+      contact: leader.contact,
+    } : null;
 
     return NextResponse.json({
       success: true,
@@ -121,9 +133,9 @@ export async function GET(
         status: team.status,
         leaderId: team.leaderId,
         leaderName: leader?.name || 'N/A',
-        memberCount: team.memberCount,
+        memberCount: team.members.length,
         capacity: 6,
-        whatsapp: hasDetailedAccess ? team.whatsapp : null,
+        whatsapp: (isMemberOfTeam || isMentorOfTeam || isAdmin) ? team.whatsapp : null,
         logoUrl: team.logoUrl,
         skillsCovered: team.skillsCovered,
         skillsNeeded: team.skillsNeeded,
@@ -137,6 +149,7 @@ export async function GET(
         members: formattedMembers,
         isMentorOfTeam,
         isMemberOfTeam,
+        leaderContact,
       },
     });
   } catch (error) {

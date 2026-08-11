@@ -1215,22 +1215,25 @@ export default function OnboardingPage() {
 
                   {/* profile photo */}
                   <div>
-                    <span className="mb-2 block text-label uppercase text-muted">
-                      Profile photo <span className="text-primary">*</span>
+                    <span className="mb-1.5 block text-label font-bold uppercase tracking-wider text-foreground">
+                      Professional Passport-Size Photograph <span className="text-primary">*</span>
                     </span>
+                    <p className="mb-3 text-xs leading-relaxed text-muted">
+                      Upload a clear, professional passport-size photograph. This photo will be used on your SIH profile and team-related views.
+                    </p>
 
                     {studentForm.avatarUrl ? (
                       <div className="flex flex-col items-center gap-5 rounded-2xl border border-[rgba(209,199,189,0.8)] bg-[rgba(239,233,225,0.5)] p-4 sm:flex-row">
                         <div className="size-24 shrink-0 overflow-hidden rounded-2xl border-2 border-[rgba(114,56,61,0.5)] shadow-[0_10px_30px_rgba(50,45,41,0.14)]">
                           <img
                             src={studentForm.avatarUrl}
-                            alt="Uploaded profile preview"
+                            alt="Uploaded professional photograph preview"
                             className="size-full object-cover"
                           />
                         </div>
                         <div className="flex-1 space-y-2 text-center sm:text-left">
-                          <span className="inline-flex items-center rounded-full border border-[rgba(172,156,141,0.7)] bg-[rgba(172,156,141,0.2)] px-2.5 py-0.5 text-caption font-bold text-foreground">
-                            Photo active
+                          <span className="inline-flex items-center gap-1.5 rounded-full border border-[rgba(114,56,61,0.3)] bg-[rgba(114,56,61,0.1)] px-2.5 py-0.5 text-caption font-bold text-primary">
+                            <Check className="size-3" /> Photograph Uploaded
                           </span>
                           <p className="text-xs leading-relaxed text-muted">
                             This photo appears on your card across team search and roster views.
@@ -1240,7 +1243,7 @@ export default function OnboardingPage() {
                               Change photo
                               <input
                                 type="file"
-                                accept="image/*"
+                                accept="image/png, image/jpeg, image/webp"
                                 className="sr-only"
                                 onChange={(e) => handleAvatarUpload(e.target.files?.[0])}
                               />
@@ -1256,35 +1259,41 @@ export default function OnboardingPage() {
                         </div>
                       </div>
                     ) : (
-                      <m.label
-                        whileHover={{ y: -3 }}
-                        transition={SPRING.snappy}
-                        className="group flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[rgba(172,156,141,0.75)] bg-[rgba(239,233,225,0.45)] p-8 text-center transition-colors duration-250 hover:border-[rgba(114,56,61,0.5)] hover:bg-[rgba(248,246,242,0.75)]"
-                      >
-                        <span className="mb-3 grid size-12 place-items-center rounded-full bg-[rgba(114,56,61,0.09)] text-primary transition-transform duration-250 group-hover:scale-110">
-                          <svg className="size-5" fill="none" viewBox="0 0 24 24" aria-hidden>
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              stroke="currentColor"
-                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                            />
-                          </svg>
-                        </span>
-                        <span className="text-sm font-bold text-foreground">
-                          Upload your profile photo
-                        </span>
-                        <span className="mt-1 text-caption text-muted">
-                          JPEG, PNG or WEBP up to 1.5 MB
-                        </span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="sr-only"
-                          onChange={(e) => handleAvatarUpload(e.target.files?.[0])}
-                        />
-                      </m.label>
+                      <div className="space-y-3">
+                        <m.label
+                          whileHover={{ y: -3 }}
+                          transition={SPRING.snappy}
+                          className="group flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[rgba(114,56,61,0.4)] bg-[rgba(239,233,225,0.45)] p-8 text-center transition-colors duration-250 hover:border-primary hover:bg-[rgba(248,246,242,0.75)]"
+                        >
+                          <span className="mb-3 grid size-12 place-items-center rounded-full bg-[rgba(114,56,61,0.09)] text-primary transition-transform duration-250 group-hover:scale-110">
+                            <svg className="size-5" fill="none" viewBox="0 0 24 24" aria-hidden>
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                stroke="currentColor"
+                                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                              />
+                            </svg>
+                          </span>
+                          <span className="text-sm font-bold text-foreground">
+                            Upload Professional Photograph *
+                          </span>
+                          <span className="mt-1 text-caption text-muted">
+                            PNG, JPG or WEBP (Max 1.5 MB)
+                          </span>
+                          <input
+                            type="file"
+                            accept="image/png, image/jpeg, image/webp"
+                            className="sr-only"
+                            onChange={(e) => handleAvatarUpload(e.target.files?.[0])}
+                          />
+                        </m.label>
+                        <div className="flex items-center gap-2 rounded-xl border border-[rgba(114,56,61,0.25)] bg-[rgba(114,56,61,0.05)] px-3.5 py-2 text-xs font-semibold text-primary">
+                          <span>⚠️</span>
+                          <span>Please upload your professional passport-size photograph to continue.</span>
+                        </div>
+                      </div>
                     )}
                   </div>
 

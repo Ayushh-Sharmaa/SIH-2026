@@ -101,6 +101,7 @@ export const mentorProfileSchema = z.object({
   name: z.string().trim().min(2).max(100),
   designation: z.string().trim().min(2).max(100),
   organization: z.string().trim().min(2).max(100),
+  contact: z.string().trim().max(40).optional(),
   expertise: z.array(z.string().trim().max(100)).max(100, "You can select at most 100 expertise tags"),
   bio: z.string().trim().max(2000).optional(),
   linkedinUrl: linkedinUrlSchema,

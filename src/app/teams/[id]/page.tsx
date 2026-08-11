@@ -58,6 +58,8 @@ interface Mentor {
   expertise: string[];
   avatarUrl?: string | null;
   linkedinUrl?: string | null;
+  email?: string | null;
+  contact?: string | null;
 }
 
 interface TeamMember {
@@ -412,13 +414,44 @@ export default function TeamDetailsPage() {
                       <div>
                         <span className="block text-label uppercase text-muted text-xs">Assigned Faculty Mentor</span>
                         {team.mentor ? (
-                          <div className="mt-1.5 flex items-start gap-3.5 rounded-2xl border border-[rgba(209,199,189,0.6)] bg-white/50 p-4">
-                            <MemberAvatar avatarUrl={team.mentor.avatarUrl} name={team.mentor.name} className="size-12 shrink-0" />
-                            <div className="min-w-0 flex-1">
-                              <h3 className="text-sm font-bold text-foreground truncate">{team.mentor.name}</h3>
-                              <p className="text-xs text-muted truncate">{team.mentor.designation}</p>
-                              <p className="text-[11px] font-semibold text-primary truncate">{team.mentor.organization}</p>
+                          <div className="mt-1.5 space-y-3 rounded-2xl border border-[rgba(209,199,189,0.6)] bg-white/50 p-4">
+                            <div className="flex items-start gap-3.5">
+                              <MemberAvatar avatarUrl={team.mentor.avatarUrl} name={team.mentor.name} className="size-12 shrink-0" />
+                              <div className="min-w-0 flex-1">
+                                <h3 className="text-sm font-bold text-foreground truncate">{team.mentor.name}</h3>
+                                <p className="text-xs text-muted truncate">{team.mentor.designation}</p>
+                                <p className="text-[11px] font-semibold text-primary truncate">{team.mentor.organization}</p>
+                              </div>
                             </div>
+                            
+                            {(team.mentor.email || team.mentor.contact) && (
+                              <div className="pt-2 border-t border-[rgba(209,199,189,0.4)] grid gap-2 sm:grid-cols-2">
+                                {team.mentor.email && (
+                                  <div className="flex items-center justify-between gap-2 text-xs">
+                                    <span className="truncate text-foreground font-semibold">{team.mentor.email}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleCopy(team.mentor!.email!, 'Email')}
+                                      className="rounded border border-[rgba(114,56,61,0.2)] bg-primary/10 px-2 py-0.5 text-[9px] font-bold text-primary hover:bg-primary/20"
+                                    >
+                                      Copy
+                                    </button>
+                                  </div>
+                                )}
+                                {team.mentor.contact && (
+                                  <div className="flex items-center justify-between gap-2 text-xs">
+                                    <span className="truncate text-foreground font-semibold">{team.mentor.contact}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleCopy(team.mentor!.contact!, 'Phone number')}
+                                      className="rounded border border-[rgba(114,56,61,0.2)] bg-primary/10 px-2 py-0.5 text-[9px] font-bold text-primary hover:bg-primary/20"
+                                    >
+                                      Copy
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </div>
                         ) : (
                           <p className="mt-1 text-xs italic text-muted">No faculty mentor has been assigned to this team yet.</p>

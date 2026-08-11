@@ -323,6 +323,7 @@ export default function OnboardingPage() {
     name: '',
     designation: '',
     organization: 'GL Bajaj Group of Institutions',
+    contact: '',
     expertiseInput: '',
     bio: '',
     linkedinUrl: '',
@@ -410,6 +411,7 @@ export default function OnboardingPage() {
                 name: prof.name || meData.user.name || '',
                 designation: prof.designation || '',
                 organization: prof.organization || 'GL Bajaj Group of Institutions',
+                contact: prof.contact || '',
                 expertiseInput: Array.isArray(prof.expertise) ? prof.expertise.join(', ') : '',
                 bio: prof.bio || '',
                 linkedinUrl: prof.linkedinUrl || '',
@@ -569,6 +571,10 @@ export default function OnboardingPage() {
       setError('Organization is mandatory. Please enter your organization/department.');
       return false;
     }
+    if (!mentorForm.contact.trim()) {
+      setError('Phone / Mobile number is mandatory. Please enter your contact number.');
+      return false;
+    }
     setError('');
     return true;
   };
@@ -669,6 +675,7 @@ export default function OnboardingPage() {
           name: mentorForm.name.trim(),
           designation: mentorForm.designation.trim(),
           organization: mentorForm.organization.trim(),
+          contact: mentorForm.contact.trim(),
           expertise,
           bio: mentorForm.bio.trim(),
           linkedinUrl: mentorForm.linkedinUrl.trim(),
@@ -2240,6 +2247,14 @@ export default function OnboardingPage() {
                     label="Organization or department"
                     value={mentorForm.organization}
                     onChange={(e) => setMentorForm({ ...mentorForm, organization: e.target.value })}
+                  />
+
+                  <Field
+                    label="Phone / Mobile number *"
+                    type="tel"
+                    value={mentorForm.contact}
+                    onChange={(e) => setMentorForm({ ...mentorForm, contact: e.target.value })}
+                    hint="Used for team communication when mutually accepted."
                   />
 
                   <div className="flex justify-end border-t border-[rgba(209,199,189,0.7)] pt-5">

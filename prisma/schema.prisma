@@ -80,6 +80,7 @@ model MentorProfile {
   bio             String?
   linkedinUrl     String?
   avatarUrl       String?
+  contact         String? // Mobile / Phone number
   registrationKey String? // Key used during sign up
   teams           Team[]
   mentorRequests  MentorRequest[]

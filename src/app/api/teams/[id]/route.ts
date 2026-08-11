@@ -49,6 +49,8 @@ export async function GET(
             expertise: true,
             avatarUrl: true,
             linkedinUrl: true,
+            contact: true,
+            user: { select: { email: true } },
           },
         },
         members: {
@@ -144,8 +146,19 @@ export async function GET(
         track: team.track,
         secondaryTrack: team.secondaryTrack,
         recruitmentNotices: team.recruitmentNotices,
-        mentorId: team.mentorId,
-        mentor: team.mentor,
+        mentor: team.mentor
+          ? {
+              userId: team.mentor.userId,
+              name: team.mentor.name,
+              designation: team.mentor.designation,
+              organization: team.mentor.organization,
+              expertise: team.mentor.expertise,
+              avatarUrl: team.mentor.avatarUrl,
+              linkedinUrl: team.mentor.linkedinUrl,
+              email: team.mentor.user?.email || null,
+              contact: team.mentor.contact || null,
+            }
+          : null,
         members: formattedMembers,
         isMentorOfTeam,
         isMemberOfTeam,

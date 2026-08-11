@@ -348,6 +348,7 @@ export async function GET(request: Request) {
                       organization: r.mentor.organization,
                       // Contact info revealed ONLY when mutually accepted
                       email: isAccepted ? r.mentor.user?.email || null : null,
+                      contact: isAccepted ? r.mentor.contact || null : null,
                     },
                   };
                 }),
@@ -445,6 +446,7 @@ export async function GET(request: Request) {
           bio: mentor.bio,
           linkedinUrl: mentor.linkedinUrl,
           email: mentor.user?.email || null,
+          contact: mentor.contact || null,
         },
         teams: mentor.teams.map((t) => {
           const leader = t.members.find((m) => m.userId === t.leaderId) || t.members[0];

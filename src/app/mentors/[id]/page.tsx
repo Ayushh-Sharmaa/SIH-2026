@@ -9,8 +9,10 @@ import {
   Award,
   BookOpen,
   Building2,
+  Check,
   CheckCircle2,
   Code2,
+  Copy,
   Crown,
   FlaskConical,
   GraduationCap,
@@ -18,6 +20,7 @@ import {
   Mail,
   Palette,
   PenLine,
+  Phone,
   ShieldCheck,
   Terminal,
   User,
@@ -49,6 +52,7 @@ interface MentorProfile {
   organization: string;
   college?: string | null;
   email?: string | null;
+  contact?: string | null;
   expertise: string[];
   guidedTeamsCount: number;
   verified: boolean;
@@ -64,6 +68,14 @@ export default function MentorProfilePage() {
   const { toast } = useToast();
   const [profile, setProfile] = useState<MentorProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  const handleCopy = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedField(label);
+    toast(`${label} copied`, 'info');
+    setTimeout(() => setCopiedField(null), 2000);
+  };
 
   useEffect(() => {
     async function loadMentor() {
@@ -198,11 +210,47 @@ export default function MentorProfilePage() {
                       </div>
                       {profile.email && (
                         <div>
-                          <dt className="text-label uppercase text-muted text-xs">Email</dt>
-                          <dd className="mt-0.5 font-bold text-primary">
-                            <a href={`mailto:${profile.email}`} className="hover:underline">
-                              {profile.email}
-                            </a>
+                          <dt className="text-label uppercase text-muted text-xs">Email Address</dt>
+                          <dd className="mt-1 flex items-center justify-between gap-2 rounded-xl border border-[rgba(209,199,189,0.6)] bg-white/50 p-2.5">
+                            <span className="font-bold text-foreground truncate text-xs">{profile.email}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleCopy(profile.email!, 'Email')}
+                              className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-[rgba(114,56,61,0.2)] bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary hover:bg-primary/20 transition-colors"
+                            >
+                              {copiedField === 'Email' ? (
+                                <span className="flex items-center gap-1 text-emerald-700">
+                                  <Check className="size-3" /> Copied
+                                </span>
+                              ) : (
+                                <>
+                                  <Copy className="size-3" /> Copy
+                                </>
+                              )}
+                            </button>
+                          </dd>
+                        </div>
+                      )}
+                      {profile.contact && (
+                        <div>
+                          <dt className="text-label uppercase text-muted text-xs">Phone Number</dt>
+                          <dd className="mt-1 flex items-center justify-between gap-2 rounded-xl border border-[rgba(209,199,189,0.6)] bg-white/50 p-2.5">
+                            <span className="font-bold text-foreground truncate text-xs">{profile.contact}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleCopy(profile.contact!, 'Phone number')}
+                              className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-[rgba(114,56,61,0.2)] bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary hover:bg-primary/20 transition-colors"
+                            >
+                              {copiedField === 'Phone number' ? (
+                                <span className="flex items-center gap-1 text-emerald-700">
+                                  <Check className="size-3" /> Copied
+                                </span>
+                              ) : (
+                                <>
+                                  <Copy className="size-3" /> Copy
+                                </>
+                              )}
+                            </button>
                           </dd>
                         </div>
                       )}

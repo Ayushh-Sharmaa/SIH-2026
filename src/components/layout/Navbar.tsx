@@ -424,7 +424,7 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
                 </Magnetic>
                 <Magnetic strength={6} as="span" className="inline-flex">
                   <Link
-                    href="/signup"
+                    href="/login"
                     className="rounded-lg bg-primary px-4 py-2 text-xs font-bold text-on-accent shadow-[0_2px_12px_rgba(114,56,61,0.22)] transition-shadow duration-250 hover:shadow-[0_8px_22px_rgba(114,56,61,0.3)]"
                   >
                     Get Started
@@ -508,8 +508,9 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
                     Sign In
                   </Link>
                   <Link
-                    href="/signup"
-                    className="flex-1 rounded-xl bg-primary py-3 text-center text-sm font-bold text-on-accent"
+                    href="/login"
+                    onClick={() => setMenuOpen(false)}
+                    className="flex w-full items-center justify-center rounded-xl bg-primary py-3 text-sm font-bold text-on-accent shadow-[0_2px_12px_rgba(114,56,61,0.22)]"
                   >
                     Get Started
                   </Link>

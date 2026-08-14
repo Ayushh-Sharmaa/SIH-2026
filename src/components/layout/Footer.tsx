@@ -23,7 +23,7 @@ const LINK_GROUPS = [
   {
     title: 'Get Started',
     links: [
-      { label: 'Create Account', href: '/signup' },
+      { label: 'Create Account', href: '/login' },
       { label: 'Sign In', href: '/login' },
       { label: 'Build a Team', href: '/team-formation/create-team' },
     ],

@@ -388,7 +388,7 @@ export default function Home() {
                   </PremiumButton>
                 ) : (
                   <>
-                    <PremiumButton href="/signup" size="lg">
+                    <PremiumButton href="/login" size="lg">
                       Create your account
                       <svg viewBox="0 0 24 24" fill="none" className="size-4">
                         <path
@@ -828,7 +828,7 @@ export default function Home() {
                     Go to Dashboard
                   </PremiumButton>
                 ) : (
-                  <PremiumButton href="/signup" size="lg">
+                  <PremiumButton href="/login" size="lg">
                     Get started
                   </PremiumButton>
                 )}

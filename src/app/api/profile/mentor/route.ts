@@ -107,26 +107,46 @@ export async function GET(request: Request) {
     }
 
     const { searchParams } = new URL(request.url);
-    const targetUserId = searchParams.get('userId')?.trim();
+    const rawTargetUserId = searchParams.get('userId')?.trim();
+    const targetUserId = (rawTargetUserId && rawTargetUserId !== 'undefined' && rawTargetUserId !== 'null') ? rawTargetUserId : null;
     const queryId = targetUserId || decoded.userId;
 
-    const mentor = await prisma.mentorProfile.findUnique({
-      where: { userId: queryId },
-      include: {
-        _count: { select: { teams: true } },
-        user: { select: { email: true, college: true } },
-        teams: {
-          select: {
-            id: true,
-            teamCode: true,
-            name: true,
-            status: true,
-            memberCount: true,
-            track: { select: { name: true, problemStatementCode: true } },
+    const [mentor, viewer] = await Promise.all([
+      prisma.mentorProfile.findUnique({
+        where: { userId: queryId },
+        include: {
+          _count: { select: { teams: true } },
+          user: { select: { email: true, college: true } },
+          teams: {
+            select: {
+              id: true,
+              teamCode: true,
+              name: true,
+              status: true,
+              memberCount: true,
+              track: { select: { name: true, problemStatementCode: true } },
+            },
           },
         },
-      },
-    });
+      }),
+      decoded.role === 'STUDENT'
+        ? prisma.studentProfile.findUnique({
+            where: { userId: decoded.userId },
+            select: {
+              teamId: true,
+              team: {
+                select: {
+                  mentorId: true,
+                  mentorRequests: {
+                    where: { mentorId: queryId, status: { in: ['pending', 'keep_pending', 'meeting_requested', 'accepted'] } },
+                    select: { id: true, status: true },
+                  },
+                },
+              },
+            },
+          })
+        : Promise.resolve(null),
+    ]);
 
     if (!mentor) {
       return NextResponse.json({ error: 'Mentor profile not found.' }, { status: 404 });
@@ -149,6 +169,20 @@ export async function GET(request: Request) {
         linkedinUrl: mentor.linkedinUrl,
         avatarUrl: mentor.avatarUrl,
         teams: mentor.teams,
+      },
+      eligibility: {
+        role: decoded.role,
+        canRequest: decoded.role === 'STUDENT' && Boolean(viewer?.teamId) && !viewer?.team?.mentorId,
+        reason:
+          decoded.role !== 'STUDENT'
+            ? 'Only students can request mentorship.'
+            : !viewer?.teamId
+              ? 'Join or create a team first.'
+              : viewer.team?.mentorId
+                ? 'Your team already has an assigned mentor.'
+                : null,
+        isRequested: Boolean(viewer?.team?.mentorRequests && viewer.team.mentorRequests.length > 0),
+        requestStatus: viewer?.team?.mentorRequests?.[0]?.status || null,
       },
     });
   } catch (error) {

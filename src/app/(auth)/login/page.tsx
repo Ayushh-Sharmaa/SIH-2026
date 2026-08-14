@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useEffect, type FormEvent } from 'react';
+import { useState, useEffect, Suspense, type FormEvent } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { useClerk } from '@clerk/nextjs';
 import { AnimatePresence, m } from 'framer-motion';
+import { ShieldAlert } from 'lucide-react';
 
 const hasClerkKey = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 import { useAuthenticatedRedirect } from '@/lib/session';
@@ -20,13 +22,27 @@ import {
 import { logger } from '@/lib/logger';
 import { userFacingMessage } from '@/lib/errors';
 
-
-
 const HIGHLIGHTS = [
   { title: 'Find teammates by skill', copy: 'Filter by stack, soft skills and language.' },
   { title: 'Request verified mentors', copy: 'Faculty and industry guides with active mentorship context.' },
   { title: 'Track your roster live', copy: 'Six seats, one leader, zero spreadsheets.' },
 ];
+
+function getMessageForErrorParam(errorParam: string | null): string {
+  if (!errorParam) return '';
+  switch (errorParam) {
+    case 'domain_not_allowed':
+      return 'Access Restricted: Please sign in using your official GL Bajaj email ID only (@glbajajgroup.org).';
+    case 'oauth_failed':
+      return 'Google sign-in could not be completed. Please try again or use your password.';
+    case 'account_suspended':
+      return 'Your account access has been suspended. Please contact the administrator.';
+    case 'rate_limited':
+      return 'Too many sign-in attempts. Please wait a moment and try again.';
+    default:
+      return 'Authentication could not be completed. Please try again.';
+  }
+}
 
 /** Full-screen hand-off shown while the session is being minted. */
 function AuthHandoff({ caption }: { caption: string }) {
@@ -107,6 +123,20 @@ function GoogleButton({
 }
 
 export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-background">
+          <div className="size-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        </div>
+      }
+    >
+      <LoginRouter />
+    </Suspense>
+  );
+}
+
+function LoginRouter() {
   if (hasClerkKey) {
     return <ClerkLoginPage />;
   }
@@ -115,6 +145,7 @@ export default function LoginPage() {
 
 function ClerkLoginPage() {
   const goAuthenticated = useAuthenticatedRedirect();
+  const searchParams = useSearchParams();
   const clerk = useClerk();
   const clerkUser = clerk.user;
   const clerkSignOut = clerk.signOut;
@@ -124,9 +155,14 @@ function ClerkLoginPage() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
-  // If the user reaches this page (meaning the app session is gone),
-  // but Clerk thinks they are still signed in (from a ghost session before our logout fix),
-  // instantly drop the Clerk session to sync state.
+  useEffect(() => {
+    const errorParam = searchParams.get('error');
+    if (errorParam) {
+      setError(getMessageForErrorParam(errorParam));
+    }
+  }, [searchParams]);
+
+  // Drop lingering Clerk session if returning to login with an error or unauthenticated state
   useEffect(() => {
     if (clerkUser) {
       clerkSignOut();
@@ -145,11 +181,11 @@ function ClerkLoginPage() {
         strategy: 'oauth_google',
         redirectUrl: '/sso-callback',
         redirectUrlComplete: '/api/auth/clerk-sync',
+        continueSignUp: true,
       });
     } catch (err) {
       logger.error('Google Sign-In error', err);
       setError(userFacingMessage(err, 'Google Sign-In failed. Please try again.'));
-    } finally {
       setGoogleLoading(false);
     }
   };
@@ -211,10 +247,18 @@ function ClerkLoginPage() {
 
 function CustomLoginPage() {
   const goAuthenticated = useAuthenticatedRedirect();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const errorParam = searchParams.get('error');
+    if (errorParam) {
+      setError(getMessageForErrorParam(errorParam));
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -278,11 +322,6 @@ interface LoginTemplateProps {
   error: string;
   loading: boolean;
   googleLoading: boolean;
-  /**
-   * Omitted when Google sign-in cannot work — the non-Clerk variant of this
-   * page. The button is then not rendered at all, rather than offered and
-   * guaranteed to fail.
-   */
   handleGoogleSignIn?: () => void;
   handleSubmit: (e: FormEvent) => void;
 }
@@ -386,13 +425,33 @@ function LoginTemplate({
               Sign in
             </h1>
             <p className="mt-2 text-sm text-muted">
-              Use the workspace account issued by the college.
+              Use the official college workspace account issued to you.
             </p>
           </Reveal>
 
+          {/* Warning / Error Alert Banner */}
+          {error && (
+            <Reveal delay={0.1}>
+              <div
+                role="alert"
+                className="mt-6 flex items-start gap-3 rounded-2xl border border-[rgba(114,56,61,0.35)] bg-[rgba(114,56,61,0.08)] p-4 text-xs font-semibold text-primary shadow-sm"
+              >
+                <ShieldAlert className="size-4 shrink-0 mt-0.5 text-primary" />
+                <div className="flex-1 space-y-1">
+                  <p className="font-bold text-foreground">
+                    {error.toLowerCase().includes('restricted') || error.toLowerCase().includes('official')
+                      ? 'Official Domain Required'
+                      : 'Authentication Notice'}
+                  </p>
+                  <p className="text-primary leading-relaxed">{error}</p>
+                </div>
+              </div>
+            </Reveal>
+          )}
+
           {handleGoogleSignIn && (
             <>
-              <Reveal delay={0.16} className="mt-8">
+              <Reveal delay={0.16} className="mt-7">
                 <GoogleButton
                   loading={googleLoading}
                   onClick={handleGoogleSignIn}
@@ -400,8 +459,6 @@ function LoginTemplate({
                 />
               </Reveal>
 
-              {/* The "or with email" rule only means anything with a second
-                  option above it, so it is hidden alongside the button. */}
               <Reveal delay={0.24} className="my-7">
                 <div className="flex items-center gap-3">
                   <span className="h-px flex-1 bg-[rgba(209,199,189,0.8)]" />
@@ -423,6 +480,7 @@ function LoginTemplate({
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                hint="Official @glbajajgroup.org ID"
               />
 
               <div className="relative">
@@ -434,7 +492,6 @@ function LoginTemplate({
                   disabled={isSandbox}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  error={error || undefined}
                 />
                 {!isSandbox && (
                   <button

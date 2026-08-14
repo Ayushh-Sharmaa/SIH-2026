@@ -1,8 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
+import { useSearchParams } from 'next/navigation';
 import { AnimatePresence, m, useScroll, useTransform } from 'framer-motion';
+import { ShieldAlert } from 'lucide-react';
 
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -28,6 +30,34 @@ const TOP_STATS = [
   { value: 6, suffix: '', label: 'Members per Team' },
   { value: 36, suffix: 'h', label: 'Grand Finale' },
 ];
+
+function AuthWarningNotice() {
+  const searchParams = useSearchParams();
+  const error = searchParams.get('error');
+
+  if (!error) return null;
+
+  const message =
+    error === 'domain_not_allowed'
+      ? 'Access Restricted: Please sign in or register using your official GL Bajaj email ID only (@glbajajgroup.org).'
+      : 'Authentication Notice: Could not complete sign in. Please use your official college account.';
+
+  return (
+    <m.div
+      initial={{ opacity: 0, y: -8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      role="alert"
+      className="mb-6 flex items-start gap-3 rounded-2xl border border-[rgba(114,56,61,0.35)] bg-[rgba(114,56,61,0.08)] p-4 text-xs font-semibold text-primary shadow-sm"
+    >
+      <ShieldAlert className="size-4 shrink-0 mt-0.5 text-primary" />
+      <div className="flex-1 space-y-1">
+        <p className="font-bold text-foreground">Official College Domain Required</p>
+        <p className="text-primary leading-relaxed">{message}</p>
+      </div>
+    </m.div>
+  );
+}
 
 const HIGHLIGHTS = [
   {
@@ -295,6 +325,10 @@ export default function Home() {
             className="relative z-content mx-auto grid w-full max-w-wide grid-cols-1 items-center gap-14 px-gutter lg:grid-cols-12 lg:gap-8"
           >
             <div className="lg:col-span-7">
+              <Suspense fallback={null}>
+                <AuthWarningNotice />
+              </Suspense>
+
               <m.span
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}

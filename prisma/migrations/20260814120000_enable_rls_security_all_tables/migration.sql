@@ -1,0 +1,28 @@
+-- Enable Row Level Security (RLS) on all public application tables to protect against PostgREST/Supabase exposure
+ALTER TABLE IF EXISTS public."User" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public."StudentProfile" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public."MentorProfile" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public."Track" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public."Team" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public."TeamCodeReservation" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public."RecruitmentNotice" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public."TeamInvite" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public."JoinRequest" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public."MentorRequest" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public."AdminEmail" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public."BannedEmail" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public."MentorRegistrationKey" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public."Notification" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public."Message" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public."_StudentTrackInterest" ENABLE ROW LEVEL SECURITY;
+
+-- Revoke all direct PostgREST anon access so data can only be queried through the hardened Next.js API layer
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN
+    REVOKE ALL ON ALL TABLES IN SCHEMA public FROM anon;
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
+    REVOKE ALL ON ALL TABLES IN SCHEMA public FROM authenticated;
+  END IF;
+END $$;

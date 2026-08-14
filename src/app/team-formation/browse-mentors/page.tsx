@@ -2,8 +2,21 @@
 
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { AnimatePresence, m } from 'framer-motion';
-import { ArrowUpRight, UserX, Search, ShieldAlert, UsersRound } from 'lucide-react';
+import {
+  ArrowUpRight,
+  UserX,
+  Search,
+  ShieldAlert,
+  UsersRound,
+  ShieldCheck,
+  Building2,
+  Mail,
+  Phone,
+  Check,
+  Copy,
+} from 'lucide-react';
 import { Container, EmptyState, MentorCardSkeleton } from '@/components/ui';
 import Icon from '@/components/ui/Icon';
 import { useToast } from '@/components/ui/Toast';
@@ -27,21 +40,76 @@ interface Mentor {
   name: string;
   designation: string;
   organization: string;
+  college?: string | null;
   expertise: string[];
   guidedTeamsCount: number;
   bio?: string;
   linkedinUrl?: string;
-  email: string;
+  avatarUrl?: string | null;
+  email?: string | null;
+  contact?: string | null;
   teams?: { id: string; teamCode: string; name: string }[];
+}
+
+const AVATAR_WASHES = [
+  'from-[#AC9C8D] to-[#D1C7BD]',
+  'from-[#D1C7BD] to-[#D9D9D9]',
+  'from-[#D9D9D9] to-[#AC9C8D]',
+  'from-[#EFE9E1] to-[#D1C7BD]',
+];
+
+function MentorAvatar({
+  avatarUrl,
+  name,
+  className = 'size-16 sm:size-20',
+}: {
+  avatarUrl?: string | null;
+  name: string;
+  className?: string;
+}) {
+  const [imageError, setImageError] = useState(false);
+
+  if (avatarUrl && !imageError && (avatarUrl.startsWith('data:image/') || avatarUrl.startsWith('http'))) {
+    return (
+      <Image
+        unoptimized
+        src={avatarUrl}
+        alt={`${name}'s profile photo`}
+        width={96}
+        height={96}
+        onError={() => setImageError(true)}
+        className={`rounded-2xl object-cover shadow-sm shrink-0 border border-[rgba(209,199,189,0.7)] ${className}`}
+      />
+    );
+  }
+
+  const wash = AVATAR_WASHES[name.length % AVATAR_WASHES.length];
+  const initials =
+    name
+      .split(' ')
+      .filter(Boolean)
+      .map((part) => part[0])
+      .join('')
+      .slice(0, 2)
+      .toUpperCase() || 'M';
+
+  return (
+    <span
+      aria-label={`${name}'s profile photo`}
+      className={`flex shrink-0 items-center justify-center rounded-2xl border border-[rgba(209,199,189,0.7)] bg-gradient-to-br ${wash} text-base sm:text-lg font-black text-foreground shadow-sm ${className}`}
+    >
+      {initials}
+    </span>
+  );
 }
 
 /** Circular guidance-count dial — draws its arc on mount. */
 function GuidanceCount({ count }: { count: number }) {
   return (
-    <div className="surface-sunken grid size-16 shrink-0 place-items-center rounded-panel text-center">
+    <div className="surface-sunken grid size-12 shrink-0 place-items-center rounded-2xl border border-[rgba(209,199,189,0.6)] text-center">
       <div>
-        <UsersRound className="mx-auto size-4 text-primary" aria-hidden />
-        <span className="mt-1 block text-caption font-black tabular-nums text-foreground">{count}</span>
+        <UsersRound className="mx-auto size-3.5 text-primary" aria-hidden />
+        <span className="mt-0.5 block text-[10px] font-black tabular-nums text-foreground">{count} {count === 1 ? 'team' : 'teams'}</span>
       </div>
     </div>
   );
@@ -109,11 +177,20 @@ function RequestMentorshipModal({
         transition={{ duration: DURATION.card, ease: EASE.outExpo }}
         className="surface-overlay relative max-h-[88vh] w-full max-w-md overflow-y-auto rounded-container p-6 text-foreground shadow-[0_12px_40px_rgba(50,45,41,0.22)]"
       >
-        <h3 id="request-mentor-title" className="text-feature text-foreground">
-          Request Mentorship from {mentor.name}
-        </h3>
-        <p className="mt-2 text-xs text-muted leading-relaxed">
-          Introduce your team and project concept. Explain what kind of guidance you are looking for.
+        <div className="flex items-center gap-3.5">
+          <MentorAvatar avatarUrl={mentor.avatarUrl} name={mentor.name} className="size-12" />
+          <div className="min-w-0">
+            <h3 id="request-mentor-title" className="text-feature text-foreground font-extrabold truncate">
+              Request Mentorship
+            </h3>
+            <p className="text-xs text-muted truncate">
+              from {mentor.name} ({mentor.designation || 'Faculty Mentor'})
+            </p>
+          </div>
+        </div>
+
+        <p className="mt-3 text-xs text-muted leading-relaxed">
+          Introduce your team and project concept. Explain what kind of technical or architectural guidance you are looking for.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
@@ -149,6 +226,14 @@ export default function FindMentorsPage() {
   const [eligibility, setEligibility] = useState<MentorEligibility | null>(null);
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  const handleCopy = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedField(label);
+    toast(`${label} copied`, 'info');
+    setTimeout(() => setCopiedField(null), 2000);
+  };
 
   // Search filter inputs
   const [name, setName] = useState('');
@@ -344,7 +429,7 @@ export default function FindMentorsPage() {
               </div>
             ) : paginatedMentors.length > 0 ? (
               <>
-                <m.div layout className="space-y-4">
+                <m.div layout className="space-y-5">
                 <AnimatePresence mode="popLayout" initial={false}>
                   {paginatedMentors.map((mentor, i) => {
                     const state = requested[mentor.userId] ??
@@ -362,46 +447,109 @@ export default function FindMentorsPage() {
                           delay: Math.min(i * 0.05, 0.35),
                         }}
                         whileHover={{ y: -4 }}
-                        className="surface-raised overflow-hidden rounded-3xl transition-colors duration-250"
+                        className="surface-raised overflow-hidden rounded-3xl border border-[rgba(209,199,189,0.7)] shadow-sm transition-all duration-250 hover:shadow-md"
                       >
-                        <div className="flex flex-col gap-6 p-5 sm:p-7 sm:flex-row">
-                          <GuidanceCount count={mentor.guidedTeamsCount} />
+                        <div className="flex flex-col gap-5 p-5 sm:p-7 md:flex-row md:items-start">
+                          {/* Mentor Photo & Stats Badge Column */}
+                          <div className="flex shrink-0 items-center gap-3.5 sm:gap-4 md:flex-col md:items-center">
+                            <div
+                              onClick={() => router.push(`/mentors/${mentor.userId}`)}
+                              className="cursor-pointer transition-transform hover:scale-105"
+                            >
+                              <MentorAvatar
+                                avatarUrl={mentor.avatarUrl}
+                                name={mentor.name}
+                                className="size-16 sm:size-20"
+                              />
+                            </div>
+                            <GuidanceCount count={mentor.guidedTeamsCount} />
+                          </div>
 
-                          <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                          {/* Mentor Information */}
+                          <div className="min-w-0 flex-1 space-y-2.5">
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
                               <h2
                                 onClick={() => router.push(`/mentors/${mentor.userId}`)}
-                                className="text-feature text-foreground font-extrabold cursor-pointer hover:text-primary transition-colors"
+                                className="text-lg sm:text-xl font-extrabold text-foreground cursor-pointer hover:text-primary transition-colors truncate"
                               >
                                 {mentor.name}
                               </h2>
-                              <span className="text-xs text-muted">
-                                {mentor.designation} at {mentor.organization}
+                              <span className="inline-flex items-center gap-1 rounded-full border border-blue-600/30 bg-blue-500/10 px-2.5 py-0.5 text-[10px] font-extrabold uppercase text-blue-700">
+                                <ShieldCheck className="size-3" /> Faculty Mentor
                               </span>
                             </div>
 
-                            <p className="mt-2 max-w-2xl text-xs leading-relaxed text-body">
-                              {mentor.bio || 'No biography details provided.'}
+                            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
+                              <span className="font-semibold text-foreground">
+                                {mentor.designation || 'Faculty Member'}
+                              </span>
+                              <span>·</span>
+                              <span className="flex items-center gap-1">
+                                <Building2 className="size-3.5" />
+                                {mentor.organization || mentor.college || 'GL Bajaj Group of Institutions'}
+                              </span>
+                            </div>
+
+                            {/* Contact Badges if Available */}
+                            {(mentor.email || mentor.contact) && (
+                              <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                                {mentor.email && (
+                                  <div className="inline-flex items-center gap-1.5 rounded-lg border border-[rgba(209,199,189,0.6)] bg-white/60 px-2 py-1 text-[11px] text-body">
+                                    <Mail className="size-3 text-muted shrink-0" />
+                                    <span className="truncate max-w-[200px] font-medium">{mentor.email}</span>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleCopy(mentor.email!, `Email for ${mentor.name}`);
+                                      }}
+                                      className="text-primary hover:text-primary/80 transition-colors ml-0.5"
+                                      title="Copy email"
+                                    >
+                                      {copiedField === `Email for ${mentor.name}` ? (
+                                        <Check className="size-3 text-emerald-700" />
+                                      ) : (
+                                        <Copy className="size-3" />
+                                      )}
+                                    </button>
+                                  </div>
+                                )}
+                                {mentor.contact && (
+                                  <div className="inline-flex items-center gap-1.5 rounded-lg border border-[rgba(209,199,189,0.6)] bg-white/60 px-2 py-1 text-[11px] text-body">
+                                    <Phone className="size-3 text-muted shrink-0" />
+                                    <span className="font-medium">{mentor.contact}</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            <p className="text-xs leading-relaxed text-body line-clamp-3">
+                              {mentor.bio || 'Experienced faculty mentor available to guide student hackathon teams on technical design, system architecture, and jury presentation.'}
                             </p>
 
-                            <div className="mt-3.5 flex flex-wrap gap-1.5">
-                              {mentor.expertise.map((exp) => (
-                                <span
-                                  key={exp}
-                                  className="rounded-md border border-[rgba(172,156,141,0.55)] bg-[rgba(172,156,141,0.18)] px-2 py-0.5 text-caption font-semibold text-foreground"
-                                >
-                                  {exp}
-                                </span>
-                              ))}
-                            </div>
+                            {/* Areas of Expertise */}
+                            {mentor.expertise && mentor.expertise.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5 pt-1">
+                                {mentor.expertise.map((exp) => (
+                                  <span
+                                    key={exp}
+                                    className="rounded-md border border-[rgba(114,56,61,0.2)] bg-[rgba(114,56,61,0.06)] px-2.5 py-0.5 text-caption font-semibold text-primary"
+                                  >
+                                    {exp}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Teams currently guided */}
                             {mentor.teams && mentor.teams.length > 0 && (
-                              <div className="mt-3 flex flex-wrap items-center gap-1.5 text-caption text-muted">
-                                <span className="font-bold uppercase tracking-wider">Teams:</span>
+                              <div className="flex flex-wrap items-center gap-1.5 pt-1 text-caption text-muted">
+                                <span className="font-bold uppercase tracking-wider text-[10px]">Mentored Teams:</span>
                                 {mentor.teams.map((team) => (
                                   <span
                                     key={team.id}
                                     onClick={() => router.push(`/teams/${team.id}`)}
-                                    className="cursor-pointer rounded-md border border-[rgba(114,56,61,0.2)] bg-[rgba(114,56,61,0.06)] px-2 py-0.5 font-black text-primary hover:border-primary transition-colors"
+                                    className="cursor-pointer rounded-md border border-[rgba(172,156,141,0.4)] bg-[rgba(172,156,141,0.12)] px-2 py-0.5 font-bold text-foreground hover:border-primary hover:text-primary transition-colors"
                                   >
                                     {team.teamCode}
                                   </span>
@@ -410,18 +558,20 @@ export default function FindMentorsPage() {
                             )}
                           </div>
 
-                          <div className="flex shrink-0 flex-row items-center gap-3 sm:flex-col sm:items-end sm:justify-center">
+                          {/* Actions Column */}
+                          <div className="flex shrink-0 flex-row items-center gap-2.5 sm:flex-col sm:items-end sm:justify-start pt-2 md:pt-0">
                             <PremiumButton
                               size="sm"
                               variant="glass"
                               onClick={() => router.push(`/mentors/${mentor.userId}`)}
+                              className="w-full sm:w-auto"
                             >
                               View Profile
                             </PremiumButton>
 
                             {!eligibility?.canRequest ? (
-                              <span className="text-xs text-muted flex items-center gap-1">
-                                <ShieldAlert className="size-3.5" /> {eligibility?.reason ?? 'Checking eligibility'}
+                              <span className="text-[11px] text-muted flex items-center gap-1">
+                                <ShieldAlert className="size-3.5 text-muted shrink-0" /> {eligibility?.reason ?? 'Checking eligibility'}
                               </span>
                             ) : (
                               <PremiumButton
@@ -430,6 +580,7 @@ export default function FindMentorsPage() {
                                 disabled={Boolean(state)}
                                 magnetic={false}
                                 onClick={() => setActiveRequestMentor(mentor)}
+                                className="w-full sm:w-auto"
                               >
                                 {state === 'sent' ? 'Request sent' : 'Request'}
                               </PremiumButton>

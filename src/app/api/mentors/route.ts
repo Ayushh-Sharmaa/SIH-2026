@@ -21,6 +21,9 @@ const getCachedMentors = unstable_cache(
         expertise: true,
         bio: true,
         linkedinUrl: true,
+        avatarUrl: true,
+        contact: true,
+        user: { select: { email: true, college: true } },
         _count: { select: { teams: true } },
         teams: {
           select: { id: true, teamCode: true, name: true },
@@ -31,7 +34,7 @@ const getCachedMentors = unstable_cache(
     });
   },
   ['verified-mentors'],
-  { revalidate: 900, tags: ['mentors'] }
+  { revalidate: 60, tags: ['mentors'] }
 );
 
 export async function GET(request: Request) {
@@ -101,11 +104,12 @@ export async function GET(request: Request) {
           const matchesName = m.name.toLowerCase().includes(search);
           const matchesExpertise = m.expertise.some((e) => e.toLowerCase().includes(search));
           const matchesOrg = m.organization.toLowerCase().includes(search);
+          const matchesCollege = (m.user?.college || '').toLowerCase().includes(search);
           const matchesDesig = m.designation.toLowerCase().includes(search);
           const matchesBio = m.bio?.toLowerCase().includes(search) || false;
           const matchesTeam = matchesTeamLookup(search);
 
-          if (!matchesName && !matchesExpertise && !matchesOrg && !matchesDesig && !matchesBio && !matchesTeam) {
+          if (!matchesName && !matchesExpertise && !matchesOrg && !matchesCollege && !matchesDesig && !matchesBio && !matchesTeam) {
             return false;
           }
         }
@@ -116,8 +120,10 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       success: true,
-      mentors: filtered.map(({ _count, ...mentor }) => ({
+      mentors: filtered.map(({ _count, user, ...mentor }) => ({
         ...mentor,
+        email: user?.email || null,
+        college: user?.college || mentor.organization,
         guidedTeamsCount: _count.teams,
       })),
       eligibility: {

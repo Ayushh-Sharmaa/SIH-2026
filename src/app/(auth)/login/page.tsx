@@ -2,9 +2,10 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { useClerk } from '@clerk/nextjs';
 import { useSearchParams } from 'next/navigation';
+import { useClerk } from '@clerk/nextjs';
 import { AnimatePresence, m } from 'framer-motion';
+import { ShieldAlert } from 'lucide-react';
 
 import {
   Aurora,
@@ -112,7 +113,13 @@ function LoginContent() {
 
   useEffect(() => {
     if (urlError === 'domain_not_allowed') {
-      setError('Access restricted. Please use your official @glbajajgroup.org email address.');
+      setError('Access restricted: Please sign in using your official GL Bajaj email ID only (@glbajajgroup.org).');
+    } else if (urlError === 'oauth_failed') {
+      setError('Google sign-in could not be completed. Please try again.');
+    } else if (urlError === 'account_suspended') {
+      setError('Your account access has been suspended. Please contact the administrator.');
+    } else if (urlError === 'rate_limited') {
+      setError('Too many sign-in attempts. Please wait a moment and try again.');
     } else if (urlError) {
       setError('An error occurred during sign-in. Please try again.');
     }
@@ -139,6 +146,7 @@ function LoginContent() {
         strategy: 'oauth_google',
         redirectUrl: '/sso-callback',
         redirectUrlComplete: '/api/auth/clerk-sync',
+        continueSignUp: true,
       });
     } catch (err) {
       logger.error('Google Sign-In error', err);
@@ -236,9 +244,29 @@ function LoginContent() {
                 Sign in
               </h1>
               <p className="mt-2 text-sm text-muted">
-                Use your college workspace account to continue.
+                Use your official GL Bajaj college workspace account (@glbajajgroup.org) to continue.
               </p>
             </Reveal>
+
+            {/* Warning / Error Alert Banner */}
+            {error && (
+              <Reveal delay={0.1}>
+                <div
+                  role="alert"
+                  className="mt-6 flex items-start gap-3 rounded-2xl border border-[rgba(114,56,61,0.35)] bg-[rgba(114,56,61,0.08)] p-4 text-xs font-semibold text-primary shadow-sm"
+                >
+                  <ShieldAlert className="size-4 shrink-0 mt-0.5 text-primary" />
+                  <div className="flex-1 space-y-1">
+                    <p className="font-bold text-foreground">
+                      {error.toLowerCase().includes('restricted') || error.toLowerCase().includes('official')
+                        ? 'Official Domain Required'
+                        : 'Sign-in Notice'}
+                    </p>
+                    <p className="text-primary leading-relaxed">{error}</p>
+                  </div>
+                </div>
+              </Reveal>
+            )}
 
             <Reveal delay={0.16} className="mt-8">
               <GoogleButton
@@ -248,14 +276,11 @@ function LoginContent() {
               />
             </Reveal>
 
-            {error && (
-              <Reveal delay={0.2} className="mt-6">
-                <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-600 dark:text-red-400">
-                  {error}
-                </div>
-              </Reveal>
-            )}
-
+            <Reveal delay={0.24} className="mt-6 text-center">
+              <p className="text-xs text-muted">
+                Only official <span className="font-semibold text-foreground">@glbajajgroup.org</span> accounts are permitted.
+              </p>
+            </Reveal>
           </div>
         </main>
       </div>
@@ -265,7 +290,13 @@ function LoginContent() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<AuthHandoff caption="Loading..." />}>
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-background">
+          <div className="size-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        </div>
+      }
+    >
       <LoginContent />
     </Suspense>
   );

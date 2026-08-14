@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useState, useEffect, Suspense, type FormEvent } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { useClerk } from '@clerk/nextjs';
 import { useAuthenticatedRedirect } from '@/lib/session';
 import { AnimatePresence, m } from 'framer-motion';
 import { looksLikeSandboxEmail } from '@/lib/sandboxShared';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, ShieldAlert } from 'lucide-react';
 import Icon from '@/components/ui/Icon';
 import { Container } from '@/components/ui';
 import {
@@ -28,6 +29,22 @@ const ROLES: { value: Role; label: string; blurb: string }[] = [
   { value: 'STUDENT', label: 'Student', blurb: 'Form a team, pick a track, find a mentor.' },
   { value: 'MENTOR', label: 'Mentor', blurb: 'Guide teams through problem selection and review.' },
 ];
+
+function getMessageForErrorParam(errorParam: string | null): string {
+  if (!errorParam) return '';
+  switch (errorParam) {
+    case 'domain_not_allowed':
+      return 'Access Restricted: Please sign up using your official GL Bajaj email ID only (@glbajajgroup.org).';
+    case 'oauth_failed':
+      return 'Google sign-up could not be completed. Please try again or sign up with your email.';
+    case 'account_suspended':
+      return 'Your account access has been suspended. Please contact the administrator.';
+    case 'rate_limited':
+      return 'Too many attempts. Please wait a moment and try again.';
+    default:
+      return 'Authentication could not be completed. Please try again.';
+  }
+}
 
 /** Full-screen hand-off shown while the profile is provisioned. */
 function OnboardingHandoff() {
@@ -101,6 +118,20 @@ function GoogleButton({ loading, onClick }: { loading: boolean; onClick: () => v
 }
 
 export default function SignupPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-background">
+          <div className="size-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        </div>
+      }
+    >
+      <SignupRouter />
+    </Suspense>
+  );
+}
+
+function SignupRouter() {
   if (hasClerkKey) {
     return <ClerkSignupPage />;
   }
@@ -109,6 +140,7 @@ export default function SignupPage() {
 
 function ClerkSignupPage() {
   const goAuthenticated = useAuthenticatedRedirect();
+  const searchParams = useSearchParams();
   const clerk = useClerk();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -118,6 +150,13 @@ function ClerkSignupPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+
+  useEffect(() => {
+    const errorParam = searchParams.get('error');
+    if (errorParam) {
+      setError(getMessageForErrorParam(errorParam));
+    }
+  }, [searchParams]);
 
   const handleGoogleSignUp = async () => {
     setError('');
@@ -131,6 +170,7 @@ function ClerkSignupPage() {
         strategy: 'oauth_google',
         redirectUrl: '/sso-callback',
         redirectUrlComplete: '/api/auth/clerk-sync',
+        continueSignUp: true,
       });
     } catch (err) {
       logger.error('Google Sign-Up error', err);
@@ -200,6 +240,7 @@ function ClerkSignupPage() {
 
 function CustomSignupPage() {
   const goAuthenticated = useAuthenticatedRedirect();
+  const searchParams = useSearchParams();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -207,6 +248,13 @@ function CustomSignupPage() {
   const [registrationKey, setRegistrationKey] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const errorParam = searchParams.get('error');
+    if (errorParam) {
+      setError(getMessageForErrorParam(errorParam));
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -347,6 +395,26 @@ function SignupTemplate({
         <Container width="form" className="relative pb-16">
           <Reveal scale delay={0.12} className="-mt-10">
             <div className="surface-raised rounded-3xl p-6 sm:p-9">
+              {/* Warning / Error Alert Banner */}
+              {error && (
+                <div
+                  role="alert"
+                  className="mb-6 flex items-start gap-3 rounded-2xl border border-[rgba(114,56,61,0.35)] bg-[rgba(114,56,61,0.08)] p-4 text-xs font-semibold text-primary shadow-sm"
+                >
+                  <ShieldAlert className="size-4 shrink-0 mt-0.5 text-primary" />
+                  <div className="flex-1 space-y-1">
+                    <p className="font-bold text-foreground">
+                      {alreadyRegistered
+                        ? 'Account Exists'
+                        : error.toLowerCase().includes('restricted') || error.toLowerCase().includes('official')
+                        ? 'Official Domain Required'
+                        : 'Registration Notice'}
+                    </p>
+                    <p className="text-primary leading-relaxed">{error}</p>
+                  </div>
+                </div>
+              )}
+
               {handleGoogleSignUp && (
                 <>
                   <GoogleButton loading={googleLoading} onClick={handleGoogleSignUp} />
@@ -427,8 +495,7 @@ function SignupTemplate({
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  hint="Must be @glbajajgroup.org or @gmail.com"
-                  error={error && !alreadyRegistered ? error : undefined}
+                  hint="Official @glbajajgroup.org ID"
                 />
 
                 <Field

@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server';
-import { currentUser } from '@clerk/nextjs/server';
+import { auth, currentUser } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
 import { signToken, normalizeEmail, isAllowedCollegeEmail } from '@/lib/auth';
 import { isUserBanned } from '@/lib/admin';
 import { checkAuthRateLimit } from '@/lib/rateLimit';
 import { onboardingRoleSchema } from '@/lib/validation';
-import { clerkCircuitBreaker } from '@/lib/circuitBreaker';
 import { logger } from '@/lib/logger';
 import { setSessionCookie } from '@/lib/sessionCookie';
 
@@ -68,21 +67,27 @@ async function syncClerkUser(email: string, defaultRole: 'STUDENT' | 'MENTOR' = 
   return { user, token, isOnboarded };
 }
 
+async function resolveClerkEmail(): Promise<string | undefined> {
+  try {
+    const authState = await auth();
+    const claims = authState?.sessionClaims as Record<string, unknown> | null;
+    if (typeof claims?.email === 'string' && claims.email) {
+      return claims.email;
+    }
+  } catch {}
+
+  try {
+    const clerkUser = await currentUser();
+    return clerkUser?.emailAddresses?.[0]?.emailAddress;
+  } catch (e) {
+    logger.error('Clerk currentUser() failed.', e);
+    return undefined;
+  }
+}
+
 export async function GET(request: Request) {
   try {
-    let email: string | undefined;
-    try {
-      const clerkUser = await clerkCircuitBreaker.execute(
-        () => currentUser(),
-        async () => {
-          logger.warn('Clerk API circuit breaker tripped open. Falling back.');
-          return null;
-        }
-      );
-      email = clerkUser?.emailAddresses?.[0]?.emailAddress;
-    } catch (e) {
-      logger.error('Clerk currentUser() failed.', e);
-    }
+    let email = await resolveClerkEmail();
 
     if (!email) {
       return NextResponse.redirect(new URL('/login?error=oauth_failed', request.url));
@@ -121,19 +126,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     // The email MUST come from the verified Clerk session and nothing else.
-    let email: string | undefined;
-    try {
-      const clerkUser = await clerkCircuitBreaker.execute(
-        () => currentUser(),
-        async () => {
-          logger.warn('Clerk API circuit breaker tripped open. Falling back.');
-          return null;
-        }
-      );
-      email = clerkUser?.emailAddresses?.[0]?.emailAddress;
-    } catch (e) {
-      logger.error('Clerk currentUser() failed.', e);
-    }
+    let email = await resolveClerkEmail();
 
     if (!email) {
       return NextResponse.json(

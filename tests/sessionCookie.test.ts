@@ -24,7 +24,7 @@ interface WrittenCookie {
   options: {
     httpOnly: boolean;
     secure: boolean;
-    sameSite: 'strict';
+    sameSite: 'lax' | 'strict';
     maxAge: number;
     path: string;
   };

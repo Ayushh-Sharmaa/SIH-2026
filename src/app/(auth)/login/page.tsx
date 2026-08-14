@@ -139,14 +139,13 @@ function LoginContent() {
     setGoogleLoading(true);
     try {
       if (!clerk?.client?.signIn) {
-        throw new Error('Google Sign-In is unavailable right now.');
+        throw new Error('Google Sign-In is initializing. Please try again.');
       }
 
       await clerk.client.signIn.authenticateWithRedirect({
         strategy: 'oauth_google',
         redirectUrl: '/sso-callback',
         redirectUrlComplete: '/api/auth/clerk-sync',
-        continueSignUp: true,
       });
     } catch (err) {
       logger.error('Google Sign-In error', err);

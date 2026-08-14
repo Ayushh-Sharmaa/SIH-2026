@@ -50,8 +50,8 @@ describe('session cookie attributes', () => {
     assert.equal(cookie.value, 'jwt-value');
     // httpOnly is what keeps the token out of reach of any XSS that lands.
     assert.equal(cookie.options.httpOnly, true);
-    // strict is what currently stands in for CSRF tokens on mutating routes.
-    assert.equal(cookie.options.sameSite, 'strict');
+    // lax is required so OAuth callback redirects from external identity providers deliver the cookie.
+    assert.equal(cookie.options.sameSite, 'lax');
     // Omitting path scopes the cookie to the issuing route's directory, so a
     // cookie set by /api/auth/login would never be sent to /dashboard.
     assert.equal(cookie.options.path, '/');

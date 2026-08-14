@@ -45,7 +45,7 @@ export interface CookieWriter {
     options: {
       httpOnly: boolean;
       secure: boolean;
-      sameSite: 'strict';
+      sameSite: 'lax' | 'strict';
       maxAge: number;
       path: string;
     },
@@ -58,9 +58,9 @@ export interface CookieWriter {
  * HSTS plus `upgrade-insecure-requests` (next.config.ts) mean production is
  * never reached over HTTP in the first place.
  *
- * `sameSite: 'strict'` is what currently stands in for CSRF tokens on mutating
- * routes: the browser withholds the cookie on any cross-site request, so a
- * forged form post from another origin arrives unauthenticated.
+ * `sameSite: 'lax'` is required for OAuth redirects: browsers send Lax cookies
+ * on top-level cross-site navigations (returning from Google), while protecting
+ * against cross-site POSTs.
  *
  * `path: '/'` is not optional. Omit it and the browser scopes the cookie to the
  * directory of the request URI — a cookie set by `/api/auth/login` would be
@@ -71,7 +71,7 @@ function cookieOptions(maxAge: number) {
   return {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict' as const,
+    sameSite: 'lax' as const,
     maxAge,
     path: '/',
   };

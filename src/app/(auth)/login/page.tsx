@@ -1,19 +1,14 @@
 'use client';
 
-import { useState, useEffect, Suspense, type FormEvent } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useClerk } from '@clerk/nextjs';
 import { AnimatePresence, m } from 'framer-motion';
 import { ShieldAlert } from 'lucide-react';
 
-const hasClerkKey = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
-import { useAuthenticatedRedirect } from '@/lib/session';
-import { looksLikeSandboxEmail } from '@/lib/sandboxShared';
 import {
   Aurora,
-  Field,
-  PremiumButton,
   Reveal,
   SplitText,
   DURATION,
@@ -27,22 +22,6 @@ const HIGHLIGHTS = [
   { title: 'Request verified mentors', copy: 'Faculty and industry guides with active mentorship context.' },
   { title: 'Track your roster live', copy: 'Six seats, one leader, zero spreadsheets.' },
 ];
-
-function getMessageForErrorParam(errorParam: string | null): string {
-  if (!errorParam) return '';
-  switch (errorParam) {
-    case 'domain_not_allowed':
-      return 'Access Restricted: Please sign in using your official GL Bajaj email ID only (@glbajajgroup.org).';
-    case 'oauth_failed':
-      return 'Google sign-in could not be completed. Please try again or use your password.';
-    case 'account_suspended':
-      return 'Your account access has been suspended. Please contact the administrator.';
-    case 'rate_limited':
-      return 'Too many sign-in attempts. Please wait a moment and try again.';
-    default:
-      return 'Authentication could not be completed. Please try again.';
-  }
-}
 
 /** Full-screen hand-off shown while the session is being minted. */
 function AuthHandoff({ caption }: { caption: string }) {
@@ -122,47 +101,33 @@ function GoogleButton({
   );
 }
 
-export default function LoginPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-screen items-center justify-center bg-background">
-          <div className="size-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-        </div>
-      }
-    >
-      <LoginRouter />
-    </Suspense>
-  );
-}
-
-function LoginRouter() {
-  if (hasClerkKey) {
-    return <ClerkLoginPage />;
-  }
-  return <CustomLoginPage />;
-}
-
-function ClerkLoginPage() {
-  const goAuthenticated = useAuthenticatedRedirect();
+function LoginContent() {
   const searchParams = useSearchParams();
+  const urlError = searchParams?.get('error');
+
   const clerk = useClerk();
   const clerkUser = clerk.user;
   const clerkSignOut = clerk.signOut;
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
   useEffect(() => {
-    const errorParam = searchParams.get('error');
-    if (errorParam) {
-      setError(getMessageForErrorParam(errorParam));
+    if (urlError === 'domain_not_allowed') {
+      setError('Access restricted: Please sign in using your official GL Bajaj email ID only (@glbajajgroup.org).');
+    } else if (urlError === 'oauth_failed') {
+      setError('Google sign-in could not be completed. Please try again.');
+    } else if (urlError === 'account_suspended') {
+      setError('Your account access has been suspended. Please contact the administrator.');
+    } else if (urlError === 'rate_limited') {
+      setError('Too many sign-in attempts. Please wait a moment and try again.');
+    } else if (urlError) {
+      setError('An error occurred during sign-in. Please try again.');
     }
-  }, [searchParams]);
+  }, [urlError]);
 
-  // Drop lingering Clerk session if returning to login with an error or unauthenticated state
+  // If the user reaches this page (meaning the app session is gone),
+  // but Clerk thinks they are still signed in (from a ghost session before our logout fix),
+  // instantly drop the Clerk session to sync state.
   useEffect(() => {
     if (clerkUser) {
       clerkSignOut();
@@ -174,7 +139,7 @@ function ClerkLoginPage() {
     setGoogleLoading(true);
     try {
       if (!clerk?.client?.signIn) {
-        throw new Error('Google Sign-In is unavailable right now. Please use your email and password.');
+        throw new Error('Google Sign-In is unavailable right now.');
       }
 
       await clerk.client.signIn.authenticateWithRedirect({
@@ -190,226 +155,23 @@ function ClerkLoginPage() {
     }
   };
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Invalid credentials');
-      }
-
-      if (data.redirectUrl) {
-        await goAuthenticated(data.redirectUrl, data.user);
-        return;
-      }
-
-      if (data.user?.role === 'ADMIN') {
-        await goAuthenticated('/admin', data.user);
-        return;
-      }
-
-      await goAuthenticated(data.user?.isOnboarded ? '/dashboard' : '/onboarding', data.user);
-    } catch (err) {
-      setLoading(false);
-      setError(err instanceof Error ? err.message : 'Something went wrong');
-    }
-  };
-
   return (
     <>
       <AnimatePresence>
-        {loading && <AuthHandoff caption="Authorising your session" />}
+        {googleLoading && <AuthHandoff caption="Authorising your session" />}
       </AnimatePresence>
-      <LoginTemplate
-        email={email}
-        setEmail={setEmail}
-        password={password}
-        setPassword={setPassword}
-        error={error}
-        loading={loading}
-        googleLoading={googleLoading}
-        handleGoogleSignIn={handleGoogleSignIn}
-        handleSubmit={handleSubmit}
-      />
-    </>
-  );
-}
+      <div className="flex min-h-screen bg-background text-foreground">
+        {/* ── BRAND PANEL: full-bleed editorial column, desktop only ── */}
+        <aside className="section-pearl relative hidden w-[44%] shrink-0 overflow-hidden lg:flex lg:flex-col lg:justify-between lg:px-12 lg:py-14 xl:px-16">
+          <Aurora variant="cool" spotlight={false} />
+          <div aria-hidden className="grid-lines absolute inset-0" />
 
-function CustomLoginPage() {
-  const goAuthenticated = useAuthenticatedRedirect();
-  const searchParams = useSearchParams();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    const errorParam = searchParams.get('error');
-    if (errorParam) {
-      setError(getMessageForErrorParam(errorParam));
-    }
-  }, [searchParams]);
-
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Invalid credentials');
-      }
-
-      if (data.redirectUrl) {
-        await goAuthenticated(data.redirectUrl, data.user);
-        return;
-      }
-
-      if (data.user?.role === 'ADMIN') {
-        await goAuthenticated('/admin', data.user);
-        return;
-      }
-
-      await goAuthenticated(data.user?.isOnboarded ? '/dashboard' : '/onboarding', data.user);
-    } catch (err) {
-      setLoading(false);
-      setError(err instanceof Error ? err.message : 'Something went wrong');
-    }
-  };
-
-  return (
-    <>
-      <AnimatePresence>
-        {loading && <AuthHandoff caption="Authorising your session" />}
-      </AnimatePresence>
-      <LoginTemplate
-        email={email}
-        setEmail={setEmail}
-        password={password}
-        setPassword={setPassword}
-        error={error}
-        loading={loading}
-        googleLoading={false}
-        handleSubmit={handleSubmit}
-      />
-    </>
-  );
-}
-
-interface LoginTemplateProps {
-  email: string;
-  setEmail: (v: string) => void;
-  password: string;
-  setPassword: (v: string) => void;
-  error: string;
-  loading: boolean;
-  googleLoading: boolean;
-  handleGoogleSignIn?: () => void;
-  handleSubmit: (e: FormEvent) => void;
-}
-
-function LoginTemplate({
-  email,
-  setEmail,
-  password,
-  setPassword,
-  error,
-  loading,
-  googleLoading,
-  handleGoogleSignIn,
-  handleSubmit,
-}: LoginTemplateProps) {
-  const isSandbox = looksLikeSandboxEmail(email);
-  const [showPassword, setShowPassword] = useState(false);
-
-  return (
-    <div className="flex min-h-screen bg-background text-foreground">
-      {/* ── BRAND PANEL: full-bleed editorial column, desktop only ── */}
-      <aside className="section-pearl relative hidden w-[44%] shrink-0 overflow-hidden lg:flex lg:flex-col lg:justify-between lg:px-12 lg:py-14 xl:px-16">
-        <Aurora variant="cool" spotlight={false} />
-        <div aria-hidden className="grid-lines absolute inset-0" />
-
-        <Reveal direction="none" blur={false}>
-          <Link href="/" className="relative inline-flex items-center gap-3">
-            <img
-              src="/Logo/NexaSphere Icon without Background.png"
-              alt=""
-              className="size-9 object-contain"
-            />
-            <span className="text-sm font-extrabold uppercase tracking-[0.18em] text-foreground">
-              SIH@GLBGOI
-            </span>
-          </Link>
-        </Reveal>
-
-        <div className="relative">
-          <SplitText
-            as="p"
-            text="Build the team that ships."
-            className="max-w-md text-heading text-foreground"
-            delay={0.12}
-          />
-
-          <ul className="mt-10 space-y-6">
-            {HIGHLIGHTS.map((h, i) => (
-              <Reveal key={h.title} direction="right" delay={0.4 + i * 0.1}>
-                <li className="flex gap-4">
-                  <span
-                    aria-hidden
-                    className="mt-1.5 h-px w-8 shrink-0 bg-gradient-to-r from-primary to-transparent"
-                  />
-                  <span className="min-w-0">
-                    <span className="block text-sm font-bold text-foreground">{h.title}</span>
-                    <span className="mt-0.5 block text-xs leading-relaxed text-muted">
-                      {h.copy}
-                    </span>
-                  </span>
-                </li>
-              </Reveal>
-            ))}
-          </ul>
-        </div>
-
-        <Reveal delay={0.75}>
-          <p className="relative text-label uppercase text-muted">
-            Team formation &amp; mentorship platform
-          </p>
-        </Reveal>
-      </aside>
-
-      {/* ── FORM COLUMN ── */}
-      <main
-        id="main"
-        className="relative flex flex-1 items-center justify-center overflow-visible px-5 py-14 sm:px-8"
-      >
-        <Aurora variant="warm" spotlight />
-
-        <div className="relative w-full max-w-sm">
-          {/* compact brand lockup for small screens */}
-          <Reveal direction="none" blur={false} className="mb-8 lg:hidden">
-            <Link href="/" className="flex items-center justify-center gap-2.5">
+          <Reveal direction="none" blur={false}>
+            <Link href="/" className="relative inline-flex items-center gap-3">
               <img
                 src="/Logo/NexaSphere Icon without Background.png"
                 alt=""
-                className="size-8 object-contain"
+                className="size-9 object-contain"
               />
               <span className="text-sm font-extrabold uppercase tracking-[0.18em] text-foreground">
                 SIH@GLBGOI
@@ -417,129 +179,125 @@ function LoginTemplate({
             </Link>
           </Reveal>
 
-          <Reveal delay={0.06}>
-            <p className="text-label uppercase text-primary">
-              Welcome back
-            </p>
-            <h1 className="mt-2 text-title text-foreground">
-              Sign in
-            </h1>
-            <p className="mt-2 text-sm text-muted">
-              Use the official college workspace account issued to you.
+          <div className="relative">
+            <SplitText
+              as="p"
+              text="Build the team that ships."
+              className="max-w-md text-heading text-foreground"
+              delay={0.12}
+            />
+
+            <ul className="mt-10 space-y-6">
+              {HIGHLIGHTS.map((h, i) => (
+                <Reveal key={h.title} direction="right" delay={0.4 + i * 0.1}>
+                  <li className="flex gap-4">
+                    <span
+                      aria-hidden
+                      className="mt-1.5 h-px w-8 shrink-0 bg-gradient-to-r from-primary to-transparent"
+                    />
+                    <span className="min-w-0">
+                      <span className="block text-sm font-bold text-foreground">{h.title}</span>
+                      <span className="mt-0.5 block text-xs leading-relaxed text-muted">
+                        {h.copy}
+                      </span>
+                    </span>
+                  </li>
+                </Reveal>
+              ))}
+            </ul>
+          </div>
+
+          <Reveal delay={0.75}>
+            <p className="relative text-label uppercase text-muted">
+              Team formation &amp; mentorship platform
             </p>
           </Reveal>
+        </aside>
 
-          {/* Warning / Error Alert Banner */}
-          {error && (
-            <Reveal delay={0.1}>
-              <div
-                role="alert"
-                className="mt-6 flex items-start gap-3 rounded-2xl border border-[rgba(114,56,61,0.35)] bg-[rgba(114,56,61,0.08)] p-4 text-xs font-semibold text-primary shadow-sm"
-              >
-                <ShieldAlert className="size-4 shrink-0 mt-0.5 text-primary" />
-                <div className="flex-1 space-y-1">
-                  <p className="font-bold text-foreground">
-                    {error.toLowerCase().includes('restricted') || error.toLowerCase().includes('official')
-                      ? 'Official Domain Required'
-                      : 'Authentication Notice'}
-                  </p>
-                  <p className="text-primary leading-relaxed">{error}</p>
-                </div>
-              </div>
-            </Reveal>
-          )}
+        {/* ── FORM COLUMN ── */}
+        <main
+          id="main"
+          className="relative flex flex-1 items-center justify-center overflow-visible px-5 py-14 sm:px-8"
+        >
+          <Aurora variant="warm" spotlight />
 
-          {handleGoogleSignIn && (
-            <>
-              <Reveal delay={0.16} className="mt-7">
-                <GoogleButton
-                  loading={googleLoading}
-                  onClick={handleGoogleSignIn}
-                  label="Continue with Google"
+          <div className="relative w-full max-w-sm">
+            {/* compact brand lockup for small screens */}
+            <Reveal direction="none" blur={false} className="mb-8 lg:hidden">
+              <Link href="/" className="flex items-center justify-center gap-2.5">
+                <img
+                  src="/Logo/NexaSphere Icon without Background.png"
+                  alt=""
+                  className="size-8 object-contain"
                 />
-              </Reveal>
-
-              <Reveal delay={0.24} className="my-7">
-                <div className="flex items-center gap-3">
-                  <span className="h-px flex-1 bg-[rgba(209,199,189,0.8)]" />
-                  <span className="text-label uppercase text-muted">
-                    or with email
-                  </span>
-                  <span className="h-px flex-1 bg-[rgba(209,199,189,0.8)]" />
-                </div>
-              </Reveal>
-            </>
-          )}
-
-          <Reveal delay={0.3}>
-            <form onSubmit={handleSubmit} noValidate className="space-y-4">
-              <Field
-                label="College email"
-                type="text"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                hint="Official @glbajajgroup.org ID"
-              />
-
-              <div className="relative">
-                <Field
-                  label="Password"
-                  type={showPassword ? 'text' : 'password'}
-                  autoComplete="current-password"
-                  required={!isSandbox}
-                  disabled={isSandbox}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-                {!isSandbox && (
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((s) => !s)}
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                    className="absolute right-4 top-6 text-label uppercase text-muted transition-colors duration-250 hover:text-primary"
-                  >
-                    {showPassword ? 'Hide' : 'Show'}
-                  </button>
-                )}
-              </div>
-
-              {isSandbox && (
-                <div className="rounded-xl bg-primary/10 border border-primary/25 p-3 text-[11px] leading-relaxed text-muted">
-                  <span className="font-bold text-primary">Sandbox mode.</span> Signing in as the
-                  troubleshooting account. Append <code className="text-primary">/mentor</code> for the
-                  mentor dashboard or <code className="text-primary">/student</code> for the student one.
-                </div>
-              )}
-
-              <div className="pt-1.5">
-                <PremiumButton
-                  type="submit"
-                  size="lg"
-                  loading={loading}
-                  className="w-full"
-                  magnetic={false}
-                >
-                  {loading ? 'Signing in…' : 'Sign in'}
-                </PremiumButton>
-              </div>
-            </form>
-          </Reveal>
-
-          <Reveal delay={0.4} className="mt-7">
-            <p className="text-center text-xs text-muted">
-              No workspace account yet?{' '}
-              <Link
-                href="/signup"
-                className="font-bold text-primary transition-colors duration-250 hover:text-[var(--primary-hover)]"
-              >
-                Create one
+                <span className="text-sm font-extrabold uppercase tracking-[0.18em] text-foreground">
+                  SIH@GLBGOI
+                </span>
               </Link>
-            </p>
-          </Reveal>
+            </Reveal>
+
+            <Reveal delay={0.06}>
+              <p className="text-label uppercase text-primary">
+                Welcome back
+              </p>
+              <h1 className="mt-2 text-title text-foreground">
+                Sign in
+              </h1>
+              <p className="mt-2 text-sm text-muted">
+                Use your official GL Bajaj college workspace account (@glbajajgroup.org) to continue.
+              </p>
+            </Reveal>
+
+            {/* Warning / Error Alert Banner */}
+            {error && (
+              <Reveal delay={0.1}>
+                <div
+                  role="alert"
+                  className="mt-6 flex items-start gap-3 rounded-2xl border border-[rgba(114,56,61,0.35)] bg-[rgba(114,56,61,0.08)] p-4 text-xs font-semibold text-primary shadow-sm"
+                >
+                  <ShieldAlert className="size-4 shrink-0 mt-0.5 text-primary" />
+                  <div className="flex-1 space-y-1">
+                    <p className="font-bold text-foreground">
+                      {error.toLowerCase().includes('restricted') || error.toLowerCase().includes('official')
+                        ? 'Official Domain Required'
+                        : 'Sign-in Notice'}
+                    </p>
+                    <p className="text-primary leading-relaxed">{error}</p>
+                  </div>
+                </div>
+              </Reveal>
+            )}
+
+            <Reveal delay={0.16} className="mt-8">
+              <GoogleButton
+                loading={googleLoading}
+                onClick={handleGoogleSignIn}
+                label="Continue with Google"
+              />
+            </Reveal>
+
+            <Reveal delay={0.24} className="mt-6 text-center">
+              <p className="text-xs text-muted">
+                Only official <span className="font-semibold text-foreground">@glbajajgroup.org</span> accounts are permitted.
+              </p>
+            </Reveal>
+          </div>
+        </main>
+      </div>
+    </>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-background">
+          <div className="size-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
         </div>
-      </main>
-    </div>
+      }
+    >
+      <LoginContent />
+    </Suspense>
   );
 }

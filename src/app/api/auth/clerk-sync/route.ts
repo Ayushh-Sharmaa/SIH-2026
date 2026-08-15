@@ -67,12 +67,36 @@ async function syncClerkUser(email: string, defaultRole: 'STUDENT' | 'MENTOR' = 
   return { user, token, isOnboarded };
 }
 
-async function resolveClerkEmail(): Promise<string | undefined> {
+import { verifyToken } from '@clerk/backend';
+
+async function resolveClerkEmail(request?: Request): Promise<string | undefined> {
   let userId: string | undefined;
 
+  // 1. Check Authorization Bearer header from client
+  const authHeader = request?.headers?.get('authorization');
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const bearerToken = authHeader.replace('Bearer ', '').trim();
+    try {
+      const verified = await verifyToken(bearerToken, {
+        secretKey: process.env.CLERK_SECRET_KEY,
+      });
+      if (verified?.sub) {
+        userId = verified.sub;
+        if (typeof (verified as Record<string, unknown>)?.email === 'string') {
+          return (verified as Record<string, unknown>).email as string;
+        }
+      }
+    } catch (err) {
+      logger.warn('Clerk Bearer token verification failed.', err);
+    }
+  }
+
+  // 2. Check Next.js auth() context
   try {
     const authState = await auth();
-    userId = authState?.userId ?? undefined;
+    if (!userId) {
+      userId = authState?.userId ?? undefined;
+    }
     const claims = authState?.sessionClaims as Record<string, unknown> | null;
     if (typeof claims?.email === 'string' && claims.email) {
       return claims.email;
@@ -84,6 +108,7 @@ async function resolveClerkEmail(): Promise<string | undefined> {
     logger.warn('Clerk auth() resolution failed.', err);
   }
 
+  // 3. If we resolved userId, fetch directly from Clerk backend SDK
   if (userId) {
     try {
       const client = await clerkClient();
@@ -97,6 +122,7 @@ async function resolveClerkEmail(): Promise<string | undefined> {
     }
   }
 
+  // 4. Fallback to currentUser()
   try {
     const clerkUser = await currentUser();
     const email =
@@ -112,7 +138,7 @@ async function resolveClerkEmail(): Promise<string | undefined> {
 
 export async function GET(request: Request) {
   try {
-    let email = await resolveClerkEmail();
+    let email = await resolveClerkEmail(request);
 
     if (!email) {
       return NextResponse.redirect(new URL('/login?error=oauth_failed', request.url));
@@ -151,7 +177,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     // The email MUST come from the verified Clerk session and nothing else.
-    let email = await resolveClerkEmail();
+    let email = await resolveClerkEmail(request);
 
     if (!email) {
       return NextResponse.json(

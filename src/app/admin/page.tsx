@@ -415,7 +415,10 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const toggleStudentAccess = async (studentEmail: string, action: 'ban' | 'restore') => {
+  const toggleStudentAccess = async (
+    studentEmail: string,
+    action: 'ban' | 'restore' | 'delete'
+  ) => {
     try {
       const res = await fetch('/api/admin/student', {
         method: 'POST',
@@ -1002,22 +1005,21 @@ export default function AdminDashboardPage() {
                                 >
                                   Set forming
                                 </PremiumButton>
-                                <PremiumButton
-                                  size="sm"
-                                  variant="ghost"
-                                  magnetic={false}
-                                  className="ml-auto"
+                                <button
+                                  type="button"
                                   onClick={() =>
                                     setConfirmState({
-                                      title: `Disband ${team.name}?`,
-                                      body: 'All members return to looking-for-team status. This cannot be undone.',
-                                      confirmLabel: 'Disband team',
+                                      title: `Delete and disband ${team.name}?`,
+                                      body: `This will permanently delete ${team.name} (${team.teamCode}). All ${team.memberCount} members will return to looking-for-team status, and all recruitment notices and requests will be removed.`,
+                                      confirmLabel: 'Delete Team',
                                       onConfirm: () => disbandTeam(team.id),
                                     })
                                   }
+                                  className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-[rgba(180,50,50,0.3)] bg-[rgba(180,50,50,0.06)] px-3 py-1.5 text-xs font-bold text-[#A82B2B] transition-all duration-200 hover:bg-[rgba(180,50,50,0.15)] hover:border-[rgba(180,50,50,0.6)] active:scale-95 cursor-pointer ml-auto"
                                 >
-                                  Disband
-                                </PremiumButton>
+                                  <Icon icon={Trash2} size="xs" />
+                                  <span>Delete Team</span>
+                                </button>
                               </div>
                             </m.article>
                           ))}
@@ -1170,7 +1172,7 @@ export default function AdminDashboardPage() {
                                 </p>
                               </div>
 
-                              <div className="flex shrink-0 gap-2">
+                              <div className="flex flex-wrap shrink-0 gap-2 items-center">
                                 <PremiumButton
                                   size="sm"
                                   variant="glass"
@@ -1205,6 +1207,21 @@ export default function AdminDashboardPage() {
                                 >
                                   {student.isBanned ? 'Restore' : 'Suspend'}
                                 </PremiumButton>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setConfirmState({
+                                      title: `Delete profile for ${student.name}?`,
+                                      body: `This will permanently remove ${student.name} (${student.email}) from the directory, remove them from any team, and delete their profile. If they sign in again later, they will start fresh from onboarding.`,
+                                      confirmLabel: 'Delete Profile',
+                                      onConfirm: () => toggleStudentAccess(student.email, 'delete'),
+                                    })
+                                  }
+                                  className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-[rgba(180,50,50,0.3)] bg-[rgba(180,50,50,0.06)] px-3 py-1.5 text-xs font-bold text-[#A82B2B] transition-all duration-200 hover:bg-[rgba(180,50,50,0.15)] hover:border-[rgba(180,50,50,0.6)] active:scale-95 cursor-pointer"
+                                >
+                                  <Icon icon={Trash2} size="xs" />
+                                  <span>Delete</span>
+                                </button>
                               </div>
                             </m.li>
                           ))}
@@ -1601,7 +1618,7 @@ export default function AdminDashboardPage() {
                 </a>
               )}
 
-              <div className="ml-auto">
+              <div className="ml-auto flex items-center gap-2">
                 <PremiumButton
                   size="sm"
                   variant="glass"
@@ -1626,6 +1643,24 @@ export default function AdminDashboardPage() {
                 >
                   {selectedStudent.isBanned ? 'Restore access' : 'Suspend access'}
                 </PremiumButton>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setConfirmState({
+                      title: `Delete profile for ${selectedStudent.name}?`,
+                      body: `This will permanently remove ${selectedStudent.name} (${selectedStudent.email}) from the platform, remove them from any team, and delete their profile. If they sign in again later, they will start fresh from onboarding.`,
+                      confirmLabel: 'Delete Profile',
+                      onConfirm: () => {
+                        toggleStudentAccess(selectedStudent.email, 'delete');
+                        setSelectedStudent(null);
+                      },
+                    })
+                  }
+                  className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-[rgba(180,50,50,0.3)] bg-[rgba(180,50,50,0.06)] px-3 py-1.5 text-xs font-bold text-[#A82B2B] transition-all duration-200 hover:bg-[rgba(180,50,50,0.15)] hover:border-[rgba(180,50,50,0.6)] active:scale-95 cursor-pointer"
+                >
+                  <Icon icon={Trash2} size="xs" />
+                  <span>Delete Profile</span>
+                </button>
               </div>
             </div>
           </Overlay>
@@ -1692,6 +1727,50 @@ export default function AdminDashboardPage() {
                 </li>
               ))}
             </ul>
+
+            <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-[rgba(209,199,189,0.7)] pt-4">
+              <div className="flex flex-wrap gap-2">
+                <PremiumButton
+                  size="sm"
+                  magnetic={false}
+                  onClick={() => {
+                    handleUpdateTeamStatus(selectedTeam.id, 'approved');
+                    setSelectedTeam(null);
+                  }}
+                >
+                  Approve Team
+                </PremiumButton>
+                <PremiumButton
+                  size="sm"
+                  variant="ghost"
+                  magnetic={false}
+                  onClick={() => {
+                    handleUpdateTeamStatus(selectedTeam.id, 'forming');
+                    setSelectedTeam(null);
+                  }}
+                >
+                  Set Forming
+                </PremiumButton>
+              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  setConfirmState({
+                    title: `Delete and disband ${selectedTeam.name}?`,
+                    body: `This will permanently delete ${selectedTeam.name} (${selectedTeam.teamCode}). All ${selectedTeam.memberCount} members will return to looking-for-team status, and all notices and requests will be removed.`,
+                    confirmLabel: 'Delete Team',
+                    onConfirm: () => {
+                      disbandTeam(selectedTeam.id);
+                      setSelectedTeam(null);
+                    },
+                  })
+                }
+                className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-[rgba(180,50,50,0.3)] bg-[rgba(180,50,50,0.06)] px-3.5 py-1.5 text-xs font-bold text-[#A82B2B] transition-all duration-200 hover:bg-[rgba(180,50,50,0.15)] hover:border-[rgba(180,50,50,0.6)] active:scale-95 cursor-pointer ml-auto"
+              >
+                <Icon icon={Trash2} size="xs" />
+                <span>Delete Team</span>
+              </button>
+            </div>
           </Overlay>
         )}
       </AnimatePresence>

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { checkUserRateLimit } from '@/lib/rateLimit';
 import { adminStudentActionSchema } from '@/lib/validation';
@@ -86,7 +87,7 @@ export async function POST(request: Request) {
             await prisma.team.delete({ where: { id: team.id } });
           } else {
             // Reassign leadership to another member
-            const nextLeader = team.members.find((m) => m.userId !== user.id);
+            const nextLeader = team.members.find((m: { userId: string }) => m.userId !== user.id);
             if (nextLeader) {
               await prisma.team.update({
                 where: { id: team.id },

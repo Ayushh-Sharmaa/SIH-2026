@@ -90,7 +90,21 @@ graph TD
 
 ---
 
-## 5. Verification Checklist
+## 5. Real-Time Synchronization & Zero-Stale Cache Architecture
+
+To guarantee that when an administrator deletes or modifies an account or team, the change **instantly reflects across the entire website** (Browse Teams, Browse Teammates, Find Mentors, and Student Dashboards):
+
+1. **Eliminated Stale Next.js Route Caches:**
+   - Removed 15-minute `unstable_cache` freezes on `/api/students` and `/api/mentors`.
+   - Added `export const dynamic = 'force-dynamic'` and `export const revalidate = 0` to all directory and admin endpoints (`/api/students`, `/api/teams`, `/api/mentors`, `/api/dashboard`, `/api/admin/data`).
+2. **Instant Multi-Route Revalidation:**
+   - In all admin deletion handlers (`/api/admin/student`, `/api/admin/mentor/delete`, `/api/admin/team`), added instant `revalidatePath(...)` triggers for `/team-formation/browse-teams`, `/team-formation/browse-teammates`, `/mentors`, `/dashboard`, and `/admin`.
+3. **Client-Side Cache Busting:**
+   - Updated client fetch calls in `BrowseTeamsPage`, `FindTeammatesPage`, `BrowseMentorsPage`, and `DashboardPage` to use `{ cache: 'no-store' }`, ensuring browsers always fetch live data from the database.
+
+---
+
+## 6. Verification Checklist
 
 | Test Case | Expected Result | Status |
 | :--- | :--- | :--- |

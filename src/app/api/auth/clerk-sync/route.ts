@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { auth, currentUser } from '@clerk/nextjs/server';
+import { auth, currentUser, clerkClient } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
 import { signToken, normalizeEmail, isAllowedCollegeEmail } from '@/lib/auth';
 import { isUserBanned } from '@/lib/admin';
@@ -68,21 +68,46 @@ async function syncClerkUser(email: string, defaultRole: 'STUDENT' | 'MENTOR' = 
 }
 
 async function resolveClerkEmail(): Promise<string | undefined> {
+  let userId: string | undefined;
+
   try {
     const authState = await auth();
+    userId = authState?.userId ?? undefined;
     const claims = authState?.sessionClaims as Record<string, unknown> | null;
     if (typeof claims?.email === 'string' && claims.email) {
       return claims.email;
     }
-  } catch {}
+    if (typeof claims?.email_address === 'string' && claims.email_address) {
+      return claims.email_address;
+    }
+  } catch (err) {
+    logger.warn('Clerk auth() resolution failed.', err);
+  }
+
+  if (userId) {
+    try {
+      const client = await clerkClient();
+      const user = await client.users.getUser(userId);
+      const email =
+        user.emailAddresses.find((e) => e.id === user.primaryEmailAddressId)?.emailAddress ||
+        user.emailAddresses[0]?.emailAddress;
+      if (email) return email;
+    } catch (e) {
+      logger.warn('Clerk client getUser() failed.', e);
+    }
+  }
 
   try {
     const clerkUser = await currentUser();
-    return clerkUser?.emailAddresses?.[0]?.emailAddress;
+    const email =
+      clerkUser?.emailAddresses?.find((e) => e.id === clerkUser.primaryEmailAddressId)?.emailAddress ||
+      clerkUser?.emailAddresses?.[0]?.emailAddress;
+    if (email) return email;
   } catch (e) {
     logger.error('Clerk currentUser() failed.', e);
-    return undefined;
   }
+
+  return undefined;
 }
 
 export async function GET(request: Request) {

@@ -3,8 +3,8 @@
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useClerk, SignInButton } from '@clerk/nextjs';
-import { AnimatePresence, m } from 'framer-motion';
+import { useClerk } from '@clerk/nextjs';
+import { m } from 'framer-motion';
 import { ShieldAlert } from 'lucide-react';
 
 import {
@@ -23,10 +23,18 @@ const HIGHLIGHTS = [
   { title: 'Track your roster live', copy: 'Six seats, one leader, zero spreadsheets.' },
 ];
 
-function GoogleButton() {
+function GoogleButton({
+  loading,
+  onClick,
+}: {
+  loading: boolean;
+  onClick: () => void;
+}) {
   return (
     <m.button
       type="button"
+      onClick={onClick}
+      disabled={loading}
       whileHover={{ y: -2 }}
       whileTap={{ scale: 0.985 }}
       transition={{ duration: DURATION.hover, ease: EASE.outExpo }}
@@ -50,7 +58,7 @@ function GoogleButton() {
           d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
         />
       </svg>
-      Continue with Google
+      {loading ? 'Connecting to Google…' : 'Continue with Google'}
     </m.button>
   );
 }
@@ -63,6 +71,7 @@ function LoginContent() {
   const clerkUser = clerk.user;
   const clerkSignOut = clerk.signOut;
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (urlError === 'domain_not_allowed') {
@@ -79,27 +88,114 @@ function LoginContent() {
   }, [urlError]);
 
   // If the user reaches this page (meaning the app session is gone),
-  // but Clerk thinks they are still signed in (from a ghost session before our logout fix),
-  // instantly drop the Clerk session to sync state.
+  // but Clerk thinks they are still signed in, drop the Clerk session to sync state.
   useEffect(() => {
     if (clerkUser) {
       clerkSignOut();
     }
   }, [clerkUser, clerkSignOut]);
 
+  const handleGoogleSignIn = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      if (!clerk.loaded) {
+        throw new Error('Authentication service is initializing. Please try again.');
+      }
+
+      if (clerk.client?.signIn) {
+        await clerk.client.signIn.authenticateWithRedirect({
+          strategy: 'oauth_google',
+          redirectUrl: '/sso-callback',
+          redirectUrlComplete: '/api/auth/clerk-sync',
+          continueSignUp: true,
+        });
+      } else if (clerk.client?.signUp) {
+        await clerk.client.signUp.authenticateWithRedirect({
+          strategy: 'oauth_google',
+          redirectUrl: '/sso-callback',
+          redirectUrlComplete: '/api/auth/clerk-sync',
+        });
+      } else {
+        throw new Error('Authentication service unavailable.');
+      }
+    } catch (err) {
+      logger.error('Google Sign-In error', err);
+      setError(userFacingMessage(err, 'Google Sign-In failed. Please try again.'));
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-background text-foreground">
-        {/* ── BRAND PANEL: full-bleed editorial column, desktop only ── */}
-        <aside className="section-pearl relative hidden w-[44%] shrink-0 overflow-hidden lg:flex lg:flex-col lg:justify-between lg:px-12 lg:py-14 xl:px-16">
-          <Aurora variant="cool" spotlight={false} />
-          <div aria-hidden className="grid-lines absolute inset-0" />
+      {/* ── BRAND PANEL: full-bleed editorial column, desktop only ── */}
+      <aside className="section-pearl relative hidden w-[44%] shrink-0 overflow-hidden lg:flex lg:flex-col lg:justify-between lg:px-12 lg:py-14 xl:px-16">
+        <Aurora variant="cool" spotlight={false} />
+        <div aria-hidden className="grid-lines absolute inset-0" />
 
-          <Reveal direction="none" blur={false}>
-            <Link href="/" className="relative inline-flex items-center gap-3">
+        <Reveal direction="none" blur={false}>
+          <Link href="/" className="relative inline-flex items-center gap-3">
+            <img
+              src="/Logo/NexaSphere Icon without Background.png"
+              alt=""
+              className="size-9 object-contain"
+            />
+            <span className="text-sm font-extrabold uppercase tracking-[0.18em] text-foreground">
+              SIH@GLBGOI
+            </span>
+          </Link>
+        </Reveal>
+
+        <div className="relative">
+          <SplitText
+            as="p"
+            text="Build the team that ships."
+            className="max-w-md text-heading text-foreground"
+            delay={0.12}
+          />
+
+          <ul className="mt-10 space-y-6">
+            {HIGHLIGHTS.map((h, i) => (
+              <Reveal key={h.title} direction="right" delay={0.4 + i * 0.1}>
+                <li className="flex gap-4">
+                  <span
+                    aria-hidden
+                    className="mt-1.5 h-px w-8 shrink-0 bg-gradient-to-r from-primary to-transparent"
+                  />
+                  <span className="min-w-0">
+                    <span className="block text-sm font-bold text-foreground">{h.title}</span>
+                    <span className="mt-0.5 block text-xs leading-relaxed text-muted">
+                      {h.copy}
+                    </span>
+                  </span>
+                </li>
+              </Reveal>
+            ))}
+          </ul>
+        </div>
+
+        <Reveal delay={0.75}>
+          <p className="relative text-label uppercase text-muted">
+            Team formation &amp; mentorship platform
+          </p>
+        </Reveal>
+      </aside>
+
+      {/* ── FORM COLUMN ── */}
+      <main
+        id="main"
+        className="relative flex flex-1 items-center justify-center overflow-visible px-5 py-14 sm:px-8"
+      >
+        <Aurora variant="warm" spotlight />
+
+        <div className="relative w-full max-w-sm">
+          {/* compact brand lockup for small screens */}
+          <Reveal direction="none" blur={false} className="mb-8 lg:hidden">
+            <Link href="/" className="flex items-center justify-center gap-2.5">
               <img
                 src="/Logo/NexaSphere Icon without Background.png"
                 alt=""
-                className="size-9 object-contain"
+                className="size-8 object-contain"
               />
               <span className="text-sm font-extrabold uppercase tracking-[0.18em] text-foreground">
                 SIH@GLBGOI
@@ -107,117 +203,53 @@ function LoginContent() {
             </Link>
           </Reveal>
 
-          <div className="relative">
-            <SplitText
-              as="p"
-              text="Build the team that ships."
-              className="max-w-md text-heading text-foreground"
-              delay={0.12}
-            />
-
-            <ul className="mt-10 space-y-6">
-              {HIGHLIGHTS.map((h, i) => (
-                <Reveal key={h.title} direction="right" delay={0.4 + i * 0.1}>
-                  <li className="flex gap-4">
-                    <span
-                      aria-hidden
-                      className="mt-1.5 h-px w-8 shrink-0 bg-gradient-to-r from-primary to-transparent"
-                    />
-                    <span className="min-w-0">
-                      <span className="block text-sm font-bold text-foreground">{h.title}</span>
-                      <span className="mt-0.5 block text-xs leading-relaxed text-muted">
-                        {h.copy}
-                      </span>
-                    </span>
-                  </li>
-                </Reveal>
-              ))}
-            </ul>
-          </div>
-
-          <Reveal delay={0.75}>
-            <p className="relative text-label uppercase text-muted">
-              Team formation &amp; mentorship platform
+          <Reveal delay={0.06}>
+            <p className="text-label uppercase text-primary">
+              Welcome back
+            </p>
+            <h1 className="mt-2 text-title text-foreground">
+              Sign in
+            </h1>
+            <p className="mt-2 text-sm text-muted">
+              Use your official GL Bajaj college workspace account (@glbajajgroup.org) to continue.
             </p>
           </Reveal>
-        </aside>
 
-        {/* ── FORM COLUMN ── */}
-        <main
-          id="main"
-          className="relative flex flex-1 items-center justify-center overflow-visible px-5 py-14 sm:px-8"
-        >
-          <Aurora variant="warm" spotlight />
-
-          <div className="relative w-full max-w-sm">
-            {/* compact brand lockup for small screens */}
-            <Reveal direction="none" blur={false} className="mb-8 lg:hidden">
-              <Link href="/" className="flex items-center justify-center gap-2.5">
-                <img
-                  src="/Logo/NexaSphere Icon without Background.png"
-                  alt=""
-                  className="size-8 object-contain"
-                />
-                <span className="text-sm font-extrabold uppercase tracking-[0.18em] text-foreground">
-                  SIH@GLBGOI
-                </span>
-              </Link>
-            </Reveal>
-
-            <Reveal delay={0.06}>
-              <p className="text-label uppercase text-primary">
-                Welcome back
-              </p>
-              <h1 className="mt-2 text-title text-foreground">
-                Sign in
-              </h1>
-              <p className="mt-2 text-sm text-muted">
-                Use your official GL Bajaj college workspace account (@glbajajgroup.org) to continue.
-              </p>
-            </Reveal>
-
-            {/* Warning / Error Alert Banner */}
-            {error && (
-              <Reveal delay={0.1}>
-                <div
-                  role="alert"
-                  className="mt-6 flex items-start gap-3 rounded-2xl border border-[rgba(114,56,61,0.35)] bg-[rgba(114,56,61,0.08)] p-4 text-xs font-semibold text-primary shadow-sm"
-                >
-                  <ShieldAlert className="size-4 shrink-0 mt-0.5 text-primary" />
-                  <div className="flex-1 space-y-1">
-                    <p className="font-bold text-foreground">
-                      {error.toLowerCase().includes('restricted') || error.toLowerCase().includes('official')
-                        ? 'Official Domain Required'
-                        : 'Sign-in Notice'}
-                    </p>
-                    <p className="text-primary leading-relaxed">{error}</p>
-                  </div>
-                </div>
-              </Reveal>
-            )}
-
-            <Reveal delay={0.16} className="mt-8">
-              <SignInButton
-                forceRedirectUrl="/api/auth/clerk-sync"
-                signUpForceRedirectUrl="/api/auth/clerk-sync"
-                fallbackRedirectUrl="/api/auth/clerk-sync"
-                signUpFallbackRedirectUrl="/api/auth/clerk-sync"
-                mode="redirect"
+          {/* Warning / Error Alert Banner */}
+          {error && (
+            <Reveal delay={0.1}>
+              <div
+                role="alert"
+                className="mt-6 flex items-start gap-3 rounded-2xl border border-[rgba(114,56,61,0.35)] bg-[rgba(114,56,61,0.08)] p-4 text-xs font-semibold text-primary shadow-sm"
               >
-                <div>
-                  <GoogleButton />
+                <ShieldAlert className="size-4 shrink-0 mt-0.5 text-primary" />
+                <div className="flex-1 space-y-1">
+                  <p className="font-bold text-foreground">
+                    {error.toLowerCase().includes('restricted') || error.toLowerCase().includes('official')
+                      ? 'Official Domain Required'
+                      : 'Sign-in Notice'}
+                  </p>
+                  <p className="text-primary leading-relaxed">{error}</p>
                 </div>
-              </SignInButton>
+              </div>
             </Reveal>
+          )}
 
-            <Reveal delay={0.24} className="mt-6 text-center">
-              <p className="text-xs text-muted">
-                Only official <span className="font-semibold text-foreground">@glbajajgroup.org</span> accounts are permitted.
-              </p>
-            </Reveal>
-          </div>
-        </main>
-      </div>
+          <Reveal delay={0.16} className="mt-8">
+            <GoogleButton
+              loading={loading}
+              onClick={handleGoogleSignIn}
+            />
+          </Reveal>
+
+          <Reveal delay={0.24} className="mt-6 text-center">
+            <p className="text-xs text-muted">
+              Only official <span className="font-semibold text-foreground">@glbajajgroup.org</span> accounts are permitted.
+            </p>
+          </Reveal>
+        </div>
+      </main>
+    </div>
   );
 }
 

@@ -56,6 +56,76 @@ export async function POST(request: Request) {
       });
     }
 
+    if (action === 'delete') {
+      if (cleanEmail === SUPER_ADMIN_EMAIL) {
+        return NextResponse.json({ error: 'Cannot delete Super Admin account.' }, { status: 400 });
+      }
+
+      const user = await prisma.user.findUnique({
+        where: { email: cleanEmail },
+        include: {
+          studentProfile: {
+            include: {
+              team: {
+                include: { members: true },
+              },
+            },
+          },
+        },
+      });
+
+      if (!user) {
+        return NextResponse.json({ error: 'User account not found.' }, { status: 404 });
+      }
+
+      const team = user.studentProfile?.team;
+      if (team) {
+        if (team.leaderId === user.id) {
+          // If student is leader and only 1 member, disband team
+          if (team.members.length <= 1) {
+            await prisma.team.delete({ where: { id: team.id } });
+          } else {
+            // Reassign leadership to another member
+            const nextLeader = team.members.find((m) => m.userId !== user.id);
+            if (nextLeader) {
+              await prisma.team.update({
+                where: { id: team.id },
+                data: {
+                  leaderId: nextLeader.userId,
+                  memberCount: { decrement: 1 },
+                },
+              });
+              await prisma.studentProfile.update({
+                where: { userId: nextLeader.userId },
+                data: { roleInTeam: 'Leader' },
+              });
+            }
+          }
+        } else {
+          // Regular member leaving team
+          await prisma.team.update({
+            where: { id: team.id },
+            data: { memberCount: { decrement: 1 } },
+          });
+        }
+      }
+
+      // Delete user (cascades to StudentProfile, JoinRequests, TeamInvites)
+      await prisma.user.delete({
+        where: { id: user.id },
+      });
+
+      // Also unban if previously banned
+      await unbanUserEmail(cleanEmail, decoded.email).catch(() => {});
+
+      logger.debug(`Admin ${decoded.email} deleted student profile: ${cleanEmail}`);
+
+      return NextResponse.json({
+        success: true,
+        message: `Student account for ${cleanEmail} was permanently deleted. They can re-register from scratch upon signing in.`,
+      });
+    }
+
     return NextResponse.json({ error: 'Unknown admin student action' }, { status: 400 });
   } catch (error) {
     logger.error('Admin student action error', error);

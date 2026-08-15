@@ -180,7 +180,7 @@ export const respondMentorRequestSchema = z.object({
 // 4. Admin Management
 export const adminStudentActionSchema = z.object({
   email: z.string().trim().toLowerCase().email().max(255),
-  action: z.enum(['ban', 'unban', 'remove', 'restore']),
+  action: z.enum(['ban', 'unban', 'remove', 'restore', 'delete']),
 });
 
 export const adminTeamActionSchema = z.object({

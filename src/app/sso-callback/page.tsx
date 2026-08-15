@@ -20,43 +20,50 @@ function CallbackBridge() {
       if (processed.current) return;
       processed.current = true;
 
-      try {
-        // 1. Process the OAuth redirect callback with Clerk
-        await clerk.handleRedirectCallback({});
+      const performSync = async () => {
+        try {
+          const token = await clerk.session?.getToken();
+          const user = clerk.user;
+          const email =
+            user?.primaryEmailAddress?.emailAddress ||
+            user?.emailAddresses?.[0]?.emailAddress;
 
-        // 2. Extract session token and user details directly from Clerk client
-        const token = await clerk.session?.getToken();
-        const user = clerk.user;
-        const email =
-          user?.primaryEmailAddress?.emailAddress ||
-          user?.emailAddresses?.[0]?.emailAddress;
+          const res = await fetch('/api/auth/clerk-sync', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            body: JSON.stringify({ email, role: 'STUDENT' }),
+          });
 
-        // 3. Post to backend endpoint to establish first-party session cookie
-        const res = await fetch('/api/auth/clerk-sync', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          body: JSON.stringify({ email, role: 'STUDENT' }),
-        });
+          const data = await res.json().catch(() => ({}));
 
-        const data = await res.json().catch(() => ({}));
+          if (res.ok) {
+            window.location.replace('/dashboard');
+            return;
+          }
 
-        if (res.ok) {
+          if (data.error && (data.error.includes('restricted') || data.error.includes('official'))) {
+            window.location.replace('/login?error=domain_not_allowed');
+            return;
+          }
+
+          window.location.replace('/login?error=oauth_failed');
+        } catch (err) {
+          console.error('Sync error:', err);
           window.location.replace('/dashboard');
-          return;
         }
+      };
 
-        if (data.error && (data.error.includes('restricted') || data.error.includes('official'))) {
-          window.location.replace('/login?error=domain_not_allowed');
-          return;
-        }
-
-        window.location.replace('/login?error=oauth_failed');
+      try {
+        // Intercept Clerk's default redirect and run our POST sync handler
+        await clerk.handleRedirectCallback({}, async () => {
+          await performSync();
+        });
       } catch (err) {
-        console.error('SSO Callback error:', err);
-        window.location.replace('/api/auth/clerk-sync');
+        console.error('handleRedirectCallback error:', err);
+        await performSync();
       }
     }
 

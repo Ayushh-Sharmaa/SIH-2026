@@ -76,13 +76,23 @@ graph TD
 ### C. Student Profile Deletion (`POST /api/admin/student`)
 * Added a **Delete Profile** button in both the Student Directory list and the **Student Detail Modal**.
 * **Backend Action:**
-  * If the student is a **team leader**:
-    * If they are the sole member, the team is disbanded.
-    * If teammates exist, leadership is automatically re-assigned to another member.
-  * If the student is a **regular member**, they are removed and team member count is decremented.
-  * Cascades deletion across join requests, team invites, and user profile.
+  * If the student is a **Team Leader**:
+    * The entire team created by the leader is **disbanded and deleted**.
+    * All teammates in that team are released back to `OPEN` status (`teamId: null`, `roleInTeam: 'Member'`).
+    * All recruitment notices, join requests, invites, and team messages are cleaned up.
+  * If the student is a **regular member**:
+    * The student is removed from the team, team member count is decremented, and skills are recalculated.
+  * Cascades deletion across join requests, team invites, student profile, and user account.
 
-### D. Team Deletion & Disbanding (`POST /api/admin/team`)
+### D. SIH Diversity Rule: Mandatory Female Candidate & Reserved 6th Seat
+* **SIH Regulation:** A team can have all 6 female members, but CANNOT have 6 male members (at least 1 female candidate is mandatory per team).
+* **Automated Seat Reservation:**
+  * If a team has 5 members and **0 female members**, the 6th and final seat is **strictly reserved for a female candidate**.
+  * Any join request or invite for a male candidate when 0 females exist on a 5-member team is automatically rejected by backend validation with an informative SIH notice.
+  * Visual indicators on the team card, roster dials (`♀`), and team detail pages display *"1 Seat Reserved for Female (SIH Rule)"*.
+  * As soon as a female member joins, the reservation is unlocked and any remaining open seats can be filled by anyone.
+
+### E. Team Deletion & Disbanding (`POST /api/admin/team`)
 * Upgraded the team disband action to a full **Delete Team** control in the team card and modal.
 * **Backend Action:**
   * Resets all student members to `OPEN` status (`teamId: null`, `roleInTeam: 'Member'`).

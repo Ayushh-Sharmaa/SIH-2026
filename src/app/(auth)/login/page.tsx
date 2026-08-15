@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useClerk } from '@clerk/nextjs';
+import { useClerk, SignInButton } from '@clerk/nextjs';
 import { AnimatePresence, m } from 'framer-motion';
 import { ShieldAlert } from 'lucide-react';
 
@@ -23,56 +23,10 @@ const HIGHLIGHTS = [
   { title: 'Track your roster live', copy: 'Six seats, one leader, zero spreadsheets.' },
 ];
 
-/** Full-screen hand-off shown while the session is being minted. */
-function AuthHandoff({ caption }: { caption: string }) {
-  return (
-    <m.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: DURATION.hover, ease: EASE.outExpo }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(239,233,225,0.96)] p-6 backdrop-blur-xl"
-      role="status"
-      aria-live="polite"
-    >
-      <div className="flex w-full max-w-4xl flex-col gap-5">
-        <div className="flex items-center justify-between border-b border-[rgba(209,199,189,0.7)] pb-4">
-          <div className="flex items-center gap-3">
-            <div className="size-8 rounded-lg skeleton-shimmer" />
-            <div className="h-4 w-28 rounded skeleton-shimmer" />
-          </div>
-          <div className="h-8 w-20 rounded-xl skeleton-shimmer" />
-        </div>
-
-        <div className="h-28 rounded-3xl skeleton-shimmer" />
-
-        <div className="grid h-64 grid-cols-1 gap-5 lg:grid-cols-3">
-          <div className="rounded-3xl skeleton-shimmer" />
-          <div className="rounded-3xl skeleton-shimmer lg:col-span-2" />
-        </div>
-
-        <p className="text-center text-label uppercase text-muted">
-          {caption}
-        </p>
-      </div>
-    </m.div>
-  );
-}
-
-function GoogleButton({
-  loading,
-  onClick,
-  label,
-}: {
-  loading: boolean;
-  onClick: () => void;
-  label: string;
-}) {
+function GoogleButton() {
   return (
     <m.button
       type="button"
-      onClick={onClick}
-      disabled={loading}
       whileHover={{ y: -2 }}
       whileTap={{ scale: 0.985 }}
       transition={{ duration: DURATION.hover, ease: EASE.outExpo }}
@@ -96,7 +50,7 @@ function GoogleButton({
           d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
         />
       </svg>
-      {loading ? 'Connecting to Google…' : label}
+      Continue with Google
     </m.button>
   );
 }
@@ -109,7 +63,6 @@ function LoginContent() {
   const clerkUser = clerk.user;
   const clerkSignOut = clerk.signOut;
   const [error, setError] = useState('');
-  const [googleLoading, setGoogleLoading] = useState(false);
 
   useEffect(() => {
     if (urlError === 'domain_not_allowed') {
@@ -134,32 +87,8 @@ function LoginContent() {
     }
   }, [clerkUser, clerkSignOut]);
 
-  const handleGoogleSignIn = async () => {
-    setError('');
-    setGoogleLoading(true);
-    try {
-      if (!clerk?.client?.signIn) {
-        throw new Error('Google Sign-In is initializing. Please try again.');
-      }
-
-      await clerk.client.signIn.authenticateWithRedirect({
-        strategy: 'oauth_google',
-        redirectUrl: '/sso-callback',
-        redirectUrlComplete: '/api/auth/clerk-sync',
-      });
-    } catch (err) {
-      logger.error('Google Sign-In error', err);
-      setError(userFacingMessage(err, 'Google Sign-In failed. Please try again.'));
-      setGoogleLoading(false);
-    }
-  };
-
   return (
-    <>
-      <AnimatePresence>
-        {googleLoading && <AuthHandoff caption="Authorising your session" />}
-      </AnimatePresence>
-      <div className="flex min-h-screen bg-background text-foreground">
+    <div className="flex min-h-screen bg-background text-foreground">
         {/* ── BRAND PANEL: full-bleed editorial column, desktop only ── */}
         <aside className="section-pearl relative hidden w-[44%] shrink-0 overflow-hidden lg:flex lg:flex-col lg:justify-between lg:px-12 lg:py-14 xl:px-16">
           <Aurora variant="cool" spotlight={false} />
@@ -268,11 +197,17 @@ function LoginContent() {
             )}
 
             <Reveal delay={0.16} className="mt-8">
-              <GoogleButton
-                loading={googleLoading}
-                onClick={handleGoogleSignIn}
-                label="Continue with Google"
-              />
+              <SignInButton
+                forceRedirectUrl="/api/auth/clerk-sync"
+                signUpForceRedirectUrl="/api/auth/clerk-sync"
+                fallbackRedirectUrl="/api/auth/clerk-sync"
+                signUpFallbackRedirectUrl="/api/auth/clerk-sync"
+                mode="redirect"
+              >
+                <div>
+                  <GoogleButton />
+                </div>
+              </SignInButton>
             </Reveal>
 
             <Reveal delay={0.24} className="mt-6 text-center">
@@ -283,7 +218,6 @@ function LoginContent() {
           </div>
         </main>
       </div>
-    </>
   );
 }
 

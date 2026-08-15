@@ -99,10 +99,6 @@ function LoginContent() {
     setError('');
     setLoading(true);
     try {
-      if (!clerk.loaded) {
-        throw new Error('Authentication service is initializing. Please try again.');
-      }
-
       if (clerk.client?.signIn) {
         await clerk.client.signIn.authenticateWithRedirect({
           strategy: 'oauth_google',
@@ -110,15 +106,19 @@ function LoginContent() {
           redirectUrlComplete: '/api/auth/clerk-sync',
           continueSignUp: true,
         });
-      } else if (clerk.client?.signUp) {
+        return;
+      }
+
+      if (clerk.client?.signUp) {
         await clerk.client.signUp.authenticateWithRedirect({
           strategy: 'oauth_google',
           redirectUrl: '/sso-callback',
           redirectUrlComplete: '/api/auth/clerk-sync',
         });
-      } else {
-        throw new Error('Authentication service unavailable.');
+        return;
       }
+
+      throw new Error('Authentication service is initializing. Please click again.');
     } catch (err) {
       logger.error('Google Sign-In error', err);
       setError(userFacingMessage(err, 'Google Sign-In failed. Please try again.'));

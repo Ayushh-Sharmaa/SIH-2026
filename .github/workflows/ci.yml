@@ -64,11 +64,11 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          # The build must not depend on real credentials. A dummy secret long
-          # enough to satisfy the 32-character guard in src/lib/auth.ts keeps the
-          # production check honest without leaking anything.
           NEXTAUTH_SECRET: ci-placeholder-secret-not-used-in-production-0000
           NEXT_PUBLIC_SITE_URL: https://sih.glbajajgroup.org
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_ZmluZS1tdXR0LTYwLmNsZXJrLmFjY291bnRzLmRldiQ
+          CLERK_SECRET_KEY: sk_test_kWeP66232cUjPUs4FtmDBRcXMDe4feTh7IX5Y7Xp8C
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
 
   audit:
     name: Dependency audit

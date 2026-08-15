@@ -1,70 +1,69 @@
 'use client';
 
 import { Suspense, useEffect, useRef } from 'react';
-import { useClerk, AuthenticateWithRedirectCallback } from '@clerk/nextjs';
+import { useClerk } from '@clerk/nextjs';
 import { useSearchParams } from 'next/navigation';
 
 function CallbackBridge() {
   const clerk = useClerk();
   const searchParams = useSearchParams();
-  const syncAttempted = useRef(false);
+  const processed = useRef(false);
 
   useEffect(() => {
-    // 1. Check for error parameters from OAuth provider
     const errorParam = searchParams.get('error') || searchParams.get('error_description');
     if (errorParam) {
       window.location.replace('/login?error=domain_not_allowed');
       return;
     }
 
-    async function syncSession() {
-      if (syncAttempted.current) return;
-      syncAttempted.current = true;
+    async function handleAuth() {
+      if (processed.current) return;
+      processed.current = true;
 
       try {
-        // Fetch session token directly from Clerk browser client
-        const token = await clerk.session?.getToken();
+        // 1. Process the OAuth redirect callback with Clerk
+        await clerk.handleRedirectCallback({});
 
+        // 2. Extract session token and user details directly from Clerk client
+        const token = await clerk.session?.getToken();
+        const user = clerk.user;
+        const email =
+          user?.primaryEmailAddress?.emailAddress ||
+          user?.emailAddresses?.[0]?.emailAddress;
+
+        // 3. Post to backend endpoint to establish first-party session cookie
         const res = await fetch('/api/auth/clerk-sync', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
-          body: JSON.stringify({ role: 'STUDENT' }),
+          body: JSON.stringify({ email, role: 'STUDENT' }),
         });
 
+        const data = await res.json().catch(() => ({}));
+
         if (res.ok) {
-          const data = await res.json().catch(() => ({}));
-          const redirectUrl = data.user?.role ? '/dashboard' : '/onboarding';
-          window.location.replace(redirectUrl);
+          window.location.replace('/dashboard');
           return;
         }
 
-        const data = await res.json().catch(() => ({}));
         if (data.error && (data.error.includes('restricted') || data.error.includes('official'))) {
           window.location.replace('/login?error=domain_not_allowed');
           return;
         }
 
-        // Fallback to direct GET navigation
-        window.location.replace('/api/auth/clerk-sync');
+        window.location.replace('/login?error=oauth_failed');
       } catch (err) {
+        console.error('SSO Callback error:', err);
         window.location.replace('/api/auth/clerk-sync');
       }
     }
 
-    if (clerk.loaded && (clerk.user || clerk.session)) {
-      syncSession();
-      return;
+    if (clerk.loaded) {
+      handleAuth();
     }
-
-    const timer = setTimeout(() => {
-      syncSession();
-    }, 1800);
-
-    return () => clearTimeout(timer);
-  }, [clerk.loaded, clerk.user, clerk.session, searchParams]);
+  }, [clerk.loaded, clerk, searchParams]);
 
   return null;
 }
@@ -77,14 +76,6 @@ export default function SSOCallbackPage() {
       </Suspense>
       <div className="size-10 animate-spin rounded-full border-4 border-[#72383D] border-t-transparent" />
       <p className="text-sm font-semibold text-[#6F645B]">Authorizing college account…</p>
-      <Suspense fallback={null}>
-        <AuthenticateWithRedirectCallback
-          signInForceRedirectUrl="/api/auth/clerk-sync"
-          signUpForceRedirectUrl="/api/auth/clerk-sync"
-          signInFallbackRedirectUrl="/api/auth/clerk-sync"
-          signUpFallbackRedirectUrl="/api/auth/clerk-sync"
-        />
-      </Suspense>
     </div>
   );
 }

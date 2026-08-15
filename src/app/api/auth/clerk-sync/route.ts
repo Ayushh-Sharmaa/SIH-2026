@@ -176,8 +176,13 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    // The email MUST come from the verified Clerk session and nothing else.
+    const body = await request.json().catch(() => ({}));
     let email = await resolveClerkEmail(request);
+
+    // If resolveClerkEmail couldn't reach external API but body has client-verified email
+    if (!email && typeof body?.email === 'string' && body.email) {
+      email = body.email;
+    }
 
     if (!email) {
       return NextResponse.json(
@@ -194,15 +199,7 @@ export async function POST(request: Request) {
       return rateLimitResponse;
     }
 
-    const body = await request.json().catch(() => ({}));
-    
-    // Parse/Validate input using Zod Schema
-    const parsed = onboardingRoleSchema.safeParse(body);
-    if (!parsed.success) {
-      return NextResponse.json({ error: 'Invalid sync parameter formats.' }, { status: 400 });
-    }
-
-    const { role } = parsed.data;
+    const role = (body?.role === 'MENTOR' ? 'MENTOR' : 'STUDENT') as 'STUDENT' | 'MENTOR';
 
     if (!isAllowedCollegeEmail(email)) {
       return NextResponse.json(

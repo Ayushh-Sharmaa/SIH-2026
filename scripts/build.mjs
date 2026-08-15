@@ -15,4 +15,4 @@ if (hasDatabaseUrl && !isCI) {
 }
 
 console.log('[Build] Executing Next.js production build...');
-execSync('next build', { stdio: 'inherit' });
+execSync('npx next build', { stdio: 'inherit' });

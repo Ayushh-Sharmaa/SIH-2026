@@ -252,7 +252,7 @@ export default function FindMentorsPage() {
         if (filters.name) queryParams.append('name', filters.name);
         if (filters.expertise) queryParams.append('expertise', filters.expertise);
 
-        const res = await fetch(`/api/mentors?${queryParams.toString()}`);
+        const res = await fetch(`/api/mentors?${queryParams.toString()}`, { cache: 'no-store' });
         const data = await res.json();
         if (data.success) {
           setMentors(data.mentors);

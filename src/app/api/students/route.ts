@@ -7,9 +7,43 @@ import { studentSearchQuerySchema, parseQuery } from '@/lib/validation';
 import { logger } from '@/lib/logger';
 import { unstable_cache } from 'next/cache';
 
-const getCachedStudents = unstable_cache(
-  async () => {
-    return prisma.studentProfile.findMany({
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+export async function GET(request: Request) {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('token')?.value;
+
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const limited = await checkUserRateLimit(request, decoded.userId);
+    if (limited) return limited;
+
+    const parsedQuery = parseQuery(request.url, studentSearchQuerySchema);
+    if (!parsedQuery.success) {
+      return NextResponse.json({ error: 'Invalid search filters.' }, { status: 400 });
+    }
+
+    const nameParam = parsedQuery.data.name?.trim().toLowerCase();
+    const skillQuery = parsedQuery.data.skill?.trim().toLowerCase();
+    const softSkillQuery = parsedQuery.data.softSkill;
+    const languageQuery = parsedQuery.data.language;
+    const trackIdQuery = parsedQuery.data.trackId;
+    const collegeParam = parsedQuery.data.college?.trim().toLowerCase();
+    const branchParam = parsedQuery.data.branch?.trim().toLowerCase();
+    const yearParam = parsedQuery.data.year?.trim().toLowerCase();
+    const search = parsedQuery.data.search?.trim().toLowerCase();
+
+    // Directly query database to always serve live, accurate data
+    let students = await prisma.studentProfile.findMany({
       where: {
         isDemo: false,
         teamId: null,
@@ -53,46 +87,6 @@ const getCachedStudents = unstable_cache(
       },
       take: 200,
     });
-  },
-  ['student-directory'],
-  { revalidate: 900, tags: ['students'] }
-);
-
-export async function GET(request: Request) {
-  try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('token')?.value;
-
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const decoded = verifyToken(token);
-    if (!decoded) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const limited = await checkUserRateLimit(request, decoded.userId);
-    if (limited) return limited;
-
-    const parsedQuery = parseQuery(request.url, studentSearchQuerySchema);
-    if (!parsedQuery.success) {
-      return NextResponse.json({ error: 'Invalid search filters.' }, { status: 400 });
-    }
-
-    const nameParam = parsedQuery.data.name?.trim().toLowerCase();
-    const skillQuery = parsedQuery.data.skill?.trim().toLowerCase();
-    const softSkillQuery = parsedQuery.data.softSkill;
-    const languageQuery = parsedQuery.data.language;
-    const trackIdQuery = parsedQuery.data.trackId;
-    const collegeParam = parsedQuery.data.college?.trim().toLowerCase();
-    const branchParam = parsedQuery.data.branch?.trim().toLowerCase();
-    const yearParam = parsedQuery.data.year?.trim().toLowerCase();
-    const search = parsedQuery.data.search?.trim().toLowerCase();
-
-    // The database query already excludes students who belong to a team, so
-    // the browser-facing search never downloads and discards whole rosters.
-    let students = await getCachedStudents();
 
     students = students.filter((s) => s.userId !== decoded.userId);
     if (softSkillQuery) {

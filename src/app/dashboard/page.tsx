@@ -601,7 +601,7 @@ export default function DashboardPage() {
 
   const fetchDashboard = useCallback(async () => {
     try {
-      const res = await fetch('/api/dashboard');
+      const res = await fetch('/api/dashboard', { cache: 'no-store' });
       if (!res.ok) throw new Error('Failed to fetch dashboard data');
       setData(await res.json());
     } catch (err) {

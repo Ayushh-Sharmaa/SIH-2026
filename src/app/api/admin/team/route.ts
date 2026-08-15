@@ -6,7 +6,7 @@ import { checkUserRateLimit } from '@/lib/rateLimit';
 import { adminTeamActionSchema } from '@/lib/validation';
 import { isAuthorizedAdminEmail } from '@/lib/admin';
 import { logger } from '@/lib/logger';
-import { revalidateTag } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 
 export async function POST(request: Request) {
   try {
@@ -60,7 +60,11 @@ export async function POST(request: Request) {
       revalidateTag('teams', { expire: 0 });
       revalidateTag('students', { expire: 0 });
       revalidateTag('mentors', { expire: 0 });
-      return NextResponse.json({ success: true, message: 'Team disbanded successfully' });
+      revalidatePath('/team-formation/browse-teams');
+      revalidatePath('/team-formation/browse-teammates');
+      revalidatePath('/admin');
+      revalidatePath('/dashboard');
+      return NextResponse.json({ success: true, message: 'Team disbanded and removed successfully.' });
     }
 
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });

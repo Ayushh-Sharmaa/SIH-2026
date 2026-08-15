@@ -10,6 +10,9 @@ import { TeamStatus, Prisma } from '@prisma/client';
 import { logger } from '@/lib/logger';
 import { revalidateTag } from 'next/cache';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET(request: Request) {
   try {
     const cookieStore = await cookies();

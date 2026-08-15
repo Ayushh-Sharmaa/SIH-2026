@@ -6,6 +6,7 @@ import { checkUserRateLimit } from '@/lib/rateLimit';
 import { adminStudentActionSchema } from '@/lib/validation';
 import { banUserEmail, isAuthorizedAdminEmail, unbanUserEmail, SUPER_ADMIN_EMAIL } from '@/lib/admin';
 import { logger } from '@/lib/logger';
+import { revalidatePath, revalidateTag } from 'next/cache';
 
 export async function POST(request: Request) {
   try {
@@ -118,6 +119,13 @@ export async function POST(request: Request) {
 
       // Also unban if previously banned
       await unbanUserEmail(cleanEmail, decoded.email).catch(() => {});
+
+      revalidateTag('students', { expire: 0 });
+      revalidateTag('teams', { expire: 0 });
+      revalidatePath('/team-formation/browse-teammates');
+      revalidatePath('/team-formation/browse-teams');
+      revalidatePath('/admin');
+      revalidatePath('/dashboard');
 
       logger.debug(`Admin ${decoded.email} deleted student profile: ${cleanEmail}`);
 

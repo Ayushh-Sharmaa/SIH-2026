@@ -255,7 +255,7 @@ export default function FindTeamsPage() {
         if (filters.size) queryParams.append('size', filters.size);
         if (filters.status) queryParams.append('status', filters.status);
 
-        const res = await fetch(`/api/teams?${queryParams.toString()}`);
+        const res = await fetch(`/api/teams?${queryParams.toString()}`, { cache: 'no-store' });
         const data = await res.json();
         if (data.success) {
           setTeams(data.teams);

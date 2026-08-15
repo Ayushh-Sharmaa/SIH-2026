@@ -5,6 +5,7 @@ import { checkUserRateLimit } from '@/lib/rateLimit';
 import { isAuthorizedAdminEmail } from '@/lib/admin';
 import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
 
 const deleteMentorSchema = z.object({
@@ -68,6 +69,13 @@ export async function POST(request: Request) {
     await prisma.user.delete({
       where: { id: mentorId },
     });
+
+    revalidateTag('mentors', { expire: 0 });
+    revalidateTag('teams', { expire: 0 });
+    revalidatePath('/mentors');
+    revalidatePath('/team-formation/browse-teams');
+    revalidatePath('/admin');
+    revalidatePath('/dashboard');
 
     logger.debug(`Admin ${decoded.email} deleted mentor profile: ${mentor.name} (${mentor.user.email})`);
 

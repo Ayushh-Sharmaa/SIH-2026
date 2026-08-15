@@ -5,37 +5,8 @@ import { verifyToken } from '@/lib/auth';
 import { checkUserRateLimit } from '@/lib/rateLimit';
 import { mentorSearchQuerySchema, parseQuery } from '@/lib/validation';
 import { logger } from '@/lib/logger';
-import { unstable_cache } from 'next/cache';
-
-const getCachedMentors = unstable_cache(
-  async () => {
-    return prisma.mentorProfile.findMany({
-      where: {
-        verified: true,
-      },
-      select: {
-        userId: true,
-        name: true,
-        designation: true,
-        organization: true,
-        expertise: true,
-        bio: true,
-        linkedinUrl: true,
-        avatarUrl: true,
-        contact: true,
-        user: { select: { email: true, college: true } },
-        _count: { select: { teams: true } },
-        teams: {
-          select: { id: true, teamCode: true, name: true },
-          orderBy: { teamCode: 'asc' },
-        },
-      },
-      take: 200,
-    });
-  },
-  ['verified-mentors'],
-  { revalidate: 60, tags: ['mentors'] }
-);
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export async function GET(request: Request) {
   try {
@@ -59,12 +30,34 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Invalid search filters.' }, { status: 400 });
     }
 
-    const nameQuery = parsedQuery.data.name?.trim().toLowerCase();
     const expertiseQuery = parsedQuery.data.expertise?.trim().toLowerCase();
+    const nameQuery = parsedQuery.data.name?.trim().toLowerCase();
     const search = parsedQuery.data.search?.trim().toLowerCase();
 
     const [mentors, viewer] = await Promise.all([
-      getCachedMentors(),
+      prisma.mentorProfile.findMany({
+        where: {
+          verified: true,
+        },
+        select: {
+          userId: true,
+          name: true,
+          designation: true,
+          organization: true,
+          expertise: true,
+          bio: true,
+          linkedinUrl: true,
+          avatarUrl: true,
+          contact: true,
+          user: { select: { email: true, college: true } },
+          _count: { select: { teams: true } },
+          teams: {
+            select: { id: true, teamCode: true, name: true },
+            orderBy: { teamCode: 'asc' },
+          },
+        },
+        take: 200,
+      }),
       decoded.role === 'STUDENT'
         ? prisma.studentProfile.findUnique({
             where: { userId: decoded.userId },

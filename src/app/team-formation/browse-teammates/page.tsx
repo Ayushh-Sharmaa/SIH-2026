@@ -169,7 +169,7 @@ export default function FindTeammatesPage() {
         if (filters.language) queryParams.append('language', filters.language);
         if (filters.trackId) queryParams.append('trackId', filters.trackId);
 
-        const res = await fetch(`/api/students?${queryParams.toString()}`);
+        const res = await fetch(`/api/students?${queryParams.toString()}`, { cache: 'no-store' });
         const data = await res.json();
         if (data.success) { setStudents(data.students); setCurrentPage(1); }
       } catch (err) {

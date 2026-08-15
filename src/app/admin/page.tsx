@@ -300,7 +300,7 @@ export default function AdminDashboardPage() {
   const fetchAdminData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/admin/data');
+      const res = await fetch('/api/admin/data', { cache: 'no-store' });
       const data = await res.json();
 
       if (!res.ok) {

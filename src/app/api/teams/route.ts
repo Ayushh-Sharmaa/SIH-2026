@@ -67,6 +67,7 @@ export async function GET(request: Request) {
             select: {
               userId: true,
               name: true,
+              gender: true,
               branch: true,
               year: true,
               avatarUrl: true,
@@ -85,7 +86,7 @@ export async function GET(request: Request) {
       decoded.role === 'STUDENT'
         ? prisma.studentProfile.findUnique({
             where: { userId: decoded.userId },
-            select: { teamId: true },
+            select: { teamId: true, gender: true },
           })
         : Promise.resolve(null),
     ]);
@@ -137,12 +138,27 @@ export async function GET(request: Request) {
       });
     }
 
+    const formattedTeams = filtered.map((t) => {
+      const femaleCount = t.members.filter((m) => m.gender?.toLowerCase() === 'female').length;
+      const maleCount = t.members.length - femaleCount;
+      const reservedSeatForFemale = femaleCount === 0 && t.members.length >= 5;
+
+      return {
+        ...t,
+        femaleCount,
+        maleCount,
+        hasFemaleMember: femaleCount > 0,
+        reservedSeatForFemale,
+      };
+    });
+
     return NextResponse.json({
       success: true,
-      teams: filtered,
+      teams: formattedTeams,
       viewer: {
         role: decoded.role,
         hasTeam: Boolean(viewerProfile?.teamId),
+        gender: viewerProfile?.gender || null,
         canJoin: decoded.role === 'STUDENT' && !viewerProfile?.teamId,
       },
     });

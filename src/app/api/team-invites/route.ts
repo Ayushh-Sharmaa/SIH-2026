@@ -70,6 +70,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Target student not found.' }, { status: 404 });
     }
 
+    // SIH Rule: At least 1 female candidate is required in every team.
+    // If team has 0 females and 5 members, the 6th seat is strictly reserved for a female.
+    const femaleCount = team.members.filter((m) => m.gender?.toLowerCase() === 'female').length;
+    const isInviteeFemale = targetStudent.gender?.toLowerCase() === 'female';
+    if (femaleCount === 0 && team.members.length >= 5 && !isInviteeFemale) {
+      return NextResponse.json({
+        error: 'Cannot invite: per SIH guidelines, every team must have at least one female member. The last seat on your team is reserved for a female teammate.',
+      }, { status: 400 });
+    }
+
     if (targetStudent.teamId) {
       return NextResponse.json({ error: 'This student is already in a team.' }, { status: 400 });
     }
@@ -252,6 +262,15 @@ export async function PUT(request: Request) {
 
     if (invite.team.members.length >= 6) {
       return NextResponse.json({ error: 'Target team is full.' }, { status: 400 });
+    }
+
+    // SIH Rule: If team has 0 females and 5 members, the 6th seat is strictly reserved for a female.
+    const femaleCount = invite.team.members.filter((m) => m.gender?.toLowerCase() === 'female').length;
+    const isInviteeFemale = student?.gender?.toLowerCase() === 'female';
+    if (femaleCount === 0 && invite.team.members.length >= 5 && !isInviteeFemale) {
+      return NextResponse.json({
+        error: 'Cannot join: per SIH guidelines, every team must have at least one female member. The 6th seat on this team is reserved for a female candidate.',
+      }, { status: 400 });
     }
 
     const TEAM_FULL = 'TEAM_FULL';

@@ -5,6 +5,7 @@ import { verifyToken } from '@/lib/auth';
 import { checkUserRateLimit } from '@/lib/rateLimit';
 import { adminStudentActionSchema } from '@/lib/validation';
 import { banUserEmail, isAuthorizedAdminEmail, unbanUserEmail, SUPER_ADMIN_EMAIL } from '@/lib/admin';
+import { recalculateTeamSkills } from '@/lib/derived';
 import { logger } from '@/lib/logger';
 import { revalidatePath, revalidateTag } from 'next/cache';
 
@@ -83,32 +84,19 @@ export async function POST(request: Request) {
       const team = user.studentProfile?.team;
       if (team) {
         if (team.leaderId === user.id) {
-          // If student is leader and only 1 member, disband team
-          if (team.members.length <= 1) {
-            await prisma.team.delete({ where: { id: team.id } });
-          } else {
-            // Reassign leadership to another member
-            const nextLeader = team.members.find((m: { userId: string }) => m.userId !== user.id);
-            if (nextLeader) {
-              await prisma.team.update({
-                where: { id: team.id },
-                data: {
-                  leaderId: nextLeader.userId,
-                  memberCount: { decrement: 1 },
-                },
-              });
-              await prisma.studentProfile.update({
-                where: { userId: nextLeader.userId },
-                data: { roleInTeam: 'Leader' },
-              });
-            }
-          }
+          // Student is the TEAM LEADER: Disband and delete the entire team
+          await prisma.studentProfile.updateMany({
+            where: { teamId: team.id, userId: { not: user.id } },
+            data: { teamId: null, teamStatus: 'OPEN', roleInTeam: 'Member' },
+          });
+          await prisma.team.delete({ where: { id: team.id } });
         } else {
-          // Regular member leaving team
+          // Student is a regular member: Remove them and decrement team member count
           await prisma.team.update({
             where: { id: team.id },
             data: { memberCount: { decrement: 1 } },
           });
+          await recalculateTeamSkills(team.id).catch(() => {});
         }
       }
 

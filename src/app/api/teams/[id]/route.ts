@@ -126,6 +126,10 @@ export async function GET(
       contact: leader.contact,
     } : null;
 
+    const femaleCount = team.members.filter((m) => m.gender?.toLowerCase() === 'female').length;
+    const maleCount = team.members.length - femaleCount;
+    const reservedSeatForFemale = femaleCount === 0 && team.members.length >= 5;
+
     return NextResponse.json({
       success: true,
       team: {
@@ -136,6 +140,10 @@ export async function GET(
         leaderId: team.leaderId,
         leaderName: leader?.name || 'N/A',
         memberCount: team.members.length,
+        femaleCount,
+        maleCount,
+        hasFemaleMember: femaleCount > 0,
+        reservedSeatForFemale,
         capacity: 6,
         whatsapp: (isMemberOfTeam || isMentorOfTeam || isAdmin) ? team.whatsapp : null,
         logoUrl: team.logoUrl,

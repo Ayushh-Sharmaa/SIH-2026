@@ -28,6 +28,7 @@ import { logger } from '@/lib/logger';
 interface TeamMember {
   userId: string;
   name: string;
+  gender?: string | null;
   branch: string;
   year: string;
   avatarUrl?: string | null;
@@ -40,6 +41,10 @@ interface Team {
   name: string;
   leaderId: string;
   memberCount: number;
+  femaleCount?: number;
+  maleCount?: number;
+  hasFemaleMember?: boolean;
+  reservedSeatForFemale?: boolean;
   status: string; // 'forming' | 'locked'
   skillsCovered: string[];
   skillsNeeded: string[];
@@ -79,6 +84,7 @@ interface TeamFilters {
 interface TeamViewer {
   role: string;
   hasTeam: boolean;
+  gender?: string | null;
   canJoin: boolean;
 }
 
@@ -628,12 +634,28 @@ export default function FindTeamsPage() {
 
                                   {/* Member Slots dials */}
                                   <div className="mt-5">
-                                    <span className="text-[10px] font-black uppercase tracking-wider text-muted">
-                                      Team Roster ({team.memberCount} / 6)
-                                    </span>
+                                    <div className="flex items-center justify-between gap-2">
+                                      <span className="text-[10px] font-black uppercase tracking-wider text-muted">
+                                        Team Roster ({team.memberCount} / 6)
+                                      </span>
+                                      {team.femaleCount === 0 && team.memberCount >= 5 ? (
+                                        <span className="rounded-full bg-[rgba(180,50,50,0.1)] border border-[rgba(180,50,50,0.3)] px-2 py-0.5 text-[9px] font-extrabold text-[#A82B2B]">
+                                          1 Seat Reserved for Female
+                                        </span>
+                                      ) : team.femaleCount !== undefined && team.femaleCount > 0 ? (
+                                        <span className="text-[9px] font-bold text-emerald-700">
+                                          {team.femaleCount} Female{team.femaleCount > 1 ? 's' : ''} · Compliant
+                                        </span>
+                                      ) : (
+                                        <span className="text-[9px] font-normal text-muted">
+                                          1+ Female Required
+                                        </span>
+                                      )}
+                                    </div>
                                     <div className="mt-2 flex flex-wrap items-center gap-1.5">
                                       {Array.from({ length: 6 }).map((_, idx) => {
                                         const mem = team.members[idx];
+                                        const isReservedSlot = !mem && idx === 5 && team.femaleCount === 0;
                                         return mem ? (
                                           <m.div
                                             key={mem.userId}
@@ -648,16 +670,20 @@ export default function FindTeamsPage() {
                                             />
                                             {/* Tooltip */}
                                             <span className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 rounded bg-foreground px-2 py-1 text-[9px] font-black text-background opacity-0 transition-opacity duration-250 group-hover:opacity-100 whitespace-nowrap">
-                                              {mem.name} ({mem.roleInTeam || 'Member'})
+                                              {mem.name} ({mem.roleInTeam || 'Member'}{mem.gender ? ` · ${mem.gender}` : ''})
                                             </span>
                                           </m.div>
                                         ) : (
                                           <div
                                             key={`empty-${idx}`}
-                                            className="size-8 rounded-lg border border-dashed border-[rgba(172,156,141,0.65)] bg-[rgba(172,156,141,0.06)] flex items-center justify-center text-[10px] text-muted font-bold"
-                                            title="Empty slot"
+                                            className={`size-8 rounded-lg border border-dashed ${
+                                              isReservedSlot
+                                                ? 'border-[rgba(180,50,50,0.5)] bg-[rgba(180,50,50,0.08)] text-[#A82B2B]'
+                                                : 'border-[rgba(172,156,141,0.65)] bg-[rgba(172,156,141,0.06)] text-muted'
+                                            } flex items-center justify-center text-[10px] font-bold`}
+                                            title={isReservedSlot ? 'Reserved for female candidate (SIH Rule)' : 'Empty slot'}
                                           >
-                                            +
+                                            {isReservedSlot ? '♀' : '+'}
                                           </div>
                                         );
                                       })}
@@ -735,6 +761,10 @@ export default function FindTeamsPage() {
                                   {userHasTeam ? (
                                     <span className="text-xs font-semibold text-muted flex items-center gap-1">
                                       <ShieldAlert className="size-3.5" /> Already in a team
+                                    </span>
+                                  ) : team.reservedSeatForFemale && viewer?.gender && viewer.gender.toLowerCase() !== 'female' ? (
+                                    <span className="text-[11px] font-bold text-[#A82B2B] flex items-center gap-1">
+                                      Seat reserved for female
                                     </span>
                                   ) : (
                                     <PremiumButton

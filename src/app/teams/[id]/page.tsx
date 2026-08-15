@@ -95,6 +95,10 @@ interface TeamDetails {
     contact?: string | null;
   } | null;
   memberCount: number;
+  femaleCount?: number;
+  maleCount?: number;
+  hasFemaleMember?: boolean;
+  reservedSeatForFemale?: boolean;
   capacity: number;
   whatsapp?: string | null;
   logoUrl?: string | null;
@@ -499,14 +503,29 @@ export default function TeamDetailsPage() {
 
               {/* Team Members List */}
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <h2 className="text-xl font-bold tracking-tight text-foreground">Team Members</h2>
                     <p className="text-xs text-muted">Click any member to view their complete student profile</p>
                   </div>
-                  <span className="rounded-full bg-[rgba(114,56,61,0.1)] px-3 py-1 text-xs font-bold text-primary">
-                    {team.members.length} Members
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {team.femaleCount === 0 && team.memberCount >= 5 ? (
+                      <span className="rounded-full bg-[rgba(180,50,50,0.1)] border border-[rgba(180,50,50,0.3)] px-3 py-1 text-xs font-bold text-[#A82B2B]">
+                        1 Seat Reserved for Female (SIH Rule)
+                      </span>
+                    ) : team.femaleCount !== undefined && team.femaleCount > 0 ? (
+                      <span className="rounded-full bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 text-xs font-bold text-emerald-700">
+                        {team.femaleCount} Female{team.femaleCount > 1 ? 's' : ''} · SIH Compliant
+                      </span>
+                    ) : (
+                      <span className="rounded-full bg-amber-500/10 border border-amber-500/30 px-3 py-1 text-xs font-bold text-amber-800">
+                        1+ Female Required
+                      </span>
+                    )}
+                    <span className="rounded-full bg-[rgba(114,56,61,0.1)] px-3 py-1 text-xs font-bold text-primary">
+                      {team.members.length} / {team.capacity} Members
+                    </span>
+                  </div>
                 </div>
 
                 <RevealGroup className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" stagger={0.06} amount={0.1}>

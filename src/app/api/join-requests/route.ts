@@ -61,6 +61,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'This team is full or locked.' }, { status: 400 });
     }
 
+    // SIH Rule: At least 1 female candidate is required in every team.
+    // If team has 0 females and 5 members, the 6th seat is strictly reserved for a female.
+    const femaleCount = team.members.filter((m) => m.gender?.toLowerCase() === 'female').length;
+    const isApplicantFemale = student.gender?.toLowerCase() === 'female';
+    if (femaleCount === 0 && team.members.length >= 5 && !isApplicantFemale) {
+      return NextResponse.json({
+        error: 'Per SIH guidelines, every team must have at least one female member. The last seat on this team is reserved for a female candidate.',
+      }, { status: 400 });
+    }
+
     const existing = await prisma.joinRequest.findFirst({
       where: {
         teamId: teamId,
@@ -144,7 +154,10 @@ export async function PUT(request: Request) {
 
     const joinRequest = await prisma.joinRequest.findUnique({
       where: { id: requestId },
-      include: { team: { include: { members: true } } },
+      include: {
+        team: { include: { members: true } },
+        student: true,
+      },
     });
 
     if (!joinRequest) {
@@ -229,6 +242,15 @@ export async function PUT(request: Request) {
     // Action is ACCEPT
     if (joinRequest.team.members.length >= 6) {
       return NextResponse.json({ error: 'Your team is already full (max 6 members).' }, { status: 400 });
+    }
+
+    // SIH Rule: If team has 0 females and 5 members, the 6th seat is strictly reserved for a female.
+    const femaleCount = joinRequest.team.members.filter((m) => m.gender?.toLowerCase() === 'female').length;
+    const isApplicantFemale = joinRequest.student?.gender?.toLowerCase() === 'female';
+    if (femaleCount === 0 && joinRequest.team.members.length >= 5 && !isApplicantFemale) {
+      return NextResponse.json({
+        error: 'Cannot accept: per SIH guidelines, every team must have at least one female member. The 6th seat is reserved for a female candidate.',
+      }, { status: 400 });
     }
 
     const TEAM_FULL = 'TEAM_FULL';

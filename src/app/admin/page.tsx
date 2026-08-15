@@ -3,7 +3,17 @@
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, m } from 'framer-motion';
-import { ArrowUpRight, Check, GraduationCap, Layers, UserCheck, Users } from 'lucide-react';
+import {
+  ArrowUpRight,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  GraduationCap,
+  Layers,
+  Trash2,
+  UserCheck,
+  Users,
+} from 'lucide-react';
 import Icon from '@/components/ui/Icon';
 import EmptyState from '@/components/ui/EmptyState';
 import { Container } from '@/components/ui';
@@ -269,6 +279,23 @@ export default function AdminDashboardPage() {
   const [allFemaleFilter, setAllFemaleFilter] = useState(false);
 
   const [psSearch, setPsSearch] = useState('');
+  const [expandedTrackIds, setExpandedTrackIds] = useState<Record<string, boolean>>({});
+
+  const toggleTrackExpand = (id: string) => {
+    setExpandedTrackIds((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const expandAllTracks = () => {
+    const all: Record<string, boolean> = {};
+    problemStatementStats.forEach((tr) => {
+      all[tr.id] = true;
+    });
+    setExpandedTrackIds(all);
+  };
+
+  const collapseAllTracks = () => {
+    setExpandedTrackIds({});
+  };
 
   const fetchAdminData = useCallback(async () => {
     setLoading(true);
@@ -367,6 +394,24 @@ export default function AdminDashboardPage() {
       fetchAdminData();
     } catch (err) {
       toast(userFacingMessage(err, 'Could not approve mentor. Please try again.'), 'error');
+    }
+  };
+
+  const handleDeleteMentor = async (mentorId: string) => {
+    try {
+      const res = await fetch('/api/admin/mentor/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mentorId }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error || 'Failed to delete mentor');
+
+      toast(data.message || 'Mentor profile removed successfully.', 'success');
+      fetchAdminData();
+    } catch (err) {
+      toast(userFacingMessage(err, 'Could not delete mentor profile. Please try again.'), 'error');
     }
   };
 
@@ -1172,10 +1217,28 @@ export default function AdminDashboardPage() {
                     <>
                       <Panel
                         title="Participation by theme"
+                        description="Click on any problem statement or theme below to view all registered teams, leaders, and roster capacity."
                         action={
-                          <span className="text-caption font-bold text-muted">
-                            {filteredPSTracks.length} of {problemStatementStats.length}
-                          </span>
+                          <div className="flex flex-wrap items-center gap-3">
+                            <button
+                              type="button"
+                              onClick={expandAllTracks}
+                              className="text-caption font-bold text-primary transition-colors duration-250 hover:text-[var(--primary-hover)] cursor-pointer"
+                            >
+                              Expand all
+                            </button>
+                            <span className="text-muted">·</span>
+                            <button
+                              type="button"
+                              onClick={collapseAllTracks}
+                              className="text-caption font-bold text-muted transition-colors duration-250 hover:text-foreground cursor-pointer"
+                            >
+                              Collapse all
+                            </button>
+                            <span className="rounded-full border border-[rgba(209,199,189,0.7)] bg-[rgba(239,233,225,0.75)] px-2.5 py-0.5 text-caption font-bold text-muted">
+                              {filteredPSTracks.length} of {problemStatementStats.length}
+                            </span>
+                          </div>
                         }
                       >
                         <input
@@ -1197,76 +1260,159 @@ export default function AdminDashboardPage() {
                         />
                       )}
 
-                      <m.div layout className="grid gap-4 xl:grid-cols-2">
+                      <div className="space-y-3">
                         <AnimatePresence mode="popLayout" initial={false}>
-                          {filteredPSTracks.map((track, i) => (
-                            <m.article
-                              key={track.id}
-                              layout
-                              initial={{ opacity: 0, y: 20, filter: 'blur(6px)' }}
-                              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                              exit={{ opacity: 0, scale: 0.97, filter: 'blur(6px)' }}
-                              transition={{
-                                duration: DURATION.card,
-                                ease: EASE.outExpo,
-                                delay: Math.min(i * 0.03, 0.3),
-                              }}
-                              className="surface-raised space-y-3.5 rounded-3xl p-5"
-                            >
-                              <div className="flex flex-wrap items-start justify-between gap-3">
-                                <div className="min-w-0">
-                                  <span className="font-mono text-caption font-bold text-primary">
-                                    {track.code}
-                                  </span>
-                                  <h3 className="mt-1 text-feature text-foreground">
-                                    {track.name}
-                                  </h3>
-                                  <p className="mt-0.5 text-caption text-muted">
-                                    {track.category} · {track.organization}
-                                  </p>
-                                </div>
-                                <Chip tone="accent">{track.teamCount} teams</Chip>
-                              </div>
+                          {filteredPSTracks.map((track, i) => {
+                            const isExpanded = Boolean(expandedTrackIds[track.id]);
 
-                              <p className="line-clamp-2 text-xs leading-relaxed text-muted">
-                                {track.description}
-                              </p>
-
-                              <div className="border-t border-[rgba(209,199,189,0.65)] pt-3">
-                                {track.teams.length > 0 ? (
-                                  <>
-                                    <p className="mb-2 text-label uppercase text-muted">
-                                      Participating teams ({track.teams.length})
+                            return (
+                              <m.div
+                                key={track.id}
+                                layout
+                                initial={{ opacity: 0, y: 15 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.98 }}
+                                transition={{
+                                  duration: DURATION.card,
+                                  ease: EASE.outExpo,
+                                  delay: Math.min(i * 0.02, 0.25),
+                                }}
+                                className="surface-raised overflow-hidden rounded-3xl border border-[rgba(209,199,189,0.7)] transition-shadow duration-250 hover:shadow-e2"
+                              >
+                                {/* Accordion Header / Dropdown Trigger */}
+                                <button
+                                  type="button"
+                                  onClick={() => toggleTrackExpand(track.id)}
+                                  aria-expanded={isExpanded}
+                                  className="flex w-full items-center justify-between gap-4 p-5 text-left transition-colors duration-250 hover:bg-[rgba(239,233,225,0.4)] cursor-pointer"
+                                >
+                                  <div className="min-w-0 flex-1 space-y-1">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <span className="font-mono text-caption font-bold text-primary">
+                                        {track.code}
+                                      </span>
+                                      <h3 className="text-feature text-foreground">
+                                        {track.name}
+                                      </h3>
+                                      <Chip tone={track.teamCount > 0 ? 'primary' : 'neutral'}>
+                                        {track.teamCount} {track.teamCount === 1 ? 'team' : 'teams'} enrolled
+                                      </Chip>
+                                    </div>
+                                    <p className="text-caption text-muted">
+                                      {track.category} · {track.organization}
                                     </p>
-                                    <ul className="space-y-1.5">
-                                      {track.teams.map((t) => (
-                                        <li
-                                          key={t.id}
-                                          className="flex items-center justify-between gap-3 rounded-xl border border-[rgba(209,199,189,0.7)] bg-[rgba(239,233,225,0.55)] px-3 py-2"
-                                        >
-                                          <span className="min-w-0 truncate text-xs font-bold text-foreground">
-                                            {t.name}
-                                            <span className="ml-1.5 text-caption font-normal text-muted">
-                                              led by {t.leaderName}
-                                            </span>
-                                          </span>
-                                          <span className="shrink-0 text-caption font-bold text-primary">
-                                            {t.memberCount}/6
-                                          </span>
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  </>
-                                ) : (
-                                  <p className="text-xs italic text-muted">
-                                    No teams registered under this theme yet.
-                                  </p>
-                                )}
-                              </div>
-                            </m.article>
-                          ))}
+                                  </div>
+
+                                  <div className="flex items-center gap-3 shrink-0">
+                                    <span className="text-caption font-bold text-primary hidden sm:inline">
+                                      {isExpanded ? 'Hide teams' : 'View teams'}
+                                    </span>
+                                    <div
+                                      className={`flex size-8 items-center justify-center rounded-full border border-[rgba(209,199,189,0.8)] bg-[rgba(248,246,242,0.8)] text-foreground transition-transform duration-300 ${
+                                        isExpanded ? 'rotate-180 bg-[rgba(114,56,61,0.12)] text-primary border-[rgba(114,56,61,0.3)]' : ''
+                                      }`}
+                                    >
+                                      <Icon icon={ChevronDown} size="xs" />
+                                    </div>
+                                  </div>
+                                </button>
+
+                                {/* Accordion Body Content */}
+                                <AnimatePresence initial={false}>
+                                  {isExpanded && (
+                                    <m.div
+                                      initial={{ height: 0, opacity: 0 }}
+                                      animate={{ height: 'auto', opacity: 1 }}
+                                      exit={{ height: 0, opacity: 0 }}
+                                      transition={{ duration: 0.3, ease: EASE.outExpo }}
+                                      className="overflow-hidden"
+                                    >
+                                      <div className="border-t border-[rgba(209,199,189,0.65)] bg-[rgba(239,233,225,0.35)] p-5 space-y-4">
+                                        <div>
+                                          <p className="text-label uppercase text-muted mb-1 font-bold">
+                                            Problem Statement Overview
+                                          </p>
+                                          <p className="text-xs leading-relaxed text-body bg-[rgba(248,246,242,0.7)] p-3 rounded-xl border border-[rgba(209,199,189,0.6)]">
+                                            {track.description}
+                                          </p>
+                                        </div>
+
+                                        <div>
+                                          <div className="mb-2.5 flex items-center justify-between">
+                                            <p className="text-label uppercase text-muted font-bold">
+                                              Enrolled Teams ({track.teams.length})
+                                            </p>
+                                            {track.teams.length > 0 && (
+                                              <span className="text-caption text-muted">
+                                                Click any team to inspect details
+                                              </span>
+                                            )}
+                                          </div>
+
+                                          {track.teams.length > 0 ? (
+                                            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                                              {track.teams.map((t) => (
+                                                <div
+                                                  key={t.id}
+                                                  className="flex flex-col justify-between gap-3 rounded-2xl border border-[rgba(209,199,189,0.7)] bg-[rgba(248,246,242,0.9)] p-3.5 shadow-sm transition-all duration-200 hover:border-primary/40 hover:shadow-e1"
+                                                >
+                                                  <div className="space-y-1 min-w-0">
+                                                    <div className="flex items-center justify-between gap-2">
+                                                      <h4 className="truncate text-xs font-extrabold text-foreground">
+                                                        {t.name}
+                                                      </h4>
+                                                      <Chip tone={t.status === 'approved' ? 'primary' : 'neutral'}>
+                                                        {t.memberCount}/6
+                                                      </Chip>
+                                                    </div>
+                                                    <p className="truncate text-caption text-muted">
+                                                      Leader: <span className="font-semibold text-body">{t.leaderName}</span>
+                                                    </p>
+                                                    {t.isAllFemale && (
+                                                      <Chip tone="accent">All-female team</Chip>
+                                                    )}
+                                                  </div>
+
+                                                  <div className="pt-2 border-t border-[rgba(209,199,189,0.5)] flex items-center justify-between">
+                                                    <span className="text-caption font-semibold uppercase text-muted text-[10px]">
+                                                      Status: {t.status}
+                                                    </span>
+                                                    <button
+                                                      type="button"
+                                                      onClick={() => {
+                                                        const fullTeam = teams.find((team) => team.id === t.id);
+                                                        if (fullTeam) {
+                                                          setSelectedTeam(fullTeam);
+                                                        }
+                                                      }}
+                                                      className="text-caption font-bold text-primary hover:underline inline-flex items-center gap-1 cursor-pointer"
+                                                    >
+                                                      Inspect <Icon icon={ArrowUpRight} size="xs" />
+                                                    </button>
+                                                  </div>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          ) : (
+                                            <div className="rounded-2xl border border-dashed border-[rgba(209,199,189,0.8)] bg-[rgba(248,246,242,0.5)] p-4 text-center">
+                                              <p className="text-xs font-semibold text-muted">
+                                                No teams registered under this theme yet.
+                                              </p>
+                                              <p className="text-caption text-muted mt-0.5">
+                                                Teams will automatically appear here when formed.
+                                              </p>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </m.div>
+                                  )}
+                                </AnimatePresence>
+                              </m.div>
+                            );
+                          })}
                         </AnimatePresence>
-                      </m.div>
+                      </div>
                     </>
                   )}
 
@@ -1283,55 +1429,74 @@ export default function AdminDashboardPage() {
                       {mentors.map((mentor) => (
                         <RevealItem key={mentor.id}>
                           <TiltCard intensity={5}>
-                            <div className="surface-raised h-full space-y-3 rounded-3xl p-5">
-                              <div className="flex items-start justify-between gap-3">
-                                <div className="min-w-0">
-                                  <h2 className="text-feature text-foreground">
-                                    {mentor.name}
-                                  </h2>
-                                  <p className="mt-0.5 text-xs font-semibold text-primary">
-                                    {mentor.designation}
-                                  </p>
-                                  <p className="mt-0.5 truncate text-caption text-muted">
-                                    {mentor.email}
-                                  </p>
+                            <div className="surface-raised h-full space-y-3 rounded-3xl p-5 flex flex-col justify-between">
+                              <div className="space-y-3">
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="min-w-0">
+                                    <h2 className="text-feature text-foreground">
+                                      {mentor.name}
+                                    </h2>
+                                    <p className="mt-0.5 text-xs font-semibold text-primary">
+                                      {mentor.designation}
+                                    </p>
+                                    <p className="mt-0.5 truncate text-caption text-muted">
+                                      {mentor.email}
+                                    </p>
+                                  </div>
+                                  <Chip tone={mentor.verified ? 'accent' : 'neutral'}>
+                                    {mentor.verified ? 'Verified' : 'Pending Approval'}
+                                  </Chip>
                                 </div>
-                                <Chip tone={mentor.verified ? 'accent' : 'neutral'}>
-                                  {mentor.verified ? 'Verified' : 'Pending Approval'}
-                                </Chip>
+
+                                <div>
+                                  <div className="mb-1.5 flex justify-between text-label uppercase text-muted">
+                                    <span>Teams guided</span>
+                                    <span>
+                                      {mentor.guidedTeamsCount}
+                                    </span>
+                                  </div>
+                                  <div className="h-1.5 overflow-hidden rounded-full bg-[rgba(209,199,189,0.7)]">
+                                    <m.div
+                                      initial={{ scaleX: 0 }}
+                                      whileInView={{
+                                        scaleX:
+                                          mentor.guidedTeamsCount > 0 ? 1 : 0,
+                                      }}
+                                      viewport={{ once: true, amount: 0.6 }}
+                                      transition={{ duration: 0.9, ease: EASE.outExpo, delay: 0.15 }}
+                                      style={{ transformOrigin: 'left' }}
+                                      className="h-full rounded-full bg-gradient-to-r from-[#AC9C8D] to-primary"
+                                    />
+                                  </div>
+                                </div>
                               </div>
 
-                              <div>
-                                <div className="mb-1.5 flex justify-between text-label uppercase text-muted">
-                                  <span>Teams guided</span>
-                                  <span>
-                                    {mentor.guidedTeamsCount}
-                                  </span>
-                                </div>
-                                <div className="h-1.5 overflow-hidden rounded-full bg-[rgba(209,199,189,0.7)]">
-                                  <m.div
-                                    initial={{ scaleX: 0 }}
-                                    whileInView={{
-                                      scaleX:
-                                        mentor.guidedTeamsCount > 0 ? 1 : 0,
-                                    }}
-                                    viewport={{ once: true, amount: 0.6 }}
-                                    transition={{ duration: 0.9, ease: EASE.outExpo, delay: 0.15 }}
-                                    style={{ transformOrigin: 'left' }}
-                                    className="h-full rounded-full bg-gradient-to-r from-[#AC9C8D] to-primary"
-                                  />
-                                </div>
-                              </div>
-
-                              {!mentor.verified && (
+                              <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-[rgba(209,199,189,0.65)] pt-3">
+                                {!mentor.verified && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleApproveMentor(mentor.id)}
+                                    className="flex-1 rounded-xl border border-[rgba(114,56,61,0.25)] bg-[rgba(114,56,61,0.08)] py-2 text-xs font-bold uppercase tracking-wider text-primary transition-all duration-200 hover:bg-[rgba(114,56,61,0.16)] active:scale-95 cursor-pointer"
+                                  >
+                                    Approve Mentor
+                                  </button>
+                                )}
                                 <button
                                   type="button"
-                                  onClick={() => handleApproveMentor(mentor.id)}
-                                  className="mt-4 w-full rounded-xl border border-[rgba(114,56,61,0.25)] bg-[rgba(114,56,61,0.08)] py-2 text-xs font-bold uppercase tracking-wider text-primary transition-all duration-200 hover:bg-[rgba(114,56,61,0.16)] active:scale-95 cursor-pointer"
+                                  onClick={() =>
+                                    setConfirmState({
+                                      title: `Delete profile for ${mentor.name}?`,
+                                      body: `This will completely remove ${mentor.name} (${mentor.email}) from the platform and unassign them from any teams. If they sign in again later, they will start fresh from onboarding.`,
+                                      confirmLabel: 'Delete Profile',
+                                      onConfirm: () => handleDeleteMentor(mentor.userId || mentor.id),
+                                    })
+                                  }
+                                  className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-[rgba(180,50,50,0.3)] bg-[rgba(180,50,50,0.06)] px-3.5 py-2 text-xs font-bold text-[#A82B2B] transition-all duration-200 hover:bg-[rgba(180,50,50,0.15)] hover:border-[rgba(180,50,50,0.6)] active:scale-95 cursor-pointer ml-auto"
                                 >
-                                  Approve Mentor
+                                  <Icon icon={Trash2} size="xs" />
+                                  <span>Delete Profile</span>
                                 </button>
-                              )}
+                              </div>
                             </div>
                           </TiltCard>
                         </RevealItem>

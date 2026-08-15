@@ -69,7 +69,7 @@ export async function POST(request: Request) {
       where: { id: mentorId },
     });
 
-    logger.info(`Admin ${decoded.email} deleted mentor profile: ${mentor.name} (${mentor.user.email})`);
+    logger.debug(`Admin ${decoded.email} deleted mentor profile: ${mentor.name} (${mentor.user.email})`);
 
     return NextResponse.json({
       success: true,

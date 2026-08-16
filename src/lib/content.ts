@@ -150,6 +150,7 @@ export const ALL_17_THEME_SETS: ThemeSet[] = [
   },
 ];
 
+export const ALL_THEME_SETS = ALL_17_THEME_SETS;
 export const ALL_18_THEME_SETS = ALL_17_THEME_SETS;
 
 export const FAQS = [

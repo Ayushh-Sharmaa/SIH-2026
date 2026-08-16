@@ -8,6 +8,8 @@ import { sanitizeAvatarUrl } from '@/lib/avatar';
 import { logger } from '@/lib/logger';
 import { Prisma } from '@prisma/client';
 
+import { resolveSkillVariants, resolveSoftSkillVariants, resolveLanguageVariants } from '@/lib/skills';
+
 const PAGE_SIZE = 24;
 
 export async function GET(request: Request) {
@@ -56,14 +58,18 @@ export async function GET(request: Request) {
     const andConditions: Prisma.StudentProfileWhereInput[] = [];
 
     if (search && search.length >= 2) {
+      const searchSkillVariants = resolveSkillVariants(search);
+      const searchSoftVariants = resolveSoftSkillVariants(search);
+      const searchLangVariants = resolveLanguageVariants(search);
+
       andConditions.push({
         OR: [
           { name: { contains: search, mode: 'insensitive' } },
           { branch: { contains: search, mode: 'insensitive' } },
           { year: { contains: search, mode: 'insensitive' } },
-          { skills: { has: search } },
-          { softSkills: { has: search } },
-          { languages: { has: search } },
+          { skills: { hasSome: searchSkillVariants } },
+          { softSkills: { hasSome: searchSoftVariants } },
+          { languages: { hasSome: searchLangVariants } },
           { trackInterest: { some: { name: { contains: search, mode: 'insensitive' } } } },
           { trackInterest: { some: { problemStatementCode: { contains: search, mode: 'insensitive' } } } },
         ],
@@ -83,15 +89,18 @@ export async function GET(request: Request) {
     }
 
     if (skillQuery) {
-      andConditions.push({ skills: { has: skillQuery } });
+      const skillVariants = resolveSkillVariants(skillQuery);
+      andConditions.push({ skills: { hasSome: skillVariants } });
     }
 
     if (softSkillQuery && softSkillQuery !== 'All soft skills') {
-      andConditions.push({ softSkills: { has: softSkillQuery } });
+      const softVariants = resolveSoftSkillVariants(softSkillQuery);
+      andConditions.push({ softSkills: { hasSome: softVariants } });
     }
 
     if (languageQuery && languageQuery !== 'All languages') {
-      andConditions.push({ languages: { has: languageQuery } });
+      const langVariants = resolveLanguageVariants(languageQuery);
+      andConditions.push({ languages: { hasSome: langVariants } });
     }
 
     if (trackIdQuery) {

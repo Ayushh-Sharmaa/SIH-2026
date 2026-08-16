@@ -1,48 +1,29 @@
 import { z } from 'zod';
 
-const githubUrlSchema = z
-  .string()
-  .trim()
-  .transform((v) => (v === '' ? undefined : v))
-  .pipe(
+const optionalUrlSchema = (domainPattern?: RegExp, errorMsg?: string) =>
+  z.preprocess(
+    (val) => {
+      if (val === null || val === undefined) return undefined;
+      if (typeof val === 'string') {
+        const trimmed = val.trim();
+        return trimmed === '' ? undefined : trimmed;
+      }
+      return val;
+    },
     z
       .string()
-      .url({ message: 'GitHub profile must be a valid GitHub URL' })
-      .refine(
-        (v) => !v || v.toLowerCase().includes('github.com'),
-        { message: 'GitHub profile must be a valid GitHub URL' }
-      )
+      .url({ message: errorMsg || 'Invalid URL' })
+      .refine((v) => !v || !domainPattern || domainPattern.test(v.toLowerCase()), {
+        message: errorMsg || 'Invalid URL',
+      })
       .max(255)
       .optional()
+      .nullable()
   );
 
-const linkedinUrlSchema = z
-  .string()
-  .trim()
-  .transform((v) => (v === '' ? undefined : v))
-  .pipe(
-    z
-      .string()
-      .url({ message: 'LinkedIn profile URL is invalid' })
-      .refine(
-        (v) => !v || v.toLowerCase().includes('linkedin.com'),
-        { message: 'LinkedIn profile URL is invalid' }
-      )
-      .max(255)
-      .optional()
-  );
-
-const resumeUrlSchema = z
-  .string()
-  .trim()
-  .transform((v) => (v === '' ? undefined : v))
-  .pipe(
-    z
-      .string()
-      .url({ message: 'Resume link must be a valid public URL' })
-      .max(255)
-      .optional()
-  );
+const githubUrlSchema = optionalUrlSchema(/github\.com/, 'GitHub profile must be a valid GitHub URL');
+const linkedinUrlSchema = optionalUrlSchema(/linkedin\.com/, 'LinkedIn profile URL is invalid');
+const resumeUrlSchema = optionalUrlSchema(undefined, 'Resume link must be a valid public URL');
 
 // 1. Authentication
 export const loginSchema = z

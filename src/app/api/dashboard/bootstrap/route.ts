@@ -218,6 +218,8 @@ export async function GET(request: Request) {
         softSkills: student.softSkills,
       },
       themesSummary: {
+        trackInterest: student.trackInterest.map((t) => t.id),
+        tracksDetailed: student.trackInterest,
         tracks: student.trackInterest,
         githubUrl: student.githubUrl,
         linkedinUrl: student.linkedinUrl,

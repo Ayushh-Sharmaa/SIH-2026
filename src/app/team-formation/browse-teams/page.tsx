@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { AnimatePresence, m } from 'framer-motion';
 import { ArrowUpRight, Users, User, Briefcase, Plus, Search, Filter, ShieldAlert } from 'lucide-react';
 import { Container, EmptyState, TeamCardSkeleton } from '@/components/ui';
@@ -746,13 +747,13 @@ export default function FindTeamsPage() {
 
                                 {/* Join Actions */}
                                 <div className="mt-6 border-t border-[rgba(209,199,189,0.6)] pt-4 flex items-center justify-between gap-2">
-                                  <PremiumButton
-                                    size="sm"
-                                    variant="glass"
-                                    onClick={() => router.push(`/teams/${team.id}`)}
+                                  <Link
+                                    href={`/teams/${team.id}`}
+                                    className="px-3.5 py-1.5 rounded-2xl border border-[rgba(209,199,189,0.8)] bg-white/60 text-xs font-bold text-body hover:border-primary hover:text-primary transition-all text-center inline-flex items-center gap-1"
                                   >
-                                    View Team
-                                  </PremiumButton>
+                                    <span>View Team</span>
+                                    <ArrowUpRight className="size-3" />
+                                  </Link>
 
                                   {userHasTeam ? (
                                     <span className="text-xs font-semibold text-muted flex items-center gap-1">

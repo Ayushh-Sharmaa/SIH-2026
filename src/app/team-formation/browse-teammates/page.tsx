@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState, useRef, type FormEvent } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, m } from 'framer-motion';
 import {
@@ -15,6 +16,8 @@ import {
   Layers,
   ChevronLeft,
   ChevronRight,
+  AlertCircle,
+  RefreshCw,
 } from 'lucide-react';
 import { Container, EmptyState, StudentCardSkeleton } from '@/components/ui';
 import Icon from '@/components/ui/Icon';
@@ -145,6 +148,7 @@ export default function FindTeammatesPage() {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [totalCount, setTotalCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -161,6 +165,7 @@ export default function FindTeammatesPage() {
   const [inviteState, setInviteState] = useState<Record<string, 'sending' | 'sent'>>({});
 
   const abortControllerRef = useRef<AbortController | null>(null);
+  const latestRequestIdRef = useRef(0);
 
   // Load Tracks (cached server/client side)
   useEffect(() => {
@@ -184,6 +189,8 @@ export default function FindTeammatesPage() {
 
   const executeSearch = useCallback(
     async (filters: TeammateFilters, page = 1) => {
+      const requestId = ++latestRequestIdRef.current;
+
       // Abort previous in-flight request
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
@@ -192,35 +199,74 @@ export default function FindTeammatesPage() {
 
       setLoading(true);
       setHasSearched(true);
+      setSearchError(null);
+
+      // Normalized structured cache key incorporating all active filters
+      const normalizedFilters = {
+        name: filters.name?.trim().toLowerCase() || '',
+        college: filters.college?.trim().toLowerCase() || '',
+        branch: filters.branch?.trim().toLowerCase() || '',
+        year: filters.year?.trim() || '',
+        skill: filters.skill?.trim().toLowerCase() || '',
+        softSkill: filters.softSkill?.trim() || '',
+        language: filters.language?.trim() || '',
+        trackId: filters.trackId?.trim() || '',
+      };
+
+      const cacheKey = `teammates:${JSON.stringify(normalizedFilters)}:${page}`;
 
       try {
         const queryParams = new URLSearchParams();
         if (filters.name?.trim()) queryParams.append('name', filters.name.trim());
         if (filters.college?.trim()) queryParams.append('college', filters.college.trim());
         if (filters.branch?.trim()) queryParams.append('branch', filters.branch.trim());
-        if (filters.year?.trim()) queryParams.append('year', filters.year.trim());
+        if (filters.year?.trim() && filters.year !== 'All years') queryParams.append('year', filters.year.trim());
         if (filters.skill?.trim()) queryParams.append('skill', filters.skill.trim());
-        if (filters.softSkill?.trim()) queryParams.append('softSkill', filters.softSkill.trim());
-        if (filters.language?.trim()) queryParams.append('language', filters.language.trim());
+        if (filters.softSkill?.trim() && filters.softSkill !== 'All soft skills') queryParams.append('softSkill', filters.softSkill.trim());
+        if (filters.language?.trim() && filters.language !== 'All languages') queryParams.append('language', filters.language.trim());
         if (filters.trackId?.trim()) queryParams.append('trackId', filters.trackId.trim());
         queryParams.append('page', String(page));
 
-        const res = await fetch(`/api/students?${queryParams.toString()}`, {
-          signal: abortControllerRef.current.signal,
-        });
-        const data = await res.json();
-        if (data.success) {
+        const data = await QueryClient.fetch<{
+          success: boolean;
+          students: Student[];
+          pagination?: { total: number; totalPages: number };
+          error?: string;
+        }>(
+          cacheKey,
+          async () => {
+            const res = await fetch(`/api/students?${queryParams.toString()}`, {
+              signal: abortControllerRef.current?.signal,
+            });
+            const json = await res.json();
+            if (!res.ok) throw new Error(json.error || 'Failed to retrieve teammates.');
+            return json;
+          },
+          { ttlMs: 15_000 }
+        );
+
+        // Stale response protection: only the latest in-flight request can update UI state
+        if (requestId !== latestRequestIdRef.current) return;
+
+        if (data.success && data.students) {
           setStudents(data.students);
-          setTotalCount(data.pagination?.total || data.students.length);
-          setTotalPages(data.pagination?.totalPages || 1);
+          setTotalCount(data.pagination?.total ?? data.students.length);
+          setTotalPages(data.pagination?.totalPages ?? 1);
           setCurrentPage(page);
+          setSearchError(null);
+        } else {
+          throw new Error(data.error || 'Failed to retrieve teammates.');
         }
       } catch (err: unknown) {
         if (err instanceof Error && err.name === 'AbortError') return;
+        if (requestId !== latestRequestIdRef.current) return;
         logger.error('Search teammates error', err);
-        toast('Could not load students. Check your connection.', 'error');
+        setSearchError(err instanceof Error ? err.message : 'Could not load students. Check your connection.');
+        toast(err instanceof Error ? err.message : 'Could not load students. Check your connection.', 'error');
       } finally {
-        setLoading(false);
+        if (requestId === latestRequestIdRef.current) {
+          setLoading(false);
+        }
       }
     },
     [toast]
@@ -229,8 +275,8 @@ export default function FindTeammatesPage() {
   // Debounced search when user types or changes filters
   useEffect(() => {
     const isFilterActive = Boolean(
-      (name && name.length >= 2) ||
-      (skill && skill.length >= 2) ||
+      (name && name.trim().length >= 2) ||
+      (skill && skill.trim().length >= 2) ||
       branch ||
       year ||
       softSkill ||
@@ -244,6 +290,7 @@ export default function FindTeammatesPage() {
         // Reset back to empty state
         setStudents([]);
         setHasSearched(false);
+        setSearchError(null);
         setTotalCount(0);
       }
       return;
@@ -272,6 +319,7 @@ export default function FindTeammatesPage() {
     setTrackId('');
     setStudents([]);
     setHasSearched(false);
+    setSearchError(null);
     setTotalCount(0);
   };
 
@@ -512,6 +560,32 @@ export default function FindTeammatesPage() {
                     </div>
                   </div>
                 </div>
+              ) : searchError ? (
+                <div className="surface-raised rounded-3xl border border-[rgba(114,56,61,0.3)] bg-[rgba(114,56,61,0.04)] p-12 text-center shadow-e1">
+                  <div className="size-14 rounded-2xl bg-[rgba(114,56,61,0.1)] flex items-center justify-center text-primary mx-auto mb-4">
+                    <AlertCircle className="size-7" />
+                  </div>
+                  <h3 className="text-feature text-foreground font-bold">Search Request Failed</h3>
+                  <p className="text-body text-muted text-xs mt-2 max-w-md mx-auto">
+                    {searchError}
+                  </p>
+                  <div className="mt-5 flex items-center justify-center gap-3">
+                    <PremiumButton
+                      size="sm"
+                      onClick={() => executeSearch({ name, college, branch, year, skill, softSkill, language, trackId }, currentPage)}
+                      className="bg-primary text-on-accent"
+                    >
+                      <RefreshCw className="size-3.5" />
+                      <span>Retry Search</span>
+                    </PremiumButton>
+                    <button
+                      onClick={handleReset}
+                      className="px-4 py-2 rounded-xl border border-[rgba(209,199,189,0.7)] text-xs font-semibold text-body hover:bg-white"
+                    >
+                      Clear Filters
+                    </button>
+                  </div>
+                </div>
               ) : students.length === 0 ? (
                 <div className="surface-raised rounded-3xl border border-[rgba(209,199,189,0.7)] p-12 text-center shadow-e1">
                   <div className="size-14 rounded-2xl bg-[rgba(209,199,189,0.3)] flex items-center justify-center text-muted mx-auto mb-4">
@@ -628,16 +702,19 @@ export default function FindTeammatesPage() {
 
                           {/* Action Footer */}
                           <div className="pt-4 border-t border-[rgba(209,199,189,0.5)] flex items-center justify-between gap-3">
-                            <button
-                              onClick={() => router.push(`/students/${student.userId}`)}
-                              className="text-xs font-semibold text-muted hover:text-foreground flex items-center gap-1"
+                            <Link
+                              href={`/students/${student.userId}`}
+                              className="text-xs font-semibold text-muted hover:text-foreground flex items-center gap-1 transition-colors"
                             >
                               <span>View Profile</span>
                               <ArrowUpRight className="size-3" />
-                            </button>
+                            </Link>
 
                             <button
-                              onClick={() => sendInvite(student)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                sendInvite(student);
+                              }}
                               disabled={inviteState[student.userId] === 'sent' || inviteState[student.userId] === 'sending'}
                               className="px-3.5 py-1.5 rounded-xl bg-primary text-on-accent text-xs font-semibold shadow-sm hover:opacity-90 disabled:opacity-50 transition-all"
                             >

@@ -364,7 +364,7 @@ export default function FindMentorsPage() {
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Mentor name or Team ID (SIH100)..."
+                    placeholder="Mentor name or Team ID (GLB100)..."
                     aria-label="Search mentor name or team ID"
                     className="w-full rounded-full border border-[rgba(209,199,189,0.85)] bg-[rgba(248,246,242,0.75)] py-2.5 pl-11 pr-4 text-sm text-foreground outline-none transition-[border-color,box-shadow,background-color] duration-250 focus:border-primary focus:bg-[rgba(248,246,242,0.96)] focus:shadow-[0_0_0_4px_rgba(114,56,61,0.10)]"
                   />

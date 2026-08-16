@@ -316,7 +316,7 @@ export default function FindTeammatesPage() {
                     <FilterLabel>Student or Team ID</FilterLabel>
                     <input
                       type="text"
-                      placeholder="Name, SIH100, or team name"
+                      placeholder="Name, GLB100, or team name"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       className={CONTROL}

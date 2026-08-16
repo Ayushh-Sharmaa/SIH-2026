@@ -4,7 +4,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, m } from 'framer-motion';
-import { ArrowUpRight, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
 import Icon from '@/components/ui/Icon';
 import Navbar from '@/components/layout/Navbar';
 import { useSession } from '@/lib/session';
@@ -22,17 +22,6 @@ import {
 } from '@/components/motion';
 import { logger } from '@/lib/logger';
 import { userFacingMessage } from '@/lib/errors';
-
-interface Track {
-  id: string;
-  name: string;
-  problemStatementCode: string;
-  organization?: string;
-  category?: string;
-  description?: string;
-  sihUrl?: string;
-  youtubeUrl?: string;
-}
 
 const STANDARD_SKILL_POOL = [
   'React', 'Node.js', 'Python', 'JavaScript', 'TypeScript', 'Next.js', 'HTML', 'CSS',
@@ -201,7 +190,6 @@ export default function OnboardingPage() {
     user: { name: string; role: string; email?: string } | null;
     status: string;
   } | null>(null);
-  const [tracks, setTracks] = useState<Track[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [step, setStep] = useState(1);
@@ -230,8 +218,6 @@ export default function OnboardingPage() {
 
   const [hoveredDomain, setHoveredDomain] =
     useState<'Engineering' | 'Design' | 'Communication'>('Engineering');
-
-  const [hoveredTrack, setHoveredTrack] = useState<Track | null>(null);
 
   const [languages, setLanguages] = useState<{
     [key: string]: 'Basic' | 'Moderate' | 'Fluent' | null;
@@ -426,18 +412,7 @@ export default function OnboardingPage() {
           router.push('/dashboard');
           return;
         }
-
-        const tracksRes = await fetch('/api/tracks');
-        const tracksData = await tracksRes.json();
-        if (tracksData.success) {
-          setTracks(tracksData.tracks);
-          if (tracksData.tracks.length > 0) {
-            setHoveredTrack(tracksData.tracks[0]);
-          }
-        }
       } catch (err) {
-        // Silently failing here left the wizard with no tracks to choose from
-        // and no explanation, which reads as the form being broken.
         logger.error('Onboarding init failed', err);
         setError('Could not load your profile options. Please refresh and try again.');
       } finally {
@@ -537,10 +512,6 @@ export default function OnboardingPage() {
   };
 
   const validateStudentStep3 = () => {
-    if (studentForm.trackInterest.length !== 2) {
-      setError('Exactly 2 preferred problem statements are required.');
-      return false;
-    }
     if (!studentForm.githubUrl.trim()) {
       setError('GitHub profile URL is mandatory. Please enter your GitHub link.');
       return false;
@@ -868,7 +839,7 @@ export default function OnboardingPage() {
     ? [
         { n: 1, label: 'Academic', caption: 'Identity and enrolment' },
         { n: 2, label: 'Skills & fluency', caption: 'Stack, languages, soft skills' },
-        { n: 3, label: 'Preferences', caption: 'Problem statements and links' },
+        { n: 3, label: 'Profiles & links', caption: 'GitHub, LinkedIn, resume' },
       ]
     : [
         { n: 1, label: 'Professional', caption: 'Name, role, department' },
@@ -1930,164 +1901,12 @@ export default function OnboardingPage() {
                   transition={{ duration: DURATION.card, ease: EASE.outExpo }}
                   className="space-y-6"
                 >
-                  <SectionHeading eyebrow="Step three" title="Preferences and links" />
+                  <SectionHeading eyebrow="Step three" title="Professional profiles & links" />
 
-                  <div>
-                    <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
-                      <span className="text-label uppercase text-muted">
-                        Preferred problem statements <span className="text-primary">*</span>
-                      </span>
-                      <span className="rounded-full border border-[rgba(114,56,61,0.24)] bg-[rgba(114,56,61,0.08)] px-2.5 py-0.5 text-caption font-bold text-primary">
-                        {studentForm.trackInterest.length} / 2 selected
-                      </span>
-                    </div>
-
-                    <div className="mb-3 flex flex-col gap-2 rounded-2xl border border-[rgba(172,156,141,0.65)] bg-[rgba(172,156,141,0.16)] p-3.5 sm:flex-row sm:items-center sm:justify-between">
-                      <p className="text-caption font-semibold leading-relaxed text-body">
-                        Official SIH 2026 statements are not published yet — these are reference
-                        tracks built from the official themes.
-                      </p>
-                      <a
-                        href="https://sih.gov.in/"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="shrink-0 rounded-lg border border-[rgba(114,56,61,0.3)] bg-[rgba(248,246,242,0.7)] px-2.5 py-1 text-caption font-bold text-primary transition-colors duration-250 hover:bg-[rgba(248,246,242,0.95)]"
-                      >
-                        SIH portal <Icon icon={ArrowUpRight} size="xs" />
-                      </a>
-                    </div>
-
-                    <div className="max-h-60 space-y-2 overflow-y-auto rounded-2xl border border-[rgba(209,199,189,0.75)] bg-[rgba(239,233,225,0.4)] p-3">
-                      {tracks.map((track) => {
-                        const isSelected = studentForm.trackInterest.includes(track.id);
-                        return (
-                          <div
-                            key={track.id}
-                            role="checkbox"
-                            aria-checked={isSelected}
-                            tabIndex={0}
-                            onMouseEnter={() => setHoveredTrack(track)}
-                            onFocus={() => setHoveredTrack(track)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
-                                e.preventDefault();
-                                (e.currentTarget as HTMLDivElement).click();
-                              }
-                            }}
-                            onClick={() => {
-                              if (isSelected) {
-                                setStudentForm({
-                                  ...studentForm,
-                                  trackInterest: studentForm.trackInterest.filter(
-                                    (t) => t !== track.id
-                                  ),
-                                });
-                                setError('');
-                              } else {
-                                if (studentForm.trackInterest.length >= 2) {
-                                  setError('Exactly 2 problem statements must be selected.');
-                                  return;
-                                }
-                                setStudentForm({
-                                  ...studentForm,
-                                  trackInterest: [...studentForm.trackInterest, track.id],
-                                });
-                                setError('');
-                              }
-                            }}
-                            className={`flex cursor-pointer flex-col justify-between gap-2 rounded-xl border p-3 transition-colors duration-250 sm:flex-row sm:items-center ${
-                              isSelected
-                                ? 'border-[rgba(114,56,61,0.45)] bg-[rgba(114,56,61,0.07)]'
-                                : 'border-[rgba(209,199,189,0.75)] bg-[rgba(248,246,242,0.55)] hover:border-[rgba(114,56,61,0.3)]'
-                            }`}
-                          >
-                            <div className="flex min-w-0 items-start gap-2.5">
-                              <span
-                                aria-hidden
-                                className={`mt-0.5 grid size-4 shrink-0 place-items-center rounded border transition-colors duration-250 ${
-                                  isSelected
-                                    ? 'border-transparent bg-primary text-on-accent'
-                                    : 'border-[rgba(172,156,141,0.9)] bg-transparent text-transparent'
-                                }`}
-                              >
-                                <Icon icon={Check} size="xs" strokeWidth={3} />
-                              </span>
-                              <div className="min-w-0">
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <span className="rounded border border-[rgba(114,56,61,0.28)] bg-[rgba(114,56,61,0.08)] px-1.5 py-0.5 font-mono text-caption font-bold text-primary">
-                                    {track.problemStatementCode}
-                                  </span>
-                                  <span className="text-xs font-bold text-foreground">
-                                    {track.name}
-                                  </span>
-                                </div>
-                                {track.organization && (
-                                  <p className="mt-0.5 text-caption text-muted">
-                                    {track.organization} · {track.category}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-
-                            {track.sihUrl && (
-                              <a
-                                href={track.sihUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={(e) => e.stopPropagation()}
-                                className="shrink-0 self-end text-caption font-bold text-primary transition-colors duration-250 hover:text-[var(--primary-hover)] sm:self-center"
-                              >
-                                Official <Icon icon={ArrowUpRight} size="xs" />
-                              </a>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    <AnimatePresence mode="wait" initial={false}>
-                      {hoveredTrack && (
-                        <m.div
-                          key={hoveredTrack.id}
-                          initial={{ opacity: 0, y: 8 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -6 }}
-                          transition={{ duration: DURATION.hover, ease: EASE.outExpo }}
-                          className="mt-3 space-y-2 rounded-2xl border border-[rgba(209,199,189,0.85)] bg-[rgba(248,246,242,0.85)] p-4"
-                        >
-                          <div className="flex items-center justify-between gap-3 border-b border-[rgba(209,199,189,0.75)] pb-2">
-                            <span className="font-mono text-caption font-bold text-primary">
-                              {hoveredTrack.problemStatementCode}
-                            </span>
-                            <span className="rounded-full border border-[rgba(172,156,141,0.65)] bg-[rgba(172,156,141,0.2)] px-2 py-0.5 text-caption font-bold text-foreground">
-                              {hoveredTrack.category}
-                            </span>
-                          </div>
-                          <p className="text-xs font-bold text-foreground">{hoveredTrack.name}</p>
-                          <p className="text-xs leading-relaxed text-muted">
-                            {hoveredTrack.description}
-                          </p>
-                          <div className="flex items-center justify-between pt-1 text-caption">
-                            <span className="text-muted">
-                              Ministry ·{' '}
-                              <strong className="font-bold text-foreground">
-                                {hoveredTrack.organization}
-                              </strong>
-                            </span>
-                            {hoveredTrack.sihUrl && (
-                              <a
-                                href={hoveredTrack.sihUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="font-bold text-primary hover:underline"
-                              >
-                                Open SIH portal <Icon icon={ArrowUpRight} size="xs" />
-                              </a>
-                            )}
-                          </div>
-                        </m.div>
-                      )}
-                    </AnimatePresence>
+                  <div className="rounded-2xl border border-[rgba(172,156,141,0.65)] bg-[rgba(172,156,141,0.14)] p-4">
+                    <p className="text-xs font-semibold leading-relaxed text-body">
+                      Add your GitHub and LinkedIn links so teammates and team leaders can review your work and projects. Problem statement themes are chosen later during team formation.
+                    </p>
                   </div>
 
                   <div className="grid gap-4 sm:grid-cols-2">
@@ -2116,7 +1935,7 @@ export default function OnboardingPage() {
                     type="url"
                     value={studentForm.resumeUrl}
                     onChange={(e) => setStudentForm({ ...studentForm, resumeUrl: e.target.value })}
-                    hint="Make sure the sharing link is public."
+                    hint="Google Drive, Notion, or personal portfolio (ensure link is publicly accessible)."
                   />
 
                   <div className="flex justify-between border-t border-[rgba(209,199,189,0.7)] pt-5">

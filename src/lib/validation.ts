@@ -94,7 +94,9 @@ export const studentProfileSchema = z.object({
   avatarUrl: z.string().max(3_000_000).optional(),
   trackInterest: z
     .array(z.string().trim().max(100))
-    .length(2, "Exactly 2 preferred problem statements are required"),
+    .max(10, "You can select at most 10 preferred problem statements")
+    .optional()
+    .default([]),
 });
 
 export const mentorProfileSchema = z.object({

@@ -119,7 +119,7 @@ export async function GET(request: Request) {
         team: firstStudent?.teamId
           ? {
               id: firstStudent.teamId,
-              teamCode: 'SIH100',
+              teamCode: 'GLB100',
               name: 'TechShak',
               status: 'forming',
               leaderId: decoded.userId,

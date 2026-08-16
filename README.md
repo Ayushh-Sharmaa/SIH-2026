@@ -1,40 +1,64 @@
-# GL Bajaj Internal SIH Portal (Powered by NexaSphere)
+# SIH@GLBGOI — Smart India Hackathon Platform
 
-The GL Bajaj Internal SIH Portal is a premium, high-performance platform designed for **GL Bajaj Group of Institutions** to streamline internal evaluations, team formation, and mentor matching for the **Smart India Hackathon (SIH)**. Developed and maintained by the **NexaSphere** student club, the application facilitates discovery and seamless coordination between students, team leaders, and faculty mentors.
+The official **SIH Internal Evaluation, Team Formation, and Faculty Mentorship Platform** for **GL Bajaj Group of Institutions, Mathura**, developed and maintained by **NexaSphere**.
 
----
-
-## 🚀 Key Features
-
-### 1. Find Teammates
-* Search and filter student profiles by name, department/branch, year of study, skills, and availability status.
-* View student profiles, portfolios, GitHub URLs, and cover graphics.
-* Send direct team invitations with a custom message.
-
-### 2. Discover Teams
-* Explore existing teams, view their rosters, current sizes, and domains.
-* Search and filter teams by problem statement, category (Software/Hardware), domain, skills needed, or leader name.
-* Request to join open teams directly.
-
-### 3. Mentor Matching
-* Find verified faculty mentors by expertise, department, and active guidance context.
-* Send mentorship requests directly from the team leader dashboard.
-
-### 4. Interactive Collaboration Hub
-* Team leaders can manage pending invitations, review incoming member requests, assign custom developer roles (e.g., frontend developer, hardware engineer), and toggle recruitment status.
-* Real-time actionable notifications (Accept, Decline, On-Hold, Waitlist, or request meeting).
+Built with a high-performance, role-aware architecture on **Next.js 16**, **React 19**, **Clerk Authentication**, **Prisma ORM**, and **Supabase PostgreSQL**.
 
 ---
 
-## 🛠️ Tech Stack & Architecture
+## 🚀 Key Capabilities
 
-* **Framework**: [Next.js 16](https://nextjs.org/) (App Router, dynamic caching via `unstable_cache`, customized `proxy.ts` middleware gate).
-* **UI/UX & Styling**: Tailwind CSS v4, customized components, and custom CSS token design.
-* **Animations**: Framer Motion (for modal springs, bell dropdowns, card reveals) and GSAP (with ScrollTrigger for hardware-accelerated parallax/effects).
-* **Smooth Scroll**: Lenis integrated with a shared ticker loop.
-* **Authentication**: Clerk OAuth sync.
-* **Database & ORM**: PostgreSQL (hosted on Supabase) with Prisma ORM.
-* **Testing**: Node.js native test runner and WCAG AA contrast testing checker.
+### 1. Teammate Discovery (`/team-formation/browse-teammates`)
+* Database-side filtered search across student profiles by skills, languages, soft skills, branch, year, and team availability status.
+* Bounded 24-result pagination with cursor-based and offset navigation.
+* Privacy-hardened DTOs: roll numbers and mobile contact details are strictly masked in public discovery.
+
+### 2. Team Formation & Management (`/team-formation/browse-teams`)
+* Explore open forming teams, review real-time member rosters, skill coverage, and missing skills.
+* SIH Regulation Compliance: Automatic 1 female member reservation enforcement (when a team reaches 5 members with 0 females, the 6th seat is locked exclusively for a female candidate).
+* Full team lifecycle: creation, recruitment notices, invitations, join requests, and atomic disbanding.
+
+### 3. Faculty Mentorship Matching (`/team-formation/browse-mentors`)
+* Search verified faculty mentors filtered by domain expertise, department, and current guidance load.
+* Direct mentorship requests from team leaders with status tracking (`pending`, `accepted`, `declined`, `meeting_requested`).
+* Strict privacy: Faculty phone contacts are excluded from public search directories.
+
+### 4. Role-Specific Staged Dashboards (`/dashboard`)
+* **Two-Stage Loading**:
+  * **Stage 1 Fast Bootstrap (`/api/dashboard/bootstrap`)**: Resolves identity, role, and completion state in `< 100ms`.
+  * **Stage 2 Async Data Section (`/api/dashboard/team-details`)**: Loads assigned rosters, pending requests, and invitations in parallel.
+* **Progressive Profile System**: 3 independent, lightweight mutation tiles for focused updates without full-page reloads.
+  * Student: Identity & Academic, Technical Skills, Track & Hackathon Interests.
+  * Faculty Mentor: Identity & Department, Domain Expertise, Professional Bio & Links.
+
+### 5. Authoritative 17 SIH Themes (`/tracks`)
+* Enforces the official 17 Smart India Hackathon themes catalog with instant client-side caching (`0.03ms` response).
+
+---
+
+## ⚡ Performance Architecture
+
+| Optimization Layer | Implementation | Verified Benchmark |
+| :--- | :--- | :---: |
+| **Avatar Streaming** | Base64 strings transformed to `/api/avatar/[userId]?v=${hash}` streaming raw binary with 24h HTTP caching. | **> 99% Payload Reduction** (Teammates: 2.5 MB $\rightarrow$ 5.6 KB; Mentors: 568 KB $\rightarrow$ 0.8 KB) |
+| **Search Projections** | Strict `select` DTOs with bounded `take: 24` pagination (no `select *`). | **< 20 KB** total JSON per 24 results |
+| **Fast Bootstrap** | Compact user identity payload (439 bytes) decoupled from heavy rosters. | **< 100 ms** target load |
+| **Client Caching** | Centralized `QueryClient` with in-flight request deduplication and 30s fresh TTL. | **< 1 ms** instant cache returns |
+| **Zero N+1 Queries** | Compound Prisma queries using foreign-key joins in single database operations. | **1 Query** per search route |
+
+---
+
+## 🛡️ Security & Privacy Architecture
+
+* **Role-Based Authorization**: Returns `401 Unauthorized` for missing/invalid tokens and `403 Forbidden` for cross-role attempts.
+* **Avatar Endpoint Hardening (`/api/avatar/[userId]`)**:
+  * Identifier format validation (`RECORD_ID_REGEX`).
+  * Dedicated IP rate limiting (120 req/min/IP).
+  * Strict MIME allowlist (`image/jpeg`, `image/png`, `image/webp`, `image/gif`), rejecting SVG/HTML to prevent XSS.
+  * 500 KB maximum payload size ceiling.
+  * Generic 404 responses for inactive/demo profiles to prevent enumeration oracles.
+* **Sensitive Data Masking**: Phone numbers and student roll numbers are excluded from public search directories and prospective mentorship inquiries.
+* **Clerk OAuth Bridge**: Domain-restricted to official `@glbajajgroup.org` workspace accounts.
 
 ---
 
@@ -42,25 +66,30 @@ The GL Bajaj Internal SIH Portal is a premium, high-performance platform designe
 
 ```
 SIH-GLBGOI/
-├── .github/workflows/    # CI Pipeline (Typecheck, Lint, Test, Contrast)
-├── docs/                 # Extended PRDs, Design Systems, and phase guides
+├── .github/workflows/    # CI Pipeline (Typecheck, Lint, Test, Contrast, Perf)
+├── docs/                 # Architecture, Security, PRD, and Production Guides
 ├── prisma/               # Schema definition and database seed scripts
-├── public/               # Static assets, branding, and images
-│   ├── Logo/             # Corporate branding logos
-│   └── sih-2026/         # Hackathon timelines and banners
+├── public/               # Static assets, branding, and hackathon banners
+├── scripts/              # Performance audit, diagnostic, and contrast scripts
 ├── src/
-│   ├── app/              # Next.js Pages, Layouts, and API Endpoints
-│   │   ├── (auth)/       # Sign-in/Sign-up workflows
-│   │   ├── admin/        # Administration console
-│   │   ├── api/          # Rate-limited REST JSON Endpoints
-│   │   ├── onboarding/   # User role selection and profile building
-│   │   ├── team-formation/# Find Teammate, Find Team, and Find Mentor pages
-│   │   └── proxy.ts      # Authentication request middleware gate
-│   ├── components/       # Reusable layout, seo, motion, and UI elements
-│   ├── hooks/            # Focus trapping, escape, scroll locking, and GSAP hooks
-│   ├── lib/              # Client instances, auth helpers, and rate-limit managers
-│   └── styles/           # Modern tokens and global styling systems
-└── tests/                # Automated validation and session test specs
+│   ├── app/              # Next.js App Router (Pages, Layouts, API Routes)
+│   │   ├── api/          # Rate-limited REST JSON Endpoints & Avatar streamer
+│   │   │   ├── avatar/   # Binary avatar streaming with cache busting
+│   │   │   ├── dashboard/# Staged bootstrap & team details endpoints
+│   │   │   ├── profile/  # Progressive profile mutation endpoints
+│   │   │   ├── students/ # Teammate discovery search endpoint
+│   │   │   ├── mentors/  # Mentor directory search endpoint
+│   │   │   ├── teams/    # Team discovery and management endpoint
+│   │   │   └── tracks/   # Official 17 themes catalog endpoint
+│   │   ├── dashboard/    # Student and Faculty Mentor dashboard views
+│   │   ├── onboarding/   # User role selection and profile builder
+│   │   ├── team-formation/# Browse Teammates, Teams, and Mentors
+│   │   └── tracks/       # 17 Official Themes directory
+│   ├── components/       # Reusable layout, modal, motion, and UI elements
+│   ├── hooks/            # Focus trapping, scroll locking, and GSAP hooks
+│   ├── lib/              # Prisma client, auth, validation, rate limiting, and avatar utils
+│   └── styles/           # Warm Light Editorial design tokens and typography
+└── tests/                # Automated unit tests, session specs, and performance assertions
 ```
 
 ---
@@ -68,19 +97,20 @@ SIH-GLBGOI/
 ## ⚙️ Development Setup
 
 ### 1. Prerequisites
-Ensure you have [Node.js (v20+)](https://nodejs.org/) installed.
+* [Node.js (v20+)](https://nodejs.org/)
+* [npm](https://www.npmjs.com/)
 
 ### 2. Environment Configuration
-Create a `.env` file in the root directory. You can copy the template from `.env.example`:
+Create a `.env` file in the root directory:
 
 ```bash
 # Database URL (Supabase PostgreSQL Connection String)
 DATABASE_URL="postgresql://postgres:[PASSWORD]@db.[PROJECT-ID].supabase.co:5432/postgres?pgbouncer=true"
 
-# JWT Authentication secret (Minimum 32 characters)
+# JWT Authentication Secret (Minimum 32 characters)
 NEXTAUTH_SECRET="your-super-secure-jwt-signing-secret"
 
-# Clerk credentials
+# Clerk Credentials
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="pk_test_..."
 CLERK_SECRET_KEY="sk_test_..."
 ```
@@ -91,47 +121,39 @@ npm install
 ```
 
 ### 4. Database Setup & Seeding
-Prepare your database tables and seed test data (users, problem statements, and profiles):
 ```bash
-# Push schema changes to remote Supabase instance
+# Push schema changes to database
 npx prisma db push
 
-# Generate client
+# Generate Prisma client
 npx prisma generate
 
-# Seed initial database records
+# Seed initial hackathon records and test profiles
 npx prisma db seed
 ```
 
 ### 5. Running Locally
-Start the development server:
 ```bash
 npm run dev
 ```
-Open `http://localhost:3000` to view the portal.
+Open `http://localhost:3000` to view the platform.
 
 ---
 
-## 🧪 Available Scripts
+## 🧪 Verification & Audit Scripts
 
-* `npm run dev`: Runs the Next.js development server.
-* `npm run build`: Builds the production bundle (pre-seeded with Prisma migration check).
-* `npm run typecheck`: Validates TypeScript without emitting code output.
-* `npm run lint`: Performs ESLint check across all directories.
-* `npm test`: Runs automated unit tests in `tests/` directory.
-* `npm run test:contrast`: Audits WCAG AA colour contrast standards.
-* `npm run verify`: Combines type checking, unit tests, and contrast audits.
+```bash
+# Run the complete test & audit verification pipeline
+npm run verify
 
----
-
-## 🤝 Contribution Guide
-
-1. Create a descriptive feature branch: `git checkout -b feature/cool-feature`
-2. Implement and test your changes: `npm run verify`
-3. Commit with concise logs: `git commit -m "Add cool feature"`
-4. Push to origin and open a Pull Request.
+# Individual validation commands:
+npm run typecheck       # TypeScript compilation check (0 errors)
+npm test                # Run 69 automated unit tests across 17 suites
+npm run test:contrast   # Audit WCAG 2.1 AA colour contrast compliance
+npm run audit:perf      # Automated payload, query count, and privacy audit
+```
 
 ---
 
 ## 📄 License
-This project is proprietary and maintained for Internal Hackathon Evaluations at GL Bajaj Group of Institutions.
+Proprietary platform built for Internal Hackathon Operations at **GL Bajaj Group of Institutions, Mathura**. Maintained by **NexaSphere**.

@@ -1,207 +1,99 @@
-# NexaSphere — Architecture
+# SIH@GLBGOI — Performance & System Architecture
+
+This document describes the high-performance, bounded, and staged architecture powering the **SIH@GLBGOI** platform.
 
 ---
 
-## 1. App Flow
+## 1. Application Flow & Data Model
 
 ```
 Visitor lands on "/"
    │
    ▼
-Signup/Login  ──►  choose role: Student or Mentor
+Clerk OAuth Sign-in ──► @glbajajgroup.org domain validation
    │
    ▼
-Onboarding (multi-step profile builder)
-   │  Student: skills, track interest, resume/GitHub/LinkedIn
-   │  Mentor: expertise, tracks supported, verification, bio
-   ▼
-Dashboard (role-specific)
-   │  Student → team status / recommendations
-   │  Mentor  → incoming requests / current teams
-   ▼
-Team Formation Hub
-   ├── find-teammates  (filter + AI-ranked matches → send invite)
-   ├── find-mentors    (filter + AI-ranked matches → send request)
-   ├── create-team     (become leader, pick track)
-   └── my-team         (roster, skill-gap view, chat)
+Onboarding Gate ──────► Checks database for completed profile
+   │                     New users: Select Role (Student / Mentor)
    │
    ▼
-Notifications drive every state change:
-   invite sent → accepted/declined → team roster updates
-   → skills_covered/skills_needed recalculated
-   → mentor request sent → accepted → team locked
-```
-
-**Core principle:** profile and relationship data are the source of truth. Derived fields (`team_status`, `skills_covered`, `skills_needed`) are recalculated on roster changes server-side. A mentor's guidance count is derived from `Team.mentor_id`; it is never stored as a mutable load counter.
-
----
-
-## 2. High-Level System Architecture
-
-```
-┌─────────────────────────────┐
-│        Next.js Frontend      │
-│  (React + Tailwind, App Dir) │
-└──────────────┬───────────────┘
-               │ REST calls
-               ▼
-┌─────────────────────────────┐
-│     Next.js API Routes       │
-│  (auth, profiles, teams,     │
-│   tracks, notifications)     │
-└──────┬───────────────┬───────┘
-       │               │
-       ▼               ▼
-┌─────────────┐  ┌──────────────────────┐
-│ PostgreSQL   │  │  AI Agent Service     │
-│ (via Prisma) │  │  (calls Claude API,   │
-│ Supabase DB  │  │  structured JSON out) │
-└─────────────┘  └──────────────────────┘
-       │
-       ▼
-┌─────────────────────────────┐
-│  Supabase Auth / Storage /   │
-│  Realtime (chat, live notifs)│
-└─────────────────────────────┘
+Staged Dashboard
+   ├── Stage 1: Fast Bootstrap (/api/dashboard/bootstrap) — <100ms
+   │     Resolves identity, role, and tile completion state.
+   └── Stage 2: Async Data Section (/api/dashboard/team-details)
+         Loads assigned rosters, pending requests, and invites.
+   │
+   ▼
+Discovery Hubs (Bounded Pagination: take: 24)
+   ├── Browse Teammates (/team-formation/browse-teammates)
+   ├── Browse Teams     (/team-formation/browse-teams)
+   └── Browse Mentors   (/team-formation/browse-mentors)
 ```
 
 ---
 
-## 3. Folder & File Structure
+## 2. Core Performance Tenets
+
+### A. Compact Projections & Bounded Result Sets
+* All directory search queries use explicit Prisma `select` projections (never `select *`).
+* Results are strictly capped with `take: 24` pagination (cursor and offset support).
+* Compound indexing on filter fields (`skills`, `expertise`, `status`, `userId`).
+
+### B. Avatar Streaming & Payload Optimization
+* Inline base64 image strings in the database are transformed via `sanitizeAvatarUrl` into `/api/avatar/[userId]?v=${hash}`.
+* The dedicated endpoint [`/api/avatar/[userId]`](file:///d:/SIH@GLBGOI/src/app/api/avatar/[userId]/route.ts) streams the raw binary image with long-lived browser caching:
+  `Cache-Control: public, max-age=86400, stale-while-revalidate=604800, immutable`
+* Reduces search JSON response sizes by **> 99%** (Teammate search reduced from 2.5 MB to 5.6 KB).
+
+### C. Two-Stage Dashboard Loading Model
+* **Stage 1 (Bootstrap)**: Ultra-compact payload (439 bytes) returning only what is needed to render the header, identity banner, and profile status.
+* **Stage 2 (Team Details)**: Independent parallel fetch for heavy relationships (team rosters, join requests, invites), rendered asynchronously without blocking the initial UI paint.
+
+### D. Progressive Profile Mutations
+Instead of large monolithic form submissions, profiles are updated through 3 focused mutation tiles:
+* **Student**:
+  * Tile 1: Personal & Academic (`PATCH /api/profile/personal`)
+  * Tile 2: Technical Skills (`PATCH /api/profile/skills`)
+  * Tile 3: Track & Hackathon Interests (`PATCH /api/profile/themes`)
+* **Faculty Mentor**:
+  * Tile 1: Personal & Department (`PATCH /api/profile/mentor` with `section: 'personal'`)
+  * Tile 2: Domain Expertise (`PATCH /api/profile/mentor` with `section: 'expertise'`)
+  * Tile 3: Professional Bio & Links (`PATCH /api/profile/mentor` with `section: 'bio'`)
+
+### E. Centralized Client-Side Caching (`QueryClient`)
+* Deduplicates in-flight concurrent requests for the same cache key.
+* Caches read-heavy query responses in memory with configurable TTLs (e.g. 30s fresh TTL for directories, 120s TTL for tracks).
+* Targeted cache invalidation (`QueryClient.invalidate`) upon mutations (e.g. profile edit, team join, request status change).
+
+---
+
+## 3. Directory Layout & Key Modules
 
 ```
-nexasphere/
+src/
 ├── app/
-│   ├── (auth)/
-│   │   ├── login/page.tsx
-│   │   └── signup/page.tsx
-│   ├── onboarding/page.tsx
-│   ├── dashboard/page.tsx
-│   ├── team-formation/
-│   │   ├── find-teammates/page.tsx
-│   │   ├── find-mentors/page.tsx
-│   │   ├── my-team/page.tsx
-│   │   └── create-team/page.tsx
-│   ├── tracks/page.tsx
-│   ├── profile/page.tsx
-│   ├── notifications/page.tsx
-│   ├── admin/page.tsx
 │   ├── api/
-│   │   ├── auth/
-│   │   │   ├── signup/route.ts
-│   │   │   ├── login/route.ts
-│   │   │   └── verify-college-email/route.ts
+│   │   ├── avatar/[userId]/route.ts       # Binary avatar streaming with rate limiting
+│   │   ├── dashboard/
+│   │   │   ├── bootstrap/route.ts         # Stage 1 fast user bootstrap
+│   │   │   └── team-details/route.ts      # Stage 2 async relationship loader
 │   │   ├── profile/
-│   │   │   ├── student/route.ts
-│   │   │   ├── mentor/route.ts
-│   │   │   └── upload-resume/route.ts
-│   │   ├── tracks/
-│   │   │   ├── route.ts
-│   │   │   └── [id]/route.ts
-│   │   ├── students/route.ts
-│   │   ├── mentors/route.ts
-│   │   ├── teams/
-│   │   │   ├── route.ts
-│   │   │   └── [id]/
-│   │   │       ├── route.ts
-│   │   │       ├── invite/route.ts
-│   │   │       ├── join-request/route.ts
-│   │   │       ├── mentor-request/route.ts
-│   │   │       └── messages/route.ts
-│   │   ├── invites/[id]/respond/route.ts
-│   │   ├── join-requests/[id]/respond/route.ts
-│   │   ├── mentor-requests/[id]/respond/route.ts
-│   │   ├── agent/
-│   │   │   ├── match-teammates/route.ts
-│   │   │   ├── match-mentors/route.ts
-│   │   │   ├── skill-gap/route.ts
-│   │   │   └── profile-assist/route.ts
-│   │   ├── notifications/route.ts
-│   │   └── admin/
-│   │       ├── verify-mentor/[id]/route.ts
-│   │       ├── teams/route.ts
-│   │       └── user/[id]/route.ts
-│   ├── layout.tsx
-│   └── globals.css
-├── components/
-│   ├── ui/              # shared, reusable primitives (button, card, input, badge)
-│   ├── profile/          # profile forms, skill-tag input
-│   ├── team/              # team card, roster list, skill-gap banner
-│   ├── mentor/            # mentor card, verification and guidance count
-│   └── layout/           # navbar, sidebar, notification bell
+│   │   │   ├── personal/route.ts          # Student identity tile
+│   │   │   ├── skills/route.ts            # Student skills tile
+│   │   │   ├── themes/route.ts            # Student tracks tile
+│   │   │   └── mentor/route.ts            # Faculty mentor progressive tiles
+│   │   ├── students/route.ts              # Teammate search directory (bounded 24)
+│   │   ├── mentors/route.ts               # Mentor directory (bounded 24, private)
+│   │   ├── teams/route.ts                 # Teams directory & management
+│   │   └── tracks/route.ts                # 17 Official Themes catalog
+│   ├── dashboard/page.tsx                 # Student & Faculty Mentor dashboard views
+│   └── team-formation/                    # Discovery directories
 ├── lib/
-│   ├── prisma.ts          # Prisma client singleton
-│   ├── supabase.ts        # Supabase client (auth/storage/realtime)
-│   ├── claude.ts          # Anthropic API wrapper for agents
-│   └── derived.ts         # skills_covered / skills_needed / member_count logic
-├── prisma/
-│   └── schema.prisma
-├── types/
-│   └── index.ts
-├── docs/                  # PRD.md, Architecture.md, Rules.md, Phases.md, Design.md, Memory.md
-├── public/
-├── .env.local
-├── next.config.js
-├── tailwind.config.ts
-└── package.json
+│   ├── avatar.ts                          # Avatar URL sanitizer & data URI parser
+│   ├── queryClient.ts                     # In-flight dedup & in-memory cache
+│   ├── tracks.ts                          # Authoritative 17 SIH themes
+│   ├── validation.ts                      # Zod input schemas with DoS bounds
+│   └── rateLimit.ts                       # In-memory IP/User rate limiters
+└── tests/
+    └── performanceArchitecture.test.ts    # Regression test suite
 ```
-
----
-
-## 4. Data Model
-
-```
-User
- ├─ id, email, password_hash, role (student|mentor|admin), college, verified_at
-
-StudentProfile (1:1 with User)
- ├─ user_id, name, year, branch, skills[]
- ├─ track_interest[] (references Track)
- ├─ resume_url, github_url, linkedin_url
- ├─ team_status (open | in_team | team_full)
- ├─ team_id (nullable FK)
-
-MentorProfile (1:1 with User)
- ├─ user_id, name, designation, organization
- ├─ expertise[], tracks_supported[]
- ├─ guided teams (derived from Team.mentor_id; no platform maximum)
- ├─ verified (bool), bio, linkedin_url
-
-Track
- ├─ id, name, problem_statement_code, description, category
-
-Team
- ├─ id, team_code, name, track_id, leader_id, status (forming|complete|locked)
- ├─ mentor_id (nullable)
- ├─ member_count (auto, max 6)
- ├─ skills_covered[], skills_needed[] (derived)
-
-TeamCodeReservation
- ├─ code (immutable primary key), allocated_at
- └─ survives Team deletion so public SIH codes are permanently retired
-
-TeamInvite      ├─ id, team_id, invited_user_id, status, created_at
-JoinRequest     ├─ id, team_id, student_id, status
-MentorRequest   ├─ id, team_id, mentor_id, status, message
-Notification    ├─ id, user_id, type, payload, read, created_at
-Message         ├─ id, team_id, sender_id, content, created_at
-```
-
----
-
-## 5. Tech Stack
-
-| Layer | Choice | Why |
-|---|---|---|
-| Frontend | Next.js (App Router) + Tailwind CSS | Fast MVP iteration, SSR where useful, one deploy target with the API |
-| Backend | Next.js API routes (Node) | No separate service to stand up for MVP scope |
-| Database | PostgreSQL + Prisma ORM | Relational data (users, teams, requests) fits SQL naturally; Prisma gives type-safe queries |
-| Auth | Supabase Auth (or Firebase Auth) | College-email verification + optional Google login out of the box |
-| Realtime | Supabase Realtime or Socket.io | Team chat, live notification updates |
-| File storage | Supabase Storage (or Cloudinary) | Resumes, ID proof for college verification |
-| AI | Anthropic Claude API, structured JSON output | Powers all 5 agents (matchmaking, mentor matching, skill-gap, profile assist, team health) |
-| Email | Resend or SendGrid | Invite, mentor-accept, reminder emails |
-| Hosting | Vercel | Native Next.js deploy, zero DevOps overhead for MVP timeline |
-| Analytics | PostHog or Google Analytics | Usage tracking post-launch |
-
-This combo (Vercel + Supabase + Prisma) minimizes DevOps overhead so the team can focus on the matching logic and AI agents, which are the actual differentiators.

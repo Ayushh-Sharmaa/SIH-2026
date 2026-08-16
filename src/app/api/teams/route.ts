@@ -7,11 +7,9 @@ import { createTeamSchema, deleteTeamSchema, updateTeamDetailsSchema } from '@/l
 import { nextTeamCode } from '@/lib/teamCode';
 import { recalculateTeamSkills } from '@/lib/derived';
 import { TeamStatus, Prisma } from '@prisma/client';
+import { sanitizeAvatarUrl } from '@/lib/avatar';
 import { logger } from '@/lib/logger';
 import { revalidateTag } from 'next/cache';
-
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
 
 export async function GET(request: Request) {
   try {
@@ -27,15 +25,22 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { searchParams } = new URL(request.url);
-    const search = searchParams.get('search')?.trim().toLowerCase();
-    const domain = searchParams.get('domain')?.trim().toLowerCase();
-    const skill = searchParams.get('skill')?.trim().toLowerCase();
-    const leader = searchParams.get('leader')?.trim().toLowerCase();
-    const size = searchParams.get('size')?.trim();
-    const status = searchParams.get('status')?.trim().toLowerCase(); // 'open' or 'closed'
+    const limited = await checkUserRateLimit(request, decoded.userId);
+    if (limited) return limited;
+
+    const url = new URL(request.url);
+    const search = url.searchParams.get('search')?.trim();
+    const domain = url.searchParams.get('domain')?.trim();
+    const skill = url.searchParams.get('skill')?.trim();
+    const leader = url.searchParams.get('leader')?.trim();
+    const size = url.searchParams.get('size')?.trim();
+    const status = url.searchParams.get('status')?.trim().toLowerCase(); // 'open' or 'closed'
+    const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10));
+    const cursor = url.searchParams.get('cursor')?.trim() || null;
+    const PAGE_SIZE = 24;
 
     const where: Prisma.TeamWhereInput = {};
+    const andConditions: Prisma.TeamWhereInput[] = [];
 
     if (size) {
       const parsedSize = parseInt(size, 10);
@@ -56,22 +61,101 @@ export async function GET(request: Request) {
       }
     }
 
-    const [teams, viewerProfile] = await Promise.all([
+    if (domain) {
+      andConditions.push({
+        track: {
+          category: { contains: domain, mode: 'insensitive' },
+        },
+      });
+    }
+
+    if (skill) {
+      andConditions.push({
+        OR: [
+          { skillsCovered: { has: skill } },
+          { skillsNeeded: { has: skill } },
+        ],
+      });
+    }
+
+    if (leader) {
+      andConditions.push({
+        members: {
+          some: {
+            name: { contains: leader, mode: 'insensitive' },
+          },
+        },
+      });
+    }
+
+    if (search && search.length >= 2) {
+      andConditions.push({
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          { teamCode: { contains: search, mode: 'insensitive' } },
+          { skillsCovered: { has: search } },
+          { skillsNeeded: { has: search } },
+          { track: { name: { contains: search, mode: 'insensitive' } } },
+          { track: { problemStatementCode: { contains: search, mode: 'insensitive' } } },
+          { secondaryTrack: { name: { contains: search, mode: 'insensitive' } } },
+          { secondaryTrack: { problemStatementCode: { contains: search, mode: 'insensitive' } } },
+          { members: { some: { name: { contains: search, mode: 'insensitive' } } } },
+        ],
+      });
+    }
+
+    if (andConditions.length > 0) {
+      where.AND = andConditions;
+    }
+
+    const [total, teams, viewerProfile] = await Promise.all([
+      prisma.team.count({ where }),
       prisma.team.findMany({
         where,
-        include: {
-          track: true,
-          secondaryTrack: true,
-          recruitmentNotices: true,
+        select: {
+          id: true,
+          teamCode: true,
+          name: true,
+          leaderId: true,
+          memberCount: true,
+          status: true,
+          skillsCovered: true,
+          skillsNeeded: true,
+          whatsapp: true,
+          logoUrl: true,
+          track: {
+            select: {
+              id: true,
+              problemStatementCode: true,
+              name: true,
+              category: true,
+            },
+          },
+          secondaryTrack: {
+            select: {
+              id: true,
+              problemStatementCode: true,
+              name: true,
+              category: true,
+            },
+          },
+          recruitmentNotices: {
+            select: {
+              id: true,
+              role: true,
+              gender: true,
+              abilities: true,
+              requirements: true,
+            },
+            take: 3,
+          },
           members: {
             select: {
               userId: true,
               name: true,
-              gender: true,
               branch: true,
               year: true,
               avatarUrl: true,
-              skills: true,
               roleInTeam: true,
               user: {
                 select: {
@@ -79,86 +163,47 @@ export async function GET(request: Request) {
                 },
               },
             },
+            take: 6,
           },
         },
-        take: 200,
+        orderBy: { teamCode: 'asc' },
+        ...(cursor
+          ? { cursor: { id: cursor }, skip: 1, take: PAGE_SIZE }
+          : { skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE }),
       }),
       decoded.role === 'STUDENT'
         ? prisma.studentProfile.findUnique({
             where: { userId: decoded.userId },
-            select: { teamId: true, gender: true },
+            select: { teamId: true },
           })
         : Promise.resolve(null),
     ]);
 
-    let filtered = teams;
+    const nextCursor = teams.length === PAGE_SIZE ? teams[teams.length - 1].id : null;
 
-    if (search || domain || skill || leader) {
-      filtered = teams.filter((t) => {
-        const teamLeader = t.members.find((m) => m.userId === t.leaderId);
-
-        // 1. Leader filter
-        if (leader && (!teamLeader || !teamLeader.name.toLowerCase().includes(leader))) {
-          return false;
-        }
-
-        // 2. Domain filter
-        if (domain && !t.track.category.toLowerCase().includes(domain) && !t.track.name.toLowerCase().includes(domain)) {
-          return false;
-        }
-
-        // 3. Skill filter
-        if (skill && !t.skillsCovered.some((s) => s.toLowerCase().includes(skill)) && !t.skillsNeeded.some((s) => s.toLowerCase().includes(skill))) {
-          return false;
-        }
-
-        // 4. Search query
-        if (search) {
-          const matchesName = t.name.toLowerCase().includes(search);
-          const matchesTeamCode = t.teamCode.toLowerCase().includes(search);
-          const matchesLeader = teamLeader ? teamLeader.name.toLowerCase().includes(search) : false;
-          const matchesTrack =
-            t.track.name.toLowerCase().includes(search) ||
-            t.track.problemStatementCode.toLowerCase().includes(search) ||
-            (t.secondaryTrack && (
-              t.secondaryTrack.name.toLowerCase().includes(search) ||
-              t.secondaryTrack.problemStatementCode.toLowerCase().includes(search)
-            ));
-          const matchesDomain = t.track.category.toLowerCase().includes(search);
-          const matchesSkills = t.skillsCovered.some((s) => s.toLowerCase().includes(search)) || t.skillsNeeded.some((s) => s.toLowerCase().includes(search));
-          const matchesMembers = t.members.some((m) => m.name.toLowerCase().includes(search));
-          const matchesCollege = t.members.some((m) => m.user.college.toLowerCase().includes(search));
-
-          if (!matchesName && !matchesTeamCode && !matchesLeader && !matchesTrack && !matchesDomain && !matchesSkills && !matchesMembers && !matchesCollege) {
-            return false;
-          }
-        }
-
-        return true;
-      });
-    }
-
-    const formattedTeams = filtered.map((t) => {
-      const femaleCount = t.members.filter((m) => m.gender?.toLowerCase() === 'female').length;
-      const maleCount = t.members.length - femaleCount;
-      const reservedSeatForFemale = femaleCount === 0 && t.members.length >= 5;
-
-      return {
-        ...t,
-        femaleCount,
-        maleCount,
-        hasFemaleMember: femaleCount > 0,
-        reservedSeatForFemale,
-      };
-    });
+    const formattedTeams = teams.map((team) => ({
+      ...team,
+      logoUrl: sanitizeAvatarUrl(team.logoUrl, team.id),
+      members: team.members.map((m) => ({
+        ...m,
+        avatarUrl: sanitizeAvatarUrl(m.avatarUrl, m.userId),
+      })),
+    }));
 
     return NextResponse.json({
       success: true,
       teams: formattedTeams,
+      pagination: {
+        page,
+        pageSize: PAGE_SIZE,
+        total,
+        totalPages: Math.ceil(total / PAGE_SIZE),
+        cursor: cursor || undefined,
+        nextCursor,
+      },
       viewer: {
         role: decoded.role,
         hasTeam: Boolean(viewerProfile?.teamId),
-        gender: viewerProfile?.gender || null,
         canJoin: decoded.role === 'STUDENT' && !viewerProfile?.teamId,
       },
     });

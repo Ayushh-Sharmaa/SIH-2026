@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, m } from 'framer-motion';
 import { ArrowUpRight, Users, User, Briefcase, Plus, Search, Filter, ShieldAlert } from 'lucide-react';
@@ -23,12 +23,12 @@ import {
   EASE,
   SPRING,
 } from '@/components/motion';
+import { QueryClient } from '@/lib/queryClient';
 import { logger } from '@/lib/logger';
 
 interface TeamMember {
   userId: string;
   name: string;
-  gender?: string | null;
   branch: string;
   year: string;
   avatarUrl?: string | null;
@@ -41,10 +41,6 @@ interface Team {
   name: string;
   leaderId: string;
   memberCount: number;
-  femaleCount?: number;
-  maleCount?: number;
-  hasFemaleMember?: boolean;
-  reservedSeatForFemale?: boolean;
   status: string; // 'forming' | 'locked'
   skillsCovered: string[];
   skillsNeeded: string[];
@@ -84,7 +80,6 @@ interface TeamFilters {
 interface TeamViewer {
   role: string;
   hasTeam: boolean;
-  gender?: string | null;
   canJoin: boolean;
 }
 
@@ -235,6 +230,11 @@ export default function FindTeamsPage() {
   const [viewer, setViewer] = useState<TeamViewer | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [pagination, setPagination] = useState<{ total: number; totalPages: number; page: number }>({
+    total: 0,
+    totalPages: 1,
+    page: 1,
+  });
 
   // Search & Filter state
   const [search, setSearch] = useState('');
@@ -248,9 +248,14 @@ export default function FindTeamsPage() {
   // Modals state
   const [activeRequestTeam, setActiveRequestTeam] = useState<Team | null>(null);
   const [submittingRequest, setSubmittingRequest] = useState<Record<string, 'sending' | 'sent'>>({});
+  const abortRef = useRef<AbortController | null>(null);
 
   const fetchTeams = useCallback(
-    async (filters: TeamFilters) => {
+    async (filters: TeamFilters, page = 1) => {
+      if (abortRef.current) abortRef.current.abort();
+      abortRef.current = new AbortController();
+      const signal = abortRef.current.signal;
+
       setRefreshing(true);
       try {
         const queryParams = new URLSearchParams();
@@ -260,15 +265,25 @@ export default function FindTeamsPage() {
         if (filters.leader) queryParams.append('leader', filters.leader);
         if (filters.size) queryParams.append('size', filters.size);
         if (filters.status) queryParams.append('status', filters.status);
+        queryParams.append('page', String(page));
 
-        const res = await fetch(`/api/teams?${queryParams.toString()}`, { cache: 'no-store' });
-        const data = await res.json();
-        if (data.success) {
-          setTeams(data.teams);
-          setViewer(data.viewer);
-          setCurrentPage(1);
+        const cacheKey = `teams:${filters.search}:${filters.domain}:${filters.skill}:${filters.leader}:${filters.size}:${filters.status}:${page}`;
+        const data = await QueryClient.fetch<any>(
+          cacheKey,
+          async () => {
+            const res = await fetch(`/api/teams?${queryParams.toString()}`, { signal });
+            return res.json();
+          },
+          { ttlMs: 30_000 }
+        );
+
+        if (data?.success) {
+          setTeams(data.teams || []);
+          setViewer(data.viewer || null);
+          setPagination(data.pagination || { total: data.teams?.length || 0, totalPages: 1, page });
         }
-      } catch (err) {
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === 'AbortError') return;
         logger.error('Fetch teams error', err);
         toast('Could not load teams. Check your connection.', 'error');
       } finally {
@@ -278,23 +293,24 @@ export default function FindTeamsPage() {
     [toast]
   );
 
+  // 300ms Debounced search
   useEffect(() => {
-    const handle = requestAnimationFrame(() => {
-      fetchTeams(EMPTY_FILTERS).finally(() => {
+    const handler = setTimeout(() => {
+      fetchTeams({ search, domain, skill, leader, size, status }, currentPage).finally(() => {
         setLoading(false);
       });
-    });
-    return () => cancelAnimationFrame(handle);
-  }, [fetchTeams]);
+    }, 300);
+
+    return () => clearTimeout(handler);
+  }, [search, domain, skill, leader, size, status, currentPage, fetchTeams]);
 
   const handleSearchSubmit = (e: FormEvent) => {
     e.preventDefault();
     fetchTeams({ search, domain, skill, leader, size, status });
   };
 
-  const itemsPerPage = 20;
-  const totalPages = Math.max(1, Math.ceil(teams.length / itemsPerPage));
-  const paginatedTeams = teams.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const totalPages = Math.max(1, pagination.totalPages);
+  const paginatedTeams = teams;
 
   const handleReset = () => {
     setSearch('');
@@ -634,28 +650,12 @@ export default function FindTeamsPage() {
 
                                   {/* Member Slots dials */}
                                   <div className="mt-5">
-                                    <div className="flex items-center justify-between gap-2">
-                                      <span className="text-[10px] font-black uppercase tracking-wider text-muted">
-                                        Team Roster ({team.memberCount} / 6)
-                                      </span>
-                                      {team.femaleCount === 0 && team.memberCount >= 5 ? (
-                                        <span className="rounded-full bg-[rgba(180,50,50,0.1)] border border-[rgba(180,50,50,0.3)] px-2 py-0.5 text-[9px] font-extrabold text-[#A82B2B]">
-                                          1 Seat Reserved for Female
-                                        </span>
-                                      ) : team.femaleCount !== undefined && team.femaleCount > 0 ? (
-                                        <span className="text-[9px] font-bold text-emerald-700">
-                                          {team.femaleCount} Female{team.femaleCount > 1 ? 's' : ''} · Compliant
-                                        </span>
-                                      ) : (
-                                        <span className="text-[9px] font-normal text-muted">
-                                          1+ Female Required
-                                        </span>
-                                      )}
-                                    </div>
+                                    <span className="text-[10px] font-black uppercase tracking-wider text-muted">
+                                      Team Roster ({team.memberCount} / 6)
+                                    </span>
                                     <div className="mt-2 flex flex-wrap items-center gap-1.5">
                                       {Array.from({ length: 6 }).map((_, idx) => {
                                         const mem = team.members[idx];
-                                        const isReservedSlot = !mem && idx === 5 && team.femaleCount === 0;
                                         return mem ? (
                                           <m.div
                                             key={mem.userId}
@@ -670,20 +670,16 @@ export default function FindTeamsPage() {
                                             />
                                             {/* Tooltip */}
                                             <span className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 rounded bg-foreground px-2 py-1 text-[9px] font-black text-background opacity-0 transition-opacity duration-250 group-hover:opacity-100 whitespace-nowrap">
-                                              {mem.name} ({mem.roleInTeam || 'Member'}{mem.gender ? ` · ${mem.gender}` : ''})
+                                              {mem.name} ({mem.roleInTeam || 'Member'})
                                             </span>
                                           </m.div>
                                         ) : (
                                           <div
                                             key={`empty-${idx}`}
-                                            className={`size-8 rounded-lg border border-dashed ${
-                                              isReservedSlot
-                                                ? 'border-[rgba(180,50,50,0.5)] bg-[rgba(180,50,50,0.08)] text-[#A82B2B]'
-                                                : 'border-[rgba(172,156,141,0.65)] bg-[rgba(172,156,141,0.06)] text-muted'
-                                            } flex items-center justify-center text-[10px] font-bold`}
-                                            title={isReservedSlot ? 'Reserved for female candidate (SIH Rule)' : 'Empty slot'}
+                                            className="size-8 rounded-lg border border-dashed border-[rgba(172,156,141,0.65)] bg-[rgba(172,156,141,0.06)] flex items-center justify-center text-[10px] text-muted font-bold"
+                                            title="Empty slot"
                                           >
-                                            {isReservedSlot ? '♀' : '+'}
+                                            +
                                           </div>
                                         );
                                       })}
@@ -761,10 +757,6 @@ export default function FindTeamsPage() {
                                   {userHasTeam ? (
                                     <span className="text-xs font-semibold text-muted flex items-center gap-1">
                                       <ShieldAlert className="size-3.5" /> Already in a team
-                                    </span>
-                                  ) : team.reservedSeatForFemale && viewer?.gender && viewer.gender.toLowerCase() !== 'female' ? (
-                                    <span className="text-[11px] font-bold text-[#A82B2B] flex items-center gap-1">
-                                      Seat reserved for female
                                     </span>
                                   ) : (
                                     <PremiumButton

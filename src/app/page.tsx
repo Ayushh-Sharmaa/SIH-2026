@@ -25,7 +25,7 @@ import { Container, Section } from '@/components/ui';
 import MilestoneIcon from '@/components/MilestoneIcon';
 
 const TOP_STATS = [
-  { value: 18, suffix: '', label: 'Official Themes' },
+  { value: 17, suffix: '', label: 'Official Themes' },
   { value: 11, suffix: '', label: 'Timeline Phases' },
   { value: 6, suffix: '', label: 'Members per Team' },
   { value: 36, suffix: 'h', label: 'Grand Finale' },
@@ -413,7 +413,7 @@ export default function Home() {
                 transition={{ duration: 0.8, delay: 1.15 }}
                 className="mt-6 text-xs text-muted"
               >
-                Official problem statements are released closer to the event. All 18 themes are
+                Official problem statements are released closer to the event. All 17 themes are
                 already configured here.
               </m.p>
             </div>

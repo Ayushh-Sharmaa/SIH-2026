@@ -14,6 +14,80 @@ import {
 } from '@/lib/validate';
 import { logger } from '@/lib/logger';
 
+export async function PATCH(request: Request) {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('token')?.value;
+
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    if (decoded.role !== 'MENTOR') {
+      return NextResponse.json({ error: 'Forbidden. Mentor access required.' }, { status: 403 });
+    }
+
+    const rateLimitResponse = await checkUserRateLimit(request, decoded.userId);
+    if (rateLimitResponse) return rateLimitResponse;
+
+    const body = await request.json().catch(() => ({}));
+    const { section, name, designation, organization, contact, expertise, bio, linkedinUrl, avatarUrl } = body;
+
+    const updateData: Record<string, any> = {};
+
+    if (section === 'personal' || section === 'identity') {
+      if (typeof name === 'string' && name.trim()) updateData.name = name.trim();
+      if (typeof designation === 'string') updateData.designation = designation.trim();
+      if (typeof organization === 'string') updateData.organization = organization.trim();
+      if (typeof contact !== 'undefined') updateData.contact = optionalText(contact, 40);
+      if (typeof avatarUrl !== 'undefined') updateData.avatarUrl = avatarDataUri(avatarUrl);
+    } else if (section === 'expertise') {
+      if (Array.isArray(expertise)) updateData.expertise = tagArray(expertise);
+    } else if (section === 'bio' || section === 'links') {
+      if (typeof bio !== 'undefined') updateData.bio = optionalText(bio, MAX_TEXT);
+      if (typeof linkedinUrl !== 'undefined') updateData.linkedinUrl = safeUrl(linkedinUrl);
+    } else {
+      // General selective update
+      if (typeof name === 'string' && name.trim()) updateData.name = name.trim();
+      if (typeof designation === 'string') updateData.designation = designation.trim();
+      if (typeof organization === 'string') updateData.organization = organization.trim();
+      if (typeof contact !== 'undefined') updateData.contact = optionalText(contact, 40);
+      if (Array.isArray(expertise)) updateData.expertise = tagArray(expertise);
+      if (typeof bio !== 'undefined') updateData.bio = optionalText(bio, MAX_TEXT);
+      if (typeof linkedinUrl !== 'undefined') updateData.linkedinUrl = safeUrl(linkedinUrl);
+      if (typeof avatarUrl !== 'undefined') updateData.avatarUrl = avatarDataUri(avatarUrl);
+    }
+
+    const updatedProfile = await prisma.mentorProfile.update({
+      where: { userId: decoded.userId },
+      data: updateData,
+    });
+
+    const identityComplete = Boolean(
+      updatedProfile.name?.trim() && updatedProfile.designation?.trim() && updatedProfile.organization?.trim()
+    );
+    const expertiseComplete = Boolean(updatedProfile.expertise && updatedProfile.expertise.length > 0);
+    const bioComplete = Boolean(updatedProfile.bio?.trim() && updatedProfile.linkedinUrl?.trim());
+
+    return NextResponse.json({
+      success: true,
+      profile: updatedProfile,
+      completion: {
+        identityComplete,
+        expertiseComplete,
+        bioComplete,
+      },
+    });
+  } catch (error) {
+    logger.error('Patch mentor profile error', error);
+    return NextResponse.json({ error: 'Failed to update mentor section.' }, { status: 500 });
+  }
+}
+
 export async function PUT(request: Request) {
   try {
     const cookieStore = await cookies();
@@ -24,8 +98,11 @@ export async function PUT(request: Request) {
     }
 
     const decoded = verifyToken(token);
-    if (!decoded || decoded.role !== 'MENTOR') {
+    if (!decoded) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    if (decoded.role !== 'MENTOR') {
+      return NextResponse.json({ error: 'Forbidden. Mentor access required.' }, { status: 403 });
     }
 
     // Authenticated user rate limit check
@@ -75,10 +152,6 @@ export async function PUT(request: Request) {
       });
     });
 
-    revalidateTag('mentors', { expire: 0 });
-    revalidateTag('teams', { expire: 0 });
-
-    // Dummy comment to trigger IDE diagnostics refresh
     return NextResponse.json({ success: true, profile: updatedProfile });
   } catch (error) {
     logger.error('Update mentor profile error', error);

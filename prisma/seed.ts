@@ -1,18 +1,18 @@
 import { PrismaClient } from '@prisma/client';
-import { SIH_OFFICIAL_18_THEMES } from '../src/lib/tracks';
+import { SIH_OFFICIAL_17_THEMES } from '../src/lib/tracks';
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('Seeding database...');
 
-  // 1. Seed Tracks (the 18 official SIH themes)
+  // 1. Seed Tracks (the 17 official SIH themes)
   //
   // `id` is written explicitly rather than left to @default(uuid()). The API
   // serves these same literal ids to the browser, and /api/teams looks the
   // submitted trackId up by primary key -- so if the seed generated UUIDs
   // instead, every team creation would 404. See src/lib/tracks.ts.
-  const trackUpserts = SIH_OFFICIAL_18_THEMES.map((theme) => {
+  const trackUpserts = SIH_OFFICIAL_17_THEMES.map((theme) => {
     const fields = {
       name: theme.name,
       problemStatementCode: theme.problemStatementCode,

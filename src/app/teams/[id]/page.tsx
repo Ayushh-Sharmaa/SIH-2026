@@ -362,18 +362,18 @@ export default function TeamDetailsPage() {
             <Container width="narrow" className="py-12 space-y-8">
               {/* Overview Cards */}
               <div className="grid gap-6 md:grid-cols-2">
-                {/* Problem Statement Track Details */}
+                {/* SIH Theme Details */}
                 <SpotlightCard className="rounded-3xl">
                   <div className="surface-raised rounded-3xl p-6 sm:p-7 space-y-5">
                     <div className="flex items-center gap-2">
                       <Layers className="size-5 text-primary" />
-                      <h2 className="text-feature text-foreground">Problem Statements</h2>
+                      <h2 className="text-feature text-foreground">SIH Themes</h2>
                     </div>
                     <div className="h-px bg-gradient-to-r from-[rgba(172,156,141,0.55)] via-[rgba(209,199,189,0.35)] to-transparent" />
 
                     <div className="space-y-4">
                       <div>
-                        <span className="block text-label uppercase text-muted text-xs">Primary Problem Statement</span>
+                        <span className="block text-label uppercase text-muted text-xs">Primary Theme</span>
                         <div className="mt-1.5 rounded-2xl border border-[rgba(114,56,61,0.22)] bg-[rgba(114,56,61,0.05)] p-4">
                           <span className="inline-block rounded-md bg-primary px-2 py-0.5 text-[10px] font-bold text-on-accent uppercase">
                             {team.track.problemStatementCode}
@@ -388,7 +388,7 @@ export default function TeamDetailsPage() {
 
                       {team.secondaryTrack && (
                         <div>
-                          <span className="block text-label uppercase text-muted text-xs">Secondary Problem Statement</span>
+                          <span className="block text-label uppercase text-muted text-xs">Secondary Theme</span>
                           <div className="mt-1.5 rounded-2xl border border-[rgba(209,199,189,0.6)] bg-white/40 p-4">
                             <span className="inline-block rounded-md bg-muted/20 px-2 py-0.5 text-[10px] font-bold text-foreground uppercase">
                               {team.secondaryTrack.problemStatementCode}

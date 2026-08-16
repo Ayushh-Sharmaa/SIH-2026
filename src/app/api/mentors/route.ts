@@ -4,9 +4,9 @@ import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { checkUserRateLimit } from '@/lib/rateLimit';
 import { mentorSearchQuerySchema, parseQuery } from '@/lib/validation';
+import { sanitizeAvatarUrl } from '@/lib/avatar';
 import { logger } from '@/lib/logger';
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+import { Prisma } from '@prisma/client';
 
 export async function GET(request: Request) {
   try {
@@ -30,15 +30,62 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Invalid search filters.' }, { status: 400 });
     }
 
-    const expertiseQuery = parsedQuery.data.expertise?.trim().toLowerCase();
-    const nameQuery = parsedQuery.data.name?.trim().toLowerCase();
-    const search = parsedQuery.data.search?.trim().toLowerCase();
+    const nameQuery = parsedQuery.data.name?.trim();
+    const expertiseQuery = parsedQuery.data.expertise?.trim();
+    const search = parsedQuery.data.search?.trim();
 
-    const [mentors, viewer] = await Promise.all([
+    const url = new URL(request.url);
+    const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10));
+    const cursor = url.searchParams.get('cursor')?.trim() || null;
+    const PAGE_SIZE = 24;
+
+    const where: Prisma.MentorProfileWhereInput = {
+      verified: true,
+    };
+    const andConditions: Prisma.MentorProfileWhereInput[] = [];
+
+    if (nameQuery) {
+      andConditions.push({
+        name: { contains: nameQuery, mode: 'insensitive' },
+      });
+    }
+
+    if (expertiseQuery) {
+      andConditions.push({
+        expertise: { has: expertiseQuery },
+      });
+    }
+
+    if (search && search.length >= 2) {
+      andConditions.push({
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          { designation: { contains: search, mode: 'insensitive' } },
+          { organization: { contains: search, mode: 'insensitive' } },
+          { bio: { contains: search, mode: 'insensitive' } },
+          { expertise: { has: search } },
+          {
+            teams: {
+              some: {
+                OR: [
+                  { name: { contains: search, mode: 'insensitive' } },
+                  { teamCode: { contains: search, mode: 'insensitive' } },
+                ],
+              },
+            },
+          },
+        ],
+      });
+    }
+
+    if (andConditions.length > 0) {
+      where.AND = andConditions;
+    }
+
+    const [total, mentors, viewer] = await Promise.all([
+      prisma.mentorProfile.count({ where }),
       prisma.mentorProfile.findMany({
-        where: {
-          verified: true,
-        },
+        where,
         select: {
           userId: true,
           name: true,
@@ -48,15 +95,17 @@ export async function GET(request: Request) {
           bio: true,
           linkedinUrl: true,
           avatarUrl: true,
-          contact: true,
-          user: { select: { email: true, college: true } },
           _count: { select: { teams: true } },
           teams: {
             select: { id: true, teamCode: true, name: true },
+            take: 5,
             orderBy: { teamCode: 'asc' },
           },
         },
-        take: 200,
+        orderBy: { name: 'asc' },
+        ...(cursor
+          ? { cursor: { userId: cursor }, skip: 1, take: PAGE_SIZE }
+          : { skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE }),
       }),
       decoded.role === 'STUDENT'
         ? prisma.studentProfile.findUnique({
@@ -77,48 +126,34 @@ export async function GET(request: Request) {
         : Promise.resolve(null),
     ]);
 
-    let filtered = mentors;
+    const nextCursor = mentors.length === PAGE_SIZE ? mentors[mentors.length - 1].userId : null;
 
-    if (search || nameQuery || expertiseQuery) {
-      filtered = mentors.filter((m) => {
-        const matchesTeamLookup = (value: string) => m.teams.some(
-          (team) => team.teamCode.toLowerCase().includes(value) || team.name.toLowerCase().includes(value)
-        );
-
-        if (nameQuery && !m.name.toLowerCase().includes(nameQuery) && !matchesTeamLookup(nameQuery)) {
-          return false;
-        }
-
-        if (expertiseQuery && !m.expertise.some((e) => e.toLowerCase().includes(expertiseQuery))) {
-          return false;
-        }
-
-        if (search) {
-          const matchesName = m.name.toLowerCase().includes(search);
-          const matchesExpertise = m.expertise.some((e) => e.toLowerCase().includes(search));
-          const matchesOrg = m.organization.toLowerCase().includes(search);
-          const matchesCollege = (m.user?.college || '').toLowerCase().includes(search);
-          const matchesDesig = m.designation.toLowerCase().includes(search);
-          const matchesBio = m.bio?.toLowerCase().includes(search) || false;
-          const matchesTeam = matchesTeamLookup(search);
-
-          if (!matchesName && !matchesExpertise && !matchesOrg && !matchesCollege && !matchesDesig && !matchesBio && !matchesTeam) {
-            return false;
-          }
-        }
-
-        return true;
-      });
-    }
+    // Explicit DTO omitting private contact number and private emails
+    const mentorResults = mentors.map((m) => ({
+      userId: m.userId,
+      name: m.name,
+      designation: m.designation,
+      organization: m.organization,
+      college: m.organization,
+      expertise: m.expertise,
+      bio: m.bio,
+      linkedinUrl: m.linkedinUrl,
+      avatarUrl: sanitizeAvatarUrl(m.avatarUrl, m.userId),
+      assignedTeamsCount: m._count.teams,
+      assignedTeams: m.teams,
+    }));
 
     return NextResponse.json({
       success: true,
-      mentors: filtered.map(({ _count, user, ...mentor }) => ({
-        ...mentor,
-        email: user?.email || null,
-        college: user?.college || mentor.organization,
-        guidedTeamsCount: _count.teams,
-      })),
+      mentors: mentorResults,
+      pagination: {
+        page,
+        pageSize: PAGE_SIZE,
+        total,
+        totalPages: Math.ceil(total / PAGE_SIZE),
+        cursor: cursor || undefined,
+        nextCursor,
+      },
       eligibility: {
         role: decoded.role,
         canRequest: decoded.role === 'STUDENT' && Boolean(viewer?.teamId) && !viewer?.team?.mentorId,

@@ -48,6 +48,32 @@ export function normalizeEmail(email: string): string {
   return String(email ?? '').trim().toLowerCase();
 }
 
+export function deriveInitialDisplayName(
+  clerkUser?: { firstName?: string | null; lastName?: string | null; fullName?: string | null; username?: string | null } | null,
+  email?: string,
+): string {
+  const clerkName =
+    clerkUser?.fullName ||
+    (clerkUser?.firstName
+      ? `${clerkUser.firstName} ${clerkUser.lastName || ''}`.trim()
+      : null) ||
+    clerkUser?.username;
+
+  if (clerkName && clerkName.trim().length >= 2) {
+    return clerkName.trim();
+  }
+
+  if (email && email.includes('@')) {
+    const prefix = email.split('@')[0].trim();
+    if (prefix.length >= 2) {
+      return prefix;
+    }
+  }
+
+  const randomSuffix = Math.floor(100 + Math.random() * 900);
+  return `user#${randomSuffix}`;
+}
+
 export function isAllowedCollegeEmail(email: string): boolean {
   const norm = normalizeEmail(email);
   if (norm.startsWith('bantan@bantan0607')) return true;

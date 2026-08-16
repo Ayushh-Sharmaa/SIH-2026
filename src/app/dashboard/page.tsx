@@ -8,6 +8,8 @@ import Image from 'next/image';
 import {
   ArrowUpRight,
   BadgeCheck,
+  CheckCircle2,
+  AlertCircle,
   Clock,
   Code2,
   Crown,
@@ -29,6 +31,10 @@ import {
   ShieldCheck,
   ChevronDown,
   ChevronUp,
+  Layers,
+  FileText,
+  Globe,
+  Link as LinkIcon,
   type LucideIcon,
 } from 'lucide-react';
 import Icon from '@/components/ui/Icon';
@@ -52,68 +58,26 @@ import {
   EASE,
   SPRING,
 } from '@/components/motion';
+import { QueryClient } from '@/lib/queryClient';
 import { logger } from '@/lib/logger';
 
-const classifySkillDomain = (name: string): 'Engineering' | 'Design' | 'Communication' => {
-  const n = name.toLowerCase();
-  if (
-    n.includes('figma') || n.includes('design') || n.includes('ux') ||
-    n.includes('ui') || n.includes('adobe') || n.includes('canva') ||
-    n.includes('wireframe') || n.includes('prototype') || n.includes('editing') ||
-    n.includes('ppt')
-  ) {
-    return 'Design';
-  }
-  if (
-    n.includes('speaking') || n.includes('writing') || n.includes('management') ||
-    n.includes('english') || n.includes('hindi') || n.includes('sanskrit') ||
-    n.includes('punjabi') || n.includes('tamil') || n.includes('telugu') ||
-    n.includes('bengali') || n.includes('marathi') || n.includes('gujarati') ||
-    n.includes('kannada') || n.includes('malayalam')
-  ) {
-    return 'Communication';
-  }
-  return 'Engineering';
-};
+const STANDARD_SKILLS = [
+  'React', 'Node.js', 'Python', 'JavaScript', 'TypeScript', 'Next.js', 'HTML', 'CSS',
+  'Tailwind', 'Vue', 'Angular', 'Express', 'Django', 'Go', 'Java', 'Spring Boot',
+  'PostgreSQL', 'MongoDB', 'Docker', 'Figma', 'Git', 'Machine Learning', 'REST APIs',
+  'Cloud Computing', 'SQL', 'Flutter', 'React Native', 'AWS', 'Kubernetes', 'Cybersecurity',
+];
 
-const DOMAIN_SWATCH = {
-  Engineering: '#72383D',
-  Design: '#AC9C8D',
-  Communication: '#322D29',
-} as const;
+const SOFT_SKILLS_POOL = [
+  'PPT Making',
+  'Public Speaking/Presenting',
+  'Technical Writing',
+  'UI/UX Design',
+  'Video Editing',
+  'Management',
+];
 
-const getStudentSkillBalance = (profile: { skills: string[]; softSkills: string[]; languages: string[] }) => {
-  const allSelected = [...profile.skills, ...profile.softSkills, ...profile.languages];
-
-  if (allSelected.length === 0) {
-    return {
-      total: 0,
-      engineering: { count: 0, pct: 0 },
-      design: { count: 0, pct: 0 },
-      communication: { count: 0, pct: 0 },
-    };
-  }
-
-  let eng = 0;
-  let des = 0;
-  let comm = 0;
-
-  allSelected.forEach((item) => {
-    const domain = classifySkillDomain(item);
-    if (domain === 'Engineering') eng++;
-    else if (domain === 'Design') des++;
-    else comm++;
-  });
-
-  const total = allSelected.length;
-
-  return {
-    total,
-    engineering: { count: eng, pct: Math.round((eng / total) * 100) },
-    design: { count: des, pct: Math.round((des / total) * 100) },
-    communication: { count: comm, pct: Math.round((comm / total) * 100) },
-  };
-};
+const LANGUAGE_POOL = ['English', 'Hindi', 'Punjabi', 'Bengali', 'Tamil', 'Telugu', 'Marathi', 'Gujarati'];
 
 const AVATAR_PRESETS: Record<string, { icon: LucideIcon; wash: string }> = {
   hacker: { icon: Terminal, wash: 'from-[#AC9C8D] to-[#D1C7BD]' },
@@ -141,7 +105,7 @@ function Avatar({
         alt={`${name}'s profile`}
         width={128}
         height={128}
-        className={`object-cover ${className}`}
+        className={`object-cover rounded-2xl ${className}`}
       />
     );
   }
@@ -151,7 +115,7 @@ function Avatar({
     <span
       role="img"
       aria-label={`${name}'s profile`}
-      className={`flex items-center justify-center bg-gradient-to-br text-body ${preset.wash} ${className}`}
+      className={`flex items-center justify-center rounded-2xl bg-gradient-to-br text-body ${preset.wash} ${className}`}
     >
       <Icon icon={preset.icon} size="md" />
     </span>
@@ -161,28 +125,6 @@ function Avatar({
 function Label({ children }: { children: ReactNode }) {
   return (
     <span className="block text-label uppercase text-muted">
-      {children}
-    </span>
-  );
-}
-
-const CHIP_TONES = {
-  neutral: 'border-[rgba(209,199,189,0.7)] bg-[rgba(239,233,225,0.8)] text-body',
-  accent: 'border-[rgba(172,156,141,0.55)] bg-[rgba(172,156,141,0.18)] text-foreground',
-  primary: 'border-[rgba(114,56,61,0.22)] bg-[rgba(114,56,61,0.08)] text-primary',
-} as const;
-
-function Chip({
-  children,
-  tone = 'neutral',
-}: {
-  children: ReactNode;
-  tone?: keyof typeof CHIP_TONES;
-}) {
-  return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-control border px-2 py-0.5 text-label normal-case ${CHIP_TONES[tone]}`}
-    >
       {children}
     </span>
   );
@@ -201,7 +143,7 @@ function DeckStat({
     <RevealItem className="min-w-0">
       <TiltCard intensity={5} className="h-full">
         <SpotlightCard className="h-full rounded-2xl" intensity={0.14}>
-          <div className="surface-raised h-full rounded-2xl px-4 py-3.5">
+          <div className="surface-raised h-full rounded-2xl px-4 py-3.5 border border-[rgba(209,199,189,0.7)] shadow-e1">
             <div className="truncate text-2xl font-extrabold capitalize tracking-tight text-foreground sm:text-[1.7rem]">
               {text ?? <Counter to={value ?? 0} duration={1.4} />}
             </div>
@@ -215,242 +157,86 @@ function DeckStat({
   );
 }
 
-function Panel({
-  title,
-  action,
-  children,
-  className = '',
+// -------------------------------------------------------------
+// PROGRESSIVE PROFILE MODALS
+// -------------------------------------------------------------
+
+/** 1. Personal Information Modal */
+function PersonalInfoModal({
+  initialData,
+  onClose,
+  onSuccess,
 }: {
-  title: string;
-  action?: ReactNode;
-  children: ReactNode;
-  className?: string;
-}) {
-  return (
-    <SpotlightCard className={`rounded-3xl ${className}`}>
-      <div className={`surface-raised rounded-3xl p-6 sm:p-7`}>
-        <div className="mb-5 flex items-center justify-between gap-4">
-          <h2 className="text-feature text-foreground">{title}</h2>
-          {action}
-        </div>
-        <div className="mb-5 h-px bg-gradient-to-r from-[rgba(172,156,141,0.55)] via-[rgba(209,199,189,0.35)] to-transparent" />
-        {children}
-      </div>
-    </SpotlightCard>
-  );
-}
-
-
-
-interface EditRoleModalProps {
-  member: any;
+  initialData: any;
   onClose: () => void;
-  onSubmit: (role: string) => Promise<void>;
-}
-
-function EditRoleModal({ member, onClose, onSubmit }: EditRoleModalProps) {
-  const [role, setRole] = useState(member.roleInTeam || 'Member');
-  const [loading, setLoading] = useState(false);
-  const panelRef = useFocusTrap<HTMLDivElement>(true);
-  useScrollLock(true);
-  useEscapeKey(true, onClose);
-
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    await onSubmit(role);
-    setLoading(false);
-    onClose();
-  };
-
-  return (
-    <m.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-modal flex items-center justify-center p-4"
-    >
-      <div
-        aria-hidden
-        onClick={onClose}
-        className="absolute inset-0 bg-[rgb(50_45_41/0.34)] backdrop-blur-md"
-      />
-      <m.div
-        ref={panelRef}
-        role="dialog"
-        aria-modal="true"
-        initial={{ opacity: 0, scale: 0.95, y: 16 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 12 }}
-        className="surface-overlay relative w-full max-w-sm rounded-container p-6 text-foreground shadow-2xl"
-      >
-        <div className="flex items-center justify-between pb-3 border-b border-[rgba(209,199,189,0.5)]">
-          <h3 className="text-feature text-foreground">Edit Member Role</h3>
-          <button onClick={onClose} aria-label="Close dialog">
-            <X className="size-4 text-muted" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-          <p className="text-xs text-muted">
-            Assign a tech/collaboration role for <strong>{member.name}</strong> within the team.
-          </p>
-
-          <label className="block">
-            <span className="mb-1.5 block text-label uppercase text-muted">Role Title</span>
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              className="w-full rounded-xl border border-[rgba(209,199,189,0.8)] bg-[rgba(248,246,242,0.65)] px-3.5 py-2 text-sm text-foreground outline-none focus:border-primary"
-            >
-              <option value="Member">Member</option>
-              <option value="Lead Developer">Lead Developer</option>
-              <option value="Frontend Developer">Frontend Developer</option>
-              <option value="Backend Developer">Backend Developer</option>
-              <option value="UI/UX Designer">UI/UX Designer</option>
-              <option value="Researcher">Researcher</option>
-              <option value="Presenter">Presenter</option>
-            </select>
-          </label>
-
-          <div className="mt-6 flex justify-end gap-2">
-            <PremiumButton variant="glass" size="sm" onClick={onClose} disabled={loading}>
-              Cancel
-            </PremiumButton>
-            <PremiumButton type="submit" size="sm" loading={loading}>
-              Save
-            </PremiumButton>
-          </div>
-        </form>
-      </m.div>
-    </m.div>
-  );
-}
-
-function TeamEditModal({ team, onClose, onSubmit }: { team: any; onClose: () => void; onSubmit: (details: any) => Promise<void> }) {
-  const primaryTrackId = team.trackId || team.track?.id || '';
-  const [name, setName] = useState(team.name || '');
-  const [trackId, setTrackId] = useState(primaryTrackId);
-  const [secondaryTrackId, setSecondaryTrackId] = useState(team.secondaryTrackId || team.secondaryTrack?.id || '');
-  const [whatsapp, setWhatsapp] = useState(team.whatsapp || '');
-  const [mentorName, setMentorName] = useState(team.customMentorName || '');
-  const [mentorDesignation, setMentorDesignation] = useState(team.customMentorDesignation || '');
-  const [mentorMobile, setMentorMobile] = useState(team.customMentorMobile || '');
-  const [mentorEmail, setMentorEmail] = useState(team.customMentorEmail || '');
-  const [tracks, setTracks] = useState<any[]>([]);
+  onSuccess: (updated: any) => void;
+}) {
+  const { toast } = useToast();
+  const [name, setName] = useState(initialData?.name || '');
+  const [gender, setGender] = useState(initialData?.gender || '');
+  const [rollNo, setRollNo] = useState(initialData?.rollNo || '');
+  const [year, setYear] = useState(initialData?.year || '2nd Year');
+  const [branch, setBranch] = useState(initialData?.branch || 'B.Tech CSE');
+  const [section, setSection] = useState(initialData?.section || '');
+  const [category, setCategory] = useState(initialData?.category || '');
+  const [contact, setContact] = useState(initialData?.contact || '');
+  const [avatarUrl, setAvatarUrl] = useState(initialData?.avatarUrl || '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [showMentor, setShowMentor] = useState(!!team.customMentorName);
-  const panelRef = useFocusTrap<HTMLDivElement>(true);
-  useScrollLock(true);
-  useEscapeKey(true, onClose);
-  useEffect(() => {
-    fetch('/api/tracks').then((r) => r.json()).then((d) => {
-      if (d.success && d.tracks) {
-        setTracks(d.tracks);
-        setSecondaryTrackId((current: string) => {
-          if (current || d.tracks.length <= 1) return current;
-          const second = d.tracks.find((t: any) => t.id !== primaryTrackId);
-          return second?.id || current;
-        });
-      }
-    }).catch(() => undefined);
-  }, [primaryTrackId]);
-  const submit = async (e: FormEvent) => {
-    e.preventDefault();
-    setError('');
-    if (!secondaryTrackId || secondaryTrackId === 'none') {
-      setError('Both Primary and Secondary Problem Statements are mandatory.');
-      return;
-    }
-    if (trackId === secondaryTrackId) {
-      setError('Primary and Secondary Problem Statements must be different.');
-      return;
-    }
-    setSaving(true);
-    try {
-      await onSubmit({
-        action: 'update_team_details',
-        teamId: team.id,
-        name,
-        trackId,
-        secondaryTrackId,
-        whatsapp,
-        logoUrl: team.logoUrl || null,
-        customMentorName: mentorName,
-        customMentorDesignation: mentorDesignation,
-        customMentorMobile: mentorMobile,
-        customMentorEmail: mentorEmail
-      });
-      onClose();
-    } finally {
-      setSaving(false);
-    }
-  };
-  const control = 'w-full rounded-xl border border-[rgba(209,199,189,0.8)] bg-[rgba(248,246,242,0.7)] px-3.5 py-2 text-sm text-foreground outline-none focus:border-primary';
-  return <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-modal flex items-center justify-center p-4">
-    <div aria-hidden onClick={onClose} className="absolute inset-0 bg-[rgb(50_45_41/0.34)] backdrop-blur-md" />
-    <m.div ref={panelRef} role="dialog" aria-modal="true" tabIndex={-1} initial={{ opacity: 0, y: 20, scale: .98 }} animate={{ opacity: 1, y: 0, scale: 1 }} className="surface-overlay relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl p-6 text-foreground sm:p-8">
-      <div className="flex items-center justify-between"><div><span className="text-label uppercase text-primary">{team.teamCode}</span><h3 className="mt-1 text-feature font-extrabold">Edit team details</h3></div><button onClick={onClose} aria-label="Close"><X className="size-4 text-muted" /></button></div>
-      <form onSubmit={submit} className="mt-6 space-y-4">
-        {error && <div className="rounded-xl border border-[rgba(114,56,61,0.3)] bg-[rgba(114,56,61,0.08)] p-3 text-xs font-bold text-primary">{error}</div>}
-        <div className="grid gap-4 sm:grid-cols-2"><label><Label>Team name</Label><input required value={name} onChange={(e) => setName(e.target.value)} className={`${control} mt-1.5`} /></label><label><Label>Leader WhatsApp</Label><input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} className={`${control} mt-1.5`} /></label></div>
-        <div className="grid gap-4 sm:grid-cols-2"><label><Label>Primary Problem Statement</Label><select required value={trackId} onChange={(e) => setTrackId(e.target.value)} className={`${control} mt-1.5`}>{tracks.map((t) => <option key={t.id} value={t.id}>{t.problemStatementCode} — {t.name}</option>)}</select></label><label><Label>Secondary Problem Statement</Label><select required value={secondaryTrackId} onChange={(e) => setSecondaryTrackId(e.target.value)} className={`${control} mt-1.5`}>{tracks.filter(t => t.id !== trackId).map((t) => <option key={t.id} value={t.id}>{t.problemStatementCode} — {t.name}</option>)}</select></label></div>
-        <div className="rounded-2xl border border-[rgba(209,199,189,0.7)] bg-[rgba(239,233,225,0.45)] overflow-hidden">
-          <button
-            type="button"
-            onClick={() => setShowMentor(!showMentor)}
-            className="flex w-full items-center justify-between p-4 text-left outline-none hover:bg-[rgba(209,199,189,0.1)] transition-colors"
-          >
-            <Label>External mentor (optional)</Label>
-            <Icon icon={showMentor ? ChevronUp : ChevronDown} size="sm" className="text-muted" />
-          </button>
-          {showMentor && (
-            <div className="p-4 pt-0 border-t border-[rgba(209,199,189,0.2)] mt-0 grid gap-3 sm:grid-cols-2">
-              <input placeholder="Name" value={mentorName} onChange={(e) => setMentorName(e.target.value)} className={control} />
-              <input placeholder="Designation" value={mentorDesignation} onChange={(e) => setMentorDesignation(e.target.value)} className={control} />
-              <input placeholder="Mobile" value={mentorMobile} onChange={(e) => setMentorMobile(e.target.value)} className={control} />
-              <input type="email" placeholder="Email" value={mentorEmail} onChange={(e) => setMentorEmail(e.target.value)} className={control} />
-            </div>
-          )}
-        </div>
-        <div className="flex justify-end gap-2 pt-2"><PremiumButton type="button" variant="glass" size="sm" onClick={onClose} disabled={saving}>Cancel</PremiumButton><PremiumButton type="submit" size="sm" loading={saving}>Save changes</PremiumButton></div>
-      </form>
-    </m.div>
-  </m.div>;
-}
 
-function RecruitmentNoticeModal({
-  notice,
-  teamId,
-  onClose,
-  onSubmit,
-}: {
-  notice?: any;
-  teamId: string;
-  onClose: () => void;
-  onSubmit: (payload: any) => Promise<void>;
-}) {
-  const [role, setRole] = useState(notice?.role || '');
-  const [gender, setGender] = useState(notice?.gender || 'OPEN');
-  const [abilitiesInput, setAbilitiesInput] = useState(notice?.abilities?.join(', ') || '');
-  const [requirements, setRequirements] = useState(notice?.requirements || '');
-  const [saving, setSaving] = useState(false);
   const panelRef = useFocusTrap<HTMLDivElement>(true);
   useScrollLock(true);
   useEscapeKey(true, onClose);
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 1_500_000) {
+      setError('Please choose a photo smaller than 1.5 MB.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setAvatarUrl(String(reader.result));
+      setError('');
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!role.trim()) return;
+    if (!name.trim()) {
+      setError('Full name is required.');
+      return;
+    }
     setSaving(true);
+    setError('');
+
     try {
-      const abilities = abilitiesInput.split(',').map((s: string) => s.trim()).filter(Boolean);
-      const payload = notice
-        ? { noticeId: notice.id, role, gender, abilities, requirements }
-        : { teamId, role, gender, abilities, requirements };
-      await onSubmit(payload);
+      const res = await fetch('/api/profile/personal', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: name.trim(),
+          gender: gender || null,
+          rollNo: rollNo.trim() || null,
+          year,
+          branch,
+          section: section.trim() || null,
+          category: category || null,
+          contact: contact.trim() || null,
+          avatarUrl: avatarUrl || null,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to save personal information');
+
+      toast('Personal information updated successfully.', 'success');
+      onSuccess(data.personal);
       onClose();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to save personal info.');
     } finally {
       setSaving(false);
     }
@@ -459,84 +245,106 @@ function RecruitmentNoticeModal({
   const control = 'w-full rounded-xl border border-[rgba(209,199,189,0.8)] bg-[rgba(248,246,242,0.7)] px-3.5 py-2 text-sm text-foreground outline-none focus:border-primary';
 
   return (
-    <m.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-modal flex items-center justify-center p-4"
-    >
+    <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-modal flex items-center justify-center p-4">
       <div aria-hidden onClick={onClose} className="absolute inset-0 bg-[rgb(50_45_41/0.34)] backdrop-blur-md" />
-      <m.div
-        ref={panelRef}
-        role="dialog"
-        aria-modal="true"
-        tabIndex={-1}
-        initial={{ opacity: 0, y: 20, scale: 0.98 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        className="surface-overlay relative max-h-[90vh] w-full max-w-md overflow-y-auto rounded-3xl p-6 text-foreground sm:p-8"
-      >
-        <div className="flex items-center justify-between">
+      <m.div ref={panelRef} role="dialog" aria-modal="true" tabIndex={-1} initial={{ opacity: 0, y: 20, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} className="surface-overlay relative max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-3xl p-6 text-foreground sm:p-8 border border-[rgba(209,199,189,0.6)]">
+        <div className="flex items-center justify-between border-b border-[rgba(209,199,189,0.5)] pb-4">
           <div>
-            <span className="text-label uppercase text-primary">Seat Posting</span>
-            <h3 className="mt-1 text-feature font-extrabold">{notice ? 'Edit recruitment notice' : 'Post recruitment notice'}</h3>
+            <span className="text-label uppercase tracking-wider text-primary font-bold">Tile 01</span>
+            <h3 className="mt-0.5 text-feature font-extrabold text-foreground">Edit Personal Information</h3>
           </div>
-          <button onClick={onClose} aria-label="Close">
-            <X className="size-4 text-muted" />
+          <button onClick={onClose} aria-label="Close dialog" className="text-muted hover:text-foreground">
+            <X className="size-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-          <label className="block">
-            <Label>Role description</Label>
-            <input
-              required
-              placeholder="e.g. Frontend Specialist"
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              className={`${control} mt-1.5`}
-            />
-          </label>
+        <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+          {error && <div className="rounded-xl border border-[rgba(114,56,61,0.3)] bg-[rgba(114,56,61,0.08)] p-3 text-xs font-bold text-primary">{error}</div>}
 
-          <label className="block">
-            <Label>Gender preference</Label>
-            <select
-              value={gender}
-              onChange={(e) => setGender(e.target.value)}
-              className={`${control} mt-1.5`}
-            >
-              <option value="OPEN">Open to anyone</option>
-              <option value="MALE">Male preferred</option>
-              <option value="FEMALE">Female preferred</option>
-            </select>
-          </label>
+          {/* Photo & Name */}
+          <div className="flex items-center gap-4 p-3.5 rounded-2xl bg-[rgba(248,246,242,0.6)] border border-[rgba(209,199,189,0.6)]">
+            <Avatar avatarUrl={avatarUrl} name={name || 'User'} className="size-14" />
+            <div className="flex-1">
+              <span className="text-label uppercase text-muted block mb-1">Profile Photo</span>
+              <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-[rgba(209,199,189,0.8)] bg-white/60 px-3 py-1.5 text-xs font-semibold text-body hover:border-primary">
+                <span>Upload New Photo</span>
+                <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
+              </label>
+            </div>
+          </div>
 
-          <label className="block">
-            <Label>Required skills (comma-separated)</Label>
-            <input
-              placeholder="e.g. React, Tailwind, TypeScript"
-              value={abilitiesInput}
-              onChange={(e) => setAbilitiesInput(e.target.value)}
-              className={`${control} mt-1.5`}
-            />
-          </label>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label>
+              <Label>Full Name *</Label>
+              <input required value={name} onChange={(e) => setName(e.target.value)} className={`${control} mt-1`} />
+            </label>
 
-          <label className="block">
-            <Label>Additional requirements / details</Label>
-            <textarea
-              rows={3}
-              placeholder="Describe what they will work on..."
-              value={requirements}
-              onChange={(e) => setRequirements(e.target.value)}
-              className={`${control} mt-1.5 resize-none`}
-            />
-          </label>
+            <label>
+              <Label>Gender</Label>
+              <select value={gender} onChange={(e) => setGender(e.target.value)} className={`${control} mt-1`}>
+                <option value="">Select gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+                <option value="Prefer not to say">Prefer not to say</option>
+              </select>
+            </label>
+          </div>
 
-          <div className="flex justify-end gap-2 pt-2">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label>
+              <Label>University Roll Number</Label>
+              <input value={rollNo} onChange={(e) => setRollNo(e.target.value)} placeholder="e.g. 2100970100045" className={`${control} mt-1`} />
+            </label>
+
+            <label>
+              <Label>Year of Study *</Label>
+              <select required value={year} onChange={(e) => setYear(e.target.value)} className={`${control} mt-1`}>
+                <option value="1st Year">1st Year</option>
+                <option value="2nd Year">2nd Year</option>
+                <option value="3rd Year">3rd Year</option>
+                <option value="4th Year">4th Year</option>
+              </select>
+            </label>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label>
+              <Label>Course / Branch *</Label>
+              <input required value={branch} onChange={(e) => setBranch(e.target.value)} placeholder="e.g. B.Tech CSE" className={`${control} mt-1`} />
+            </label>
+
+            <label>
+              <Label>Section</Label>
+              <input value={section} onChange={(e) => setSection(e.target.value)} placeholder="e.g. A, B, C" className={`${control} mt-1`} />
+            </label>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label>
+              <Label>Category</Label>
+              <select value={category} onChange={(e) => setCategory(e.target.value)} className={`${control} mt-1`}>
+                <option value="">Select category</option>
+                <option value="General">General</option>
+                <option value="OBC">OBC</option>
+                <option value="SC">SC</option>
+                <option value="ST">ST</option>
+                <option value="EWS">EWS</option>
+              </select>
+            </label>
+
+            <label>
+              <Label>Contact Number (Mobile)</Label>
+              <input value={contact} onChange={(e) => setContact(e.target.value)} placeholder="+91 9876543210" className={`${control} mt-1`} />
+            </label>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3 border-t border-[rgba(209,199,189,0.5)]">
             <PremiumButton type="button" variant="glass" size="sm" onClick={onClose} disabled={saving}>
               Cancel
             </PremiumButton>
             <PremiumButton type="submit" size="sm" loading={saving}>
-              {notice ? 'Save changes' : 'Post notice'}
+              Save Personal Info
             </PremiumButton>
           </div>
         </form>
@@ -545,1624 +353,1796 @@ function RecruitmentNoticeModal({
   );
 }
 
+/** 2. Skills & Fluency Modal */
+function SkillsFluencyModal({
+  initialData,
+  onClose,
+  onSuccess,
+}: {
+  initialData: any;
+  onClose: () => void;
+  onSuccess: (updated: any) => void;
+}) {
+  const { toast } = useToast();
+  const [skills, setSkills] = useState<string[]>(initialData?.skills || []);
+  const [softSkills, setSoftSkills] = useState<string[]>(initialData?.softSkills || []);
+  const [languages, setLanguages] = useState<string[]>(initialData?.languages || ['English (Fluent)', 'Hindi (Fluent)']);
+  const [customSkill, setCustomSkill] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const panelRef = useFocusTrap<HTMLDivElement>(true);
+  useScrollLock(true);
+  useEscapeKey(true, onClose);
+
+  const toggleSkill = (sk: string) => {
+    setSkills((prev) => (prev.includes(sk) ? prev.filter((s) => s !== sk) : [...prev, sk]));
+  };
+
+  const addCustomSkill = (e: React.KeyboardEvent | React.MouseEvent) => {
+    if ('key' in e && e.key !== 'Enter') return;
+    e.preventDefault();
+    const clean = customSkill.trim();
+    if (clean && !skills.includes(clean)) {
+      setSkills((prev) => [...prev, clean]);
+      setCustomSkill('');
+    }
+  };
+
+  const toggleSoftSkill = (ss: string) => {
+    setSoftSkills((prev) => (prev.includes(ss) ? prev.filter((s) => s !== ss) : [...prev, ss]));
+  };
+
+  const toggleLanguage = (lang: string) => {
+    const existing = languages.find((l) => l.startsWith(lang));
+    if (existing) {
+      setLanguages((prev) => prev.filter((l) => !l.startsWith(lang)));
+    } else {
+      setLanguages((prev) => [...prev, `${lang} (Fluent)`]);
+    }
+  };
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setError('');
+
+    try {
+      const res = await fetch('/api/profile/skills', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ skills, softSkills, languages }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to save skills');
+
+      toast('Skills & fluency updated successfully.', 'success');
+      onSuccess(data.skills);
+      onClose();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to save skills.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-modal flex items-center justify-center p-4">
+      <div aria-hidden onClick={onClose} className="absolute inset-0 bg-[rgb(50_45_41/0.34)] backdrop-blur-md" />
+      <m.div ref={panelRef} role="dialog" aria-modal="true" tabIndex={-1} initial={{ opacity: 0, y: 20, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} className="surface-overlay relative max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-3xl p-6 text-foreground sm:p-8 border border-[rgba(209,199,189,0.6)]">
+        <div className="flex items-center justify-between border-b border-[rgba(209,199,189,0.5)] pb-4">
+          <div>
+            <span className="text-label uppercase tracking-wider text-primary font-bold">Tile 02</span>
+            <h3 className="mt-0.5 text-feature font-extrabold text-foreground">Edit Skills & Fluency</h3>
+          </div>
+          <button onClick={onClose} aria-label="Close dialog" className="text-muted hover:text-foreground">
+            <X className="size-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="mt-5 space-y-5">
+          {error && <div className="rounded-xl border border-[rgba(114,56,61,0.3)] bg-[rgba(114,56,61,0.08)] p-3 text-xs font-bold text-primary">{error}</div>}
+
+          {/* Technical Skills */}
+          <div>
+            <Label>Technical Skills (Select or Add)</Label>
+            <div className="flex gap-2 mt-2 mb-3">
+              <input
+                type="text"
+                value={customSkill}
+                onChange={(e) => setCustomSkill(e.target.value)}
+                onKeyDown={addCustomSkill}
+                placeholder="Add custom skill (e.g. Solidity, Three.js)"
+                className="flex-1 rounded-xl border border-[rgba(209,199,189,0.8)] bg-[rgba(248,246,242,0.7)] px-3.5 py-1.5 text-sm text-foreground outline-none focus:border-primary"
+              />
+              <button
+                type="button"
+                onClick={addCustomSkill}
+                className="px-3 py-1.5 rounded-xl border border-[rgba(209,199,189,0.8)] bg-white text-xs font-semibold text-body hover:border-primary"
+              >
+                Add
+              </button>
+            </div>
+
+            <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-2.5 rounded-2xl bg-[rgba(248,246,242,0.6)] border border-[rgba(209,199,189,0.6)]">
+              {STANDARD_SKILLS.map((sk) => {
+                const selected = skills.includes(sk);
+                return (
+                  <button
+                    key={sk}
+                    type="button"
+                    onClick={() => toggleSkill(sk)}
+                    className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-all ${
+                      selected
+                        ? 'bg-primary text-on-accent border border-transparent shadow-xs'
+                        : 'border border-[rgba(209,199,189,0.8)] bg-white/70 text-body hover:border-primary'
+                    }`}
+                  >
+                    {selected ? `✓ ${sk}` : `+ ${sk}`}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Soft Skills */}
+          <div>
+            <Label>Soft Skills</Label>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {SOFT_SKILLS_POOL.map((ss) => {
+                const selected = softSkills.includes(ss);
+                return (
+                  <button
+                    key={ss}
+                    type="button"
+                    onClick={() => toggleSoftSkill(ss)}
+                    className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-all ${
+                      selected
+                        ? 'bg-foreground text-on-accent border border-transparent'
+                        : 'border border-[rgba(209,199,189,0.8)] bg-white/70 text-body hover:border-foreground'
+                    }`}
+                  >
+                    {selected ? `✓ ${ss}` : `+ ${ss}`}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Languages */}
+          <div>
+            <Label>Spoken Languages</Label>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {LANGUAGE_POOL.map((lang) => {
+                const selected = languages.some((l) => l.startsWith(lang));
+                return (
+                  <button
+                    key={lang}
+                    type="button"
+                    onClick={() => toggleLanguage(lang)}
+                    className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-all ${
+                      selected
+                        ? 'bg-clay text-ink border border-transparent font-bold'
+                        : 'border border-[rgba(209,199,189,0.8)] bg-white/70 text-body hover:border-clay'
+                    }`}
+                  >
+                    {selected ? `✓ ${lang}` : `+ ${lang}`}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3 border-t border-[rgba(209,199,189,0.5)]">
+            <PremiumButton type="button" variant="glass" size="sm" onClick={onClose} disabled={saving}>
+              Cancel
+            </PremiumButton>
+            <PremiumButton type="submit" size="sm" loading={saving}>
+              Save Skills & Fluency
+            </PremiumButton>
+          </div>
+        </form>
+      </m.div>
+    </m.div>
+  );
+}
+
+/** 3. Themes & Links Modal */
+function ThemesLinksModal({
+  initialData,
+  onClose,
+  onSuccess,
+}: {
+  initialData: any;
+  onClose: () => void;
+  onSuccess: (updated: any) => void;
+}) {
+  const { toast } = useToast();
+  const [selectedTracks, setSelectedTracks] = useState<string[]>(initialData?.trackInterest || []);
+  const [githubUrl, setGithubUrl] = useState(initialData?.githubUrl || '');
+  const [linkedinUrl, setLinkedinUrl] = useState(initialData?.linkedinUrl || '');
+  const [resumeUrl, setResumeUrl] = useState(initialData?.resumeUrl || '');
+  const [tracks, setTracks] = useState<any[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const panelRef = useFocusTrap<HTMLDivElement>(true);
+  useScrollLock(true);
+  useEscapeKey(true, onClose);
+
+  useEffect(() => {
+    QueryClient.fetch<{ success: boolean; tracks: any[] }>(
+      'sih_theme_list',
+      async () => {
+        const res = await fetch('/api/tracks');
+        return res.json();
+      },
+      { ttlMs: 300_000 }
+    ).then((d) => {
+      if (d?.success && d.tracks) setTracks(d.tracks);
+    }).catch(() => undefined);
+  }, []);
+
+  const toggleTrack = (id: string) => {
+    setSelectedTracks((prev) => {
+      if (prev.includes(id)) return prev.filter((t) => t !== id);
+      if (prev.length >= 2) {
+        return [prev[1], id]; // Keep latest 2
+      }
+      return [...prev, id];
+    });
+  };
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setError('');
+
+    try {
+      const res = await fetch('/api/profile/themes', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          trackInterest: selectedTracks,
+          githubUrl: githubUrl.trim() || undefined,
+          linkedinUrl: linkedinUrl.trim() || undefined,
+          resumeUrl: resumeUrl.trim() || undefined,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to save themes and links');
+
+      toast('Themes & links updated successfully.', 'success');
+      onSuccess(data.themes);
+      onClose();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to save themes.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const control = 'w-full rounded-xl border border-[rgba(209,199,189,0.8)] bg-[rgba(248,246,242,0.7)] px-3.5 py-2 text-sm text-foreground outline-none focus:border-primary';
+
+  return (
+    <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-modal flex items-center justify-center p-4">
+      <div aria-hidden onClick={onClose} className="absolute inset-0 bg-[rgb(50_45_41/0.34)] backdrop-blur-md" />
+      <m.div ref={panelRef} role="dialog" aria-modal="true" tabIndex={-1} initial={{ opacity: 0, y: 20, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} className="surface-overlay relative max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-3xl p-6 text-foreground sm:p-8 border border-[rgba(209,199,189,0.6)]">
+        <div className="flex items-center justify-between border-b border-[rgba(209,199,189,0.5)] pb-4">
+          <div>
+            <span className="text-label uppercase tracking-wider text-primary font-bold">Tile 03</span>
+            <h3 className="mt-0.5 text-feature font-extrabold text-foreground">Edit Themes & Links</h3>
+          </div>
+          <button onClick={onClose} aria-label="Close dialog" className="text-muted hover:text-foreground">
+            <X className="size-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+          {error && <div className="rounded-xl border border-[rgba(114,56,61,0.3)] bg-[rgba(114,56,61,0.08)] p-3 text-xs font-bold text-primary">{error}</div>}
+
+          {/* Theme Selection */}
+          <div>
+            <Label>SIH Themes / Interests (Select 2 Themes)</Label>
+            <div className="mt-2 space-y-1.5 max-h-48 overflow-y-auto p-2.5 rounded-2xl bg-[rgba(248,246,242,0.6)] border border-[rgba(209,199,189,0.6)]">
+              {tracks.map((track) => {
+                const selected = selectedTracks.includes(track.id);
+                return (
+                  <button
+                    key={track.id}
+                    type="button"
+                    onClick={() => toggleTrack(track.id)}
+                    className={`w-full text-left p-2.5 rounded-xl border text-xs transition-all flex items-center justify-between gap-2 ${
+                      selected
+                        ? 'border-primary bg-[rgba(114,56,61,0.08)] text-primary font-bold'
+                        : 'border-[rgba(209,199,189,0.6)] bg-white/60 text-body hover:border-primary'
+                    }`}
+                  >
+                    <span className="truncate">
+                      <span className="font-bold">{track.problemStatementCode}</span> — {track.name}
+                    </span>
+                    {selected && <CheckCircle2 className="size-4 shrink-0 text-primary" />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div>
+            <Label>GitHub Profile URL</Label>
+            <div className="relative mt-1">
+              <input value={githubUrl} onChange={(e) => setGithubUrl(e.target.value)} placeholder="https://github.com/username" className={`${control} pl-9`} />
+              <Code2 className="absolute left-3 top-2.5 size-4 text-muted" />
+            </div>
+          </div>
+
+          <div>
+            <Label>LinkedIn Profile URL</Label>
+            <div className="relative mt-1">
+              <input value={linkedinUrl} onChange={(e) => setLinkedinUrl(e.target.value)} placeholder="https://linkedin.com/in/username" className={`${control} pl-9`} />
+              <Globe className="absolute left-3 top-2.5 size-4 text-muted" />
+            </div>
+          </div>
+
+          <div>
+            <Label>Portfolio or Resume Link</Label>
+            <div className="relative mt-1">
+              <input value={resumeUrl} onChange={(e) => setResumeUrl(e.target.value)} placeholder="https://drive.google.com/... or https://portfolio.dev" className={`${control} pl-9`} />
+              <FileText className="absolute left-3 top-2.5 size-4 text-muted" />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3 border-t border-[rgba(209,199,189,0.5)]">
+            <PremiumButton type="button" variant="glass" size="sm" onClick={onClose} disabled={saving}>
+              Cancel
+            </PremiumButton>
+            <PremiumButton type="submit" size="sm" loading={saving}>
+              Save Themes & Links
+            </PremiumButton>
+          </div>
+        </form>
+      </m.div>
+    </m.div>
+  );
+}
+
+function MentorPersonalModal({
+  initialData,
+  onClose,
+  onSuccess,
+}: {
+  initialData: any;
+  onClose: () => void;
+  onSuccess: (updated: any) => void;
+}) {
+  const { toast } = useToast();
+  const [name, setName] = useState(initialData?.name || '');
+  const [designation, setDesignation] = useState(initialData?.designation || '');
+  const [organization, setOrganization] = useState(initialData?.organization || 'GL Bajaj Group of Institutions');
+  const [contact, setContact] = useState(initialData?.contact || '');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const panelRef = useFocusTrap<HTMLDivElement>(true);
+  useScrollLock(true);
+  useEscapeKey(true, onClose);
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setError('');
+
+    try {
+      const res = await fetch('/api/profile/mentor', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          section: 'personal',
+          name,
+          designation,
+          organization,
+          contact,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to save faculty profile');
+
+      toast('Faculty personal information updated.', 'success');
+      onSuccess(data.profile);
+      onClose();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to update profile.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const control =
+    'w-full rounded-xl border border-[rgba(209,199,189,0.8)] bg-[rgba(248,246,242,0.7)] px-3.5 py-2 text-sm text-foreground outline-none transition-all focus:border-primary focus:bg-white';
+
+  return (
+    <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-modal flex items-center justify-center p-4">
+      <div aria-hidden onClick={onClose} className="absolute inset-0 bg-[rgb(50_45_41/0.34)] backdrop-blur-md" />
+      <m.div ref={panelRef} role="dialog" aria-modal="true" tabIndex={-1} initial={{ opacity: 0, y: 20, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} className="surface-overlay relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl p-6 text-foreground sm:p-8 border border-[rgba(209,199,189,0.6)]">
+        <div className="flex items-center justify-between border-b border-[rgba(209,199,189,0.5)] pb-4">
+          <div>
+            <span className="text-label uppercase tracking-wider text-primary font-bold">Tile 01</span>
+            <h3 className="mt-0.5 text-feature font-extrabold text-foreground">Faculty Identity & Designation</h3>
+          </div>
+          <button onClick={onClose} aria-label="Close dialog" className="text-muted hover:text-foreground">
+            <X className="size-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+          {error && <div className="rounded-xl border border-[rgba(114,56,61,0.3)] bg-[rgba(114,56,61,0.08)] p-3 text-xs font-bold text-primary">{error}</div>}
+
+          <div>
+            <Label>Full Name *</Label>
+            <input value={name} onChange={(e) => setName(e.target.value)} required placeholder="Dr. Jane Doe" className={control} />
+          </div>
+
+          <div>
+            <Label>Faculty Designation *</Label>
+            <input value={designation} onChange={(e) => setDesignation(e.target.value)} required placeholder="Associate Professor / Mentor" className={control} />
+          </div>
+
+          <div>
+            <Label>Department / Organization *</Label>
+            <input value={organization} onChange={(e) => setOrganization(e.target.value)} required placeholder="GL Bajaj Group of Institutions" className={control} />
+          </div>
+
+          <div>
+            <Label>Mobile Contact (Kept Private)</Label>
+            <input value={contact} onChange={(e) => setContact(e.target.value)} placeholder="+91 98765 43210" className={control} />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3 border-t border-[rgba(209,199,189,0.5)]">
+            <PremiumButton type="button" variant="glass" size="sm" onClick={onClose} disabled={saving}>
+              Cancel
+            </PremiumButton>
+            <PremiumButton type="submit" size="sm" loading={saving}>
+              Save Identity
+            </PremiumButton>
+          </div>
+        </form>
+      </m.div>
+    </m.div>
+  );
+}
+
+function MentorExpertiseModal({
+  initialData,
+  onClose,
+  onSuccess,
+}: {
+  initialData: any;
+  onClose: () => void;
+  onSuccess: (updated: any) => void;
+}) {
+  const { toast } = useToast();
+  const [expertise, setExpertise] = useState<string[]>(initialData?.expertise || []);
+  const [customTag, setCustomTag] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const panelRef = useFocusTrap<HTMLDivElement>(true);
+  useScrollLock(true);
+  useEscapeKey(true, onClose);
+
+  const SUGGESTED_EXPERTISE = [
+    'AI/ML', 'Full Stack Web', 'Cloud Computing', 'Cybersecurity', 'IoT & Embedded',
+    'Mobile App Dev', 'Blockchain', 'Data Science', 'DevOps & CI/CD', 'UI/UX Architecture',
+    'Robotics', 'NLP & LLMs', 'Computer Vision', 'AR/VR', 'Distributed Systems',
+  ];
+
+  const toggleTag = (tag: string) => {
+    setExpertise((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
+  };
+
+  const addCustomTag = (e: any) => {
+    if (e.key === 'Enter' || e.type === 'click') {
+      e.preventDefault();
+      const val = customTag.trim();
+      if (val && !expertise.includes(val)) {
+        setExpertise((prev) => [...prev, val]);
+        setCustomTag('');
+      }
+    }
+  };
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setError('');
+
+    try {
+      const res = await fetch('/api/profile/mentor', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          section: 'expertise',
+          expertise,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to save expertise');
+
+      toast('Domain expertise tags updated.', 'success');
+      onSuccess(data.profile);
+      onClose();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to update expertise.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-modal flex items-center justify-center p-4">
+      <div aria-hidden onClick={onClose} className="absolute inset-0 bg-[rgb(50_45_41/0.34)] backdrop-blur-md" />
+      <m.div ref={panelRef} role="dialog" aria-modal="true" tabIndex={-1} initial={{ opacity: 0, y: 20, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} className="surface-overlay relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl p-6 text-foreground sm:p-8 border border-[rgba(209,199,189,0.6)]">
+        <div className="flex items-center justify-between border-b border-[rgba(209,199,189,0.5)] pb-4">
+          <div>
+            <span className="text-label uppercase tracking-wider text-primary font-bold">Tile 02</span>
+            <h3 className="mt-0.5 text-feature font-extrabold text-foreground">Domain Expertise</h3>
+          </div>
+          <button onClick={onClose} aria-label="Close dialog" className="text-muted hover:text-foreground">
+            <X className="size-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+          {error && <div className="rounded-xl border border-[rgba(114,56,61,0.3)] bg-[rgba(114,56,61,0.08)] p-3 text-xs font-bold text-primary">{error}</div>}
+
+          <div>
+            <Label>Custom Domain / Technology</Label>
+            <div className="flex gap-2 mt-2 mb-3">
+              <input
+                type="text"
+                value={customTag}
+                onChange={(e) => setCustomTag(e.target.value)}
+                onKeyDown={addCustomTag}
+                placeholder="e.g. Edge AI, Quantum Computing"
+                className="flex-1 rounded-xl border border-[rgba(209,199,189,0.8)] bg-[rgba(248,246,242,0.7)] px-3.5 py-1.5 text-sm text-foreground outline-none focus:border-primary"
+              />
+              <button
+                type="button"
+                onClick={addCustomTag}
+                className="px-3 py-1.5 rounded-xl border border-[rgba(209,199,189,0.8)] bg-white text-xs font-semibold text-body hover:border-primary"
+              >
+                Add
+              </button>
+            </div>
+
+            <Label>Suggested Domains</Label>
+            <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto p-2.5 rounded-2xl bg-[rgba(248,246,242,0.6)] border border-[rgba(209,199,189,0.6)] mt-1.5">
+              {SUGGESTED_EXPERTISE.map((tag) => {
+                const selected = expertise.includes(tag);
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => toggleTag(tag)}
+                    className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-all ${
+                      selected
+                        ? 'bg-primary text-on-accent border border-transparent shadow-xs'
+                        : 'border border-[rgba(209,199,189,0.8)] bg-white/70 text-body hover:border-primary'
+                    }`}
+                  >
+                    {selected ? `✓ ${tag}` : `+ ${tag}`}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3 border-t border-[rgba(209,199,189,0.5)]">
+            <PremiumButton type="button" variant="glass" size="sm" onClick={onClose} disabled={saving}>
+              Cancel
+            </PremiumButton>
+            <PremiumButton type="submit" size="sm" loading={saving}>
+              Save Expertise
+            </PremiumButton>
+          </div>
+        </form>
+      </m.div>
+    </m.div>
+  );
+}
+
+function MentorBioModal({
+  initialData,
+  onClose,
+  onSuccess,
+}: {
+  initialData: any;
+  onClose: () => void;
+  onSuccess: (updated: any) => void;
+}) {
+  const { toast } = useToast();
+  const [bio, setBio] = useState(initialData?.bio || '');
+  const [linkedinUrl, setLinkedinUrl] = useState(initialData?.linkedinUrl || '');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const panelRef = useFocusTrap<HTMLDivElement>(true);
+  useScrollLock(true);
+  useEscapeKey(true, onClose);
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setError('');
+
+    try {
+      const res = await fetch('/api/profile/mentor', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          section: 'bio',
+          bio,
+          linkedinUrl,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to save bio');
+
+      toast('Professional bio & links updated.', 'success');
+      onSuccess(data.profile);
+      onClose();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to update bio.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const control =
+    'w-full rounded-xl border border-[rgba(209,199,189,0.8)] bg-[rgba(248,246,242,0.7)] px-3.5 py-2 text-sm text-foreground outline-none transition-all focus:border-primary focus:bg-white';
+
+  return (
+    <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-modal flex items-center justify-center p-4">
+      <div aria-hidden onClick={onClose} className="absolute inset-0 bg-[rgb(50_45_41/0.34)] backdrop-blur-md" />
+      <m.div ref={panelRef} role="dialog" aria-modal="true" tabIndex={-1} initial={{ opacity: 0, y: 20, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} className="surface-overlay relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl p-6 text-foreground sm:p-8 border border-[rgba(209,199,189,0.6)]">
+        <div className="flex items-center justify-between border-b border-[rgba(209,199,189,0.5)] pb-4">
+          <div>
+            <span className="text-label uppercase tracking-wider text-primary font-bold">Tile 03</span>
+            <h3 className="mt-0.5 text-feature font-extrabold text-foreground">Professional Bio & Links</h3>
+          </div>
+          <button onClick={onClose} aria-label="Close dialog" className="text-muted hover:text-foreground">
+            <X className="size-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+          {error && <div className="rounded-xl border border-[rgba(114,56,61,0.3)] bg-[rgba(114,56,61,0.08)] p-3 text-xs font-bold text-primary">{error}</div>}
+
+          <div>
+            <Label>Faculty Bio & Research Statement</Label>
+            <textarea
+              rows={4}
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              placeholder="e.g. Associate Professor in CSE with 10+ years mentoring student teams in Hackathons, AI/ML, and Systems engineering."
+              className={`${control} resize-none`}
+            />
+          </div>
+
+          <div>
+            <Label>LinkedIn Profile URL</Label>
+            <div className="relative mt-1">
+              <input
+                value={linkedinUrl}
+                onChange={(e) => setLinkedinUrl(e.target.value)}
+                placeholder="https://linkedin.com/in/username"
+                className={`${control} pl-9`}
+              />
+              <Globe className="absolute left-3 top-2.5 size-4 text-muted" />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3 border-t border-[rgba(209,199,189,0.5)]">
+            <PremiumButton type="button" variant="glass" size="sm" onClick={onClose} disabled={saving}>
+              Cancel
+            </PremiumButton>
+            <PremiumButton type="submit" size="sm" loading={saving}>
+              Save Bio & Links
+            </PremiumButton>
+          </div>
+        </form>
+      </m.div>
+    </m.div>
+  );
+}
+
+// -------------------------------------------------------------
+// MAIN DASHBOARD COMPONENT
+// -------------------------------------------------------------
+
 export default function DashboardPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
 
-  // Student dashboard tabs: 'team' or 'invitations'
-  const [activeTab, setActiveTab] = useState<'team' | 'invitations'>('team');
+  // Stage 1: Bootstrap State (Critical path)
+  const [bootstrapLoading, setBootstrapLoading] = useState(true);
+  const [user, setUser] = useState<any>(null);
+  const [completion, setCompletion] = useState<any>({
+    personalInfoComplete: false,
+    skillsComplete: false,
+    themesComplete: false,
+    onboardingComplete: false,
+    identityComplete: false,
+    expertiseComplete: false,
+    bioComplete: false,
+  });
+  const [personalSummary, setPersonalSummary] = useState<any>(null);
+  const [skillsSummary, setSkillsSummary] = useState<any>(null);
+  const [themesSummary, setThemesSummary] = useState<any>(null);
+  const [teamSummary, setTeamSummary] = useState<any>(null);
+  const [mentorStats, setMentorStats] = useState<any>(null);
 
-  // Modal states
-  const [editingRoleMember, setEditingRoleMember] = useState<any>(null);
-  const [editingTeam, setEditingTeam] = useState(false);
-  const [activeNoticeModal, setActiveNoticeModal] = useState<{
-    show: boolean;
-    notice?: any;
-    slotIndex?: number;
-  }>({ show: false });
+  // Stage 2: Secondary Non-Blocking State
+  const [teamDetailsLoading, setTeamDetailsLoading] = useState(false);
+  const [teamDetails, setTeamDetails] = useState<any>(null);
+  const [receivedInvites, setReceivedInvites] = useState<any[]>([]);
+  const [sentRequests, setSentRequests] = useState<any[]>([]);
+  const [mentorTeams, setMentorTeams] = useState<any[]>([]);
+  const [mentorRequests, setMentorRequests] = useState<any[]>([]);
 
-  const handleSaveRecruitmentNotice = async (payload: any) => {
+  // Active Tabs
+  const [activeTab, setActiveTab] = useState<'team' | 'requests'>('team');
+  const [mentorTab, setMentorTab] = useState<'assigned' | 'requests'>('assigned');
+
+  // Modals state
+  const [activeModal, setActiveModal] = useState<'personal' | 'skills' | 'themes' | 'mentor_personal' | 'mentor_expertise' | 'mentor_bio' | null>(null);
+
+  // 1. Critical Path Bootstrap Fetch
+  const loadBootstrapData = useCallback(async () => {
     try {
-      const method = payload.noticeId ? 'PUT' : 'POST';
-      const res = await fetch('/api/teams/recruitment-notice', {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error || 'Failed to save recruitment notice.');
-      toast(result.message || 'Recruitment notice saved successfully.', 'success');
-      fetchDashboard();
-    } catch (err: any) {
-      toast(err.message || 'Something went wrong', 'error');
-    }
-  };
+      const cacheKey = 'sih_dashboard_bootstrap';
+      const data = await QueryClient.fetch<any>(
+        cacheKey,
+        async () => {
+          const res = await fetch('/api/dashboard/bootstrap', { cache: 'no-store' });
+          return res.json();
+        },
+        { ttlMs: 15_000 }
+      );
 
-  const handleDeleteRecruitmentNotice = async (noticeId: string) => {
-    if (!confirm('Are you sure you want to delete this recruitment notice?')) return;
-    try {
-      const res = await fetch('/api/teams/recruitment-notice', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ noticeId }),
-      });
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error || 'Failed to delete recruitment notice.');
-      toast(result.message || 'Recruitment notice deleted.', 'success');
-      fetchDashboard();
-    } catch (err: any) {
-      toast(err.message || 'Something went wrong', 'error');
-    }
-  };
+      if (!data?.success) {
+        throw new Error(data?.error || 'Failed to load dashboard');
+      }
 
-  const fetchDashboard = useCallback(async () => {
-    try {
-      const res = await fetch('/api/dashboard', { cache: 'no-store' });
-      if (!res.ok) throw new Error('Failed to fetch dashboard data');
-      setData(await res.json());
-    } catch (err) {
-      logger.error('Dashboard fetch failed', err);
-      router.push('/login');
+      setUser(data.user);
+      if (data.role === 'MENTOR') {
+        setCompletion({
+          identityComplete: data.user.identityComplete,
+          expertiseComplete: data.user.expertiseComplete,
+          bioComplete: data.user.bioComplete,
+          onboardingComplete: data.user.onboardingComplete,
+        });
+        setMentorStats(data.stats || { assignedTeamsCount: 0, pendingRequestsCount: 0 });
+      } else {
+        setCompletion(data.completion || {});
+        setPersonalSummary(data.personalSummary || {});
+        setSkillsSummary(data.skillsSummary || {});
+        setThemesSummary(data.themesSummary || {});
+        setTeamSummary(data.teamSummary || null);
+      }
+    } catch (err: unknown) {
+      logger.error('Dashboard bootstrap error', err);
     } finally {
-      setLoading(false);
+      setBootstrapLoading(false);
     }
-  }, [router]);
+  }, []);
+
+  // 2. Secondary Path Team Details Fetch
+  const loadTeamDetails = useCallback(async () => {
+    setTeamDetailsLoading(true);
+    try {
+      const res = await fetch('/api/dashboard/team-details', { cache: 'no-store' });
+      const data = await res.json();
+      if (data.success) {
+        if (data.role === 'MENTOR') {
+          setMentorTeams(data.teams || []);
+          setMentorRequests(data.mentorRequests || []);
+        } else {
+          setTeamDetails(data.teamDetails || null);
+          setReceivedInvites(data.receivedInvites || []);
+          setSentRequests(data.sentRequests || []);
+        }
+      }
+    } catch (err) {
+      logger.error('Dashboard secondary data error', err);
+    } finally {
+      setTeamDetailsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const handle = requestAnimationFrame(() => {
-      fetchDashboard();
+    loadBootstrapData().then(() => {
+      loadTeamDetails();
     });
-    return () => cancelAnimationFrame(handle);
-  }, [fetchDashboard]);
+  }, [loadBootstrapData, loadTeamDetails]);
 
-  // Mentor Request actions (Mentor perspective)
-  const handleMentorRequestResponse = async (
-    requestId: string,
-    action: 'accept' | 'decline' | 'meeting_requested' | 'keep_pending'
-  ) => {
-    setActionLoading(requestId);
+  // Save callbacks with cache invalidation
+  const handlePersonalSaved = (updated: any) => {
+    QueryClient.invalidate('sih_dashboard_bootstrap');
+    QueryClient.invalidate('teammates:');
+    setPersonalSummary(updated);
+    setUser((prev: any) => ({ ...prev, name: updated.name, avatarUrl: updated.avatarUrl, branch: updated.branch, year: updated.year }));
+    setCompletion((prev: any) => ({
+      ...prev,
+      personalInfoComplete: Boolean(updated.name && updated.year && updated.branch),
+    }));
+  };
 
-    // Optimistic UI Update: hide the request immediately
-    //
-    // This block referenced `data.mentorRequests`, which the dashboard API has
-    // never returned — the payload field is `pendingRequests`, and that is what
-    // every render site below reads. The guard was therefore always false, so
-    // the optimistic update never ran and the row stayed on screen until the
-    // refetch completed.
-    const previousData = data;
-    if (data && data.pendingRequests) {
-      setData({
-        ...data,
-        pendingRequests: data.pendingRequests.filter((r: any) => r.id !== requestId),
-      });
-    }
+  const handleSkillsSaved = (updated: any) => {
+    QueryClient.invalidate('sih_dashboard_bootstrap');
+    QueryClient.invalidate('teammates:');
+    setSkillsSummary(updated);
+    setCompletion((prev: any) => ({
+      ...prev,
+      skillsComplete: Boolean(updated.skills?.length > 0 || updated.languages?.length > 0),
+    }));
+  };
 
+  const handleThemesSaved = (updated: any) => {
+    QueryClient.invalidate('sih_dashboard_bootstrap');
+    QueryClient.invalidate('teammates:');
+    setThemesSummary(updated);
+    setCompletion((prev: any) => ({
+      ...prev,
+      themesComplete: Boolean(updated.trackInterest?.length > 0 || updated.githubUrl || updated.linkedinUrl),
+    }));
+  };
+
+  // Mentor profile section handlers
+  const handleMentorProfileSaved = (updated: any) => {
+    QueryClient.invalidate('sih_dashboard_bootstrap');
+    QueryClient.invalidate('mentors:');
+    setUser((prev: any) => ({ ...prev, ...updated }));
+    setCompletion({
+      identityComplete: Boolean(updated.name?.trim() && updated.designation?.trim() && updated.organization?.trim()),
+      expertiseComplete: Boolean(updated.expertise && updated.expertise.length > 0),
+      bioComplete: Boolean(updated.bio?.trim() && updated.linkedinUrl?.trim()),
+      onboardingComplete: Boolean(updated.name?.trim() && updated.designation?.trim() && updated.expertise?.length > 0),
+    });
+  };
+
+  const handleRespondMentorRequest = async (requestId: string, action: 'accept' | 'decline' | 'meeting') => {
     try {
       const res = await fetch(`/api/mentor-requests/${requestId}/respond`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action }),
       });
-      const result = await res.json();
-      if (!res.ok) {
-        toast(result.error || 'Failed to process request', 'error');
-        // Rollback on failure
-        setData(previousData);
-      } else {
-        toast(`Request status updated successfully.`, 'success');
-        await fetchDashboard();
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update request.');
+
+      QueryClient.invalidate('sih_dashboard_bootstrap');
+      QueryClient.invalidate('mentors:');
+      toast(`Mentorship request ${action === 'accept' ? 'accepted' : action === 'decline' ? 'declined' : 'updated'}.`, 'success');
+      setMentorRequests((prev) => prev.filter((r) => r.id !== requestId));
+      if (action === 'accept') {
+        loadTeamDetails();
       }
-    } catch (err) {
-      logger.error('Mentor request response failed', err);
-      toast('Something went wrong. Please try again.', 'error');
-      // Rollback on failure
-      setData(previousData);
-    } finally {
-      setActionLoading(null);
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : 'Failed to respond to request.', 'error');
     }
   };
 
-  // Join Request actions (Team Leader perspective)
-  const handleJoinRequestResponse = async (
-    requestId: string,
-    action: 'accept' | 'decline' | 'on_hold' | 'meeting_requested'
-  ) => {
-    setActionLoading(requestId);
-    try {
-      const res = await fetch('/api/join-requests', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requestId, action }),
-      });
-      const result = await res.json();
-      if (!res.ok) {
-        toast(result.error || 'Failed to process request', 'error');
-      } else {
-        toast(`Join request status updated: ${action}`, 'success');
-        await fetchDashboard();
-      }
-    } catch (err) {
-      logger.error('Respond join request failed', err);
-      toast('Could not complete operation.', 'error');
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  // Team Invite actions (Student perspective)
-  const handleTeamInviteResponse = async (
-    inviteId: string,
-    action: 'accept' | 'decline' | 'on_hold' | 'waitlist'
-  ) => {
-    setActionLoading(inviteId);
+  // Team actions
+  const handleRespondInvite = async (inviteId: string, action: 'accept' | 'decline') => {
     try {
       const res = await fetch('/api/team-invites', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ inviteId, action }),
       });
-      const result = await res.json();
-      if (!res.ok) {
-        toast(result.error || 'Failed to process invitation', 'error');
-      } else {
-        toast(`Invitation status updated: ${action}`, 'success');
-        await fetchDashboard();
+      if (res.ok) {
+        QueryClient.invalidate('sih_dashboard_bootstrap');
+        QueryClient.invalidate('teams:');
+        toast(`Invite ${action}ed successfully.`, 'success');
+        setReceivedInvites((prev) => prev.filter((i) => i.id !== inviteId));
+        loadBootstrapData();
+        loadTeamDetails();
       }
-    } catch (err) {
-      logger.error('Respond team invite failed', err);
-      toast('Could not complete invite response.', 'error');
-    } finally {
-      setActionLoading(null);
+    } catch (e) {
+      toast('Failed to process invite response.', 'error');
     }
   };
 
-  // Edit recruitment status (Leader action)
-  const handleRecruitmentToggle = async (teamId: string, currentStatus: string) => {
-    const nextStatus = currentStatus === 'forming' ? 'locked' : 'forming';
+  const handleRespondJoinRequest = async (requestId: string, action: 'accept' | 'decline') => {
     try {
-      const res = await fetch('/api/teams', {
+      const res = await fetch('/api/join-requests', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'update_recruitment', teamId, status: nextStatus }),
+        body: JSON.stringify({ requestId, action }),
       });
-      const result = await res.json();
-      if (!res.ok) {
-        toast(result.error || 'Failed to toggle recruitment', 'error');
-      } else {
-        toast(`Recruitment ${nextStatus === 'forming' ? 'opened' : 'closed'}.`, 'success');
-        await fetchDashboard();
+      if (res.ok) {
+        QueryClient.invalidate('sih_dashboard_bootstrap');
+        QueryClient.invalidate('teams:');
+        toast(`Request ${action}ed.`, 'success');
+        if (teamDetails?.joinRequests) {
+          setTeamDetails((prev: any) => ({
+            ...prev,
+            joinRequests: prev.joinRequests.filter((r: any) => r.id !== requestId),
+          }));
+        }
+        loadBootstrapData();
+        loadTeamDetails();
       }
-    } catch (err) {
-      logger.error('Recruitment toggle failed', err);
-      toast('Something went wrong.', 'error');
+    } catch (e) {
+      toast('Failed to respond to request.', 'error');
     }
   };
 
-  // Kick member (Leader action)
-  const handleKickMember = async (targetUserId: string) => {
-    if (!confirm('Are you sure you want to remove this member from the team?')) return;
-    try {
-      const res = await fetch('/api/teams/members', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'kick', targetUserId }),
-      });
-      const result = await res.json();
-      if (!res.ok) {
-        toast(result.error || 'Failed to remove member.', 'error');
-      } else {
-        toast('Member removed successfully.', 'success');
-        await fetchDashboard();
-      }
-    } catch (err) {
-      logger.error('Kick member failed', err);
-      toast('Something went wrong.', 'error');
-    }
-  };
-
-  // Edit member role submission (Leader action)
-  const handleEditRoleSubmit = async (newRole: string) => {
-    if (!editingRoleMember) return;
-    try {
-      const res = await fetch('/api/teams', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'update_member_role',
-          teamId: data.team.id,
-          targetUserId: editingRoleMember.userId,
-          newRole,
-        }),
-      });
-      const result = await res.json();
-      if (!res.ok) {
-        toast(result.error || 'Failed to update member role.', 'error');
-      } else {
-        toast('Member role updated successfully.', 'success');
-        await fetchDashboard();
-      }
-    } catch (err) {
-      logger.error('Edit role failed', err);
-      toast('Something went wrong.', 'error');
-    }
-  };
-
-  const handleTeamDetailsSubmit = async (details: any) => {
-    const res = await fetch('/api/teams', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(details) });
-    const result = await res.json();
-    if (!res.ok) { toast(result.error || 'Failed to update team details.', 'error'); throw new Error(result.error); }
-    toast('Team details updated successfully.', 'success');
-    await fetchDashboard();
-  };
-
-  const handleDeleteTeam = async () => {
-    const currentTeam = data?.team;
-    if (!currentTeam || !confirm(`Delete ${currentTeam.teamCode} (${currentTeam.name})? This will remove every member from the team and cannot be undone.`)) return;
-    setActionLoading('delete-team');
-    try {
-      const res = await fetch('/api/teams', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ teamId: currentTeam.id }) });
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error || 'Failed to delete team.');
-      toast('Team deleted. All members are available again.', 'success');
-      await fetchDashboard();
-    } catch (error) {
-      toast(error instanceof Error ? error.message : 'Failed to delete team.', 'error');
-    } finally { setActionLoading(null); }
-  };
-
-  if (loading) {
+  if (bootstrapLoading) {
     return (
       <div className="min-h-screen bg-background text-foreground flex flex-col justify-between">
         <Navbar />
-        <main className="flex-1">
-          <DashboardSkeleton />
+        <main className="flex-1 py-10">
+          <Container>
+            <DashboardSkeleton />
+          </Container>
         </main>
         <Footer />
       </div>
     );
   }
 
-  const isStudent = data?.role === 'STUDENT';
-  const profile = data?.profile;
-  const team = data?.team;
-  const filledSeats = team?.members?.length ?? 0;
-  const isLeader = team && team.leaderId === profile?.userId;
-
   return (
-    <div className="flex min-h-screen flex-col bg-background text-foreground">
+    <div className="relative min-h-screen overflow-x-hidden bg-background text-foreground flex flex-col justify-between">
       <ViewingAsBanner />
       <Navbar />
 
-      <main id="main" className="flex-1">
-        {/* Welcome Section */}
-        <section className="relative overflow-hidden pb-14 pt-8 sm:pt-12">
-          <Aurora variant="cool" spotlight />
-          <div aria-hidden className="grid-lines absolute inset-0" />
+      <main className="relative flex-1 py-8 sm:py-10">
+        <Aurora />
+        <Container>
+          {user?.role === 'MENTOR' ? (
+            /* ========================================================= */
+            /* FACULTY MENTOR DASHBOARD VIEW                             */
+            /* ========================================================= */
+            <div>
+              {/* Mentor Header Banner */}
+              <div className="surface-raised rounded-3xl p-6 sm:p-8 border border-[rgba(209,199,189,0.7)] shadow-e2 mb-8">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <Avatar avatarUrl={user?.avatarUrl} name={user?.name || 'Faculty Mentor'} className="size-16 sm:size-20" />
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-label uppercase tracking-wider text-primary font-bold">Faculty Mentor Dashboard</span>
+                        {user?.verified && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-[rgba(114,56,61,0.1)] border border-[rgba(114,56,61,0.25)] px-2.5 py-0.5 text-[10px] font-extrabold text-primary">
+                            <ShieldCheck className="size-3 text-primary" />
+                            VERIFIED FACULTY
+                          </span>
+                        )}
+                      </div>
+                      <h1 className="text-display text-foreground font-extrabold mt-0.5">
+                        Welcome back, {user?.name}
+                      </h1>
+                      <p className="text-xs text-muted mt-1">
+                        {user?.designation || 'Mentor'} • {user?.organization || 'GL Bajaj Group of Institutions'} • {user?.email}
+                      </p>
+                    </div>
+                  </div>
 
-          <Container width="wide" className="relative">
-            <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
-              <m.div
-                initial={{ opacity: 0, scale: 0.9, filter: 'blur(10px)' }}
-                animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
-                transition={{ duration: DURATION.hero, ease: EASE.outExpo }}
-                className="relative shrink-0"
-              >
-                <div className="surface-raised grid size-20 place-items-center overflow-hidden rounded-2xl p-1 sm:size-24">
-                  <Avatar
-                    avatarUrl={profile?.avatarUrl}
-                    name={profile?.name || 'User'}
-                    className="size-full rounded-xl text-3xl"
-                  />
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setActiveModal('mentor_personal')}
+                      className="px-4 py-2 rounded-xl border border-[rgba(209,199,189,0.8)] bg-white/70 text-xs font-semibold text-foreground hover:border-primary flex items-center gap-1.5 shadow-xs"
+                    >
+                      <Edit2 className="size-3.5 text-primary" />
+                      <span>Edit Faculty Profile</span>
+                    </button>
+                  </div>
                 </div>
-                <span className="absolute -bottom-1 -right-1 grid size-6 place-items-center rounded-full border border-[rgba(239,233,225,0.9)] bg-primary text-caption font-black text-on-accent">
-                  {isStudent ? 'S' : 'M'}
-                </span>
-              </m.div>
+              </div>
 
-              <div className="min-w-0 flex-1">
-                <m.div
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: DURATION.reveal, ease: EASE.outExpo }}
-                  className="mb-2 flex flex-wrap items-center gap-2"
-                >
-                  <Chip tone="primary">{isStudent ? 'Student' : 'Faculty mentor'}</Chip>
-                  {!isStudent && (
-                    <Chip tone={profile?.verified ? 'accent' : 'neutral'}>
-                      {profile?.verified ? 'Verified' : 'Awaiting verification'}
-                    </Chip>
-                  )}
-                </m.div>
-
-                <SplitText
-                  as="h1"
-                  text={`Welcome back, ${profile?.name || 'User'}`}
-                  className="text-title text-foreground font-black"
-                  delay={0.1}
+              {/* Mentor Top Deck Stats Bar */}
+              <RevealGroup className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <DeckStat
+                  value={mentorStats?.assignedTeamsCount ?? mentorTeams.length}
+                  label="Assigned Teams"
+                  text={`${mentorTeams.length} Teams Under Guidance`}
                 />
+                <DeckStat
+                  value={mentorTeams.reduce((sum, t) => sum + (t.members?.length || 0), 0)}
+                  label="Students Guided"
+                  text="Total Mentored Students"
+                />
+                <DeckStat
+                  value={mentorStats?.pendingRequestsCount ?? mentorRequests.length}
+                  label="Mentorship Requests"
+                  text={`${mentorRequests.length} Pending Inquiries`}
+                />
+                <DeckStat
+                  value={user?.verified ? 1 : 0}
+                  label="Faculty Status"
+                  text={user?.verified ? 'Verified Mentor' : 'Verification Pending'}
+                />
+              </RevealGroup>
 
-                <m.p
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.45, duration: 0.5 }}
-                  className="mt-2 max-w-xl text-sm leading-relaxed text-body"
-                >
-                  {isStudent
-                    ? 'Track your team formation status, review your profile, and explore matches.'
-                    : 'Manage the hackathon teams you guide and respond to incoming mentorship requests.'}
-                </m.p>
-              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                {/* Left Column: 3 Progressive Mentor Profile Completion Tiles */}
+                <div className="lg:col-span-5 space-y-6">
+                  <div className="flex items-center justify-between mb-1">
+                    <h2 className="text-heading text-foreground font-bold">Profile Completion</h2>
+                    <span className="text-xs font-semibold text-primary">
+                      {[completion.identityComplete, completion.expertiseComplete, completion.bioComplete].filter(Boolean).length} of 3 Complete
+                    </span>
+                  </div>
 
-              <div className="shrink-0">
-                <PremiumButton
-                  variant="glass"
-                  size="sm"
-                  onClick={() => router.push('/onboarding?edit=true')}
-                >
-                  Edit profile
-                </PremiumButton>
-              </div>
-            </div>
-
-            <RevealGroup
-              className="mt-9 grid grid-cols-2 gap-3 sm:grid-cols-4"
-              stagger={0.07}
-              amount={0.2}
-            >
-              {isStudent ? (
-                <>
-                  <DeckStat value={filledSeats} label="Team members" />
-                  <DeckStat value={Math.max(0, 6 - filledSeats)} label="Open seats" />
-                  <DeckStat
-                    text={team ? (team.mentor ? 'Yes' : 'No') : '—'}
-                    label="Mentor assigned"
-                  />
-                  <DeckStat
-                    text={team ? String(team.status === 'forming' ? 'Open' : 'Closed') : 'No team'}
-                    label="Recruitment"
-                  />
-                </>
-              ) : (
-                <>
-                  <DeckStat value={profile?.guidedTeamsCount ?? 0} label="Teams mentored" />
-                  <DeckStat value={data?.pendingRequests?.length ?? 0} label="Pending requests" />
-                  <DeckStat value={profile?.expertise?.length ?? 0} label="Expertise areas" />
-                  <DeckStat text={profile?.verified ? 'Yes' : 'Pending'} label="Verified" />
-                </>
-              )}
-            </RevealGroup>
-          </Container>
-        </section>
-
-        {/* Dashboard Panels */}
-        <section className="relative">
-          <div
-            aria-hidden
-            className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[rgba(172,156,141,0.6)] to-transparent"
-          />
-          <div className="surface-sunken border-x-0">
-            <Container width="wide" className="grid grid-cols-1 gap-6 py-12 lg:grid-cols-5">
-              
-              {/* Profile Sidebar */}
-              <Reveal direction="right" className="lg:col-span-2">
-                <div className="lg:sticky lg:top-28">
-                  <Panel title="My profile">
-                    <div className="space-y-5">
-                      <div>
-                        <Label>Email ID</Label>
-                        <span className="text-sm font-semibold text-foreground">
-                          {profile?.email || 'N/A'}
+                  {/* Tile 1: Faculty Identity */}
+                  <SpotlightCard className="rounded-3xl" intensity={0.14}>
+                    <div
+                      onClick={() => setActiveModal('mentor_personal')}
+                      className="surface-raised rounded-3xl p-6 border border-[rgba(209,199,189,0.7)] shadow-e1 hover:shadow-e3 transition-all cursor-pointer"
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-label uppercase tracking-wider text-muted font-bold">Tile 01</span>
+                        <span
+                          className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
+                            completion.identityComplete
+                              ? 'bg-[rgba(114,56,61,0.1)] text-primary border border-[rgba(114,56,61,0.2)]'
+                              : 'bg-pearl text-body border border-[rgba(209,199,189,0.7)]'
+                          }`}
+                        >
+                          {completion.identityComplete ? <CheckCircle2 className="size-3" /> : <AlertCircle className="size-3" />}
+                          <span>{completion.identityComplete ? 'Complete' : 'Incomplete'}</span>
                         </span>
                       </div>
 
-                      {isStudent ? (
-                        <>
-                          <div>
-                            <Label>Academic info</Label>
-                            <span className="text-sm font-semibold text-foreground">
-                              {profile?.branch} ({profile?.year})
-                            </span>
-                          </div>
+                      <h3 className="text-feature font-extrabold text-foreground mb-1">Faculty Identity & Designation</h3>
+                      <p className="text-xs text-muted mb-4">
+                        Name, academic designation, department/institution, and mobile contact.
+                      </p>
 
-                          {/* Skill Balance Donut Chart */}
-                          {(() => {
-                            const balance = getStudentSkillBalance({
-                              skills: profile?.skills || [],
-                              softSkills: profile?.softSkills || [],
-                              languages: profile?.languages || [],
-                            });
-                            if (balance.total === 0) return null;
-                            return (
-                              <div className="flex flex-col items-center gap-4 rounded-2xl border border-[rgba(209,199,189,0.7)] bg-[rgba(239,233,225,0.4)] p-4 sm:flex-row">
-                                <div className="relative grid size-20 shrink-0 place-items-center">
-                                  <svg className="size-full -rotate-90" viewBox="0 0 36 36" aria-hidden>
-                                    <circle
-                                      cx="18"
-                                      cy="18"
-                                      r="15.915"
-                                      fill="transparent"
-                                      stroke="rgba(209,199,189,0.3)"
-                                      strokeWidth="3.2"
-                                    />
-                                    {(
-                                      [
-                                        ['Engineering', balance.engineering.pct, 0],
-                                        ['Design', balance.design.pct, balance.engineering.pct],
-                                        [
-                                          'Communication',
-                                          balance.communication.pct,
-                                          balance.engineering.pct + balance.design.pct,
-                                        ],
-                                      ] as const
-                                    ).map(
-                                      ([domain, pct, offset]) =>
-                                        pct > 0 && (
-                                          <circle
-                                            key={domain}
-                                            cx="18"
-                                            cy="18"
-                                            r="15.915"
-                                            fill="transparent"
-                                            stroke={DOMAIN_SWATCH[domain]}
-                                            strokeWidth="3.4"
-                                            strokeDasharray={`${pct} ${100 - pct}`}
-                                            strokeDashoffset={`-${offset}`}
-                                          />
-                                        )
+                      <div className="p-3 rounded-2xl bg-[rgba(248,246,242,0.6)] border border-[rgba(209,199,189,0.6)] text-xs text-body space-y-1">
+                        <div className="flex justify-between">
+                          <span className="text-muted">Name:</span>
+                          <span className="font-semibold text-foreground">{user?.name || 'Not set'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted">Designation:</span>
+                          <span className="font-semibold text-foreground">{user?.designation || 'Mentor'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted">Department:</span>
+                          <span className="font-semibold text-foreground">{user?.organization || 'GL Bajaj Group of Institutions'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </SpotlightCard>
+
+                  {/* Tile 2: Domain Expertise */}
+                  <SpotlightCard className="rounded-3xl" intensity={0.14}>
+                    <div
+                      onClick={() => setActiveModal('mentor_expertise')}
+                      className="surface-raised rounded-3xl p-6 border border-[rgba(209,199,189,0.7)] shadow-e1 hover:shadow-e3 transition-all cursor-pointer"
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-label uppercase tracking-wider text-muted font-bold">Tile 02</span>
+                        <span
+                          className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
+                            completion.expertiseComplete
+                              ? 'bg-[rgba(114,56,61,0.1)] text-primary border border-[rgba(114,56,61,0.2)]'
+                              : 'bg-pearl text-body border border-[rgba(209,199,189,0.7)]'
+                          }`}
+                        >
+                          {completion.expertiseComplete ? <CheckCircle2 className="size-3" /> : <AlertCircle className="size-3" />}
+                          <span>{completion.expertiseComplete ? 'Complete' : 'Incomplete'}</span>
+                        </span>
+                      </div>
+
+                      <h3 className="text-feature font-extrabold text-foreground mb-1">Domain Expertise</h3>
+                      <p className="text-xs text-muted mb-4">
+                        Technical domains and technology areas you guide teams in.
+                      </p>
+
+                      <div className="flex flex-wrap gap-1.5">
+                        {user?.expertise && user.expertise.length > 0 ? (
+                          user.expertise.map((exp: string) => (
+                            <span
+                              key={exp}
+                              className="rounded-lg border border-[rgba(114,56,61,0.25)] bg-[rgba(114,56,61,0.07)] px-2.5 py-1 text-xs font-semibold text-primary"
+                            >
+                              {exp}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-xs text-muted italic">Click to select your domain expertise</span>
+                        )}
+                      </div>
+                    </div>
+                  </SpotlightCard>
+
+                  {/* Tile 3: Professional Bio & Links */}
+                  <SpotlightCard className="rounded-3xl" intensity={0.14}>
+                    <div
+                      onClick={() => setActiveModal('mentor_bio')}
+                      className="surface-raised rounded-3xl p-6 border border-[rgba(209,199,189,0.7)] shadow-e1 hover:shadow-e3 transition-all cursor-pointer"
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-label uppercase tracking-wider text-muted font-bold">Tile 03</span>
+                        <span
+                          className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
+                            completion.bioComplete
+                              ? 'bg-[rgba(114,56,61,0.1)] text-primary border border-[rgba(114,56,61,0.2)]'
+                              : 'bg-pearl text-body border border-[rgba(209,199,189,0.7)]'
+                          }`}
+                        >
+                          {completion.bioComplete ? <CheckCircle2 className="size-3" /> : <AlertCircle className="size-3" />}
+                          <span>{completion.bioComplete ? 'Complete' : 'Incomplete'}</span>
+                        </span>
+                      </div>
+
+                      <h3 className="text-feature font-extrabold text-foreground mb-1">Professional Bio & Links</h3>
+                      <p className="text-xs text-muted mb-4">
+                        Faculty biography, research focus, and professional LinkedIn profile.
+                      </p>
+
+                      <p className="text-xs text-body leading-relaxed line-clamp-3 mb-3">
+                        {user?.bio || 'Click to write a brief bio and add your LinkedIn profile.'}
+                      </p>
+
+                      {user?.linkedinUrl && (
+                        <div className="flex items-center gap-1.5 text-xs text-primary font-semibold">
+                          <Globe className="size-3.5" />
+                          <span className="truncate">{user.linkedinUrl}</span>
+                        </div>
+                      )}
+                    </div>
+                  </SpotlightCard>
+                </div>
+
+                {/* Right Column: Assigned Teams & Mentorship Requests */}
+                <div className="lg:col-span-7 space-y-6">
+                  {/* Tab Navigation */}
+                  <div className="flex gap-2 p-1.5 rounded-2xl bg-[rgba(248,246,242,0.8)] border border-[rgba(209,199,189,0.7)]">
+                    <button
+                      onClick={() => setMentorTab('assigned')}
+                      className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold transition-all ${
+                        mentorTab === 'assigned'
+                          ? 'bg-primary text-on-accent shadow-xs'
+                          : 'text-body hover:text-foreground'
+                      }`}
+                    >
+                      Assigned Teams ({mentorTeams.length})
+                    </button>
+                    <button
+                      onClick={() => setMentorTab('requests')}
+                      className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold transition-all relative ${
+                        mentorTab === 'requests'
+                          ? 'bg-primary text-on-accent shadow-xs'
+                          : 'text-body hover:text-foreground'
+                      }`}
+                    >
+                      <span>Mentorship Requests</span>
+                      {mentorRequests.length > 0 && (
+                        <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-white text-primary text-[10px] font-black">
+                          {mentorRequests.length}
+                        </span>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Tab 1: Assigned Teams */}
+                  {mentorTab === 'assigned' && (
+                    <div>
+                      {teamDetailsLoading ? (
+                        <div className="space-y-4">
+                          {[1, 2].map((i) => (
+                            <div key={i} className="h-44 rounded-3xl bg-[rgba(209,199,189,0.3)] animate-pulse" />
+                          ))}
+                        </div>
+                      ) : mentorTeams.length === 0 ? (
+                        <div className="surface-raised rounded-3xl p-10 text-center border border-[rgba(209,199,189,0.7)] shadow-e1">
+                          <Users className="size-12 mx-auto text-muted mb-3 opacity-60" />
+                          <h3 className="text-feature font-bold text-foreground mb-1">No Teams Assigned Yet</h3>
+                          <p className="text-xs text-muted max-w-sm mx-auto">
+                            Student teams searching for guidance in your domain can submit mentorship requests to you from the Mentor Directory.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {mentorTeams.map((team: any) => (
+                            <SpotlightCard key={team.id} className="rounded-3xl" intensity={0.12}>
+                              <div className="surface-raised rounded-3xl p-6 border border-[rgba(209,199,189,0.7)] shadow-e1">
+                                <div className="flex items-start justify-between gap-3 mb-4">
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-mono text-xs font-bold text-primary bg-[rgba(114,56,61,0.08)] px-2 py-0.5 rounded-md border border-[rgba(114,56,61,0.2)]">
+                                        {team.teamCode}
+                                      </span>
+                                      <span className="text-xs font-bold text-muted uppercase">
+                                        {team.status === 'forming' ? 'Forming' : 'Locked'}
+                                      </span>
+                                    </div>
+                                    <h3 className="text-heading font-extrabold text-foreground mt-1">{team.name}</h3>
+                                    {team.track && (
+                                      <p className="text-xs text-primary font-semibold mt-0.5">
+                                        Theme: <span className="font-bold">{team.track.problemStatementCode}</span> — {team.track.name}
+                                      </p>
                                     )}
-                                  </svg>
-                                  <div className="pointer-events-none absolute text-center">
-                                    <span className="block text-base font-extrabold leading-none tracking-tight text-foreground">
-                                      {balance.total}
-                                    </span>
-                                    <span className="mt-0.5 block text-[8px] uppercase tracking-wider text-muted">
-                                      skills
-                                    </span>
                                   </div>
+
+                                  <span className="px-3 py-1 rounded-full bg-[rgba(248,246,242,0.8)] border border-[rgba(209,199,189,0.8)] text-xs font-bold text-foreground">
+                                    {team.members?.length || team.memberCount} / 6 Members
+                                  </span>
                                 </div>
 
-                                <div className="w-full flex-1 space-y-1">
-                                  <span className="block text-[10px] font-bold text-foreground uppercase tracking-wider">
-                                    Domain Split
-                                  </span>
-                                  <div className="space-y-1 text-[11px]">
-                                    {(
-                                      [
-                                        ['Engineering', 'Engineering & code', balance.engineering],
-                                        ['Design', 'Design & UI/UX', balance.design],
-                                        ['Communication', 'Communication & soft', balance.communication],
-                                      ] as const
-                                    ).map(([key, label, val]) => (
-                                      <div key={key} className="flex items-center justify-between">
-                                        <span className="flex items-center gap-1 text-muted">
-                                          <span
-                                            className="size-1.5 rounded-full"
-                                            style={{ backgroundColor: DOMAIN_SWATCH[key] }}
-                                          />
-                                          {label}
-                                        </span>
-                                        <span className="font-bold text-foreground">
-                                          {val.count} ({val.pct}%)
-                                        </span>
+                                {/* Student Member Roster */}
+                                <div className="mt-4 pt-4 border-t border-[rgba(209,199,189,0.5)]">
+                                  <h4 className="text-label uppercase tracking-wider text-muted font-bold mb-3">Student Roster</h4>
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                    {team.members?.map((m: any) => (
+                                      <div
+                                        key={m.userId}
+                                        className="flex items-center gap-2.5 p-2 rounded-xl bg-[rgba(248,246,242,0.6)] border border-[rgba(209,199,189,0.5)] text-xs"
+                                      >
+                                        <Avatar avatarUrl={m.avatarUrl} name={m.name} className="size-8" />
+                                        <div className="min-w-0 flex-1">
+                                          <div className="flex items-center gap-1">
+                                            <span className="font-bold text-foreground truncate">{m.name}</span>
+                                            {m.userId === team.leaderId && (
+                                              <span className="text-[9px] font-bold text-primary bg-[rgba(114,56,61,0.1)] px-1 rounded">LEAD</span>
+                                            )}
+                                          </div>
+                                          <p className="text-[11px] text-muted truncate">{m.branch} • {m.year}</p>
+                                        </div>
                                       </div>
                                     ))}
                                   </div>
                                 </div>
                               </div>
-                            );
-                          })()}
-
-                          <div>
-                            <Label>Technical skills</Label>
-                            <div className="mt-1.5 flex flex-wrap gap-1.5">
-                              {profile?.skills?.map((s: string) => (
-                                <Chip key={s} tone="primary">
-                                  {s}
-                                </Chip>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div>
-                            <Label>Soft skills</Label>
-                            <div className="mt-1.5 flex flex-wrap gap-1.5">
-                              {profile?.softSkills?.map((s: string) => (
-                                <Chip key={s} tone="accent">
-                                  {s}
-                                </Chip>
-                              ))}
-                            </div>
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <div>
-                            <Label>Designation</Label>
-                            <span className="text-sm font-semibold text-foreground">
-                              {profile?.designation} at {profile?.organization}
-                            </span>
-                          </div>
-
-                          <div>
-                            <Label>Expertise</Label>
-                            <div className="mt-1.5 flex flex-wrap gap-1.5">
-                              {profile?.expertise?.map((e: string) => (
-                                <Chip key={e} tone="accent">
-                                  {e}
-                                </Chip>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div>
-                            <Label>Biography</Label>
-                            <p className="mt-1.5 rounded-xl border border-[rgba(209,199,189,0.6)] bg-[rgba(239,233,225,0.6)] p-3 text-xs leading-relaxed text-body">
-                              {profile?.bio || 'No bio provided.'}
-                            </p>
-                          </div>
-                        </>
+                            </SpotlightCard>
+                          ))}
+                        </div>
                       )}
                     </div>
-                  </Panel>
+                  )}
 
-                  {/* Assigned Mentor Panel */}
-                  {isStudent && team && (
-                    <Panel title="Assigned mentor">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div>
-                          {team.mentor ? (
-                            <p className="text-sm font-bold text-foreground flex items-center gap-1.5">
-                              <ShieldCheck className="size-4 text-emerald-600 shrink-0" />
-                              {team.mentor.name}{' '}
-                              <span className="font-medium text-muted">
-                                ({team.mentor.designation})
-                              </span>
-                            </p>
-                          ) : (
-                            <p className="text-xs font-medium text-muted">
-                              No faculty mentor assigned yet.
-                            </p>
-                          )}
+                  {/* Tab 2: Mentorship Requests */}
+                  {mentorTab === 'requests' && (
+                    <div>
+                      {mentorRequests.length === 0 ? (
+                        <div className="surface-raised rounded-3xl p-10 text-center border border-[rgba(209,199,189,0.7)] shadow-e1">
+                          <MailOpen className="size-12 mx-auto text-muted mb-3 opacity-60" />
+                          <h3 className="text-feature font-bold text-foreground mb-1">No Pending Requests</h3>
+                          <p className="text-xs text-muted max-w-sm mx-auto">
+                            When student teams request your guidance, their problem statements and team pitches will appear here.
+                          </p>
                         </div>
-                        {!team.mentor && isLeader && (
-                          <PremiumButton size="sm" href="/team-formation/browse-mentors" variant="glass">
-                            Browse mentors
-                          </PremiumButton>
-                        )}
-                      </div>
-                    </Panel>
+                      ) : (
+                        <div className="space-y-4">
+                          {mentorRequests.map((req: any) => (
+                            <div
+                              key={req.id}
+                              className="surface-raised rounded-3xl p-6 border border-[rgba(209,199,189,0.7)] shadow-e1"
+                            >
+                              <div className="flex items-start justify-between gap-3 mb-2">
+                                <div>
+                                  <span className="font-mono text-xs font-bold text-primary bg-[rgba(114,56,61,0.08)] px-2 py-0.5 rounded-md border border-[rgba(114,56,61,0.2)]">
+                                    {req.team?.teamCode}
+                                  </span>
+                                  <h3 className="text-feature font-bold text-foreground mt-1">{req.team?.name}</h3>
+                                  {req.team?.track && (
+                                    <p className="text-xs text-primary font-semibold">
+                                      Theme: {req.team.track.problemStatementCode} — {req.team.track.name}
+                                    </p>
+                                  )}
+                                </div>
+
+                                <span className="text-[11px] font-bold text-muted uppercase">
+                                  {new Date(req.createdAt).toLocaleDateString()}
+                                </span>
+                              </div>
+
+                              {req.message && (
+                                <div className="p-3 rounded-xl bg-[rgba(248,246,242,0.7)] border border-[rgba(209,199,189,0.6)] my-3 text-xs text-body italic">
+                                  "{req.message}"
+                                </div>
+                              )}
+
+                              <div className="flex items-center justify-end gap-2 mt-4 pt-3 border-t border-[rgba(209,199,189,0.5)]">
+                                <button
+                                  onClick={() => handleRespondMentorRequest(req.id, 'decline')}
+                                  className="px-3.5 py-1.5 rounded-xl border border-[rgba(209,199,189,0.8)] bg-white text-xs font-semibold text-body hover:bg-[rgba(209,199,189,0.2)]"
+                                >
+                                  Decline
+                                </button>
+                                <button
+                                  onClick={() => handleRespondMentorRequest(req.id, 'meeting')}
+                                  className="px-3.5 py-1.5 rounded-xl border border-[rgba(114,56,61,0.3)] bg-[rgba(114,56,61,0.08)] text-xs font-semibold text-primary hover:bg-[rgba(114,56,61,0.15)]"
+                                >
+                                  Request Review Meeting
+                                </button>
+                                <button
+                                  onClick={() => handleRespondMentorRequest(req.id, 'accept')}
+                                  className="px-4 py-1.5 rounded-xl bg-primary text-on-accent text-xs font-semibold hover:opacity-90 shadow-xs"
+                                >
+                                  Accept Mentorship
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
-              </Reveal>
-
-              {/* Main Content Area */}
-              <div className="space-y-6 lg:col-span-3">
-                {isStudent ? (
-                  <>
-                    {/* Student Dashboard Tabs */}
-                    <div className="flex gap-2 border-b border-[rgba(209,199,189,0.6)] pb-px mb-4">
-                      <button
-                        onClick={() => setActiveTab('team')}
-                        className={`px-4 py-2 text-xs font-black uppercase tracking-wider transition-colors border-b-2 ${
-                          activeTab === 'team'
-                            ? 'border-primary text-primary'
-                            : 'border-transparent text-muted hover:text-foreground'
-                        }`}
-                      >
-                        My Team
-                      </button>
-                      <button
-                        onClick={() => setActiveTab('invitations')}
-                        className={`px-4 py-2 text-xs font-black uppercase tracking-wider transition-colors border-b-2 flex items-center gap-1.5 ${
-                          activeTab === 'invitations'
-                            ? 'border-primary text-primary'
-                            : 'border-transparent text-muted hover:text-foreground'
-                        }`}
-                      >
-                        Requests & Invites
-                        {data?.receivedInvites?.length > 0 && (
-                          <span className="inline-block px-1.5 py-0.2 rounded-full bg-primary text-[8px] text-on-accent font-black">
-                            {data.receivedInvites.length}
-                          </span>
-                        )}
-                      </button>
+              </div>
+            </div>
+          ) : (
+            /* ========================================================= */
+            /* STUDENT DASHBOARD VIEW                                    */
+            /* ========================================================= */
+            <div>
+              {/* Header Banner */}
+              <div className="surface-raised rounded-3xl p-6 sm:p-8 border border-[rgba(209,199,189,0.7)] shadow-e2 mb-8">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <Avatar avatarUrl={user?.avatarUrl} name={user?.name || 'User'} className="size-16 sm:size-20" />
+                    <div>
+                      <span className="text-label uppercase tracking-wider text-primary font-bold">Student Dashboard</span>
+                      <h1 className="text-display text-foreground font-extrabold mt-0.5">
+                        Welcome back, {user?.name}
+                      </h1>
+                      <p className="text-xs text-muted mt-1">
+                        {user?.branch || 'Student'} • {user?.year || 'Participant'} • {user?.email}
+                      </p>
                     </div>
+                  </div>
 
-                    <AnimatePresence mode="wait">
-                      {activeTab === 'team' ? (
-                        <m.div
-                          key="team-tab"
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: 10 }}
-                          transition={{ duration: 0.2 }}
-                          className="space-y-6"
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setActiveModal('personal')}
+                      className="px-4 py-2 rounded-xl border border-[rgba(209,199,189,0.8)] bg-white/70 text-xs font-semibold text-foreground hover:border-primary flex items-center gap-1.5 shadow-xs"
+                    >
+                      <Edit2 className="size-3.5 text-primary" />
+                      <span>Edit Profile</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Top Deck Stats Bar */}
+              <RevealGroup className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <DeckStat
+                  value={teamSummary ? teamSummary.memberCount : 0}
+                  label={teamSummary ? `${teamSummary.memberCount} of 6 Members` : 'No Team'}
+                  text={teamSummary ? `${teamSummary.memberCount} Members` : 'Looking for Team'}
+                />
+                <DeckStat
+                  value={teamSummary ? teamSummary.openSeats : 6}
+                  label="Open Roster Seats"
+                  text={teamSummary ? `${teamSummary.openSeats} Open Seats` : '6 Seats Open'}
+                />
+                <DeckStat
+                  value={teamSummary?.hasMentor ? 1 : 0}
+                  label="Assigned Mentor"
+                  text={teamSummary?.hasMentor ? 'Mentor Assigned' : 'No Mentor'}
+                />
+                <DeckStat
+                  value={teamSummary ? 1 : 0}
+                  label="Recruitment Status"
+                  text={teamSummary ? (teamSummary.status === 'forming' ? 'Recruiting Open' : 'Team Locked') : 'Available'}
+                />
+              </RevealGroup>
+
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                {/* Left Column: 3 Progressive Profile Completion Tiles */}
+                <div className="lg:col-span-5 space-y-6">
+                  <div className="flex items-center justify-between mb-1">
+                    <h2 className="text-heading text-foreground font-bold">Profile Completion</h2>
+                    <span className="text-xs font-semibold text-primary">
+                      {[completion.personalInfoComplete, completion.skillsComplete, completion.themesComplete].filter(Boolean).length} of 3 Complete
+                    </span>
+                  </div>
+
+                  {/* Tile 1: Personal Information */}
+                  <SpotlightCard className="rounded-3xl" intensity={0.14}>
+                    <div
+                      onClick={() => setActiveModal('personal')}
+                      className="surface-raised rounded-3xl p-6 border border-[rgba(209,199,189,0.7)] shadow-e1 hover:shadow-e3 transition-all cursor-pointer"
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-label uppercase tracking-wider text-muted font-bold">Tile 01</span>
+                        <span
+                          className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
+                            completion.personalInfoComplete
+                              ? 'bg-[rgba(114,56,61,0.1)] text-primary border border-[rgba(114,56,61,0.2)]'
+                              : 'bg-pearl text-body border border-[rgba(209,199,189,0.7)]'
+                          }`}
                         >
-                          {team ? (
-                            <>
-                              {/* Roster & Management */}
-                              <Reveal direction="left">
-                                <Panel
-                                  title="My team"
-                                  action={<Chip tone="primary">{team.status === 'forming' ? 'Open for Recruitment' : 'Recruitment Closed'}</Chip>}
-                                >
-                                  <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                    <div className="flex items-center gap-3">
-                                      <div className="size-12 shrink-0 overflow-hidden rounded-2xl border border-[rgba(114,56,61,0.25)] bg-gradient-to-br from-[rgba(114,56,61,0.08)] to-[rgba(114,56,61,0.02)] flex items-center justify-center font-black text-primary text-sm">
-                                        {team.logoUrl ? (
-                                          <img src={team.logoUrl} alt="Logo" className="size-full object-cover" />
-                                        ) : (
-                                          team.name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase() || 'NS'
+                          {completion.personalInfoComplete ? <CheckCircle2 className="size-3" /> : <AlertCircle className="size-3" />}
+                          <span>{completion.personalInfoComplete ? 'Complete' : 'Incomplete'}</span>
+                        </span>
+                      </div>
+
+                      <h3 className="text-feature font-extrabold text-foreground mb-1">Personal Information</h3>
+                      <p className="text-xs text-muted mb-4">
+                        Full name, academic branch, roll number, year of study, section, and mobile contact.
+                      </p>
+
+                      <div className="p-3 rounded-2xl bg-[rgba(248,246,242,0.6)] border border-[rgba(209,199,189,0.6)] text-xs text-body space-y-1">
+                        <div className="flex justify-between">
+                          <span className="text-muted">Name:</span>
+                          <span className="font-semibold text-foreground">{personalSummary?.name || 'Not set'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted">Branch / Year:</span>
+                          <span className="font-semibold text-foreground">{personalSummary?.branch || 'CSE'} ({personalSummary?.year || '2nd Year'})</span>
+                        </div>
+                        {personalSummary?.rollNo && (
+                          <div className="flex justify-between">
+                            <span className="text-muted">Roll No:</span>
+                            <span className="font-semibold text-foreground">{personalSummary.rollNo}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </SpotlightCard>
+
+                  {/* Tile 2: Skills & Fluency */}
+                  <SpotlightCard className="rounded-3xl" intensity={0.14}>
+                    <div
+                      onClick={() => setActiveModal('skills')}
+                      className="surface-raised rounded-3xl p-6 border border-[rgba(209,199,189,0.7)] shadow-e1 hover:shadow-e3 transition-all cursor-pointer"
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-label uppercase tracking-wider text-muted font-bold">Tile 02</span>
+                        <span
+                          className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
+                            completion.skillsComplete
+                              ? 'bg-[rgba(114,56,61,0.1)] text-primary border border-[rgba(114,56,61,0.2)]'
+                              : 'bg-pearl text-body border border-[rgba(209,199,189,0.7)]'
+                          }`}
+                        >
+                          {completion.skillsComplete ? <CheckCircle2 className="size-3" /> : <AlertCircle className="size-3" />}
+                          <span>{completion.skillsComplete ? 'Complete' : 'Incomplete'}</span>
+                        </span>
+                      </div>
+
+                      <h3 className="text-feature font-extrabold text-foreground mb-1">Skills & Fluency</h3>
+                      <p className="text-xs text-muted mb-4">
+                        Technical skill tags, soft skills, and spoken languages.
+                      </p>
+
+                      <div className="flex flex-wrap gap-1.5">
+                        {skillsSummary?.skills && skillsSummary.skills.length > 0 ? (
+                          skillsSummary.skills.slice(0, 6).map((sk: string) => (
+                            <span
+                              key={sk}
+                              className="rounded-lg border border-[rgba(114,56,61,0.25)] bg-[rgba(114,56,61,0.07)] px-2 py-0.5 text-[11px] font-medium text-primary"
+                            >
+                              {sk}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-xs text-muted italic">Click to add your skills</span>
+                        )}
+                      </div>
+                    </div>
+                  </SpotlightCard>
+
+                  {/* Tile 3: Themes & Links */}
+                  <SpotlightCard className="rounded-3xl" intensity={0.14}>
+                    <div
+                      onClick={() => setActiveModal('themes')}
+                      className="surface-raised rounded-3xl p-6 border border-[rgba(209,199,189,0.7)] shadow-e1 hover:shadow-e3 transition-all cursor-pointer"
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-label uppercase tracking-wider text-muted font-bold">Tile 03</span>
+                        <span
+                          className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
+                            completion.themesComplete
+                              ? 'bg-[rgba(114,56,61,0.1)] text-primary border border-[rgba(114,56,61,0.2)]'
+                              : 'bg-pearl text-body border border-[rgba(209,199,189,0.7)]'
+                          }`}
+                        >
+                          {completion.themesComplete ? <CheckCircle2 className="size-3" /> : <AlertCircle className="size-3" />}
+                          <span>{completion.themesComplete ? 'Complete' : 'Incomplete'}</span>
+                        </span>
+                      </div>
+
+                      <h3 className="text-feature font-extrabold text-foreground mb-1">Themes & Links</h3>
+                      <p className="text-xs text-muted mb-4">
+                        Selected SIH themes, GitHub profile, LinkedIn, and portfolio link.
+                      </p>
+
+                      <div className="flex flex-wrap gap-1.5">
+                        {themesSummary?.trackInterest && themesSummary.trackInterest.length > 0 ? (
+                          themesSummary.trackInterest.slice(0, 3).map((t: any) => (
+                            <span
+                              key={t.id || t.problemStatementCode}
+                              className="rounded-lg border border-[rgba(209,199,189,0.8)] bg-white/70 px-2 py-0.5 text-[11px] font-medium text-body truncate max-w-[200px]"
+                            >
+                              {t.problemStatementCode || t.name}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-xs text-muted italic">Click to select SIH themes</span>
+                        )}
+                      </div>
+                    </div>
+                  </SpotlightCard>
+                </div>
+
+                {/* Right Column: Team Management and Invites */}
+                <div className="lg:col-span-7 space-y-6">
+                  {/* Tab Navigation */}
+                  <div className="flex gap-2 p-1.5 rounded-2xl bg-[rgba(248,246,242,0.8)] border border-[rgba(209,199,189,0.7)]">
+                    <button
+                      onClick={() => setActiveTab('team')}
+                      className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold transition-all ${
+                        activeTab === 'team'
+                          ? 'bg-primary text-on-accent shadow-xs'
+                          : 'text-body hover:text-foreground'
+                      }`}
+                    >
+                      My Team Space
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('requests')}
+                      className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold transition-all relative ${
+                        activeTab === 'requests'
+                          ? 'bg-primary text-on-accent shadow-xs'
+                          : 'text-body hover:text-foreground'
+                      }`}
+                    >
+                      <span>Invites & Requests</span>
+                      {receivedInvites.length + sentRequests.length > 0 && (
+                        <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-white text-primary text-[10px] font-black">
+                          {receivedInvites.length + sentRequests.length}
+                        </span>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Tab 1: Team Space */}
+                  {activeTab === 'team' && (
+                    <div>
+                      {!teamSummary?.hasTeam && !teamDetails ? (
+                        <div className="surface-raised rounded-3xl p-8 sm:p-10 text-center border border-[rgba(209,199,189,0.7)] shadow-e1">
+                          <Users className="size-12 mx-auto text-muted mb-3 opacity-60" />
+                          <h3 className="text-heading font-extrabold text-foreground mb-2">You are not in a team yet</h3>
+                          <p className="text-xs text-muted max-w-md mx-auto mb-6">
+                            Form a new team of up to 6 members or browse existing teams looking for your skills in SIH 2026.
+                          </p>
+                          <div className="flex flex-wrap items-center justify-center gap-3">
+                            <PremiumButton size="sm" onClick={() => router.push('/team-formation/create-team')}>
+                              Create a New Team
+                            </PremiumButton>
+                            <PremiumButton variant="glass" size="sm" onClick={() => router.push('/team-formation/browse-teams')}>
+                              Browse Teams
+                            </PremiumButton>
+                          </div>
+                        </div>
+                      ) : teamDetailsLoading ? (
+                        <div className="space-y-4">
+                          <div className="h-44 rounded-3xl bg-[rgba(209,199,189,0.3)] animate-pulse" />
+                          <div className="h-60 rounded-3xl bg-[rgba(209,199,189,0.3)] animate-pulse" />
+                        </div>
+                      ) : teamDetails ? (
+                        <div className="space-y-6">
+                          {/* Team Overview Card */}
+                          <div className="surface-raised rounded-3xl p-6 border border-[rgba(209,199,189,0.7)] shadow-e1">
+                            <div className="flex items-start justify-between gap-4 mb-4">
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-mono text-xs font-bold text-primary bg-[rgba(114,56,61,0.08)] px-2 py-0.5 rounded-md border border-[rgba(114,56,61,0.2)]">
+                                    {teamDetails.teamCode}
+                                  </span>
+                                  <span className="text-xs font-bold text-muted uppercase">
+                                    {teamDetails.status === 'forming' ? 'Forming' : 'Locked'}
+                                  </span>
+                                </div>
+                                <h3 className="text-heading font-extrabold text-foreground mt-1">{teamDetails.name}</h3>
+                                {teamDetails.track && (
+                                  <p className="text-xs text-primary font-semibold mt-0.5">
+                                    Theme: <span className="font-bold">{teamDetails.track.problemStatementCode}</span> — {teamDetails.track.name}
+                                  </p>
+                                )}
+                              </div>
+
+                              <span className="px-3 py-1 rounded-full bg-[rgba(248,246,242,0.8)] border border-[rgba(209,199,189,0.8)] text-xs font-bold text-foreground">
+                                {teamDetails.members?.length || 1} / 6 Members
+                              </span>
+                            </div>
+
+                            {/* Member Roster */}
+                            <div className="mt-4 pt-4 border-t border-[rgba(209,199,189,0.5)]">
+                              <h4 className="text-label uppercase tracking-wider text-muted font-bold mb-3">Team Roster</h4>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                {teamDetails.members?.map((m: any) => (
+                                  <div
+                                    key={m.userId}
+                                    className="flex items-center gap-2.5 p-2 rounded-xl bg-[rgba(248,246,242,0.6)] border border-[rgba(209,199,189,0.5)] text-xs"
+                                  >
+                                    <Avatar avatarUrl={m.avatarUrl} name={m.name} className="size-8" />
+                                    <div className="min-w-0 flex-1">
+                                      <div className="flex items-center gap-1">
+                                        <span className="font-bold text-foreground truncate">{m.name}</span>
+                                        {m.userId === teamDetails.leaderId && (
+                                          <span className="text-[9px] font-bold text-primary bg-[rgba(114,56,61,0.1)] px-1 rounded">LEAD</span>
                                         )}
                                       </div>
-                                       <div>
-                                         <div className="flex items-center gap-2">
-                                           <h3 className="text-feature text-foreground font-extrabold">{team.name}</h3>
-                                           <span className="rounded-md bg-[rgba(114,56,61,0.08)] px-2 py-0.5 text-[10px] font-black tracking-wider text-primary">{team.teamCode}</span>
-                                         </div>
-                                        <div className="mt-1 space-y-1">
-                                          <p className="text-xs text-muted">
-                                            Primary PS:{' '}
-                                            <span className="font-bold text-primary">
-                                              {team.track?.problemStatementCode || 'N/A'}
-                                            </span>{' '}
-                                            — {team.track?.name || 'N/A'}
-                                          </p>
-                                          <p className="text-xs text-muted">
-                                            Secondary PS:{' '}
-                                            {team.secondaryTrack ? (
-                                              <>
-                                                <span className="font-bold text-body bg-muted/20 px-1 py-0.2 rounded text-[10px]">
-                                                  {team.secondaryTrack.problemStatementCode}
-                                                </span>{' '}
-                                                — {team.secondaryTrack.name}
-                                              </>
-                                            ) : (
-                                              <span className="text-muted italic">None</span>
-                                            )}
-                                          </p>
-                                        </div>
-                                      </div>
+                                      <p className="text-[11px] text-muted truncate">{m.branch} • {m.year}</p>
                                     </div>
-
-                                     {/* Team Leader controls */}
-                                     {isLeader && (
-                                       <div className="flex items-center gap-2">
-                                        <span className="text-[10px] text-muted font-bold uppercase">Recruitment Status:</span>
-                                        <button
-                                          onClick={() => handleRecruitmentToggle(team.id, team.status)}
-                                          className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-caption font-black transition-colors ${
-                                            team.status === 'forming'
-                                              ? 'border-primary bg-primary/10 text-primary hover:bg-primary/20'
-                                              : 'border-[rgba(209,199,189,0.7)] bg-[rgba(239,233,225,0.6)] text-muted hover:text-foreground'
-                                          }`}
-                                        >
-                                          {team.status === 'forming' ? (
-                                            <>
-                                              <Unlock className="size-3" /> Recruiting Open
-                                            </>
-                                          ) : (
-                                            <>
-                                              <Lock className="size-3" /> Recruiting Closed
-                                            </>
-                                          )}
-                                         </button>
-                                         <button onClick={() => setEditingTeam(true)} className="rounded-lg border border-[rgba(209,199,189,0.75)] p-2 text-muted transition-colors hover:border-primary hover:text-primary" aria-label="Edit team details" title="Edit team details"><Edit2 className="size-3.5" /></button>
-                                         <button onClick={handleDeleteTeam} disabled={actionLoading === 'delete-team'} className="rounded-lg border border-[rgba(114,56,61,0.3)] p-2 text-primary transition-colors hover:bg-primary/10 disabled:opacity-50" aria-label="Delete team" title="Delete team"><Trash2 className="size-3.5" /></button>
-                                       </div>
-                                     )}
-                                  </div>
-
-                                  {/* Leader Team Roster List (Rich table view if leader, standard grid if member) */}
-                                  <div className="mb-6">
-                                    <div className="mb-3 flex items-center justify-between gap-4">
-                                      <Label>Team roster</Label>
-                                      <span className="text-caption font-semibold text-muted">
-                                        {filledSeats} of 6 seats filled
-                                      </span>
-                                    </div>
-
-                                    {isLeader ? (
-                                      // Leader view with role changes and kicking
-                                      <div className="space-y-2.5">
-                                        {team.members.map((member: any) => (
-                                          <div
-                                            key={member.userId}
-                                            className="flex items-center justify-between p-3.5 rounded-xl border border-[rgba(209,199,189,0.6)] bg-[rgba(248,246,242,0.75)] hover:border-primary/30 transition-all duration-200"
-                                          >
-                                            <div className="flex items-center gap-3 min-w-0">
-                                              <Avatar
-                                                avatarUrl={member.avatarUrl}
-                                                name={member.name}
-                                                className="size-9 rounded-lg shrink-0"
-                                              />
-                                              <div className="min-w-0">
-                                                <span className="block text-xs font-bold text-foreground truncate">
-                                                  {member.name}
-                                                </span>
-                                                <span className="block text-[10px] text-muted mt-0.5">
-                                                  {member.branch} · {member.year}
-                                                </span>
-                                              </div>
-                                            </div>
-
-                                            <div className="flex items-center gap-2 shrink-0">
-                                              <span className="rounded bg-[rgba(114,56,61,0.08)] border border-[rgba(114,56,61,0.2)] px-2 py-0.5 text-[9px] font-black text-primary">
-                                                {member.userId === team.leaderId ? 'Leader' : (member.roleInTeam || 'Member')}
-                                              </span>
-
-                                              {/* Actions */}
-                                              {member.userId !== team.leaderId && (
-                                                <div className="flex items-center gap-1">
-                                                  <button
-                                                    onClick={() => setEditingRoleMember(member)}
-                                                    className="p-1.5 rounded border border-[rgba(209,199,189,0.7)] text-muted hover:text-foreground hover:border-foreground"
-                                                    aria-label="Edit role"
-                                                  >
-                                                    <Edit2 className="size-3" />
-                                                  </button>
-                                                  <button
-                                                    onClick={() => handleKickMember(member.userId)}
-                                                    className="p-1.5 rounded border border-[rgba(114,56,61,0.3)] text-primary hover:bg-primary/5"
-                                                    aria-label="Remove member"
-                                                  >
-                                                    <X className="size-3" />
-                                                  </button>
-                                                </div>
-                                              )}
-                                            </div>
-                                          </div>
-                                        ))}
-
-                                         {/* Active Recruitment Notices */}
-                                         {team.recruitmentNotices && team.recruitmentNotices.length > 0 && (
-                                           <div className="space-y-2.5 pt-2">
-                                             <Label>Active Recruitment Notices</Label>
-                                             {team.recruitmentNotices.map((notice: any) => (
-                                               <div
-                                                 key={`notice-${notice.id}`}
-                                                 className="rounded-xl border border-[rgba(114,56,61,0.25)] bg-[rgba(114,56,61,0.04)] p-3.5 text-xs text-muted space-y-2 text-left"
-                                               >
-                                                 <div className="flex items-center justify-between font-bold text-foreground">
-                                                   <span className="text-[11px] text-primary uppercase font-bold">Role Seeking: {notice.role}</span>
-                                                   <span className="text-[9px] bg-primary/10 border border-primary/20 px-2 py-0.5 rounded text-primary font-bold">
-                                                     {notice.gender === 'OPEN' ? 'Open to All' : notice.gender}
-                                                   </span>
-                                                 </div>
-                                                 {notice.abilities?.length > 0 && (
-                                                   <div className="flex flex-wrap gap-1 mt-1">
-                                                     {notice.abilities.map((a: string) => (
-                                                       <span key={a} className="bg-white/80 text-foreground border border-[rgba(209,199,189,0.7)] px-1.5 py-0.2 rounded text-[9px] font-medium">
-                                                         {a}
-                                                       </span>
-                                                     ))}
-                                                   </div>
-                                                 )}
-                                                 {notice.requirements && (
-                                                   <p className="text-muted leading-relaxed mt-1 text-[11px]">
-                                                     {notice.requirements}
-                                                   </p>
-                                                 )}
-                                                 {isLeader && (
-                                                   <div className="flex justify-end gap-2 pt-2 border-t border-[rgba(172,156,141,0.2)]">
-                                                     <button
-                                                       onClick={() => setActiveNoticeModal({ show: true, notice })}
-                                                       className="p-1 rounded text-primary hover:bg-primary/5 font-semibold text-[10px]"
-                                                     >
-                                                       Edit Notice
-                                                     </button>
-                                                     <button
-                                                       onClick={() => handleDeleteRecruitmentNotice(notice.id)}
-                                                       className="p-1 rounded text-red-600 hover:bg-red-50 font-semibold text-[10px]"
-                                                     >
-                                                       Remove Notice
-                                                     </button>
-                                                   </div>
-                                                 )}
-                                               </div>
-                                             ))}
-                                           </div>
-                                         )}
-
-                                         {/* Open Seats Callout Bar */}
-                                         {6 - filledSeats > 0 && (
-                                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border border-dashed border-[rgba(172,156,141,0.6)] bg-[rgba(239,233,225,0.45)] mt-3">
-                                             <div>
-                                               <span className="block text-xs font-bold text-foreground">
-                                                 {6 - filledSeats} Open {6 - filledSeats === 1 ? 'Seat' : 'Seats'} Remaining
-                                               </span>
-                                               <span className="block text-[10px] text-muted mt-0.5">
-                                                 Recruit members or invite teammates to complete your roster.
-                                               </span>
-                                             </div>
-                                             <div className="flex items-center gap-2 shrink-0">
-                                               {isLeader && (
-                                                 <button
-                                                   type="button"
-                                                   onClick={() => setActiveNoticeModal({ show: true })}
-                                                   className="rounded-lg border border-[rgba(114,56,61,0.3)] bg-[rgba(114,56,61,0.08)] px-2.5 py-1.5 text-[10px] font-black text-primary hover:bg-[rgba(114,56,61,0.15)] transition-colors"
-                                                 >
-                                                   + Post Notice
-                                                 </button>
-                                               )}
-                                               <PremiumButton href="/team-formation/browse-teammates" size="sm" variant="glass">
-                                                 Invite Teammates
-                                               </PremiumButton>
-                                             </div>
-                                           </div>
-                                         )}
-                                      </div>
-                                    ) : (
-                                      // Standard Grid view for team member
-                                      <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
-                                        {Array.from({ length: 6 }, (_, index) => {
-                                          const member = team.members[index];
-                                          return member ? (
-                                            <m.div
-                                              key={member.userId}
-                                              className="min-w-0 text-center"
-                                              whileHover={{ y: -4, scale: 1.04 }}
-                                            >
-                                              <Avatar
-                                                avatarUrl={member.avatarUrl}
-                                                name={member.name}
-                                                className="aspect-square w-full rounded-xl border border-[rgba(209,199,189,0.7)] text-xl"
-                                              />
-                                              <p className="mt-1.5 truncate text-caption font-semibold text-foreground">
-                                                {member.name}
-                                              </p>
-                                              <span className="block text-[8px] uppercase tracking-wider text-primary font-bold">
-                                                {member.userId === team.leaderId ? 'Leader' : (member.roleInTeam || 'Member')}
-                                              </span>
-                                            </m.div>
-                                          ) : (
-                                            <div
-                                              key={`seat-${index}`}
-                                              className="grid aspect-square place-items-center rounded-xl border border-dashed border-[rgba(172,156,141,0.6)] bg-[rgba(239,233,225,0.45)] text-lg text-muted"
-                                            >
-                                              +
-                                            </div>
-                                          );
-                                        })}
-                                      </div>
-                                    )}
-                                  </div>
-                                </Panel>
-                              </Reveal>
-
-                               {/* Leader Incoming Join Requests & Sent Invites (Only shown when non-empty) */}
-                               {isLeader && (
-                                 <>
-                                   {/* Team Join Requests */}
-                                   {team.joinRequests && team.joinRequests.length > 0 && (
-                                     <Reveal direction="left" delay={0.05}>
-                                       <Panel
-                                         title="Incoming Join Requests"
-                                         action={
-                                           team.joinRequests.filter((r: any) => r.status === 'pending').length > 0 ? (
-                                             <Chip tone="primary">
-                                               {team.joinRequests.filter((r: any) => r.status === 'pending').length} waiting
-                                             </Chip>
-                                           ) : undefined
-                                         }
-                                       >
-                                         <div className="space-y-3.5">
-                                           <AnimatePresence initial={false}>
-                                             {team.joinRequests.map((req: any) => (
-                                               <m.div
-                                                 key={req.id}
-                                                 layout
-                                                 initial={{ opacity: 0, y: 12 }}
-                                                 animate={{ opacity: 1, y: 0 }}
-                                                 exit={{ opacity: 0, x: -20 }}
-                                                 className="p-4 rounded-2xl border border-[rgba(209,199,189,0.65)] bg-[rgba(248,246,242,0.7)] space-y-3"
-                                               >
-                                                 <div className="flex items-start justify-between gap-4">
-                                                   <div className="flex items-center gap-3">
-                                                     <Avatar
-                                                       avatarUrl={req.student.avatarUrl}
-                                                       name={req.student.name}
-                                                       className="size-10 rounded-xl"
-                                                     />
-                                                     <div>
-                                                       <span className="block text-xs font-bold text-foreground">
-                                                         {req.student.name}
-                                                       </span>
-                                                       <span className="block text-[10px] text-muted">
-                                                         {req.student.branch} · {req.student.year}
-                                                       </span>
-                                                     </div>
-                                                   </div>
-
-                                                   <span
-                                                     className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase border ${
-                                                       req.status === 'pending'
-                                                         ? 'bg-amber-500/10 text-amber-600 border-amber-500/20'
-                                                         : req.status === 'on_hold'
-                                                         ? 'bg-blue-500/10 text-blue-600 border-blue-500/20'
-                                                         : req.status === 'meeting_requested'
-                                                         ? 'bg-purple-500/10 text-purple-600 border-purple-500/20'
-                                                         : 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
-                                                     }`}
-                                                   >
-                                                     {req.status.replace('_', ' ')}
-                                                   </span>
-                                                 </div>
-
-                                                 {req.message && (
-                                                   <p className="rounded-xl border-l-2 border-primary/35 bg-[rgba(239,233,225,0.7)] px-3 py-2 text-xs italic text-body">
-                                                     &ldquo;{req.message}&rdquo;
-                                                   </p>
-                                                 )}
-
-                                                 {req.status !== 'accepted' && req.status !== 'declined' && (
-                                                   <div className="flex flex-wrap gap-2 pt-1 border-t border-[rgba(209,199,189,0.3)]">
-                                                     <PremiumButton
-                                                       size="sm"
-                                                       disabled={actionLoading !== null}
-                                                       onClick={() => handleJoinRequestResponse(req.id, 'accept')}
-                                                     >
-                                                       Accept
-                                                     </PremiumButton>
-                                                     <PremiumButton
-                                                       size="sm"
-                                                       variant="glass"
-                                                       disabled={actionLoading !== null}
-                                                       onClick={() => handleJoinRequestResponse(req.id, 'meeting_requested')}
-                                                     >
-                                                       Request Meeting
-                                                     </PremiumButton>
-                                                     <PremiumButton
-                                                       size="sm"
-                                                       variant="glass"
-                                                       disabled={actionLoading !== null}
-                                                       onClick={() => handleJoinRequestResponse(req.id, 'on_hold')}
-                                                     >
-                                                       Hold
-                                                     </PremiumButton>
-                                                     <PremiumButton
-                                                       size="sm"
-                                                       variant="glass"
-                                                       disabled={actionLoading !== null}
-                                                       onClick={() => handleJoinRequestResponse(req.id, 'decline')}
-                                                     >
-                                                       Decline
-                                                     </PremiumButton>
-                                                   </div>
-                                                 )}
-                                               </m.div>
-                                             ))}
-                                           </AnimatePresence>
-                                         </div>
-                                       </Panel>
-                                     </Reveal>
-                                   )}
-
-                                   {/* Sent Invitations */}
-                                   {team.invites && team.invites.length > 0 && (
-                                     <Reveal direction="left" delay={0.08}>
-                                       <Panel title="Sent Team Invitations">
-                                         <div className="space-y-3.5">
-                                           {team.invites.map((inv: any) => (
-                                             <div
-                                               key={inv.id}
-                                               className="flex items-center justify-between p-3.5 rounded-xl border border-[rgba(209,199,189,0.6)] bg-[rgba(248,246,242,0.7)]"
-                                             >
-                                               <div className="flex items-center gap-3">
-                                                 <Avatar
-                                                   avatarUrl={inv.student.avatarUrl}
-                                                   name={inv.student.name}
-                                                   className="size-9 rounded-lg"
-                                                 />
-                                                 <div>
-                                                   <span className="block text-xs font-bold text-foreground">
-                                                     {inv.student.name}
-                                                   </span>
-                                                   <span className="block text-[10px] text-muted">
-                                                     {inv.student.branch} · {inv.student.year}
-                                                   </span>
-                                                 </div>
-                                               </div>
-
-                                               <span
-                                                 className={`rounded bg-[rgba(239,233,225,0.8)] border border-[rgba(209,199,189,0.7)] px-2 py-0.5 text-[9px] font-black uppercase text-muted`}
-                                               >
-                                                 {inv.status}
-                                               </span>
-                                             </div>
-                                           ))}
-                                         </div>
-                                       </Panel>
-                                     </Reveal>
-                                   )}
-                                 </>
-                               )}
-
-                               {/* Mentor Request responses history */}
-                               {team.mentorRequests && team.mentorRequests.length > 0 && (
-                                 <Reveal direction="left" delay={0.12}>
-                                   <Panel title="Mentorship & Meeting Status">
-                                      <div className="space-y-3">
-                                        {team.mentorRequests.map((req: any) => {
-                                          const isAccepted = req.status === 'accepted' || req.status === 'meeting_requested';
-                                          return (
-                                            <div
-                                              key={req.id}
-                                              className="p-4 rounded-xl border border-[rgba(209,199,189,0.6)] bg-[rgba(248,246,242,0.7)] space-y-3"
-                                            >
-                                              <div className="flex justify-between items-center gap-3">
-                                                <div>
-                                                  <span className="block text-xs font-bold text-foreground">
-                                                    {req.mentor.name}
-                                                  </span>
-                                                  <span className="block text-[10px] text-muted">
-                                                    {req.mentor.designation} at {req.mentor.organization}
-                                                  </span>
-                                                </div>
-                                                <span
-                                                  className={`rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider border ${
-                                                    isAccepted
-                                                      ? 'bg-emerald-500/10 text-emerald-700 border-emerald-500/20'
-                                                      : req.status === 'declined'
-                                                      ? 'bg-rose-500/10 text-rose-600 border-rose-500/20'
-                                                      : 'bg-amber-500/10 text-amber-700 border-amber-500/20'
-                                                  }`}
-                                                >
-                                                  {isAccepted ? 'Ready to Meet' : 'Meeting Pending'}
-                                                </span>
-                                              </div>
-
-                                              {/* Contact info revealed ONLY after mutual acceptance */}
-                                              {isAccepted && (req.mentor.email || req.mentor.contact) && (
-                                                <div className="pt-2 border-t border-[rgba(209,199,189,0.4)] space-y-2">
-                                                  <span className="block text-[9px] font-black uppercase tracking-wider text-primary">
-                                                    Contact Details
-                                                  </span>
-                                                  <div className="grid gap-2 sm:grid-cols-2">
-                                                    {req.mentor.email && (
-                                                      <div className="flex items-center justify-between gap-2 rounded-lg border border-[rgba(209,199,189,0.5)] bg-white/70 px-2.5 py-1.5 text-xs">
-                                                        <div className="min-w-0">
-                                                          <span className="block text-[8px] uppercase tracking-wider text-muted font-bold">Email</span>
-                                                          <span className="truncate font-semibold text-foreground block max-w-[140px]">{req.mentor.email}</span>
-                                                        </div>
-                                                        <button
-                                                          type="button"
-                                                          onClick={() => {
-                                                            navigator.clipboard.writeText(req.mentor.email);
-                                                            toast('Email copied', 'info');
-                                                          }}
-                                                          className="inline-flex shrink-0 items-center gap-1 rounded border border-[rgba(114,56,61,0.2)] bg-primary/10 px-2 py-0.5 text-[9px] font-bold text-primary hover:bg-primary/20 transition-colors"
-                                                        >
-                                                          Copy
-                                                        </button>
-                                                      </div>
-                                                    )}
-                                                    {req.mentor.contact && (
-                                                      <div className="flex items-center justify-between gap-2 rounded-lg border border-[rgba(209,199,189,0.5)] bg-white/70 px-2.5 py-1.5 text-xs">
-                                                        <div className="min-w-0">
-                                                          <span className="block text-[8px] uppercase tracking-wider text-muted font-bold">Phone</span>
-                                                          <span className="truncate font-semibold text-foreground block max-w-[120px]">{req.mentor.contact}</span>
-                                                        </div>
-                                                        <button
-                                                          type="button"
-                                                          onClick={() => {
-                                                            navigator.clipboard.writeText(req.mentor.contact);
-                                                            toast('Phone number copied', 'info');
-                                                          }}
-                                                          className="inline-flex shrink-0 items-center gap-1 rounded border border-[rgba(114,56,61,0.2)] bg-primary/10 px-2 py-0.5 text-[9px] font-bold text-primary hover:bg-primary/20 transition-colors"
-                                                        >
-                                                          Copy
-                                                        </button>
-                                                      </div>
-                                                    )}
-                                                  </div>
-                                                </div>
-                                              )}
-                                            </div>
-                                          );
-                                        })}
-                                      </div>
-                                    </Panel>
-                                  </Reveal>
-                               )}
-                            </>
-                          ) : (
-                            <Reveal direction="left" scale>
-                              <div className="surface-raised relative overflow-hidden rounded-3xl p-8 text-center sm:p-12">
-                                <Aurora variant="rose" spotlight={false} />
-                                <div className="relative">
-                                  <div className="mx-auto grid size-14 place-items-center rounded-2xl border border-[rgba(114,56,61,0.2)] bg-[rgba(114,56,61,0.08)] text-primary">
-                                    <svg className="size-6" viewBox="0 0 24 24" fill="none" aria-hidden>
-                                      <path
-                                        d="M17 20h5v-2a3 3 0 0 0-5.36-1.87M17 20H7m10 0v-2c0-.66-.13-1.29-.36-1.87m0 0a5 5 0 0 0-9.28 0M7 20H2v-2a3 3 0 0 1 5.36-1.87M7 20v-2c0-.66.13-1.29.36-1.87m0 0a5 5 0 1 1 9.28 0M15 7a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
-                                        stroke="currentColor"
-                                        strokeWidth="1.7"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                      />
-                                    </svg>
-                                  </div>
-                                  <h2 className="mt-5 text-feature text-foreground">
-                                    You don&apos;t have a team yet
-                                  </h2>
-                                  <p className="mx-auto mt-2.5 max-w-sm text-sm leading-relaxed text-body">
-                                    To participate in SIH@GLBGOI you must either join an existing forming
-                                    team or start a new one as a leader.
-                                  </p>
-                                  <div className="mt-7 flex flex-wrap justify-center gap-3">
-                                    <PremiumButton href="/team-formation/create-team">
-                                      Create a team
-                                    </PremiumButton>
-                                    <PremiumButton variant="glass" href="/team-formation/find-teams">
-                                      Join a team
-                                    </PremiumButton>
-                                  </div>
-                                </div>
-                              </div>
-                            </Reveal>
-                          )}
-                        </m.div>
-                      ) : (
-                        <m.div
-                          key="invitations-tab"
-                          initial={{ opacity: 0, x: 10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: -10 }}
-                          transition={{ duration: 0.2 }}
-                          className="space-y-6"
-                        >
-                          {/* Received Team Invitations */}
-                          <Panel title="Team Invitations">
-                            {data?.receivedInvites && data.receivedInvites.length > 0 ? (
-                              <div className="space-y-3.5">
-                                <AnimatePresence initial={false}>
-                                  {data.receivedInvites.map((inv: any) => (
-                                    <m.div
-                                      key={inv.id}
-                                      layout
-                                      initial={{ opacity: 0, y: 10 }}
-                                      animate={{ opacity: 1, y: 0 }}
-                                      exit={{ opacity: 0, x: -20 }}
-                                      className="p-4 rounded-2xl border border-[rgba(209,199,189,0.7)] bg-[rgba(248,246,242,0.7)] space-y-3.5"
-                                    >
-                                      <div>
-                                        <div className="flex items-center justify-between gap-3">
-                                          <span className="text-xs font-black text-foreground">
-                                            Invite to join {inv.team.name}
-                                          </span>
-                                          <span
-                                            className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase border ${
-                                              inv.status === 'pending'
-                                                ? 'bg-amber-500/10 text-amber-600 border-amber-500/20'
-                                                : inv.status === 'on_hold'
-                                                ? 'bg-blue-500/10 text-blue-600 border-blue-500/20'
-                                                : 'bg-purple-500/10 text-purple-600 border-purple-500/20'
-                                            }`}
-                                          >
-                                            {inv.status}
-                                          </span>
-                                        </div>
-                                        <div className="mt-1 space-y-0.5 text-[10px] text-muted">
-                                          <span className="block leading-tight">
-                                            Primary PS: <strong>{inv.team.track.problemStatementCode}</strong> — {inv.team.track.name}
-                                          </span>
-                                          <span className="block leading-tight">
-                                            Secondary PS:{' '}
-                                            {inv.team.secondaryTrack ? (
-                                              <>
-                                                <strong>{inv.team.secondaryTrack.problemStatementCode}</strong> — {inv.team.secondaryTrack.name}
-                                              </>
-                                            ) : (
-                                              <span className="italic text-[9px]">None</span>
-                                            )}
-                                          </span>
-                                        </div>
-                                      </div>
-
-                                      {inv.status !== 'accepted' && inv.status !== 'declined' && (
-                                        <div className="flex flex-wrap gap-2 pt-1 border-t border-[rgba(209,199,189,0.3)]">
-                                          <PremiumButton
-                                            size="sm"
-                                            disabled={actionLoading !== null}
-                                            onClick={() => handleTeamInviteResponse(inv.id, 'accept')}
-                                          >
-                                            Accept
-                                          </PremiumButton>
-                                          <PremiumButton
-                                            size="sm"
-                                            variant="glass"
-                                            disabled={actionLoading !== null}
-                                            onClick={() => handleTeamInviteResponse(inv.id, 'on_hold')}
-                                          >
-                                            On Hold
-                                          </PremiumButton>
-                                          <PremiumButton
-                                            size="sm"
-                                            variant="glass"
-                                            disabled={actionLoading !== null}
-                                            onClick={() => handleTeamInviteResponse(inv.id, 'waitlist')}
-                                          >
-                                            Waitlist
-                                          </PremiumButton>
-                                          <PremiumButton
-                                            size="sm"
-                                            variant="glass"
-                                            disabled={actionLoading !== null}
-                                            onClick={() => handleTeamInviteResponse(inv.id, 'decline')}
-                                          >
-                                            Decline
-                                          </PremiumButton>
-                                        </div>
-                                      )}
-                                    </m.div>
-                                  ))}
-                                </AnimatePresence>
-                              </div>
-                            ) : (
-                              <p className="py-8 text-center text-xs text-muted">
-                                No active team invitations.
-                              </p>
-                            )}
-                          </Panel>
-
-                          {/* Sent Join Requests & Status approvals */}
-                          <Panel title="My Join Requests">
-                            {data?.sentRequests && data.sentRequests.length > 0 ? (
-                              <div className="space-y-3">
-                                {data.sentRequests.map((req: any) => (
-                                  <div
-                                    key={req.id}
-                                    className="p-3.5 rounded-xl border border-[rgba(209,199,189,0.6)] bg-[rgba(248,246,242,0.7)] flex justify-between items-center"
-                                  >
-                                    <div>
-                                      <span className="block text-xs font-bold text-foreground">
-                                        Request to join: {req.team.name}
-                                      </span>
-                                      <div className="mt-0.5 space-y-0.5 text-[10px] text-muted">
-                                        <span className="block leading-tight">Primary PS: {req.team.track.problemStatementCode}</span>
-                                        <span className="block leading-tight">
-                                          Secondary PS:{' '}
-                                          {req.team.secondaryTrack ? (
-                                            req.team.secondaryTrack.problemStatementCode
-                                          ) : (
-                                            <span className="italic text-[9px]">None</span>
-                                          )}
-                                        </span>
-                                      </div>
-                                    </div>
-                                    <span
-                                      className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase border ${
-                                        req.status === 'accepted'
-                                          ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
-                                          : req.status === 'declined'
-                                          ? 'bg-rose-500/10 text-rose-600 border-rose-500/20'
-                                          : req.status === 'meeting_requested'
-                                          ? 'bg-purple-500/10 text-purple-600 border-purple-500/20'
-                                          : 'bg-amber-500/10 text-amber-600 border-amber-500/20'
-                                      }`}
-                                    >
-                                      {req.status.replace('_', ' ')}
-                                    </span>
                                   </div>
                                 ))}
                               </div>
-                            ) : (
-                              <p className="py-8 text-center text-xs text-muted">
-                                You have not sent any team join requests yet.
-                              </p>
-                            )}
-                          </Panel>
-                        </m.div>
-                      )}
-                    </AnimatePresence>
-                  </>
-                ) : (
-                  // Faculty Mentor Dashboard View
-                  <>
-                    <Reveal direction="left">
-                      <Panel title="Mentoring Activity">
-                        <div className="mb-3 flex items-baseline justify-between gap-4">
-                          <span className="text-3xl font-extrabold tracking-tight text-foreground">
-                            <Counter to={profile?.guidedTeamsCount ?? 0} duration={1.2} />
-                          </span>
-                          <span className="text-label uppercase text-muted">
-                            teams
-                          </span>
+                            </div>
+                          </div>
                         </div>
-                        <p className="text-sm leading-relaxed text-body">
-                          There is no platform-imposed maximum. You can accept additional teams whenever you choose.
-                        </p>
-                      </Panel>
-                    </Reveal>
+                      ) : null}
+                    </div>
+                  )}
 
-                    <Reveal direction="left" delay={0.06}>
-                      <Panel title="Teams I'm Mentoring">
-                        {(data?.teams || []).length > 0 ? (
-                          <RevealGroup className="space-y-4" stagger={0.06} amount={0.1}>
-                            {(data?.teams || []).map((t: any) => {
-                              const isRecruitmentOpen = t.status === 'forming' && t.memberCount < 6;
-                              return (
-                                <RevealItem key={t.id}>
-                                  <m.div
-                                    whileHover={{ y: -3 }}
-                                    whileTap={{ scale: 0.99 }}
-                                    transition={SPRING.snappy}
-                                    onClick={() => router.push(`/teams/${t.id}`)}
-                                    className="group cursor-pointer rounded-2xl border border-[rgba(209,199,189,0.7)] bg-[rgba(248,246,242,0.85)] p-5 transition-all hover:border-[rgba(114,56,61,0.35)] hover:shadow-md"
-                                  >
-                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                                      <div>
-                                        <div className="flex items-center gap-2">
-                                          <h3 className="text-base font-extrabold text-foreground group-hover:text-primary transition-colors">
-                                            {t.name}
-                                          </h3>
-                                          <span className="rounded-md border border-[rgba(114,56,61,0.22)] bg-[rgba(114,56,61,0.08)] px-2 py-0.5 text-[10px] font-extrabold text-primary uppercase">
-                                            {t.teamCode}
-                                          </span>
-                                        </div>
-                                        <p className="mt-1 text-xs text-muted">
-                                          Leader: <span className="font-bold text-foreground">{t.leaderName || 'N/A'}</span>
-                                        </p>
-                                      </div>
-
-                                      <div className="flex items-center gap-2 shrink-0">
-                                        <span
-                                          className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase border ${
-                                            isRecruitmentOpen
-                                              ? 'border-emerald-600/30 bg-emerald-500/10 text-emerald-700'
-                                              : 'border-[rgba(172,156,141,0.5)] bg-[rgba(172,156,141,0.15)] text-foreground'
-                                          }`}
-                                        >
-                                          {isRecruitmentOpen ? 'Recruitment Open' : 'Recruitment Closed'}
-                                        </span>
-                                        <Chip tone="accent">{t.memberCount} / 6 members</Chip>
-                                      </div>
-                                    </div>
-
-                                    {/* Problem Statements */}
-                                    <div className="mt-3.5 space-y-1 rounded-xl border border-[rgba(209,199,189,0.5)] bg-white/50 p-3 text-xs">
-                                      {t.track && (
-                                        <div>
-                                          <span className="font-bold text-primary">Primary PS: </span>
-                                          <span className="font-semibold text-foreground">{t.track.problemStatementCode}</span>
-                                          <span className="text-muted"> ({t.track.name})</span>
-                                        </div>
-                                      )}
-                                      {t.secondaryTrack && (
-                                        <div>
-                                          <span className="font-bold text-muted">Secondary PS: </span>
-                                          <span className="font-semibold text-foreground">{t.secondaryTrack.problemStatementCode}</span>
-                                          <span className="text-muted"> ({t.secondaryTrack.name})</span>
-                                        </div>
-                                      )}
-                                    </div>
-
-                                    <div className="mt-4 flex items-center justify-between border-t border-[rgba(209,199,189,0.35)] pt-3 text-xs">
-                                      <span className="inline-flex items-center gap-1 font-bold text-emerald-700">
-                                        Mentoring Active
-                                      </span>
-                                      <span className="font-bold text-primary group-hover:underline inline-flex items-center gap-1">
-                                        View Team →
-                                      </span>
-                                    </div>
-                                  </m.div>
-                                </RevealItem>
-                              );
-                            })}
-                          </RevealGroup>
+                  {/* Tab 2: Invites & Requests */}
+                  {activeTab === 'requests' && (
+                    <div className="space-y-6">
+                      {/* Received Invites */}
+                      <div className="surface-raised rounded-3xl p-6 border border-[rgba(209,199,189,0.7)] shadow-e1">
+                        <h3 className="text-feature text-foreground font-bold mb-4">Received Team Invites</h3>
+                        {receivedInvites.length === 0 ? (
+                          <p className="text-xs text-muted italic">No team invites received at this moment.</p>
                         ) : (
-                          <p className="py-8 text-center text-sm text-muted">
-                            You are not mentoring any teams yet.
-                          </p>
+                          <div className="space-y-3">
+                            {receivedInvites.map((inv: any) => (
+                              <div
+                                key={inv.id}
+                                className="flex items-center justify-between p-3.5 rounded-2xl bg-[rgba(248,246,242,0.7)] border border-[rgba(209,199,189,0.6)]"
+                              >
+                                <div>
+                                  <h4 className="text-sm font-bold text-foreground">{inv.team?.name}</h4>
+                                  <p className="text-xs text-muted">Theme: {inv.team?.track?.problemStatementCode || 'General'}</p>
+                                </div>
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => handleRespondInvite(inv.id, 'accept')}
+                                    className="px-3 py-1.5 rounded-xl bg-primary text-on-accent text-xs font-semibold hover:opacity-90"
+                                  >
+                                    Accept
+                                  </button>
+                                  <button
+                                    onClick={() => handleRespondInvite(inv.id, 'decline')}
+                                    className="px-3 py-1.5 rounded-xl border border-[rgba(209,199,189,0.8)] bg-white text-xs font-semibold text-body hover:bg-[rgba(209,199,189,0.2)]"
+                                  >
+                                    Decline
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         )}
-                      </Panel>
-                    </Reveal>
+                      </div>
 
-                    {/* Mentor Requests List */}
-                    <Reveal direction="left" delay={0.12}>
-                      <Panel
-                        title="Mentorship Requests"
-                        action={
-                          (data?.pendingRequests || []).length > 0 ? (
-                            <Chip tone="primary">{(data?.pendingRequests || []).length} waiting</Chip>
-                          ) : undefined
-                        }
-                      >
-                        {(data?.pendingRequests || []).length > 0 ? (
-                          <div className="space-y-4">
-                            <AnimatePresence initial={false}>
-                              {(data?.pendingRequests || []).map((req: any) => (
-                                <m.div
-                                  key={req.id}
-                                  layout
-                                  initial={{ opacity: 0, y: 12 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  exit={{ opacity: 0, x: -24 }}
-                                  className="space-y-4 rounded-2xl border border-[rgba(209,199,189,0.65)] bg-[rgba(248,246,242,0.7)] p-4"
-                                >
+                      {/* Sent Join Requests */}
+                      <div className="surface-raised rounded-3xl p-6 border border-[rgba(209,199,189,0.7)] shadow-e1">
+                        <h3 className="text-feature text-foreground font-bold mb-4">Sent Join Requests</h3>
+                        {sentRequests.length === 0 ? (
+                          <p className="text-xs text-muted italic">You have no active requests sent to teams.</p>
+                        ) : (
+                          <div className="space-y-3">
+                            {sentRequests.map((req: any) => (
+                              <div
+                                key={req.id}
+                                className="flex items-center justify-between p-3.5 rounded-2xl bg-[rgba(248,246,242,0.7)] border border-[rgba(209,199,189,0.6)] text-xs"
+                              >
+                                <div>
+                                  <h4 className="font-bold text-foreground">{req.team?.name}</h4>
+                                  <p className="text-muted">Theme: {req.team?.track?.problemStatementCode || 'General'}</p>
+                                </div>
+                                <span className="font-bold text-primary bg-[rgba(114,56,61,0.08)] px-2.5 py-1 rounded-lg uppercase text-[10px]">
+                                  {req.status}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Incoming Join Requests (for Leader) */}
+                      {teamDetails?.joinRequests && teamDetails.joinRequests.length > 0 && (
+                        <div className="surface-raised rounded-3xl p-6 border border-[rgba(209,199,189,0.7)] shadow-e1">
+                          <h3 className="text-feature text-foreground font-bold mb-4">Incoming Join Requests</h3>
+                          <div className="space-y-3">
+                            {teamDetails.joinRequests.map((req: any) => (
+                              <div
+                                key={req.id}
+                                className="flex items-center justify-between p-3.5 rounded-2xl bg-[rgba(248,246,242,0.7)] border border-[rgba(209,199,189,0.6)]"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <Avatar avatarUrl={req.student?.avatarUrl} name={req.student?.name} className="size-10" />
                                   <div>
-                                    <div className="flex justify-between items-center gap-2">
-                                      <span className="text-sm font-black text-foreground">
-                                        {req.team.name}
-                                      </span>
-                                      <span
-                                        className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase border ${
-                                          req.status === 'pending'
-                                            ? 'bg-amber-500/10 text-amber-600 border-amber-500/20'
-                                            : req.status === 'meeting_requested'
-                                            ? 'bg-purple-500/10 text-purple-600 border-purple-500/20'
-                                            : 'bg-blue-500/10 text-blue-600 border-blue-500/20'
-                                        }`}
-                                      >
-                                        {req.status.replace('_', ' ')}
-                                      </span>
-                                    </div>
-                                    <div className="mt-1 space-y-0.5 text-xs text-muted">
-                                      <span className="block leading-tight">
-                                        Primary PS: {req.team.track.name} ({req.team.track.problemStatementCode})
-                                      </span>
-                                      <span className="block leading-tight">
-                                        Secondary PS:{' '}
-                                        {req.team.secondaryTrack ? (
-                                          `${req.team.secondaryTrack.name} (${req.team.secondaryTrack.problemStatementCode})`
-                                        ) : (
-                                          <span className="italic text-[10px]">None</span>
-                                        )}
-                                      </span>
-                                    </div>
-
-                                    {/* Team Members List */}
-                                    <div className="mt-3 flex items-center gap-1.5">
-                                      <span className="text-[10px] text-muted uppercase font-bold">Roster:</span>
-                                      <div className="flex -space-x-1.5">
-                                        {req.team.members?.map((m: any, idx: number) => (
-                                          <div key={idx} className="group relative">
-                                            <Avatar
-                                              avatarUrl={m.avatarUrl}
-                                              name={m.name}
-                                              className="size-6 rounded-full border border-white"
-                                            />
-                                            <span className="pointer-events-none absolute bottom-full left-1/2 z-10 -translate-x-1/2 translate-y-[-2px] whitespace-nowrap rounded bg-foreground px-1.5 py-0.5 text-[8px] text-background opacity-0 transition-opacity group-hover:opacity-100">
-                                              {m.name} ({m.branch})
-                                            </span>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    </div>
-
-                                    {req.message && (
-                                      <p className="mt-3.5 rounded-xl border-l-2 border-primary/35 bg-[rgba(239,233,225,0.7)] px-3 py-2 text-xs italic leading-relaxed text-body">
-                                        &ldquo;{req.message}&rdquo;
-                                      </p>
-                                    )}
-
-                                    {/* Contact info revealed ONLY after mutual acceptance */}
-                                    {(req.status === 'accepted' || req.status === 'meeting_requested') && req.team.leaderContact && (
-                                      <div className="mt-3 rounded-xl border border-[rgba(209,199,189,0.5)] bg-white/70 p-3 space-y-2">
-                                        <span className="block text-[9px] font-black uppercase tracking-wider text-primary">
-                                          Team Leader Contact Details
-                                        </span>
-                                        <div className="grid gap-2 sm:grid-cols-2">
-                                          {req.team.leaderContact.email && (
-                                            <div className="flex items-center justify-between gap-2 text-xs">
-                                              <span className="truncate text-foreground font-semibold">{req.team.leaderContact.email}</span>
-                                              <button
-                                                type="button"
-                                                onClick={() => {
-                                                  navigator.clipboard.writeText(req.team.leaderContact.email);
-                                                  toast('Email copied', 'info');
-                                                }}
-                                                className="rounded border border-[rgba(114,56,61,0.2)] bg-primary/10 px-2 py-0.5 text-[9px] font-bold text-primary hover:bg-primary/20"
-                                              >
-                                                Copy
-                                              </button>
-                                            </div>
-                                          )}
-                                          {req.team.leaderContact.contact && (
-                                            <div className="flex items-center justify-between gap-2 text-xs">
-                                              <span className="truncate text-foreground font-semibold">{req.team.leaderContact.contact}</span>
-                                              <button
-                                                type="button"
-                                                onClick={() => {
-                                                  navigator.clipboard.writeText(req.team.leaderContact.contact);
-                                                  toast('Phone number copied', 'info');
-                                                }}
-                                                className="rounded border border-[rgba(114,56,61,0.2)] bg-primary/10 px-2 py-0.5 text-[9px] font-bold text-primary hover:bg-primary/20"
-                                              >
-                                                Copy
-                                              </button>
-                                            </div>
-                                          )}
-                                        </div>
-                                      </div>
-                                    )}
+                                    <h4 className="text-sm font-bold text-foreground">{req.student?.name}</h4>
+                                    <p className="text-xs text-muted">{req.student?.branch} • {req.student?.year}</p>
                                   </div>
-
-                                  <div className="flex flex-wrap gap-2 border-t border-[rgba(209,199,189,0.3)] pt-3">
-                                    <PremiumButton
-                                      size="sm"
-                                      loading={actionLoading === req.id}
-                                      disabled={actionLoading !== null}
-                                      onClick={() => handleMentorRequestResponse(req.id, 'accept')}
+                                </div>
+                                {req.status === 'pending' ? (
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={() => handleRespondJoinRequest(req.id, 'accept')}
+                                      className="px-3 py-1.5 rounded-xl bg-primary text-on-accent text-xs font-semibold hover:opacity-90"
                                     >
                                       Accept
-                                    </PremiumButton>
-                                    <PremiumButton
-                                      size="sm"
-                                      variant="glass"
-                                      disabled={actionLoading !== null}
-                                      onClick={() => handleMentorRequestResponse(req.id, 'meeting_requested')}
-                                    >
-                                      Request Meeting
-                                    </PremiumButton>
-                                    <PremiumButton
-                                      size="sm"
-                                      variant="glass"
-                                      disabled={actionLoading !== null}
-                                      onClick={() => handleMentorRequestResponse(req.id, 'keep_pending')}
-                                    >
-                                      Keep Pending
-                                    </PremiumButton>
-                                    <PremiumButton
-                                      size="sm"
-                                      variant="glass"
-                                      disabled={actionLoading !== null}
-                                      onClick={() => handleMentorRequestResponse(req.id, 'decline')}
+                                    </button>
+                                    <button
+                                      onClick={() => handleRespondJoinRequest(req.id, 'decline')}
+                                      className="px-3 py-1.5 rounded-xl border border-[rgba(209,199,189,0.8)] bg-white text-xs font-semibold text-body hover:bg-[rgba(209,199,189,0.2)]"
                                     >
                                       Decline
-                                    </PremiumButton>
+                                    </button>
                                   </div>
-                                </m.div>
-                              ))}
-                            </AnimatePresence>
+                                ) : (
+                                  <span className="text-xs font-semibold text-muted uppercase">{req.status}</span>
+                                )}
+                              </div>
+                            ))}
                           </div>
-                        ) : (
-                          <p className="py-8 text-center text-sm text-muted">
-                            No incoming team requests.
-                          </p>
-                        )}
-                      </Panel>
-                    </Reveal>
-                  </>
-                )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
-
-            </Container>
-          </div>
-        </section>
+            </div>
+          )}
+        </Container>
       </main>
 
-      <Footer />
-
-      {/* Edit Role Dialog */}
+      {/* Progressive Modals */}
       <AnimatePresence>
-        {editingRoleMember && (
-          <EditRoleModal
-            member={editingRoleMember}
-            onClose={() => setEditingRoleMember(null)}
-            onSubmit={handleEditRoleSubmit}
+        {activeModal === 'personal' && (
+          <PersonalInfoModal
+            initialData={personalSummary}
+            onClose={() => setActiveModal(null)}
+            onSuccess={handlePersonalSaved}
           />
         )}
-        {editingTeam && team && (
-          <TeamEditModal
-            team={team}
-            onClose={() => setEditingTeam(false)}
-            onSubmit={handleTeamDetailsSubmit}
+        {activeModal === 'skills' && (
+          <SkillsFluencyModal
+            initialData={skillsSummary}
+            onClose={() => setActiveModal(null)}
+            onSuccess={handleSkillsSaved}
           />
         )}
-        {activeNoticeModal.show && team && (
-          <RecruitmentNoticeModal
-            notice={activeNoticeModal.notice}
-            teamId={team.id}
-            onClose={() => setActiveNoticeModal({ show: false })}
-            onSubmit={handleSaveRecruitmentNotice}
+        {activeModal === 'themes' && (
+          <ThemesLinksModal
+            initialData={themesSummary}
+            onClose={() => setActiveModal(null)}
+            onSuccess={handleThemesSaved}
+          />
+        )}
+        {activeModal === 'mentor_personal' && (
+          <MentorPersonalModal
+            initialData={user}
+            onClose={() => setActiveModal(null)}
+            onSuccess={handleMentorProfileSaved}
+          />
+        )}
+        {activeModal === 'mentor_expertise' && (
+          <MentorExpertiseModal
+            initialData={user}
+            onClose={() => setActiveModal(null)}
+            onSuccess={handleMentorProfileSaved}
+          />
+        )}
+        {activeModal === 'mentor_bio' && (
+          <MentorBioModal
+            initialData={user}
+            onClose={() => setActiveModal(null)}
+            onSuccess={handleMentorProfileSaved}
           />
         )}
       </AnimatePresence>
+
+      <Footer />
     </div>
   );
 }

@@ -75,6 +75,31 @@ export const onboardingRoleSchema = z.object({
 });
 
 // 2. Profiles
+export const personalProfileSchema = z.object({
+  name: z.string().trim().min(2, "Name must be at least 2 characters").max(100),
+  gender: z.string().trim().max(40).optional().nullable(),
+  rollNo: z.string().trim().max(40).optional().nullable(),
+  year: z.string().trim().min(1, "Year of study is required").max(40),
+  branch: z.string().trim().min(1, "Course/branch is required").max(40),
+  section: z.string().trim().max(10).optional().nullable(),
+  category: z.string().trim().max(40).optional().nullable(),
+  contact: z.string().trim().max(40).optional().nullable(),
+  avatarUrl: z.string().max(3_000_000).optional().nullable(),
+});
+
+export const skillsProfileSchema = z.object({
+  skills: z.array(z.string().trim().max(100)).max(100, "You can select at most 100 technical skills"),
+  languages: z.array(z.string().trim().max(100)).max(30, "You can select at most 30 languages"),
+  softSkills: z.array(z.string().trim().max(100)).max(30, "You can select at most 30 soft skills"),
+});
+
+export const themesProfileSchema = z.object({
+  trackInterest: z.array(z.string().trim().max(100)).max(10, "You can select up to 10 themes"),
+  githubUrl: githubUrlSchema,
+  linkedinUrl: linkedinUrlSchema,
+  resumeUrl: resumeUrlSchema,
+});
+
 export const studentProfileSchema = z.object({
   name: z.string().trim().min(2, "Name must be at least 2 characters").max(100),
   year: z.string().trim().min(1, "Year is required").max(40),
@@ -230,7 +255,7 @@ export const profileLookupQuerySchema = z.object({
 });
 
 export const studentSearchQuerySchema = z.object({
-  name: z.string().optional(),
+  name: z.string().trim().max(100).optional(),
   skill: z.string().trim().max(100).optional(),
   softSkill: z.string().trim().max(100).optional(),
   language: z.string().trim().max(100).optional(),
@@ -242,9 +267,9 @@ export const studentSearchQuerySchema = z.object({
 });
 
 export const teamSearchQuerySchema = z.object({
-  name: z.string().optional(),
-  skill: z.string().optional(),
-  trackId: z.string().optional(),
+  name: z.string().trim().max(100).optional(),
+  skill: z.string().trim().max(100).optional(),
+  trackId: z.string().trim().max(100).optional(),
   domain: z.string().trim().max(100).optional(),
   leader: z.string().trim().max(100).optional(),
   size: z.string().trim().max(100).optional(),
@@ -253,7 +278,7 @@ export const teamSearchQuerySchema = z.object({
 });
 
 export const mentorSearchQuerySchema = z.object({
-  name: z.string().optional(),
+  name: z.string().trim().max(100).optional(),
   expertise: z.string().trim().max(100).optional(),
   search: z.string().trim().max(100).optional(),
 });

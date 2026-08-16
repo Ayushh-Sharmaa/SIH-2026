@@ -1273,7 +1273,7 @@ export default function AdminDashboardPage() {
                           icon={Layers}
                           size="compact"
                           title="No problem statements match this search"
-                          description="Try a different keyword, or clear the search to see all 18 themes."
+                          description={`Try a different keyword, or clear the search to see all ${problemStatementStats.length || 17} official themes.`}
                         />
                       )}
 

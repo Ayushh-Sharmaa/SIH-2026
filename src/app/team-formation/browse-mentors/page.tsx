@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import Image from 'next/image';
 import { AnimatePresence, m } from 'framer-motion';
 import {
@@ -583,14 +584,12 @@ export default function FindMentorsPage() {
 
                           {/* Actions Column */}
                           <div className="flex shrink-0 flex-row items-center gap-2.5 sm:flex-col sm:items-end sm:justify-start pt-2 md:pt-0">
-                            <PremiumButton
-                              size="sm"
-                              variant="glass"
-                              onClick={() => router.push(`/mentors/${mentor.userId}`)}
-                              className="w-full sm:w-auto"
+                            <Link
+                              href={`/mentors/${mentor.userId}`}
+                              className="px-4 py-2 rounded-2xl border border-[rgba(209,199,189,0.8)] bg-white/60 text-xs font-bold text-body hover:border-primary hover:text-primary transition-all text-center w-full sm:w-auto"
                             >
                               View Profile
-                            </PremiumButton>
+                            </Link>
 
                             {!eligibility?.canRequest ? (
                               <span className="text-[11px] text-muted flex items-center gap-1">

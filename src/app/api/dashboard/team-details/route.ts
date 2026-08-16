@@ -171,12 +171,29 @@ export async function GET(request: Request) {
             name: true,
             status: true,
             leaderId: true,
+            memberCount: true,
             whatsapp: true,
             logoUrl: true,
             customMentorName: true,
             customMentorDesignation: true,
             customMentorMobile: true,
             customMentorEmail: true,
+            track: {
+              select: {
+                id: true,
+                name: true,
+                problemStatementCode: true,
+                category: true,
+              },
+            },
+            secondaryTrack: {
+              select: {
+                id: true,
+                name: true,
+                problemStatementCode: true,
+                category: true,
+              },
+            },
             mentor: {
               select: {
                 userId: true,
@@ -197,7 +214,7 @@ export async function GET(request: Request) {
                 createdAt: true,
               },
               orderBy: { createdAt: 'desc' },
-              take: 5,
+              take: 3,
             },
             members: {
               select: {
@@ -229,7 +246,7 @@ export async function GET(request: Request) {
                 },
               },
               orderBy: { createdAt: 'desc' },
-              take: 20,
+              take: 10,
             },
             invites: {
               select: {
@@ -248,7 +265,7 @@ export async function GET(request: Request) {
                 },
               },
               orderBy: { createdAt: 'desc' },
-              take: 20,
+              take: 10,
             },
             mentorRequests: {
               select: {
@@ -266,7 +283,7 @@ export async function GET(request: Request) {
                 },
               },
               orderBy: { createdAt: 'desc' },
-              take: 10,
+              take: 5,
             },
           },
         },

@@ -34,6 +34,8 @@ import {
   Layers,
   FileText,
   Globe,
+  Search,
+  Plus,
   Link as LinkIcon,
   type LucideIcon,
 } from 'lucide-react';
@@ -559,7 +561,14 @@ function ThemesLinksModal({
   onSuccess: (updated: any) => void;
 }) {
   const { toast } = useToast();
-  const [selectedTracks, setSelectedTracks] = useState<string[]>(initialData?.trackInterest || []);
+  const initialTracks = Array.isArray(initialData?.trackInterest)
+    ? initialData.trackInterest
+    : Array.isArray(initialData?.tracksDetailed)
+    ? initialData.tracksDetailed.map((t: any) => t.id)
+    : Array.isArray(initialData?.tracks)
+    ? initialData.tracks.map((t: any) => (typeof t === 'string' ? t : t.id))
+    : [];
+  const [selectedTracks, setSelectedTracks] = useState<string[]>(initialTracks);
   const [githubUrl, setGithubUrl] = useState(initialData?.githubUrl || '');
   const [linkedinUrl, setLinkedinUrl] = useState(initialData?.linkedinUrl || '');
   const [resumeUrl, setResumeUrl] = useState(initialData?.resumeUrl || '');
@@ -585,6 +594,7 @@ function ThemesLinksModal({
   }, []);
 
   const toggleTrack = (id: string) => {
+    setError('');
     setSelectedTracks((prev) => {
       if (prev.includes(id)) return prev.filter((t) => t !== id);
       if (prev.length >= 2) {
@@ -596,6 +606,11 @@ function ThemesLinksModal({
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (selectedTracks.length !== 2) {
+      setError('Please select exactly 2 SIH themes according to platform guidelines.');
+      return;
+    }
+
     setSaving(true);
     setError('');
 
@@ -615,7 +630,12 @@ function ThemesLinksModal({
       if (!res.ok) throw new Error(data.error || 'Failed to save themes and links');
 
       toast('Themes & links updated successfully.', 'success');
-      onSuccess(data.themes);
+      onSuccess({
+        ...data.themes,
+        trackInterest: data.themes?.trackInterest || selectedTracks,
+        tracksDetailed: data.themes?.tracksDetailed || tracks.filter((t) => selectedTracks.includes(t.id)),
+        tracks: data.themes?.tracksDetailed || tracks.filter((t) => selectedTracks.includes(t.id)),
+      });
       onClose();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to save themes.');
@@ -645,8 +665,14 @@ function ThemesLinksModal({
 
           {/* Theme Selection */}
           <div>
-            <Label>SIH Themes / Interests (Select 2 Themes)</Label>
-            <div className="mt-2 space-y-1.5 max-h-48 overflow-y-auto p-2.5 rounded-2xl bg-[rgba(248,246,242,0.6)] border border-[rgba(209,199,189,0.6)]">
+            <div className="flex items-center justify-between mb-1">
+              <Label>SIH Themes / Interests</Label>
+              <span className="text-[11px] font-bold text-primary bg-[rgba(114,56,61,0.08)] px-2 py-0.5 rounded-md">
+                {selectedTracks.length} / 2 Selected
+              </span>
+            </div>
+            <p className="text-[11px] text-muted mb-2">Select your 2 preferred official SIH problem statement themes.</p>
+            <div className="space-y-1.5 max-h-52 overflow-y-auto p-2.5 rounded-2xl bg-[rgba(248,246,242,0.6)] border border-[rgba(209,199,189,0.6)]">
               {tracks.map((track) => {
                 const selected = selectedTracks.includes(track.id);
                 return (
@@ -661,7 +687,8 @@ function ThemesLinksModal({
                     }`}
                   >
                     <span className="truncate">
-                      <span className="font-bold">{track.problemStatementCode}</span> — {track.name}
+                      <span className="font-bold text-foreground">{track.name}</span>{' '}
+                      <span className="text-[11px] text-muted font-normal">({track.problemStatementCode})</span>
                     </span>
                     {selected && <CheckCircle2 className="size-4 shrink-0 text-primary" />}
                   </button>
@@ -671,7 +698,7 @@ function ThemesLinksModal({
           </div>
 
           <div>
-            <Label>GitHub Profile URL</Label>
+            <Label>GitHub Profile URL (Optional)</Label>
             <div className="relative mt-1">
               <input value={githubUrl} onChange={(e) => setGithubUrl(e.target.value)} placeholder="https://github.com/username" className={`${control} pl-9`} />
               <Code2 className="absolute left-3 top-2.5 size-4 text-muted" />
@@ -679,7 +706,7 @@ function ThemesLinksModal({
           </div>
 
           <div>
-            <Label>LinkedIn Profile URL</Label>
+            <Label>LinkedIn Profile URL (Optional)</Label>
             <div className="relative mt-1">
               <input value={linkedinUrl} onChange={(e) => setLinkedinUrl(e.target.value)} placeholder="https://linkedin.com/in/username" className={`${control} pl-9`} />
               <Globe className="absolute left-3 top-2.5 size-4 text-muted" />
@@ -687,7 +714,7 @@ function ThemesLinksModal({
           </div>
 
           <div>
-            <Label>Portfolio or Resume Link</Label>
+            <Label>Portfolio or Resume Link (Optional)</Label>
             <div className="relative mt-1">
               <input value={resumeUrl} onChange={(e) => setResumeUrl(e.target.value)} placeholder="https://drive.google.com/... or https://portfolio.dev" className={`${control} pl-9`} />
               <FileText className="absolute left-3 top-2.5 size-4 text-muted" />
@@ -1855,13 +1882,22 @@ export default function DashboardPage() {
                       </p>
 
                       <div className="flex flex-wrap gap-1.5">
-                        {themesSummary?.trackInterest && themesSummary.trackInterest.length > 0 ? (
-                          themesSummary.trackInterest.slice(0, 3).map((t: any) => (
+                        {themesSummary?.tracksDetailed && themesSummary.tracksDetailed.length > 0 ? (
+                          themesSummary.tracksDetailed.slice(0, 2).map((t: any) => (
                             <span
                               key={t.id || t.problemStatementCode}
-                              className="rounded-lg border border-[rgba(209,199,189,0.8)] bg-white/70 px-2 py-0.5 text-[11px] font-medium text-body truncate max-w-[200px]"
+                              className="rounded-lg border border-[rgba(114,56,61,0.25)] bg-[rgba(114,56,61,0.07)] px-2 py-0.5 text-[11px] font-semibold text-primary truncate max-w-[200px]"
                             >
-                              {t.problemStatementCode || t.name}
+                              {t.name || t.problemStatementCode}
+                            </span>
+                          ))
+                        ) : themesSummary?.trackInterest && themesSummary.trackInterest.length > 0 ? (
+                          themesSummary.trackInterest.slice(0, 2).map((t: any) => (
+                            <span
+                              key={typeof t === 'string' ? t : t.id}
+                              className="rounded-lg border border-[rgba(114,56,61,0.25)] bg-[rgba(114,56,61,0.07)] px-2 py-0.5 text-[11px] font-semibold text-primary truncate max-w-[200px]"
+                            >
+                              {typeof t === 'string' ? t : t.name || t.problemStatementCode}
                             </span>
                           ))
                         ) : (
@@ -1908,17 +1944,38 @@ export default function DashboardPage() {
                     <div>
                       {!teamSummary?.hasTeam && !teamDetails ? (
                         <div className="surface-raised rounded-3xl p-8 sm:p-10 text-center border border-[rgba(209,199,189,0.7)] shadow-e1">
-                          <Users className="size-12 mx-auto text-muted mb-3 opacity-60" />
+                          <div className="size-16 rounded-3xl bg-[rgba(114,56,61,0.08)] border border-[rgba(114,56,61,0.18)] flex items-center justify-center text-primary mx-auto mb-4">
+                            <Users className="size-8" />
+                          </div>
                           <h3 className="text-heading font-extrabold text-foreground mb-2">You are not in a team yet</h3>
-                          <p className="text-xs text-muted max-w-md mx-auto mb-6">
-                            Form a new team of up to 6 members or browse existing teams looking for your skills in SIH 2026.
+                          <p className="text-xs text-muted max-w-md mx-auto mb-6 leading-relaxed">
+                            Form a new team of up to 6 members or browse existing teams looking for your skills in Smart India Hackathon 2026.
                           </p>
+
+                          {sentRequests.length > 0 && (
+                            <div className="mb-6 p-3 rounded-2xl border border-[rgba(114,56,61,0.25)] bg-[rgba(114,56,61,0.06)] max-w-md mx-auto flex items-center justify-between text-xs text-primary font-semibold">
+                              <span>You have {sentRequests.length} active join request{sentRequests.length > 1 ? 's' : ''}.</span>
+                              <button
+                                onClick={() => setActiveTab('requests')}
+                                className="underline font-bold hover:opacity-80"
+                              >
+                                View Status
+                              </button>
+                            </div>
+                          )}
+
                           <div className="flex flex-wrap items-center justify-center gap-3">
-                            <PremiumButton size="sm" onClick={() => router.push('/team-formation/create-team')}>
-                              Create a New Team
+                            <PremiumButton size="sm" onClick={() => router.push('/team-formation/browse-teams')}>
+                              <Search className="size-3.5" />
+                              <span>Browse Teams & Post Join Request</span>
                             </PremiumButton>
-                            <PremiumButton variant="glass" size="sm" onClick={() => router.push('/team-formation/browse-teams')}>
-                              Browse Teams
+                            <PremiumButton variant="glass" size="sm" onClick={() => router.push('/team-formation/create-team')}>
+                              <Plus className="size-3.5" />
+                              <span>Create a New Team</span>
+                            </PremiumButton>
+                            <PremiumButton variant="glass" size="sm" onClick={() => router.push('/team-formation/browse-teammates')}>
+                              <Users className="size-3.5" />
+                              <span>Browse Teammates</span>
                             </PremiumButton>
                           </div>
                         </div>
@@ -1931,52 +1988,132 @@ export default function DashboardPage() {
                         <div className="space-y-6">
                           {/* Team Overview Card */}
                           <div className="surface-raised rounded-3xl p-6 border border-[rgba(209,199,189,0.7)] shadow-e1">
-                            <div className="flex items-start justify-between gap-4 mb-4">
+                            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
                               <div>
-                                <div className="flex items-center gap-2">
-                                  <span className="font-mono text-xs font-bold text-primary bg-[rgba(114,56,61,0.08)] px-2 py-0.5 rounded-md border border-[rgba(114,56,61,0.2)]">
+                                <div className="flex items-center gap-2 mb-1.5">
+                                  <span className="font-mono text-xs font-bold text-primary bg-[rgba(114,56,61,0.08)] px-2.5 py-0.5 rounded-md border border-[rgba(114,56,61,0.2)]">
                                     {teamDetails.teamCode}
                                   </span>
                                   <span className="text-xs font-bold text-muted uppercase">
                                     {teamDetails.status === 'forming' ? 'Forming' : 'Locked'}
                                   </span>
+                                  {teamDetails.leaderId === user?.userId && (
+                                    <span className="text-[10px] font-bold text-primary bg-[rgba(114,56,61,0.12)] px-2 py-0.5 rounded-md">
+                                      Leader View
+                                    </span>
+                                  )}
                                 </div>
-                                <h3 className="text-heading font-extrabold text-foreground mt-1">{teamDetails.name}</h3>
-                                {teamDetails.track && (
-                                  <p className="text-xs text-primary font-semibold mt-0.5">
-                                    Theme: <span className="font-bold">{teamDetails.track.problemStatementCode}</span> — {teamDetails.track.name}
-                                  </p>
-                                )}
+                                <h3 className="text-heading font-extrabold text-foreground">{teamDetails.name}</h3>
+
+                                {/* Human-Readable Themes */}
+                                <div className="mt-2 space-y-1">
+                                  {teamDetails.track && (
+                                    <p className="text-xs text-foreground font-medium flex items-center gap-1.5">
+                                      <span className="text-label uppercase text-muted font-bold">Primary Theme:</span>
+                                      <span className="font-bold text-primary">{teamDetails.track.name}</span>
+                                      <span className="text-[11px] text-muted">({teamDetails.track.problemStatementCode})</span>
+                                    </p>
+                                  )}
+                                  {teamDetails.secondaryTrack && (
+                                    <p className="text-xs text-foreground font-medium flex items-center gap-1.5">
+                                      <span className="text-label uppercase text-muted font-bold">Secondary Theme:</span>
+                                      <span className="font-bold text-body">{teamDetails.secondaryTrack.name}</span>
+                                      <span className="text-[11px] text-muted">({teamDetails.secondaryTrack.problemStatementCode})</span>
+                                    </p>
+                                  )}
+                                  {!teamDetails.track && teamDetails.customPsName && (
+                                    <p className="text-xs text-foreground font-medium flex items-center gap-1.5">
+                                      <span className="text-label uppercase text-muted font-bold">Primary Theme:</span>
+                                      <span className="font-bold text-primary">{teamDetails.customPsName}</span>
+                                      {teamDetails.customPsCode && <span className="text-[11px] text-muted">({teamDetails.customPsCode})</span>}
+                                    </p>
+                                  )}
+                                </div>
                               </div>
 
-                              <span className="px-3 py-1 rounded-full bg-[rgba(248,246,242,0.8)] border border-[rgba(209,199,189,0.8)] text-xs font-bold text-foreground">
-                                {teamDetails.members?.length || 1} / 6 Members
-                              </span>
+                              {/* Capacity & Open Seats Badge */}
+                              <div className="flex flex-col sm:items-end gap-1 shrink-0">
+                                <span className="px-3 py-1 rounded-full bg-[rgba(248,246,242,0.9)] border border-[rgba(209,199,189,0.8)] text-xs font-bold text-foreground inline-flex items-center gap-1.5">
+                                  <span>{(teamDetails.members?.length || teamDetails.memberCount || 1)} / 6 Members</span>
+                                </span>
+                                <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-md text-right ${
+                                  Math.max(0, 6 - (teamDetails.members?.length || teamDetails.memberCount || 1)) > 0
+                                    ? 'text-primary bg-[rgba(114,56,61,0.08)]'
+                                    : 'text-muted bg-[rgba(209,199,189,0.4)]'
+                                }`}>
+                                  {Math.max(0, 6 - (teamDetails.members?.length || teamDetails.memberCount || 1))} Open Seat{Math.max(0, 6 - (teamDetails.members?.length || teamDetails.memberCount || 1)) !== 1 ? 's' : ''}
+                                </span>
+                              </div>
                             </div>
 
                             {/* Member Roster */}
                             <div className="mt-4 pt-4 border-t border-[rgba(209,199,189,0.5)]">
-                              <h4 className="text-label uppercase tracking-wider text-muted font-bold mb-3">Team Roster</h4>
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                              <div className="flex items-center justify-between mb-3">
+                                <h4 className="text-label uppercase tracking-wider text-muted font-bold">Team Roster</h4>
+                                <span className="text-[11px] text-muted font-semibold">
+                                  {teamDetails.members?.length || 1} of 6 filled
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 {teamDetails.members?.map((m: any) => (
                                   <div
                                     key={m.userId}
-                                    className="flex items-center gap-2.5 p-2 rounded-xl bg-[rgba(248,246,242,0.6)] border border-[rgba(209,199,189,0.5)] text-xs"
+                                    className="flex items-center gap-3 p-3 rounded-2xl bg-[rgba(248,246,242,0.7)] border border-[rgba(209,199,189,0.6)] text-xs"
                                   >
-                                    <Avatar avatarUrl={m.avatarUrl} name={m.name} className="size-8" />
+                                    <Avatar avatarUrl={m.avatarUrl} name={m.name} className="size-9" />
                                     <div className="min-w-0 flex-1">
-                                      <div className="flex items-center gap-1">
+                                      <div className="flex items-center gap-1.5">
                                         <span className="font-bold text-foreground truncate">{m.name}</span>
                                         {m.userId === teamDetails.leaderId && (
-                                          <span className="text-[9px] font-bold text-primary bg-[rgba(114,56,61,0.1)] px-1 rounded">LEAD</span>
+                                          <span className="text-[9px] font-bold text-primary bg-[rgba(114,56,61,0.12)] px-1.5 py-0.5 rounded">LEAD</span>
+                                        )}
+                                        {m.userId === user?.userId && (
+                                          <span className="text-[9px] font-semibold text-muted bg-white/80 px-1 rounded border border-[rgba(209,199,189,0.6)]">You</span>
                                         )}
                                       </div>
-                                      <p className="text-[11px] text-muted truncate">{m.branch} • {m.year}</p>
+                                      <p className="text-[11px] text-muted truncate mt-0.5">{m.branch || 'Student'} • {m.year || 'General'}</p>
+                                      {m.skills && m.skills.length > 0 && (
+                                        <p className="text-[10px] text-primary/90 truncate font-medium mt-0.5">
+                                          {m.skills.slice(0, 3).join(', ')}
+                                        </p>
+                                      )}
                                     </div>
                                   </div>
                                 ))}
                               </div>
                             </div>
+
+                            {/* Team Space Actions */}
+                            <div className="mt-5 pt-4 border-t border-[rgba(209,199,189,0.5)] flex flex-wrap items-center justify-between gap-3">
+                              <div className="flex items-center gap-2">
+                                <PremiumButton
+                                  size="sm"
+                                  variant="glass"
+                                  onClick={() => router.push(`/teams/${teamDetails.id}`)}
+                                >
+                                  View Public Team Page
+                                </PremiumButton>
+                                {teamDetails.leaderId === user?.userId && (
+                                  <PremiumButton
+                                    size="sm"
+                                    onClick={() => router.push('/team-formation/browse-teammates')}
+                                  >
+                                    <Users className="size-3.5" />
+                                    <span>Invite Teammates</span>
+                                  </PremiumButton>
+                                )}
+                              </div>
+
+                                {teamDetails.leaderId === user?.userId && teamDetails.joinRequests && teamDetails.joinRequests.length > 0 && (
+                                  <button
+                                    onClick={() => setActiveTab('requests')}
+                                    className="text-xs font-semibold text-primary hover:underline flex items-center gap-1"
+                                  >
+                                    <span>Review {teamDetails.joinRequests.filter((r: any) => r.status === 'pending').length} Pending Request(s)</span>
+                                    <ArrowUpRight className="size-3" />
+                                  </button>
+                                )}
+                              </div>
                           </div>
                         </div>
                       ) : null}

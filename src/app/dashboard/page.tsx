@@ -93,7 +93,7 @@ const AVATAR_PRESETS: Record<string, { icon: LucideIcon; wash: string }> = {
 function Avatar({
   avatarUrl,
   name,
-  className = '',
+  className = 'size-12',
 }: {
   avatarUrl?: string | null;
   name: string;
@@ -101,14 +101,16 @@ function Avatar({
 }) {
   if (avatarUrl?.startsWith('data:image/') || avatarUrl?.startsWith('http')) {
     return (
-      <Image
-        unoptimized
-        src={avatarUrl}
-        alt={`${name}'s profile`}
-        width={128}
-        height={128}
-        className={`object-cover rounded-2xl ${className}`}
-      />
+      <div className={`relative shrink-0 overflow-hidden rounded-2xl bg-[rgba(248,246,242,0.8)] border border-[rgba(209,199,189,0.7)] ${className}`}>
+        <Image
+          unoptimized
+          src={avatarUrl}
+          alt={`${name}'s profile`}
+          fill
+          sizes="96px"
+          className="object-cover"
+        />
+      </div>
     );
   }
 
@@ -117,7 +119,7 @@ function Avatar({
     <span
       role="img"
       aria-label={`${name}'s profile`}
-      className={`flex items-center justify-center rounded-2xl bg-gradient-to-br text-body ${preset.wash} ${className}`}
+      className={`shrink-0 flex items-center justify-center rounded-2xl bg-gradient-to-br text-body ${preset.wash} ${className}`}
     >
       <Icon icon={preset.icon} size="md" />
     </span>
@@ -1709,25 +1711,29 @@ export default function DashboardPage() {
             /* ========================================================= */
             <div>
               {/* Header Banner */}
-              <div className="surface-raised rounded-3xl p-6 sm:p-8 border border-[rgba(209,199,189,0.7)] shadow-e2 mb-8">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                  <div className="flex items-center gap-4">
-                    <Avatar avatarUrl={user?.avatarUrl} name={user?.name || 'User'} className="size-16 sm:size-20" />
-                    <div>
+              <div className="surface-raised rounded-3xl p-6 sm:p-7 border border-[rgba(209,199,189,0.7)] shadow-e2 mb-8">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
+                  <div className="flex items-center gap-4 sm:gap-5 min-w-0 flex-1">
+                    <Avatar
+                      avatarUrl={user?.avatarUrl}
+                      name={user?.name || 'User'}
+                      className="size-16 sm:size-20 shrink-0 shadow-sm"
+                    />
+                    <div className="min-w-0 flex-1">
                       <span className="text-label uppercase tracking-wider text-primary font-bold">Student Dashboard</span>
-                      <h1 className="text-display text-foreground font-extrabold mt-0.5">
+                      <h1 className="text-xl sm:text-2xl lg:text-3xl text-foreground font-extrabold mt-0.5 truncate tracking-tight">
                         Welcome back, {user?.name}
                       </h1>
-                      <p className="text-xs text-muted mt-1">
+                      <p className="text-xs text-muted mt-1 truncate">
                         {user?.branch || 'Student'} • {user?.year || 'Participant'} • {user?.email}
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 shrink-0">
                     <button
                       onClick={() => setActiveModal('personal')}
-                      className="px-4 py-2 rounded-xl border border-[rgba(209,199,189,0.8)] bg-white/70 text-xs font-semibold text-foreground hover:border-primary flex items-center gap-1.5 shadow-xs"
+                      className="px-4 py-2 rounded-xl border border-[rgba(209,199,189,0.8)] bg-white/70 text-xs font-semibold text-foreground hover:border-primary flex items-center gap-1.5 shadow-xs transition-colors"
                     >
                       <Edit2 className="size-3.5 text-primary" />
                       <span>Edit Profile</span>
@@ -1942,7 +1948,160 @@ export default function DashboardPage() {
                   {/* Tab 1: Team Space */}
                   {activeTab === 'team' && (
                     <div>
-                      {!teamSummary?.hasTeam && !teamDetails ? (
+                      {teamDetailsLoading || (teamSummary?.hasTeam && !teamDetails) ? (
+                        <div className="surface-raised rounded-3xl p-6 border border-[rgba(209,199,189,0.7)] shadow-e1 space-y-4">
+                          <div className="flex items-center justify-between">
+                            <div className="h-6 w-32 rounded-lg bg-[rgba(209,199,189,0.3)] animate-pulse" />
+                            <div className="h-6 w-24 rounded-full bg-[rgba(209,199,189,0.3)] animate-pulse" />
+                          </div>
+                          <div className="h-8 w-48 rounded-xl bg-[rgba(209,199,189,0.3)] animate-pulse" />
+                          <div className="h-20 rounded-2xl bg-[rgba(209,199,189,0.2)] animate-pulse" />
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                            <div className="h-16 rounded-2xl bg-[rgba(209,199,189,0.25)] animate-pulse" />
+                            <div className="h-16 rounded-2xl bg-[rgba(209,199,189,0.25)] animate-pulse" />
+                          </div>
+                        </div>
+                      ) : teamDetails ? (
+                        <div className="space-y-6">
+                          {/* Team Overview Card */}
+                          <div className="surface-raised rounded-3xl p-6 border border-[rgba(209,199,189,0.7)] shadow-e1">
+                            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2 mb-1.5">
+                                  <span className="font-mono text-xs font-bold text-primary bg-[rgba(114,56,61,0.08)] px-2.5 py-0.5 rounded-md border border-[rgba(114,56,61,0.2)]">
+                                    {teamDetails.teamCode}
+                                  </span>
+                                  <span className="text-xs font-bold text-muted uppercase">
+                                    {teamDetails.status === 'forming' ? 'Forming' : 'Locked'}
+                                  </span>
+                                  {teamDetails.leaderId === user?.userId && (
+                                    <span className="text-[10px] font-bold text-primary bg-[rgba(114,56,61,0.12)] px-2 py-0.5 rounded-md">
+                                      Leader View
+                                    </span>
+                                  )}
+                                </div>
+                                <h3 className="text-xl sm:text-2xl font-extrabold text-foreground tracking-tight truncate">
+                                  {teamDetails.name}
+                                </h3>
+
+                                {/* Clean Human-Readable Themes Box */}
+                                <div className="mt-3 space-y-2 p-3.5 rounded-2xl bg-[rgba(248,246,242,0.7)] border border-[rgba(209,199,189,0.6)] text-xs">
+                                  {teamDetails.track && (
+                                    <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-2">
+                                      <span className="text-[10px] uppercase font-bold tracking-wider text-muted shrink-0 sm:w-28">
+                                        Primary Theme:
+                                      </span>
+                                      <span className="font-bold text-primary">
+                                        {teamDetails.track.name}{' '}
+                                        <span className="font-normal text-muted text-[11px]">
+                                          ({teamDetails.track.problemStatementCode})
+                                        </span>
+                                      </span>
+                                    </div>
+                                  )}
+                                  {teamDetails.secondaryTrack && (
+                                    <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-2">
+                                      <span className="text-[10px] uppercase font-bold tracking-wider text-muted shrink-0 sm:w-28">
+                                        Secondary Theme:
+                                      </span>
+                                      <span className="font-semibold text-foreground">
+                                        {teamDetails.secondaryTrack.name}{' '}
+                                        <span className="font-normal text-muted text-[11px]">
+                                          ({teamDetails.secondaryTrack.problemStatementCode})
+                                        </span>
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Capacity & Open Seats Badge */}
+                              <div className="flex flex-col sm:items-end gap-1.5 shrink-0">
+                                <span className="px-3 py-1 rounded-full bg-[rgba(248,246,242,0.9)] border border-[rgba(209,199,189,0.8)] text-xs font-bold text-foreground inline-flex items-center gap-1.5">
+                                  <span>{(teamDetails.members?.length || teamDetails.memberCount || 1)} / 6 Members</span>
+                                </span>
+                                <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-md text-right ${
+                                  Math.max(0, 6 - (teamDetails.members?.length || teamDetails.memberCount || 1)) > 0
+                                    ? 'text-primary bg-[rgba(114,56,61,0.08)]'
+                                    : 'text-muted bg-[rgba(209,199,189,0.4)]'
+                                }`}>
+                                  {Math.max(0, 6 - (teamDetails.members?.length || teamDetails.memberCount || 1))} Open Seat{Math.max(0, 6 - (teamDetails.members?.length || teamDetails.memberCount || 1)) !== 1 ? 's' : ''}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Member Roster */}
+                            <div className="mt-4 pt-4 border-t border-[rgba(209,199,189,0.5)]">
+                              <div className="flex items-center justify-between mb-3">
+                                <h4 className="text-label uppercase tracking-wider text-muted font-bold">Team Roster</h4>
+                                <span className="text-[11px] text-muted font-semibold">
+                                  {teamDetails.members?.length || 1} of 6 filled
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {teamDetails.members?.map((m: any) => (
+                                  <div
+                                    key={m.userId}
+                                    className="flex items-center gap-3 p-3 rounded-2xl bg-[rgba(248,246,242,0.7)] border border-[rgba(209,199,189,0.6)] text-xs min-w-0"
+                                  >
+                                    <Avatar avatarUrl={m.avatarUrl} name={m.name} className="size-9 shrink-0" />
+                                    <div className="min-w-0 flex-1">
+                                      <div className="flex items-center gap-1.5">
+                                        <span className="font-bold text-foreground truncate">{m.name}</span>
+                                        {m.userId === teamDetails.leaderId && (
+                                          <span className="text-[9px] font-bold text-primary bg-[rgba(114,56,61,0.12)] px-1.5 py-0.5 rounded shrink-0">LEAD</span>
+                                        )}
+                                        {m.userId === user?.userId && (
+                                          <span className="text-[9px] font-semibold text-muted bg-white/80 px-1 rounded border border-[rgba(209,199,189,0.6)] shrink-0">You</span>
+                                        )}
+                                      </div>
+                                      <p className="text-[11px] text-muted truncate mt-0.5">{m.branch || 'Student'} • {m.year || 'General'}</p>
+                                      {m.skills && m.skills.length > 0 && (
+                                        <p className="text-[10px] text-primary font-medium truncate mt-0.5">
+                                          {m.skills.slice(0, 3).join(', ')}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Team Space Actions */}
+                            <div className="mt-5 pt-4 border-t border-[rgba(209,199,189,0.5)] flex flex-wrap items-center justify-between gap-3">
+                              <div className="flex items-center gap-2">
+                                <PremiumButton
+                                  size="sm"
+                                  variant="glass"
+                                  onClick={() => router.push(`/teams/${teamDetails.id}`)}
+                                >
+                                  View Public Team Page
+                                </PremiumButton>
+                                {teamDetails.leaderId === user?.userId && (
+                                  <PremiumButton
+                                    size="sm"
+                                    onClick={() => router.push('/team-formation/browse-teammates')}
+                                  >
+                                    <Users className="size-3.5" />
+                                    <span>Invite Teammates</span>
+                                  </PremiumButton>
+                                )}
+                              </div>
+
+                              {teamDetails.leaderId === user?.userId && teamDetails.joinRequests && teamDetails.joinRequests.length > 0 && (
+                                <button
+                                  onClick={() => setActiveTab('requests')}
+                                  className="text-xs font-semibold text-primary hover:underline flex items-center gap-1"
+                                >
+                                  <span>Review {teamDetails.joinRequests.filter((r: any) => r.status === 'pending').length} Pending Request(s)</span>
+                                  <ArrowUpRight className="size-3" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        /* Teamless State */
                         <div className="surface-raised rounded-3xl p-8 sm:p-10 text-center border border-[rgba(209,199,189,0.7)] shadow-e1">
                           <div className="size-16 rounded-3xl bg-[rgba(114,56,61,0.08)] border border-[rgba(114,56,61,0.18)] flex items-center justify-center text-primary mx-auto mb-4">
                             <Users className="size-8" />
@@ -1979,144 +2138,7 @@ export default function DashboardPage() {
                             </PremiumButton>
                           </div>
                         </div>
-                      ) : teamDetailsLoading ? (
-                        <div className="space-y-4">
-                          <div className="h-44 rounded-3xl bg-[rgba(209,199,189,0.3)] animate-pulse" />
-                          <div className="h-60 rounded-3xl bg-[rgba(209,199,189,0.3)] animate-pulse" />
-                        </div>
-                      ) : teamDetails ? (
-                        <div className="space-y-6">
-                          {/* Team Overview Card */}
-                          <div className="surface-raised rounded-3xl p-6 border border-[rgba(209,199,189,0.7)] shadow-e1">
-                            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
-                              <div>
-                                <div className="flex items-center gap-2 mb-1.5">
-                                  <span className="font-mono text-xs font-bold text-primary bg-[rgba(114,56,61,0.08)] px-2.5 py-0.5 rounded-md border border-[rgba(114,56,61,0.2)]">
-                                    {teamDetails.teamCode}
-                                  </span>
-                                  <span className="text-xs font-bold text-muted uppercase">
-                                    {teamDetails.status === 'forming' ? 'Forming' : 'Locked'}
-                                  </span>
-                                  {teamDetails.leaderId === user?.userId && (
-                                    <span className="text-[10px] font-bold text-primary bg-[rgba(114,56,61,0.12)] px-2 py-0.5 rounded-md">
-                                      Leader View
-                                    </span>
-                                  )}
-                                </div>
-                                <h3 className="text-heading font-extrabold text-foreground">{teamDetails.name}</h3>
-
-                                {/* Human-Readable Themes */}
-                                <div className="mt-2 space-y-1">
-                                  {teamDetails.track && (
-                                    <p className="text-xs text-foreground font-medium flex items-center gap-1.5">
-                                      <span className="text-label uppercase text-muted font-bold">Primary Theme:</span>
-                                      <span className="font-bold text-primary">{teamDetails.track.name}</span>
-                                      <span className="text-[11px] text-muted">({teamDetails.track.problemStatementCode})</span>
-                                    </p>
-                                  )}
-                                  {teamDetails.secondaryTrack && (
-                                    <p className="text-xs text-foreground font-medium flex items-center gap-1.5">
-                                      <span className="text-label uppercase text-muted font-bold">Secondary Theme:</span>
-                                      <span className="font-bold text-body">{teamDetails.secondaryTrack.name}</span>
-                                      <span className="text-[11px] text-muted">({teamDetails.secondaryTrack.problemStatementCode})</span>
-                                    </p>
-                                  )}
-                                  {!teamDetails.track && teamDetails.customPsName && (
-                                    <p className="text-xs text-foreground font-medium flex items-center gap-1.5">
-                                      <span className="text-label uppercase text-muted font-bold">Primary Theme:</span>
-                                      <span className="font-bold text-primary">{teamDetails.customPsName}</span>
-                                      {teamDetails.customPsCode && <span className="text-[11px] text-muted">({teamDetails.customPsCode})</span>}
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-
-                              {/* Capacity & Open Seats Badge */}
-                              <div className="flex flex-col sm:items-end gap-1 shrink-0">
-                                <span className="px-3 py-1 rounded-full bg-[rgba(248,246,242,0.9)] border border-[rgba(209,199,189,0.8)] text-xs font-bold text-foreground inline-flex items-center gap-1.5">
-                                  <span>{(teamDetails.members?.length || teamDetails.memberCount || 1)} / 6 Members</span>
-                                </span>
-                                <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-md text-right ${
-                                  Math.max(0, 6 - (teamDetails.members?.length || teamDetails.memberCount || 1)) > 0
-                                    ? 'text-primary bg-[rgba(114,56,61,0.08)]'
-                                    : 'text-muted bg-[rgba(209,199,189,0.4)]'
-                                }`}>
-                                  {Math.max(0, 6 - (teamDetails.members?.length || teamDetails.memberCount || 1))} Open Seat{Math.max(0, 6 - (teamDetails.members?.length || teamDetails.memberCount || 1)) !== 1 ? 's' : ''}
-                                </span>
-                              </div>
-                            </div>
-
-                            {/* Member Roster */}
-                            <div className="mt-4 pt-4 border-t border-[rgba(209,199,189,0.5)]">
-                              <div className="flex items-center justify-between mb-3">
-                                <h4 className="text-label uppercase tracking-wider text-muted font-bold">Team Roster</h4>
-                                <span className="text-[11px] text-muted font-semibold">
-                                  {teamDetails.members?.length || 1} of 6 filled
-                                </span>
-                              </div>
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                {teamDetails.members?.map((m: any) => (
-                                  <div
-                                    key={m.userId}
-                                    className="flex items-center gap-3 p-3 rounded-2xl bg-[rgba(248,246,242,0.7)] border border-[rgba(209,199,189,0.6)] text-xs"
-                                  >
-                                    <Avatar avatarUrl={m.avatarUrl} name={m.name} className="size-9" />
-                                    <div className="min-w-0 flex-1">
-                                      <div className="flex items-center gap-1.5">
-                                        <span className="font-bold text-foreground truncate">{m.name}</span>
-                                        {m.userId === teamDetails.leaderId && (
-                                          <span className="text-[9px] font-bold text-primary bg-[rgba(114,56,61,0.12)] px-1.5 py-0.5 rounded">LEAD</span>
-                                        )}
-                                        {m.userId === user?.userId && (
-                                          <span className="text-[9px] font-semibold text-muted bg-white/80 px-1 rounded border border-[rgba(209,199,189,0.6)]">You</span>
-                                        )}
-                                      </div>
-                                      <p className="text-[11px] text-muted truncate mt-0.5">{m.branch || 'Student'} • {m.year || 'General'}</p>
-                                      {m.skills && m.skills.length > 0 && (
-                                        <p className="text-[10px] text-primary/90 truncate font-medium mt-0.5">
-                                          {m.skills.slice(0, 3).join(', ')}
-                                        </p>
-                                      )}
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-
-                            {/* Team Space Actions */}
-                            <div className="mt-5 pt-4 border-t border-[rgba(209,199,189,0.5)] flex flex-wrap items-center justify-between gap-3">
-                              <div className="flex items-center gap-2">
-                                <PremiumButton
-                                  size="sm"
-                                  variant="glass"
-                                  onClick={() => router.push(`/teams/${teamDetails.id}`)}
-                                >
-                                  View Public Team Page
-                                </PremiumButton>
-                                {teamDetails.leaderId === user?.userId && (
-                                  <PremiumButton
-                                    size="sm"
-                                    onClick={() => router.push('/team-formation/browse-teammates')}
-                                  >
-                                    <Users className="size-3.5" />
-                                    <span>Invite Teammates</span>
-                                  </PremiumButton>
-                                )}
-                              </div>
-
-                                {teamDetails.leaderId === user?.userId && teamDetails.joinRequests && teamDetails.joinRequests.length > 0 && (
-                                  <button
-                                    onClick={() => setActiveTab('requests')}
-                                    className="text-xs font-semibold text-primary hover:underline flex items-center gap-1"
-                                  >
-                                    <span>Review {teamDetails.joinRequests.filter((r: any) => r.status === 'pending').length} Pending Request(s)</span>
-                                    <ArrowUpRight className="size-3" />
-                                  </button>
-                                )}
-                              </div>
-                          </div>
-                        </div>
-                      ) : null}
+                      )}
                     </div>
                   )}
 

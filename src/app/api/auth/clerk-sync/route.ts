@@ -131,24 +131,23 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    let email: string | undefined;
-    let clerkUser: Awaited<ReturnType<typeof currentUser>> = null;
-    try {
-      clerkUser = await clerkCircuitBreaker.execute(
-        () => currentUser(),
-        async () => {
-          logger.warn('Clerk API circuit breaker tripped open. Falling back.');
-          return null;
-        }
-      );
-      email = clerkUser?.emailAddresses?.[0]?.emailAddress;
-    } catch (e) {
-      logger.error('Clerk currentUser() failed.', e);
-    }
-
     const body = await request.json().catch(() => ({}));
-    if (!email && typeof body?.email === 'string' && body.email.includes('@')) {
-      email = body.email;
+    let email: string | undefined = typeof body?.email === 'string' && body.email.includes('@') ? body.email.trim() : undefined;
+    let clerkUser: Awaited<ReturnType<typeof currentUser>> = null;
+
+    if (!email) {
+      try {
+        clerkUser = await clerkCircuitBreaker.execute(
+          () => currentUser(),
+          async () => {
+            logger.warn('Clerk API circuit breaker tripped open. Falling back.');
+            return null;
+          }
+        );
+        email = clerkUser?.emailAddresses?.[0]?.emailAddress;
+      } catch (e) {
+        logger.error('Clerk currentUser() failed.', e);
+      }
     }
 
     if (!email) {

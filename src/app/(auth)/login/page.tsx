@@ -68,8 +68,6 @@ function LoginContent() {
   const urlError = searchParams?.get('error');
 
   const clerk = useClerk();
-  const clerkUser = clerk.user;
-  const clerkSignOut = clerk.signOut;
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -86,14 +84,6 @@ function LoginContent() {
       setError('An error occurred during sign-in. Please try again.');
     }
   }, [urlError]);
-
-  // If the user reaches this page (meaning the app session is gone),
-  // but Clerk thinks they are still signed in, drop the Clerk session to sync state.
-  useEffect(() => {
-    if (clerkUser) {
-      clerkSignOut();
-    }
-  }, [clerkUser, clerkSignOut]);
 
   const handleGoogleSignIn = async () => {
     setError('');

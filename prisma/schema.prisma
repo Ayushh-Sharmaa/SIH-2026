@@ -62,10 +62,10 @@ model StudentProfile {
   joinRequests  JoinRequest[]
   teamInvites   TeamInvite[]
 
-  // The teammate directory filters on teamStatus and excludes demo rows; the
-  // roster and dashboard queries look members up by teamId.
+  // The teammate directory filters on teamStatus, demo status, teamId, and academic filters.
   @@index([teamId])
   @@index([teamStatus, isDemo])
+  @@index([branch, year])
 }
 
 model MentorProfile {

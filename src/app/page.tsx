@@ -19,13 +19,13 @@ import Counter from '@/components/motion/Counter';
 import { TiltCard } from '@/components/motion/Magnetic';
 import { EASE, SPRING } from '@/components/motion/tokens';
 import { usePrefersReducedMotion } from '@/components/motion/useReducedMotion';
-import { ALL_18_THEME_SETS, FAQS, SIH_MILESTONES } from '@/lib/content';
+import { ALL_THEME_SETS, FAQS, SIH_MILESTONES } from '@/lib/content';
 import { FaqStructuredData } from '@/components/seo/StructuredData';
 import { Container, Section } from '@/components/ui';
 import MilestoneIcon from '@/components/MilestoneIcon';
 
 const TOP_STATS = [
-  { value: 18, suffix: '', label: 'Official Themes' },
+  { value: 17, suffix: '', label: 'Official Themes' },
   { value: 11, suffix: '', label: 'Timeline Phases' },
   { value: 6, suffix: '', label: 'Members per Team' },
   { value: 36, suffix: 'h', label: 'Grand Finale' },
@@ -299,7 +299,7 @@ export default function Home() {
   const heroFade = useTransform(scrollYProgress, [0, 0.75], [1, 0]);
 
   const phase = SIH_MILESTONES[activePhase];
-  const marqueeItems = ALL_18_THEME_SETS.flatMap((s) => s.themes.map((t) => t.name));
+  const marqueeItems = ALL_THEME_SETS.flatMap((s) => s.themes.map((t) => t.name));
 
   return (
     <>
@@ -413,7 +413,7 @@ export default function Home() {
                 transition={{ duration: 0.8, delay: 1.15 }}
                 className="mt-6 text-xs text-muted"
               >
-                Official problem statements are released closer to the event. All 18 themes are
+                Official problem statements are released closer to the event. All 17 themes are
                 already configured here.
               </m.p>
             </div>
@@ -693,7 +693,7 @@ export default function Home() {
                 Themes &amp; domains
               </span>
               <h2 className="mt-4 text-heading text-foreground">
-                All 18 official SIH tracks
+                All 17 official SIH tracks
               </h2>
               <p className="mt-4 text-sm leading-relaxed text-muted">
                 Ministry-defined themes spanning health, agriculture, space, security, and more.
@@ -703,7 +703,7 @@ export default function Home() {
 
             <div className="mt-14 grid gap-8 lg:grid-cols-12">
               <div className="flex flex-col gap-2 lg:col-span-4">
-                {ALL_18_THEME_SETS.map((set, i) => {
+                {ALL_THEME_SETS.map((set, i) => {
                   const isActive = i === activeSet;
                   return (
                     <button
@@ -743,7 +743,7 @@ export default function Home() {
                     variants={{ visible: { transition: { staggerChildren: 0.08 } } }}
                     className="grid gap-5 sm:grid-cols-3"
                   >
-                    {ALL_18_THEME_SETS[activeSet].themes.map((theme, i) => (
+                    {ALL_THEME_SETS[activeSet].themes.map((theme, i) => (
                       <m.article
                         key={theme.name}
                         variants={{

@@ -127,7 +127,7 @@ const AVATAR_PRESETS: Record<string, { icon: LucideIcon; wash: string }> = {
 function MemberAvatar({
   avatarUrl,
   name,
-  className = 'size-14',
+  className = 'size-12',
 }: {
   avatarUrl?: string | null;
   name: string;
@@ -135,14 +135,16 @@ function MemberAvatar({
 }) {
   if (avatarUrl?.startsWith('data:image/') || avatarUrl?.startsWith('http')) {
     return (
-      <Image
-        unoptimized
-        src={avatarUrl}
-        alt={`${name}'s avatar`}
-        width={64}
-        height={64}
-        className={`object-cover rounded-2xl ${className}`}
-      />
+      <div className={`relative shrink-0 overflow-hidden rounded-2xl bg-[rgba(248,246,242,0.8)] border border-[rgba(209,199,189,0.7)] ${className}`}>
+        <Image
+          unoptimized
+          src={avatarUrl}
+          alt={`${name}'s avatar`}
+          fill
+          sizes="48px"
+          className="object-cover"
+        />
+      </div>
     );
   }
 
@@ -151,7 +153,7 @@ function MemberAvatar({
     <span
       role="img"
       aria-label={`${name}'s profile avatar`}
-      className={`flex items-center justify-center bg-gradient-to-br text-body rounded-2xl ${preset.wash} ${className}`}
+      className={`shrink-0 flex items-center justify-center bg-gradient-to-br text-body rounded-2xl ${preset.wash} ${className}`}
     >
       <Icon icon={preset.icon} size="md" />
     </span>
@@ -362,18 +364,18 @@ export default function TeamDetailsPage() {
             <Container width="narrow" className="py-12 space-y-8">
               {/* Overview Cards */}
               <div className="grid gap-6 md:grid-cols-2">
-                {/* Problem Statement Track Details */}
+                {/* SIH Theme Details */}
                 <SpotlightCard className="rounded-3xl">
                   <div className="surface-raised rounded-3xl p-6 sm:p-7 space-y-5">
                     <div className="flex items-center gap-2">
                       <Layers className="size-5 text-primary" />
-                      <h2 className="text-feature text-foreground">Problem Statements</h2>
+                      <h2 className="text-feature text-foreground">SIH Themes</h2>
                     </div>
                     <div className="h-px bg-gradient-to-r from-[rgba(172,156,141,0.55)] via-[rgba(209,199,189,0.35)] to-transparent" />
 
                     <div className="space-y-4">
                       <div>
-                        <span className="block text-label uppercase text-muted text-xs">Primary Problem Statement</span>
+                        <span className="block text-label uppercase text-muted text-xs">Primary Theme</span>
                         <div className="mt-1.5 rounded-2xl border border-[rgba(114,56,61,0.22)] bg-[rgba(114,56,61,0.05)] p-4">
                           <span className="inline-block rounded-md bg-primary px-2 py-0.5 text-[10px] font-bold text-on-accent uppercase">
                             {team.track.problemStatementCode}
@@ -388,7 +390,7 @@ export default function TeamDetailsPage() {
 
                       {team.secondaryTrack && (
                         <div>
-                          <span className="block text-label uppercase text-muted text-xs">Secondary Problem Statement</span>
+                          <span className="block text-label uppercase text-muted text-xs">Secondary Theme</span>
                           <div className="mt-1.5 rounded-2xl border border-[rgba(209,199,189,0.6)] bg-white/40 p-4">
                             <span className="inline-block rounded-md bg-muted/20 px-2 py-0.5 text-[10px] font-bold text-foreground uppercase">
                               {team.secondaryTrack.problemStatementCode}
@@ -539,14 +541,14 @@ export default function TeamDetailsPage() {
                             className="group surface-raised flex h-full cursor-pointer flex-col justify-between rounded-2xl p-5 border border-[rgba(209,199,189,0.65)] transition-all hover:border-[rgba(114,56,61,0.3)] hover:shadow-md"
                           >
                             <div className="space-y-4">
-                              <div className="flex items-start justify-between gap-3">
-                                <div className="flex items-center gap-3">
+                              <div className="flex items-start justify-between gap-2.5">
+                                <div className="flex items-center gap-3 min-w-0 flex-1">
                                   <MemberAvatar avatarUrl={member.avatarUrl} name={member.name} className="size-12 shrink-0" />
-                                  <div className="min-w-0">
-                                    <h3 className="text-base font-bold text-foreground truncate group-hover:text-primary transition-colors">
+                                  <div className="min-w-0 flex-1">
+                                    <h3 className="text-sm font-bold text-foreground truncate group-hover:text-primary transition-colors">
                                       {member.name}
                                     </h3>
-                                    <p className="text-xs font-semibold text-muted">
+                                    <p className="text-xs font-semibold text-muted truncate mt-0.5">
                                       {member.branch} · {member.year}
                                     </p>
                                   </div>
@@ -556,7 +558,7 @@ export default function TeamDetailsPage() {
                                     <Crown className="size-3" /> Leader
                                   </span>
                                 ) : (
-                                  <span className="rounded-full border border-[rgba(209,199,189,0.6)] bg-white/50 px-2 py-0.5 text-[10px] font-bold uppercase text-muted">
+                                  <span className="shrink-0 rounded-full border border-[rgba(209,199,189,0.6)] bg-white/50 px-2 py-0.5 text-[10px] font-bold uppercase text-muted">
                                     Member
                                   </span>
                                 )}

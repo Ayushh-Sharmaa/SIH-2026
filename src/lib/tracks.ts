@@ -1,17 +1,8 @@
 /**
- * The 18 official SIH themes.
+ * The 17 official SIH themes.
  *
  * This list is the single source of truth for both the API (`/api/tracks`) and
- * the database seed (`prisma/seed.ts`). It used to live only in the route
- * handler, which is what broke team creation entirely: the route served
- * synthetic ids (`sih-theme-N`) that existed nowhere in the database, while the
- * seed wrote five unrelated tracks with generated UUIDs. Every attempt to
- * create a team POSTed a `trackId` the `Track` table had never heard of, so
- * `/api/teams` answered "Selected Track does not exist." for every user, and
- * the same phantom ids broke `trackInterest` during onboarding.
- *
- * Seeding from this array pins `Track.id` to these literals, so what the
- * browser sends back is guaranteed to resolve.
+ * the database seed (`prisma/seed.ts`).
  */
 export interface SihTheme {
   id: string;
@@ -23,7 +14,7 @@ export interface SihTheme {
   sihUrl: string;
 }
 
-export const SIH_OFFICIAL_18_THEMES: SihTheme[] = [
+export const SIH_OFFICIAL_17_THEMES: SihTheme[] = [
   {
     id: 'sih-theme-1',
     problemStatementCode: 'PS-MEDTECH',
@@ -153,7 +144,7 @@ export const SIH_OFFICIAL_18_THEMES: SihTheme[] = [
   {
     id: 'sih-theme-15',
     problemStatementCode: 'PS-GAMING',
-    name: 'Games & Toys',
+    name: 'Toys & Games',
     organization: 'Ministry of Information and Broadcasting',
     category: 'Gaming & Culture',
     description: 'Challenge your creative mind to conceptualize and develop unique toys and games based on our civilization, history, and culture etc.',
@@ -161,24 +152,6 @@ export const SIH_OFFICIAL_18_THEMES: SihTheme[] = [
   },
   {
     id: 'sih-theme-16',
-    problemStatementCode: 'PS-MISCELLANEOUS',
-    name: 'Miscellaneous',
-    organization: 'Cross-Ministry / Open Innovation',
-    category: 'Open Category',
-    description: 'Technology ideas in tertiary sectors like Hospitality, Entertainment and Retail.',
-    sihUrl: 'https://sih.gov.in/',
-  },
-  {
-    id: 'sih-theme-17',
-    problemStatementCode: 'PS-FINTECH',
-    name: 'FinTech',
-    organization: 'Ministry of Finance / RBI',
-    category: 'Finance & Banking',
-    description: 'Challenges related to the financial services.',
-    sihUrl: 'https://sih.gov.in/',
-  },
-  {
-    id: 'sih-theme-18',
     problemStatementCode: 'PS-AUTOMATION',
     name: 'Smart Automation',
     organization: 'Ministry of Heavy Industries / MeitY',
@@ -187,13 +160,16 @@ export const SIH_OFFICIAL_18_THEMES: SihTheme[] = [
     sihUrl: 'https://sih.gov.in/',
   },
   {
-    id: 'sih-theme-19',
-    problemStatementCode: 'PS-OPEN-INNOVATION',
-    name: 'Open Innovation',
-    organization: 'Ministry of Education / AICTE',
+    id: 'sih-theme-17',
+    problemStatementCode: 'PS-MISCELLANEOUS',
+    name: 'Miscellaneous',
+    organization: 'Cross-Ministry / Open Innovation',
     category: 'Open Category',
-    description: 'Submit any innovative idea that doesn\'t fit into the other official categories.',
+    description: 'Technology ideas in tertiary sectors like Hospitality, Entertainment and Retail.',
     sihUrl: 'https://sih.gov.in/',
   },
 ];
 
+// Alias for backwards compatibility across existing imports
+export const SIH_OFFICIAL_18_THEMES = SIH_OFFICIAL_17_THEMES;
+export const SIH_OFFICIAL_THEMES = SIH_OFFICIAL_17_THEMES;

@@ -1,9 +1,24 @@
 'use client';
 
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useState, useRef, type FormEvent } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, m } from 'framer-motion';
-import { ArrowUpRight, Users, BookOpen, GraduationCap, Calendar, Compass, ShieldCheck } from 'lucide-react';
+import {
+  ArrowUpRight,
+  Users,
+  Search,
+  BookOpen,
+  GraduationCap,
+  Sparkles,
+  ShieldCheck,
+  RotateCcw,
+  Layers,
+  ChevronLeft,
+  ChevronRight,
+  AlertCircle,
+  RefreshCw,
+} from 'lucide-react';
 import { Container, EmptyState, StudentCardSkeleton } from '@/components/ui';
 import Icon from '@/components/ui/Icon';
 import { useToast } from '@/components/ui/Toast';
@@ -22,6 +37,7 @@ import {
   EASE,
   SPRING,
 } from '@/components/motion';
+import { QueryClient } from '@/lib/queryClient';
 import { logger } from '@/lib/logger';
 
 interface Student {
@@ -32,20 +48,9 @@ interface Student {
   skills: string[];
   languages: string[];
   softSkills: string[];
-  resumeUrl?: string;
-  githubUrl?: string;
-  linkedinUrl?: string;
   avatarUrl?: string | null;
   college: string;
   teamStatus: string;
-  team: {
-    id: string;
-    teamCode: string;
-    name: string;
-    status: string;
-    leaderId: string;
-    mentor?: { userId: string; name: string; designation: string; organization: string } | null;
-  } | null;
   interests: Array<{ code: string; name: string }>;
 }
 
@@ -93,6 +98,7 @@ const SOFT_SKILL_OPTIONS = [
   'Management',
 ];
 const LANGUAGE_OPTIONS = ['English', 'Hindi'];
+const POPULAR_SUGGESTIONS = ['React', 'Python', 'Machine Learning', 'Next.js', 'Figma', 'Node.js', 'Spring Boot'];
 
 function ProfileAvatar({ avatarUrl, name }: { avatarUrl?: string | null; name: string }) {
   if (avatarUrl?.startsWith('data:image/') || avatarUrl?.startsWith('http')) {
@@ -140,10 +146,14 @@ export default function FindTeammatesPage() {
   const router = useRouter();
   const [students, setStudents] = useState<Student[]>([]);
   const [tracks, setTracks] = useState<Track[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [totalCount, setTotalCount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
-  // Search & Filters state
+  // Filters
   const [name, setName] = useState('');
   const [college, setCollege] = useState('');
   const [branch, setBranch] = useState('');
@@ -153,61 +163,150 @@ export default function FindTeammatesPage() {
   const [language, setLanguage] = useState('');
   const [trackId, setTrackId] = useState('');
   const [inviteState, setInviteState] = useState<Record<string, 'sending' | 'sent'>>({});
-  const [currentPage, setCurrentPage] = useState(1);
 
-  const fetchTeammates = useCallback(
-    async (filters: TeammateFilters) => {
-      setRefreshing(true);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const latestRequestIdRef = useRef(0);
+
+  // Load Tracks (cached server/client side)
+  useEffect(() => {
+    async function loadTracks() {
+      try {
+        const data = await QueryClient.fetch<{ success: boolean; tracks: Track[] }>(
+          'sih_theme_list',
+          async () => {
+            const res = await fetch('/api/tracks');
+            return res.json();
+          },
+          { ttlMs: 300_000 }
+        );
+        if (data?.success) setTracks(data.tracks);
+      } catch (err) {
+        logger.error('Fetch tracks failed', err);
+      }
+    }
+    loadTracks();
+  }, []);
+
+  const executeSearch = useCallback(
+    async (filters: TeammateFilters, page = 1) => {
+      const requestId = ++latestRequestIdRef.current;
+
+      // Abort previous in-flight request
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      abortControllerRef.current = new AbortController();
+
+      setLoading(true);
+      setHasSearched(true);
+      setSearchError(null);
+
+      // Normalized structured cache key incorporating all active filters
+      const normalizedFilters = {
+        name: filters.name?.trim().toLowerCase() || '',
+        college: filters.college?.trim().toLowerCase() || '',
+        branch: filters.branch?.trim().toLowerCase() || '',
+        year: filters.year?.trim() || '',
+        skill: filters.skill?.trim().toLowerCase() || '',
+        softSkill: filters.softSkill?.trim() || '',
+        language: filters.language?.trim() || '',
+        trackId: filters.trackId?.trim() || '',
+      };
+
+      const cacheKey = `teammates:${JSON.stringify(normalizedFilters)}:${page}`;
+
       try {
         const queryParams = new URLSearchParams();
-        if (filters.name) queryParams.append('name', filters.name);
-        if (filters.college) queryParams.append('college', filters.college);
-        if (filters.branch) queryParams.append('branch', filters.branch);
-        if (filters.year) queryParams.append('year', filters.year);
-        if (filters.skill) queryParams.append('skill', filters.skill);
-        if (filters.softSkill) queryParams.append('softSkill', filters.softSkill);
-        if (filters.language) queryParams.append('language', filters.language);
-        if (filters.trackId) queryParams.append('trackId', filters.trackId);
+        if (filters.name?.trim()) queryParams.append('name', filters.name.trim());
+        if (filters.college?.trim()) queryParams.append('college', filters.college.trim());
+        if (filters.branch?.trim()) queryParams.append('branch', filters.branch.trim());
+        if (filters.year?.trim() && filters.year !== 'All years') queryParams.append('year', filters.year.trim());
+        if (filters.skill?.trim()) queryParams.append('skill', filters.skill.trim());
+        if (filters.softSkill?.trim() && filters.softSkill !== 'All soft skills') queryParams.append('softSkill', filters.softSkill.trim());
+        if (filters.language?.trim() && filters.language !== 'All languages') queryParams.append('language', filters.language.trim());
+        if (filters.trackId?.trim()) queryParams.append('trackId', filters.trackId.trim());
+        queryParams.append('page', String(page));
 
-        const res = await fetch(`/api/students?${queryParams.toString()}`, { cache: 'no-store' });
-        const data = await res.json();
-        if (data.success) { setStudents(data.students); setCurrentPage(1); }
-      } catch (err) {
-        logger.error('Fetch teammates error', err);
-        toast('Could not load students. Check your connection.', 'error');
+        const data = await QueryClient.fetch<{
+          success: boolean;
+          students: Student[];
+          pagination?: { total: number; totalPages: number };
+          error?: string;
+        }>(
+          cacheKey,
+          async () => {
+            const res = await fetch(`/api/students?${queryParams.toString()}`, {
+              signal: abortControllerRef.current?.signal,
+            });
+            const json = await res.json();
+            if (!res.ok) throw new Error(json.error || 'Failed to retrieve teammates.');
+            return json;
+          },
+          { ttlMs: 15_000 }
+        );
+
+        // Stale response protection: only the latest in-flight request can update UI state
+        if (requestId !== latestRequestIdRef.current) return;
+
+        if (data.success && data.students) {
+          setStudents(data.students);
+          setTotalCount(data.pagination?.total ?? data.students.length);
+          setTotalPages(data.pagination?.totalPages ?? 1);
+          setCurrentPage(page);
+          setSearchError(null);
+        } else {
+          throw new Error(data.error || 'Failed to retrieve teammates.');
+        }
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === 'AbortError') return;
+        if (requestId !== latestRequestIdRef.current) return;
+        logger.error('Search teammates error', err);
+        setSearchError(err instanceof Error ? err.message : 'Could not load students. Check your connection.');
+        toast(err instanceof Error ? err.message : 'Could not load students. Check your connection.', 'error');
       } finally {
-        setRefreshing(false);
+        if (requestId === latestRequestIdRef.current) {
+          setLoading(false);
+        }
       }
     },
     [toast]
   );
 
+  // Debounced search when user types or changes filters
   useEffect(() => {
-    async function initPage() {
-      const loadTracks = async () => {
-        try {
-        const res = await fetch('/api/tracks');
-        const data = await res.json();
-        if (data.success) setTracks(data.tracks);
-        } catch (err) {
-          logger.error('Fetch tracks failed', err);
-          toast('Could not load track filters. Please refresh.', 'error');
-        }
-      };
-      await Promise.all([loadTracks(), fetchTeammates(EMPTY_TEAMMATE_FILTERS)]);
-      setLoading(false);
+    const isFilterActive = Boolean(
+      (name && name.trim().length >= 2) ||
+      (skill && skill.trim().length >= 2) ||
+      branch ||
+      year ||
+      softSkill ||
+      language ||
+      trackId ||
+      college
+    );
+
+    if (!isFilterActive) {
+      if (hasSearched && !name && !skill && !branch && !year && !softSkill && !language && !trackId && !college) {
+        // Reset back to empty state
+        setStudents([]);
+        setHasSearched(false);
+        setSearchError(null);
+        setTotalCount(0);
+      }
+      return;
     }
-    initPage();
-  }, [fetchTeammates, toast]);
 
-  const handleSearch = (e: FormEvent) => {
+    const timer = setTimeout(() => {
+      executeSearch({ name, college, branch, year, skill, softSkill, language, trackId }, 1);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [name, college, branch, year, skill, softSkill, language, trackId, executeSearch, hasSearched]);
+
+  const handleSearchSubmit = (e: FormEvent) => {
     e.preventDefault();
-    fetchTeammates({ name, college, branch, year, skill, softSkill, language, trackId });
+    executeSearch({ name, college, branch, year, skill, softSkill, language, trackId }, 1);
   };
-
-  const itemsPerPage = 20;
-  const totalPages = Math.max(1, Math.ceil(students.length / itemsPerPage));
-  const paginatedTeammates = students.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const handleReset = () => {
     setName('');
@@ -218,7 +317,15 @@ export default function FindTeammatesPage() {
     setSoftSkill('');
     setLanguage('');
     setTrackId('');
-    fetchTeammates(EMPTY_TEAMMATE_FILTERS);
+    setStudents([]);
+    setHasSearched(false);
+    setSearchError(null);
+    setTotalCount(0);
+  };
+
+  const handleSuggestionClick = (keyword: string) => {
+    setSkill(keyword);
+    executeSearch({ ...EMPTY_TEAMMATE_FILTERS, skill: keyword }, 1);
   };
 
   const sendInvite = async (student: Student) => {
@@ -245,119 +352,122 @@ export default function FindTeammatesPage() {
     }
   };
 
-  const activeFilters = [name, college, branch, year, skill, softSkill, language, trackId].filter(Boolean).length;
+  const activeFiltersCount = [name, college, branch, year, skill, softSkill, language, trackId].filter(Boolean).length;
 
   return (
-    <div className="flex min-h-screen flex-col bg-background text-foreground">
+    <div className="relative min-h-screen overflow-x-hidden bg-background text-foreground flex flex-col justify-between">
       <Navbar />
 
-      <main id="main" className="flex-1">
-        {/* Header Section */}
-        <section className="section-dune relative overflow-hidden">
-          <Aurora variant="warm" spotlight={false} />
-          <Container width="wide" className="relative flex flex-col gap-6 py-12 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <Reveal direction="none" blur={false}>
-                <span className="text-label uppercase text-primary">
-                  Talent directory
-                </span>
-              </Reveal>
-              <SplitText
-                as="h1"
-                text="Browse teammates"
-                className="mt-3 text-title text-foreground"
-                delay={0.08}
-              />
-              <Reveal delay={0.28} className="mt-3">
-                <p className="max-w-xl text-sm leading-relaxed text-body">
-                  Browse students looking for SIH teams. Browse collaborators by college, branch, year, skills and track interest.
-                </p>
-              </Reveal>
-            </div>
+      <main className="relative flex-1 py-10">
+        <Aurora />
+        <Container>
+          {/* Header */}
+          <div className="mb-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <Reveal>
+              <span className="text-label uppercase tracking-widest text-primary font-bold">Talent Directory</span>
+              <h1 className="text-display text-foreground mt-1">
+                <SplitText text="Browse teammates" />
+              </h1>
+              <p className="mt-2 text-body text-muted max-w-xl text-base">
+                Discover collaborating students for Smart India Hackathon. Search by technical skills, theme interests, branch, and fluency.
+              </p>
+            </Reveal>
 
-            <Reveal direction="left" delay={0.2}>
-              <div className="surface-raised flex items-center gap-5 rounded-2xl px-5 py-4">
-                <div>
-                  <div className="text-3xl font-extrabold tracking-tight text-foreground">
-                    <m.span layout><Counter to={students.length} duration={1.2} /></m.span>
+            {hasSearched && (
+              <div className="flex gap-4">
+                <div className="surface-raised rounded-2xl p-4 border border-[rgba(209,199,189,0.7)] text-center min-w-[110px]">
+                  <div className="text-2xl font-black text-foreground">
+                    <Counter to={totalCount} duration={1.2} />
                   </div>
-                  <div className="text-label uppercase text-muted">
-                    profiles shown
-                  </div>
+                  <div className="text-label uppercase text-muted mt-0.5">Profiles Found</div>
                 </div>
-                <div className="h-10 w-px bg-[rgba(172,156,141,0.5)]" />
-                <div>
-                  <div className="text-3xl font-extrabold tracking-tight text-foreground">
-                    {activeFilters}
+                <div className="surface-raised rounded-2xl p-4 border border-[rgba(209,199,189,0.7)] text-center min-w-[110px]">
+                  <div className="text-2xl font-black text-primary">
+                    <Counter to={activeFiltersCount} duration={1.2} />
                   </div>
-                  <div className="text-label uppercase text-muted">
-                    filters active
-                  </div>
+                  <div className="text-label uppercase text-muted mt-0.5">Active Filters</div>
                 </div>
               </div>
-            </Reveal>
-          </Container>
-        </section>
+            )}
+          </div>
 
-        {/* Filter Rail & Results */}
-        <section className="surface-sunken">
-          <Container width="wide" className="grid grid-cols-1 gap-6 py-10 lg:grid-cols-[280px_1fr]">
-            {/* Filter rail */}
-            <Reveal direction="right">
-              <form
-                onSubmit={handleSearch}
-                className="surface-raised rounded-3xl p-6 lg:sticky lg:top-28"
-              >
-                <h2 className="text-feature text-foreground">Refine</h2>
-                <div className="my-5 h-px bg-gradient-to-r from-[rgba(172,156,141,0.55)] to-transparent" />
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
+            {/* Left Search / Refine Panel */}
+            <div className="lg:col-span-4">
+              <div className="surface-raised rounded-3xl border border-[rgba(209,199,189,0.7)] p-6 shadow-e2 lg:sticky lg:top-24">
+                <div className="flex items-center justify-between border-b border-[rgba(209,199,189,0.6)] pb-4 mb-5">
+                  <div className="flex items-center gap-2 font-bold text-foreground">
+                    <Search className="size-4 text-primary" />
+                    <span>Search & Refine</span>
+                  </div>
+                  {activeFiltersCount > 0 && (
+                    <button
+                      onClick={handleReset}
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+                    >
+                      <RotateCcw className="size-3" />
+                      <span>Reset</span>
+                    </button>
+                  )}
+                </div>
 
-                <div className="space-y-4">
-                  <label className="block">
-                    <FilterLabel>Student or Team ID</FilterLabel>
+                <form onSubmit={handleSearchSubmit} className="space-y-4">
+                  {/* Name or ID */}
+                  <div>
+                    <FilterLabel>Student Name or Keyword</FilterLabel>
                     <input
                       type="text"
-                      placeholder="Name, GLB100, or team name"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
+                      placeholder="e.g. Tanishk, Bansal..."
                       className={CONTROL}
                     />
-                  </label>
+                  </div>
 
-                  <label className="block">
-                    <FilterLabel>Tech skill</FilterLabel>
+                  {/* Technical Skill */}
+                  <div>
+                    <FilterLabel>Technical Skill</FilterLabel>
                     <input
                       type="text"
-                      placeholder="e.g. React, Python"
                       value={skill}
                       onChange={(e) => setSkill(e.target.value)}
+                      placeholder="e.g. React, Python, Flutter..."
                       className={CONTROL}
                     />
-                  </label>
+                  </div>
 
-                  <label className="block">
-                    <FilterLabel>College</FilterLabel>
-                    <input
-                      type="text"
-                      placeholder="e.g. GL Bajaj"
-                      value={college}
-                      onChange={(e) => setCollege(e.target.value)}
+                  {/* SIH Theme Filter */}
+                  <div>
+                    <FilterLabel>Theme Interest</FilterLabel>
+                    <select
+                      value={trackId}
+                      onChange={(e) => setTrackId(e.target.value)}
                       className={CONTROL}
-                    />
-                  </label>
+                    >
+                      <option value="">All Themes</option>
+                      {tracks.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.name} ({t.problemStatementCode})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-                  <label className="block">
-                    <FilterLabel>Department (Branch)</FilterLabel>
+                  {/* Branch */}
+                  <div>
+                    <FilterLabel>Department / Branch</FilterLabel>
                     <input
                       type="text"
-                      placeholder="e.g. CSE, IT"
                       value={branch}
                       onChange={(e) => setBranch(e.target.value)}
+                      placeholder="e.g. CSE, IT, AI/ML..."
                       className={CONTROL}
                     />
-                  </label>
+                  </div>
 
-                  <label className="block">
-                    <FilterLabel>Year</FilterLabel>
+                  {/* Year */}
+                  <div>
+                    <FilterLabel>Year of Study</FilterLabel>
                     <select
                       value={year}
                       onChange={(e) => setYear(e.target.value)}
@@ -369,10 +479,11 @@ export default function FindTeammatesPage() {
                       <option value="3rd Year">3rd Year</option>
                       <option value="4th Year">4th Year</option>
                     </select>
-                  </label>
+                  </div>
 
-                  <label className="block">
-                    <FilterLabel>Soft skill</FilterLabel>
+                  {/* Soft Skill */}
+                  <div>
+                    <FilterLabel>Soft Skill</FilterLabel>
                     <select
                       value={softSkill}
                       onChange={(e) => setSoftSkill(e.target.value)}
@@ -385,287 +496,271 @@ export default function FindTeammatesPage() {
                         </option>
                       ))}
                     </select>
-                  </label>
+                  </div>
 
-                  <label className="block">
-                    <FilterLabel>Language</FilterLabel>
+                  {/* Spoken Language */}
+                  <div>
+                    <FilterLabel>Spoken Language</FilterLabel>
                     <select
                       value={language}
                       onChange={(e) => setLanguage(e.target.value)}
                       className={CONTROL}
                     >
                       <option value="">All languages</option>
-                      {LANGUAGE_OPTIONS.map((opt) => (
-                        <option key={opt} value={opt}>
-                          {opt}
+                      {LANGUAGE_OPTIONS.map((lang) => (
+                        <option key={lang} value={lang}>
+                          {lang}
                         </option>
                       ))}
                     </select>
-                  </label>
+                  </div>
 
-                  <label className="block">
-                    <FilterLabel>Problem statement</FilterLabel>
-                    <select
-                      value={trackId}
-                      onChange={(e) => setTrackId(e.target.value)}
-                      className={CONTROL}
-                    >
-                      <option value="">All tracks</option>
-                      {tracks.map((track) => (
-                        <option key={track.id} value={track.id}>
-                          {track.problemStatementCode}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
-
-                <div className="mt-6 flex gap-2">
                   <PremiumButton
                     type="submit"
-                    size="sm"
-                    loading={refreshing}
-                    className="flex-1"
+                    className="w-full justify-center bg-primary text-on-accent mt-4"
                   >
-                    Apply
+                    <span>Search Teammates</span>
+                    <Search className="size-4" />
                   </PremiumButton>
-                  <PremiumButton
-                    variant="glass"
-                    size="sm"
-                    onClick={handleReset}
-                    className="flex-1"
-                  >
-                    Reset
-                  </PremiumButton>
-                </div>
-              </form>
-            </Reveal>
+                </form>
+              </div>
+            </div>
 
-            {/* Results Grid */}
-            <div>
+            {/* Right Results Area */}
+            <div className="lg:col-span-8">
               {loading ? (
-                <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-                  {Array.from({ length: 6 }, (_, i) => (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  {Array.from({ length: 4 }).map((_, i) => (
                     <StudentCardSkeleton key={i} />
                   ))}
                 </div>
-              ) : paginatedTeammates.length > 0 ? (
-                <>
-                  <m.div
-                  layout
-                  className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3"
-                >
-                  <AnimatePresence mode="popLayout" initial={false}>
-                    {paginatedTeammates.map((student, i) => {
-                      const state = inviteState[student.userId];
-                      return (
-                        <m.div
-                          key={student.userId}
-                          layout
-                          initial={{ opacity: 0, y: 20, filter: 'blur(8px)' }}
-                          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                          exit={{ opacity: 0, scale: 0.96, filter: 'blur(8px)' }}
-                          transition={{
-                            duration: DURATION.card,
-                            ease: EASE.outExpo,
-                            delay: Math.min(i * 0.03, 0.3),
-                          }}
+              ) : !hasSearched ? (
+                /* Initial Engaging Search Prompt State */
+                <div className="surface-raised rounded-3xl border border-[rgba(209,199,189,0.7)] p-10 text-center shadow-e1">
+                  <div className="size-16 rounded-3xl bg-[rgba(114,56,61,0.1)] border border-[rgba(114,56,61,0.2)] flex items-center justify-center text-primary mx-auto mb-5">
+                    <Sparkles className="size-8" />
+                  </div>
+                  <h2 className="text-heading text-foreground font-bold mb-2">Find your teammates</h2>
+                  <p className="text-body text-muted max-w-md mx-auto text-sm mb-6 leading-relaxed">
+                    Search students by technical skills, SIH theme interests, academic branch, or spoken languages using the refine panel on the left.
+                  </p>
+
+                  <div className="pt-4 border-t border-[rgba(209,199,189,0.5)]">
+                    <p className="text-label uppercase text-muted font-bold mb-3">Popular Searches</p>
+                    <div className="flex flex-wrap items-center justify-center gap-2 max-w-lg mx-auto">
+                      {POPULAR_SUGGESTIONS.map((tag) => (
+                        <button
+                          key={tag}
+                          onClick={() => handleSuggestionClick(tag)}
+                          className="px-3 py-1.5 rounded-full border border-[rgba(209,199,189,0.8)] bg-[rgba(248,246,242,0.8)] text-xs font-semibold text-body hover:border-primary hover:text-primary transition-all duration-200"
                         >
-                          <TiltCard intensity={5} className="h-full">
-                            <SpotlightCard className="h-full rounded-3xl" intensity={0.08}>
-                              <article className="surface-raised flex h-full flex-col justify-between rounded-3xl p-5 sm:p-6">
-                                  <m.div
-                                    whileTap={{ scale: 0.99 }}
-                                    transition={SPRING.snappy}
-                                    onClick={() => router.push(`/students/${student.userId}`)}
-                                    className="space-y-4 cursor-pointer group/card"
-                                  >
-                                    <div className="flex items-start justify-between gap-3">
-                                      <div className="flex items-center gap-3 min-w-0">
-                                        <ProfileAvatar
-                                          avatarUrl={student.avatarUrl}
-                                          name={student.name}
-                                        />
-                                        <div className="min-w-0">
-                                          <h3 className="truncate text-feature text-foreground group-hover/card:text-primary transition-colors duration-200 font-extrabold">
-                                            {student.name}
-                                          </h3>
-                                          <span className="mt-0.5 block truncate text-caption text-muted flex items-center gap-1">
-                                            <BookOpen className="size-3 shrink-0" />
-                                            {student.branch} · {student.year}
-                                          </span>
-                                        </div>
-                                      </div>
-                                      <span className={`rounded-full border px-2 py-0.5 text-[9px] font-black uppercase shrink-0 flex items-center gap-0.5 ${student.team ? 'border-[rgba(172,156,141,0.55)] bg-[rgba(172,156,141,0.18)] text-body' : 'bg-[rgba(114,56,61,0.08)] border-[rgba(114,56,61,0.2)] text-primary'}`}>
-                                        <ShieldCheck className="size-2.5" /> {student.team ? 'Already in team' : 'Available'}
-                                      </span>
-                                    </div>
-
-                                    {/* Track Interests (Header placement for high prominence) */}
-                                    {student.interests && student.interests.length > 0 && (
-                                      <div className="rounded-2xl border border-[rgba(114,56,61,0.2)] bg-gradient-to-br from-[rgba(114,56,61,0.06)] to-[rgba(114,56,61,0.01)] p-3 space-y-1.5">
-                                        <span className="block text-[9px] font-black uppercase tracking-wider text-primary">
-                                          Track Interests
-                                        </span>
-                                        <div className="flex flex-wrap gap-1">
-                                          {student.interests.map((theme) => (
-                                            <div
-                                              key={theme.code}
-                                              className="inline-flex items-center gap-1.5 rounded-lg border border-[rgba(114,56,61,0.18)] bg-white/80 px-2 py-0.5 text-[10px] font-bold text-primary shadow-sm"
-                                            >
-                                              <span className="font-extrabold tracking-wider bg-[rgba(114,56,61,0.09)] px-1.5 py-0.5 rounded text-[9px]">
-                                                {theme.code}
-                                              </span>
-                                              <span className="max-w-[140px] truncate text-foreground/90 font-bold">
-                                                {theme.name}
-                                              </span>
-                                            </div>
-                                          ))}
-                                        </div>
-                                      </div>
-                                    )}
-
-                                    {/* College info */}
-                                    <div className="text-[11px] text-muted flex items-center gap-1 border-t border-b border-[rgba(209,199,189,0.4)] py-1.5">
-                                      <GraduationCap className="size-3.5 shrink-0 text-primary" />
-                                      <span className="truncate">{student.college}</span>
-                                    </div>
-
-                                    {student.team && (
-                                      <div className="rounded-xl border border-[rgba(114,56,61,0.18)] bg-[rgba(114,56,61,0.06)] px-3 py-2 text-xs">
-                                        <span className="font-black text-primary">{student.team.teamCode}</span>
-                                        <span className="text-body"> · {student.team.name}</span>
-                                        {student.team.mentor && (
-                                          <span className="mt-1 block text-caption text-muted">Mentor: {student.team.mentor.name}</span>
-                                        )}
-                                      </div>
-                                    )}
-
-                                    {/* Tech skills */}
-                                    <div>
-                                      <FilterLabel>Tech skills</FilterLabel>
-                                      <div className="flex flex-wrap gap-1.5">
-                                        {student.skills.map((sk) => (
-                                          <span
-                                            key={sk}
-                                            className="rounded-md border border-[rgba(114,56,61,0.22)] bg-[rgba(114,56,61,0.08)] px-2 py-0.5 text-caption font-semibold text-primary"
-                                          >
-                                            {sk}
-                                          </span>
-                                        ))}
-                                      </div>
-                                    </div>
-
-                                    {/* Soft skills */}
-                                    <div>
-                                      <FilterLabel>Soft skills &amp; language</FilterLabel>
-                                      <div className="flex flex-wrap gap-1.5">
-                                        {student.softSkills.map((sk) => (
-                                          <span
-                                            key={sk}
-                                            className="rounded-md border border-[rgba(172,156,141,0.55)] bg-[rgba(172,156,141,0.18)] px-2 py-0.5 text-caption font-semibold text-foreground"
-                                          >
-                                            {sk}
-                                          </span>
-                                        ))}
-                                        {student.languages.map((ln) => (
-                                          <span
-                                            key={ln}
-                                            className="rounded-md border border-[rgba(209,199,189,0.7)] bg-[rgba(239,233,225,0.8)] px-2 py-0.5 text-caption font-semibold text-body"
-                                          >
-                                            {ln}
-                                          </span>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  </m.div>
-
-                                  <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-[rgba(209,199,189,0.6)] pt-4">
-                                    <PremiumButton
-                                      size="sm"
-                                      variant="glass"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        router.push(`/students/${student.userId}`);
-                                      }}
-                                    >
-                                      View Profile
-                                    </PremiumButton>
-
-                                    <PremiumButton
-                                      size="sm"
-                                      variant={state === 'sent' || student.team ? 'glass' : 'primary'}
-                                      loading={state === 'sending'}
-                                      disabled={Boolean(state) || Boolean(student.team)}
-                                      magnetic={false}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        sendInvite(student);
-                                      }}
-                                    >
-                                      {student.team ? 'Already in team' : state === 'sent' ? 'Invite sent' : 'Invite'}
-                                    </PremiumButton>
-                                  </div>
-                              </article>
-                            </SpotlightCard>
-                          </TiltCard>
-                        </m.div>
-                      );
-                    })}
-                  </AnimatePresence>
-                </m.div>
-
-                {/* Pagination Controls */}
-                {totalPages > 1 && (
-                  <div className="mt-10 flex items-center justify-center gap-2">
-                    <button
-                      disabled={currentPage === 1}
-                      onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                      className="rounded-xl border border-[rgba(114,56,61,0.2)] bg-[rgba(248,246,242,0.7)] px-4 py-2 text-caption font-bold text-primary transition-all duration-200 hover:bg-[rgba(114,56,61,0.08)] disabled:opacity-50 disabled:cursor-not-allowed"
+                          + {tag}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : searchError ? (
+                <div className="surface-raised rounded-3xl border border-[rgba(114,56,61,0.3)] bg-[rgba(114,56,61,0.04)] p-12 text-center shadow-e1">
+                  <div className="size-14 rounded-2xl bg-[rgba(114,56,61,0.1)] flex items-center justify-center text-primary mx-auto mb-4">
+                    <AlertCircle className="size-7" />
+                  </div>
+                  <h3 className="text-feature text-foreground font-bold">Search Request Failed</h3>
+                  <p className="text-body text-muted text-xs mt-2 max-w-md mx-auto">
+                    {searchError}
+                  </p>
+                  <div className="mt-5 flex items-center justify-center gap-3">
+                    <PremiumButton
+                      size="sm"
+                      onClick={() => executeSearch({ name, college, branch, year, skill, softSkill, language, trackId }, currentPage)}
+                      className="bg-primary text-on-accent"
                     >
-                      Previous
-                    </button>
-
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                      <button
-                        key={page}
-                        onClick={() => setCurrentPage(page)}
-                        className={`size-10 rounded-xl font-bold transition-all duration-200 flex items-center justify-center ${
-                          currentPage === page
-                            ? 'bg-primary text-on-accent shadow-[0_4px_12px_rgba(114,56,61,0.25)]'
-                            : 'border border-[rgba(114,56,61,0.2)] bg-[rgba(248,246,242,0.7)] text-muted hover:border-primary hover:text-primary'
-                        }`}
-                      >
-                        {page}
-                      </button>
-                    ))}
-
+                      <RefreshCw className="size-3.5" />
+                      <span>Retry Search</span>
+                    </PremiumButton>
                     <button
-                      disabled={currentPage === totalPages}
-                      onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                      className="rounded-xl border border-[rgba(114,56,61,0.2)] bg-[rgba(248,246,242,0.7)] px-4 py-2 text-caption font-bold text-primary transition-all duration-200 hover:bg-[rgba(114,56,61,0.08)] disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={handleReset}
+                      className="px-4 py-2 rounded-xl border border-[rgba(209,199,189,0.7)] text-xs font-semibold text-body hover:bg-white"
                     >
-                      Next
+                      Clear Filters
                     </button>
                   </div>
-                )}
-              </>
-            ) : (
-                <EmptyState
-                  icon={Users}
-                  title="No teammate profiles match these filters."
-                  description="Clear a filter or widen your search to discover more collaborators."
-                  action={
-                    <PremiumButton variant="glass" size="sm" onClick={handleReset}>
-                      Reset filters
-                    </PremiumButton>
-                  }
-                  className="max-w-2xl mx-auto w-full"
-                />
+                </div>
+              ) : students.length === 0 ? (
+                <div className="surface-raised rounded-3xl border border-[rgba(209,199,189,0.7)] p-12 text-center shadow-e1">
+                  <div className="size-14 rounded-2xl bg-[rgba(209,199,189,0.3)] flex items-center justify-center text-muted mx-auto mb-4">
+                    <Users className="size-7" />
+                  </div>
+                  <h3 className="text-feature text-foreground font-bold">No matching teammates found</h3>
+                  <p className="text-body text-muted text-xs mt-2 max-w-md mx-auto">
+                    Try broadening your filters or searching for related skills like JavaScript, Python, or Web Development.
+                  </p>
+                  <button
+                    onClick={handleReset}
+                    className="mt-5 px-5 py-2 rounded-xl bg-primary text-on-accent text-xs font-semibold"
+                  >
+                    Clear All Filters
+                  </button>
+                </div>
+              ) : (
+                /* Results Grid with Modular Teammate Cards */
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {students.map((student) => (
+                      <SpotlightCard key={student.userId} className="rounded-3xl h-full" intensity={0.14}>
+                        <div className="surface-raised h-full rounded-3xl p-6 border border-[rgba(209,199,189,0.7)] flex flex-col justify-between shadow-e2 transition-all hover:shadow-e4">
+                          <div>
+                            {/* Identity Section */}
+                            <div className="flex items-start justify-between gap-3 mb-4">
+                              <div className="flex items-center gap-3">
+                                <ProfileAvatar avatarUrl={student.avatarUrl} name={student.name} />
+                                <div>
+                                  <h3 className="text-feature font-bold text-foreground truncate max-w-[180px]">
+                                    {student.name}
+                                  </h3>
+                                  <p className="text-xs text-muted flex items-center gap-1 mt-0.5">
+                                    <GraduationCap className="size-3.5" />
+                                    <span>{student.branch || 'Student'} • {student.year || 'General'}</span>
+                                  </p>
+                                </div>
+                              </div>
+
+                              <span className="inline-flex items-center gap-1 rounded-full border border-[rgba(172,156,141,0.5)] bg-[rgba(248,246,242,0.8)] px-2.5 py-0.5 text-[11px] font-semibold text-primary">
+                                <ShieldCheck className="size-3" />
+                                <span>Available</span>
+                              </span>
+                            </div>
+
+                            {/* Theme Section */}
+                            {student.interests && student.interests.length > 0 && (
+                              <div className="mb-4 rounded-2xl border border-[rgba(209,199,189,0.6)] bg-[rgba(248,246,242,0.6)] p-3">
+                                <div className="text-[10px] uppercase font-bold tracking-wider text-muted flex items-center gap-1 mb-1.5">
+                                  <Layers className="size-3 text-primary" />
+                                  <span>Theme Interests</span>
+                                </div>
+                                <div className="space-y-1">
+                                  {student.interests.slice(0, 2).map((interest, idx) => (
+                                    <div key={idx} className="text-xs text-foreground font-medium truncate">
+                                      <span className="font-semibold text-primary">{interest.code}</span> — {interest.name}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Technical Skills Section */}
+                            {student.skills && student.skills.length > 0 && (
+                              <div className="mb-3">
+                                <span className="text-[10px] uppercase font-bold tracking-wider text-muted block mb-1.5">
+                                  Technical Skills
+                                </span>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {student.skills.slice(0, 5).map((sk) => (
+                                    <span
+                                      key={sk}
+                                      className="rounded-lg border border-[rgba(114,56,61,0.25)] bg-[rgba(114,56,61,0.07)] px-2 py-0.5 text-[11px] font-medium text-primary"
+                                    >
+                                      {sk}
+                                    </span>
+                                  ))}
+                                  {student.skills.length > 5 && (
+                                    <span className="rounded-lg border border-[rgba(209,199,189,0.7)] px-2 py-0.5 text-[11px] text-muted">
+                                      +{student.skills.length - 5}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Soft Skills & Languages */}
+                            {(student.softSkills?.length > 0 || student.languages?.length > 0) && (
+                              <div className="mb-4">
+                                <span className="text-[10px] uppercase font-bold tracking-wider text-muted block mb-1.5">
+                                  Soft Skills & Languages
+                                </span>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {student.softSkills?.slice(0, 2).map((ss) => (
+                                    <span
+                                      key={ss}
+                                      className="rounded-lg border border-[rgba(209,199,189,0.7)] bg-[rgba(239,233,225,0.7)] px-2 py-0.5 text-[11px] text-body"
+                                    >
+                                      {ss}
+                                    </span>
+                                  ))}
+                                  {student.languages?.slice(0, 2).map((lang) => (
+                                    <span
+                                      key={lang}
+                                      className="rounded-lg border border-[rgba(209,199,189,0.7)] bg-[rgba(239,233,225,0.7)] px-2 py-0.5 text-[11px] text-body"
+                                    >
+                                      {lang}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Action Footer */}
+                          <div className="pt-4 border-t border-[rgba(209,199,189,0.5)] flex items-center justify-between gap-3">
+                            <Link
+                              href={`/students/${student.userId}`}
+                              className="text-xs font-semibold text-muted hover:text-foreground flex items-center gap-1 transition-colors"
+                            >
+                              <span>View Profile</span>
+                              <ArrowUpRight className="size-3" />
+                            </Link>
+
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                sendInvite(student);
+                              }}
+                              disabled={inviteState[student.userId] === 'sent' || inviteState[student.userId] === 'sending'}
+                              className="px-3.5 py-1.5 rounded-xl bg-primary text-on-accent text-xs font-semibold shadow-sm hover:opacity-90 disabled:opacity-50 transition-all"
+                            >
+                              {inviteState[student.userId] === 'sent'
+                                ? 'Invited ✓'
+                                : inviteState[student.userId] === 'sending'
+                                ? 'Sending…'
+                                : 'Invite to Team'}
+                            </button>
+                          </div>
+                        </div>
+                      </SpotlightCard>
+                    ))}
+                  </div>
+
+                  {/* Pagination Controls */}
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-center gap-3 pt-6">
+                      <button
+                        onClick={() => executeSearch({ name, college, branch, year, skill, softSkill, language, trackId }, currentPage - 1)}
+                        disabled={currentPage <= 1}
+                        className="px-3 py-1.5 rounded-xl border border-[rgba(209,199,189,0.7)] text-xs font-semibold text-body disabled:opacity-40 flex items-center gap-1 hover:bg-[rgba(209,199,189,0.2)]"
+                      >
+                        <ChevronLeft className="size-4" />
+                        <span>Previous</span>
+                      </button>
+
+                      <span className="text-xs font-semibold text-muted">
+                        Page {currentPage} of {totalPages}
+                      </span>
+
+                      <button
+                        onClick={() => executeSearch({ name, college, branch, year, skill, softSkill, language, trackId }, currentPage + 1)}
+                        disabled={currentPage >= totalPages}
+                        className="px-3 py-1.5 rounded-xl border border-[rgba(209,199,189,0.7)] text-xs font-semibold text-body disabled:opacity-40 flex items-center gap-1 hover:bg-[rgba(209,199,189,0.2)]"
+                      >
+                        <span>Next</span>
+                        <ChevronRight className="size-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
-          </Container>
-        </section>
+          </div>
+        </Container>
       </main>
 
       <Footer />

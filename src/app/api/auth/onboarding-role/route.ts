@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { currentUser } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
-import { verifyToken, signToken } from '@/lib/auth';
+import { verifyToken, signToken, deriveInitialDisplayName } from '@/lib/auth';
 import { checkUserRateLimit } from '@/lib/rateLimit';
 import { matchesMentorMasterKey, matchesDepartmentMentorKey } from '@/lib/mentorKey';
 import { onboardingRoleSchema } from '@/lib/validation';
+import { clerkCircuitBreaker } from '@/lib/circuitBreaker';
 import { logger } from '@/lib/logger';
 import { setSessionCookie } from '@/lib/sessionCookie';
 
@@ -68,7 +70,18 @@ export async function POST(request: Request) {
       }
     }
 
-    // Now update the user role and setup/ensure profile is created
+    // Retrieve clerkUser server-side for safe display name derivation
+    let clerkUser: Awaited<ReturnType<typeof currentUser>> = null;
+    try {
+      clerkUser = await clerkCircuitBreaker.execute(
+        () => currentUser(),
+        async () => null
+      );
+    } catch {}
+
+    const initialName = deriveInitialDisplayName(clerkUser, user.email);
+
+    // Update the user role and setup/ensure profile is created idempotently
     await prisma.$transaction(async (tx) => {
       // 1. Update user role
       await tx.user.update({
@@ -84,13 +97,13 @@ export async function POST(request: Request) {
         });
       }
 
-      // 3. Ensure target profile exists
+      // 3. Ensure target profile exists idempotently
       if (role === 'STUDENT') {
         if (!user.studentProfile) {
           await tx.studentProfile.create({
             data: {
               userId: user.id,
-              name: user.email.split('@')[0] || 'Student User',
+              name: initialName,
               year: '',
               branch: '',
             },
@@ -101,7 +114,7 @@ export async function POST(request: Request) {
           await tx.mentorProfile.create({
             data: {
               userId: user.id,
-              name: user.email.split('@')[0] || 'Mentor User',
+              name: initialName,
               designation: '',
               organization: 'GL Bajaj Group of Institutions',
               verified: isMentorVerified,
@@ -113,7 +126,11 @@ export async function POST(request: Request) {
 
     // Generate new session cookie with updated role!
     const updatedToken = signToken({ userId: user.id, email: user.email, role });
-    const response = NextResponse.json({ success: true });
+    const response = NextResponse.json({
+      success: true,
+      role,
+      name: user.studentProfile?.name || user.mentorProfile?.name || initialName,
+    });
     setSessionCookie(response.cookies, updatedToken);
 
     return response;

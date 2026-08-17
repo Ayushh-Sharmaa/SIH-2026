@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import Image from 'next/image';
 import { AnimatePresence, m } from 'framer-motion';
 import {
@@ -33,7 +34,9 @@ import {
   EASE,
   SPRING,
 } from '@/components/motion';
+import { QueryClient } from '@/lib/queryClient';
 import { logger } from '@/lib/logger';
+import { useRef } from 'react';
 
 interface Mentor {
   userId: string;
@@ -198,7 +201,7 @@ function RequestMentorshipModal({
             <span className="mb-1.5 block text-label uppercase text-muted">Message (Optional)</span>
             <textarea
               rows={4}
-              placeholder="e.g. Hello Professor! We are working on SIH Problem Statement PS-MEDTECH. We have code ready for machine learning and would love your guidance on deployment and clinical validation."
+              placeholder="e.g. Hello Professor! We are working on the SIH MedTech / HealthTech Theme. We have code ready for machine learning and would love your guidance on deployment and clinical validation."
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               className="w-full rounded-xl border border-[rgba(209,199,189,0.85)] bg-[rgba(248,246,242,0.75)] px-3.5 py-2 text-sm text-foreground outline-none transition-[border-color,box-shadow,background-color] duration-250 focus:border-primary focus:bg-[rgba(248,246,242,0.96)] focus:shadow-[0_0_0_4px_rgba(114,56,61,0.1)] resize-none"
@@ -238,28 +241,48 @@ export default function FindMentorsPage() {
   // Search filter inputs
   const [name, setName] = useState('');
   const [expertise, setExpertise] = useState('');
+  const [pagination, setPagination] = useState<{ total: number; totalPages: number; page: number }>({
+    total: 0,
+    totalPages: 1,
+    page: 1,
+  });
 
   // Modals state
   const [activeRequestMentor, setActiveRequestMentor] = useState<Mentor | null>(null);
   const [requested, setRequested] = useState<Record<string, 'sending' | 'sent'>>({});
   const [currentPage, setCurrentPage] = useState(1);
+  const abortRef = useRef<AbortController | null>(null);
 
   const fetchMentors = useCallback(
-    async (filters: MentorFilters) => {
+    async (filters: MentorFilters, page = 1) => {
+      if (abortRef.current) abortRef.current.abort();
+      abortRef.current = new AbortController();
+      const signal = abortRef.current.signal;
+
       setSearching(true);
       try {
         const queryParams = new URLSearchParams();
         if (filters.name) queryParams.append('name', filters.name);
         if (filters.expertise) queryParams.append('expertise', filters.expertise);
+        queryParams.append('page', String(page));
 
-        const res = await fetch(`/api/mentors?${queryParams.toString()}`, { cache: 'no-store' });
-        const data = await res.json();
-        if (data.success) {
-          setMentors(data.mentors);
-          setEligibility(data.eligibility);
-          setCurrentPage(1);
+        const cacheKey = `mentors:${filters.name}:${filters.expertise}:${page}`;
+        const data = await QueryClient.fetch<any>(
+          cacheKey,
+          async () => {
+            const res = await fetch(`/api/mentors?${queryParams.toString()}`, { signal });
+            return res.json();
+          },
+          { ttlMs: 30_000 }
+        );
+
+        if (data?.success) {
+          setMentors(data.mentors || []);
+          setEligibility(data.eligibility || null);
+          setPagination(data.pagination || { total: data.mentors?.length || 0, totalPages: 1, page });
         }
-      } catch (err) {
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === 'AbortError') return;
         logger.error('Fetch mentors failed', err);
         toast('Could not load mentors. Check your connection.', 'error');
       } finally {
@@ -269,26 +292,27 @@ export default function FindMentorsPage() {
     [toast]
   );
 
+  // 300ms Debounced search
   useEffect(() => {
-    const handle = requestAnimationFrame(() => {
-      fetchMentors(EMPTY_MENTOR_FILTERS).finally(() => setLoading(false));
-    });
-    return () => cancelAnimationFrame(handle);
-  }, [fetchMentors]);
+    const handler = setTimeout(() => {
+      fetchMentors({ name, expertise }, currentPage).finally(() => setLoading(false));
+    }, 300);
+
+    return () => clearTimeout(handler);
+  }, [name, expertise, currentPage, fetchMentors]);
 
   const handleSearch = (e: FormEvent) => {
     e.preventDefault();
-    fetchMentors({ name, expertise });
+    fetchMentors({ name, expertise }, currentPage);
   };
 
-  const itemsPerPage = 20;
-  const totalPages = Math.max(1, Math.ceil(mentors.length / itemsPerPage));
-  const paginatedMentors = mentors.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const totalPages = Math.max(1, pagination.totalPages);
+  const paginatedMentors = mentors;
 
   const handleReset = () => {
     setName('');
     setExpertise('');
-    fetchMentors(EMPTY_MENTOR_FILTERS);
+    fetchMentors(EMPTY_MENTOR_FILTERS, 1);
   };
 
   const submitMentorRequest = async (message: string) => {
@@ -364,7 +388,7 @@ export default function FindMentorsPage() {
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Mentor name or Team ID (GLB100)..."
+                    placeholder="Mentor name or Team ID (SIH100)..."
                     aria-label="Search mentor name or team ID"
                     className="w-full rounded-full border border-[rgba(209,199,189,0.85)] bg-[rgba(248,246,242,0.75)] py-2.5 pl-11 pr-4 text-sm text-foreground outline-none transition-[border-color,box-shadow,background-color] duration-250 focus:border-primary focus:bg-[rgba(248,246,242,0.96)] focus:shadow-[0_0_0_4px_rgba(114,56,61,0.10)]"
                   />
@@ -560,14 +584,12 @@ export default function FindMentorsPage() {
 
                           {/* Actions Column */}
                           <div className="flex shrink-0 flex-row items-center gap-2.5 sm:flex-col sm:items-end sm:justify-start pt-2 md:pt-0">
-                            <PremiumButton
-                              size="sm"
-                              variant="glass"
-                              onClick={() => router.push(`/mentors/${mentor.userId}`)}
-                              className="w-full sm:w-auto"
+                            <Link
+                              href={`/mentors/${mentor.userId}`}
+                              className="px-4 py-2 rounded-2xl border border-[rgba(209,199,189,0.8)] bg-white/60 text-xs font-bold text-body hover:border-primary hover:text-primary transition-all text-center w-full sm:w-auto"
                             >
                               View Profile
-                            </PremiumButton>
+                            </Link>
 
                             {!eligibility?.canRequest ? (
                               <span className="text-[11px] text-muted flex items-center gap-1">

@@ -430,7 +430,7 @@ export default function StudentProfilePage() {
                   <div className="space-y-5">
                     {profile.tracksDetailed && profile.tracksDetailed.length > 0 && (
                       <div>
-                        <span className="block text-label uppercase text-muted text-xs mb-2">Preferred Problem Statement Tracks</span>
+                        <span className="block text-label uppercase text-muted text-xs mb-2">Selected SIH Themes</span>
                         <div className="grid gap-2 sm:grid-cols-2">
                           {profile.tracksDetailed.map((t) => (
                             <div

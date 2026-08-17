@@ -13,7 +13,7 @@ export async function GET() {
     success: true,
     officialPsReleased: false,
     notice:
-      'Official SIH 2026 Problem Statements are not out yet. Platform tracks are configured with all 18 official SIH Themes.',
+      'Official SIH 2026 Problem Statements are not out yet. Platform tracks are configured with all 17 official SIH Themes.',
     tracks: SIH_OFFICIAL_18_THEMES,
   });
 }

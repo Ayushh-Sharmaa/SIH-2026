@@ -203,7 +203,7 @@ function RequestMentorshipModal({
             <span className="mb-1.5 block text-label uppercase text-muted">Message (Optional)</span>
             <textarea
               rows={4}
-              placeholder="e.g. Hello Professor! We are working on SIH Problem Statement PS-MEDTECH. We have code ready for machine learning and would love your guidance on deployment and clinical validation."
+              placeholder="e.g. Hello Professor! We are working on the SIH MedTech / HealthTech Theme. We have code ready for machine learning and would love your guidance on deployment and clinical validation."
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               className="w-full rounded-xl border border-[rgba(209,199,189,0.85)] bg-[rgba(248,246,242,0.75)] px-3.5 py-2 text-sm text-foreground outline-none transition-[border-color,box-shadow,background-color] duration-250 focus:border-primary focus:bg-[rgba(248,246,242,0.96)] focus:shadow-[0_0_0_4px_rgba(114,56,61,0.1)] resize-none"

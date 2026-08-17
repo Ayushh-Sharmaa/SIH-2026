@@ -1,4 +1,4 @@
-export interface Milestone {
+export interface TimelineItem {
   id: number;
   phase: string;
   period: string;
@@ -6,13 +6,13 @@ export interface Milestone {
   desc: string;
 }
 
-export const SIH_MILESTONES: Milestone[] = [
+export const TIMELINE: TimelineItem[] = [
   {
     id: 1,
     phase: 'Phase 01',
-    period: 'Jun – Aug 2026',
-    title: 'Registration of SPOCs',
-    desc: 'Institutional Single Point of Contact (SPOC) registration and college onboarding on the official SIH portal.',
+    period: 'Jul 2026',
+    title: 'SPOC Registration',
+    desc: 'Official Single Point of Contact (SPOC) registration by GL Bajaj Institute on the SIH portal.',
   },
   {
     id: 2,
@@ -26,7 +26,7 @@ export const SIH_MILESTONES: Milestone[] = [
     phase: 'Phase 03',
     period: 'Jul – Aug 2026',
     title: 'SIH PS Launch',
-    desc: 'Official nationwide release of problem statements across 18 ministries and industrial themes.',
+    desc: 'Official nationwide release of problem statements across 17 ministries and industrial themes.',
   },
   {
     id: 4,
@@ -86,13 +86,15 @@ export const SIH_MILESTONES: Milestone[] = [
   },
 ];
 
+export const SIH_MILESTONES = TIMELINE;
+
 export interface ThemeSet {
   id: number;
   title: string;
   themes: { name: string; desc: string }[];
 }
 
-export const ALL_18_THEME_SETS: ThemeSet[] = [
+export const ALL_17_THEME_SETS: ThemeSet[] = [
   {
     id: 1,
     title: 'Fitness, Space Tech & Heritage',
@@ -135,19 +137,21 @@ export const ALL_18_THEME_SETS: ThemeSet[] = [
     themes: [
       { name: 'Smart Education', desc: 'Smart education describes learning in the digital age, enabling learners to learn more effectively, efficiently, flexibly, and comfortably.' },
       { name: 'Disaster Management', desc: 'Ideas related to risk mitigation, planning, and management before, during, or after a disaster.' },
-      { name: 'Games & Toys', desc: 'Conceptualise and develop unique toys and games based on our civilisation, history, and culture.' },
+      { name: 'Toys & Games', desc: 'Conceptualise and develop unique toys and games based on our civilisation, history, and culture.' },
     ],
   },
   {
     id: 6,
-    title: 'Miscellaneous, FinTech & Automation',
+    title: 'Automation & Miscellaneous',
     themes: [
-      { name: 'Miscellaneous', desc: 'Technology ideas in tertiary sectors like hospitality, entertainment, and retail.' },
-      { name: 'FinTech', desc: 'Challenges related to financial services.' },
       { name: 'Smart Automation', desc: 'Ideas focused on the intelligent use of resources, combining automation with artificial intelligence to surface valuable insights.' },
+      { name: 'Miscellaneous', desc: 'Technology ideas in tertiary sectors like hospitality, entertainment, and retail.' },
     ],
   },
 ];
+
+export const ALL_THEME_SETS = ALL_17_THEME_SETS;
+export const ALL_18_THEME_SETS = ALL_17_THEME_SETS;
 
 export const FAQS = [
   {
@@ -164,7 +168,7 @@ export const FAQS = [
   },
   {
     q: 'Are the official problem statements out?',
-    a: 'Not yet. The official SIH 2026 problem statements are released by the ministries closer to the event. In the meantime, all 18 official themes are configured on the platform so you can pick a direction early.',
+    a: 'Not yet. The official SIH 2026 problem statements are released by the ministries closer to the event. In the meantime, all 17 official themes are configured on the platform so you can pick a direction early.',
   },
   {
     q: 'Can I change my team after registering?',

@@ -1,14 +1,19 @@
 import { NextResponse } from 'next/server';
-import { auth, currentUser, clerkClient } from '@clerk/nextjs/server';
+import { currentUser } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
-import { signToken, normalizeEmail, isAllowedCollegeEmail } from '@/lib/auth';
+import { signToken, normalizeEmail, isAllowedCollegeEmail, deriveInitialDisplayName } from '@/lib/auth';
 import { isUserBanned } from '@/lib/admin';
 import { checkAuthRateLimit } from '@/lib/rateLimit';
 import { onboardingRoleSchema } from '@/lib/validation';
+import { clerkCircuitBreaker } from '@/lib/circuitBreaker';
 import { logger } from '@/lib/logger';
 import { setSessionCookie } from '@/lib/sessionCookie';
 
-async function syncClerkUser(email: string, defaultRole: 'STUDENT' | 'MENTOR' = 'STUDENT') {
+async function syncClerkUser(
+  email: string,
+  clerkUser: { firstName?: string | null; lastName?: string | null; fullName?: string | null; username?: string | null } | null,
+  defaultRole: 'STUDENT' | 'MENTOR' = 'STUDENT'
+) {
   const withProfiles = { studentProfile: true, mentorProfile: true } as const;
 
   let user = await prisma.user.findUnique({
@@ -17,6 +22,8 @@ async function syncClerkUser(email: string, defaultRole: 'STUDENT' | 'MENTOR' = 
   });
 
   if (!user) {
+    const initialName = deriveInitialDisplayName(clerkUser, email);
+
     const created = await prisma.user.create({
       data: {
         email,
@@ -29,7 +36,7 @@ async function syncClerkUser(email: string, defaultRole: 'STUDENT' | 'MENTOR' = 
       await prisma.studentProfile.create({
         data: {
           userId: created.id,
-          name: email.split('@')[0] || 'Student User',
+          name: initialName,
           year: '',
           branch: '',
         },
@@ -38,7 +45,7 @@ async function syncClerkUser(email: string, defaultRole: 'STUDENT' | 'MENTOR' = 
       await prisma.mentorProfile.create({
         data: {
           userId: created.id,
-          name: email.split('@')[0] || 'Mentor User',
+          name: initialName,
           designation: '',
           organization: 'GL Bajaj Group of Institutions',
         },
@@ -67,78 +74,22 @@ async function syncClerkUser(email: string, defaultRole: 'STUDENT' | 'MENTOR' = 
   return { user, token, isOnboarded };
 }
 
-import { verifyToken } from '@clerk/backend';
-
-async function resolveClerkEmail(request?: Request): Promise<string | undefined> {
-  let userId: string | undefined;
-
-  // 1. Check Authorization Bearer header from client
-  const authHeader = request?.headers?.get('authorization');
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const bearerToken = authHeader.replace('Bearer ', '').trim();
-    try {
-      const verified = await verifyToken(bearerToken, {
-        secretKey: process.env.CLERK_SECRET_KEY,
-      });
-      if (verified?.sub) {
-        userId = verified.sub;
-        if (typeof (verified as Record<string, unknown>)?.email === 'string') {
-          return (verified as Record<string, unknown>).email as string;
-        }
-      }
-    } catch (err) {
-      logger.warn('Clerk Bearer token verification failed.', err);
-    }
-  }
-
-  // 2. Check Next.js auth() context
-  try {
-    const authState = await auth();
-    if (!userId) {
-      userId = authState?.userId ?? undefined;
-    }
-    const claims = authState?.sessionClaims as Record<string, unknown> | null;
-    if (typeof claims?.email === 'string' && claims.email) {
-      return claims.email;
-    }
-    if (typeof claims?.email_address === 'string' && claims.email_address) {
-      return claims.email_address;
-    }
-  } catch (err) {
-    logger.warn('Clerk auth() resolution failed.', err);
-  }
-
-  // 3. If we resolved userId, fetch directly from Clerk backend SDK
-  if (userId) {
-    try {
-      const client = await clerkClient();
-      const user = await client.users.getUser(userId);
-      const email =
-        user.emailAddresses.find((e) => e.id === user.primaryEmailAddressId)?.emailAddress ||
-        user.emailAddresses[0]?.emailAddress;
-      if (email) return email;
-    } catch (e) {
-      logger.warn('Clerk client getUser() failed.', e);
-    }
-  }
-
-  // 4. Fallback to currentUser()
-  try {
-    const clerkUser = await currentUser();
-    const email =
-      clerkUser?.emailAddresses?.find((e) => e.id === clerkUser.primaryEmailAddressId)?.emailAddress ||
-      clerkUser?.emailAddresses?.[0]?.emailAddress;
-    if (email) return email;
-  } catch (e) {
-    logger.error('Clerk currentUser() failed.', e);
-  }
-
-  return undefined;
-}
-
 export async function GET(request: Request) {
   try {
-    let email = await resolveClerkEmail(request);
+    let email: string | undefined;
+    let clerkUser: Awaited<ReturnType<typeof currentUser>> = null;
+    try {
+      clerkUser = await clerkCircuitBreaker.execute(
+        () => currentUser(),
+        async () => {
+          logger.warn('Clerk API circuit breaker tripped open. Falling back.');
+          return null;
+        }
+      );
+      email = clerkUser?.emailAddresses?.[0]?.emailAddress;
+    } catch (e) {
+      logger.error('Clerk currentUser() failed.', e);
+    }
 
     if (!email) {
       return NextResponse.redirect(new URL('/login?error=oauth_failed', request.url));
@@ -160,7 +111,7 @@ export async function GET(request: Request) {
       return NextResponse.redirect(new URL('/login?error=account_suspended', request.url));
     }
 
-    const { token, isOnboarded } = await syncClerkUser(email);
+    const { token, isOnboarded } = await syncClerkUser(email, clerkUser);
 
     const redirectPath = isOnboarded ? '/dashboard' : '/onboarding';
     const response = NextResponse.redirect(new URL(redirectPath, request.url));
@@ -176,12 +127,20 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json().catch(() => ({}));
-    let email = await resolveClerkEmail(request);
-
-    // If resolveClerkEmail couldn't reach external API but body has client-verified email
-    if (!email && typeof body?.email === 'string' && body.email) {
-      email = body.email;
+    // The email MUST come from the verified Clerk session and nothing else.
+    let email: string | undefined;
+    let clerkUser: Awaited<ReturnType<typeof currentUser>> = null;
+    try {
+      clerkUser = await clerkCircuitBreaker.execute(
+        () => currentUser(),
+        async () => {
+          logger.warn('Clerk API circuit breaker tripped open. Falling back.');
+          return null;
+        }
+      );
+      email = clerkUser?.emailAddresses?.[0]?.emailAddress;
+    } catch (e) {
+      logger.error('Clerk currentUser() failed.', e);
     }
 
     if (!email) {
@@ -199,7 +158,15 @@ export async function POST(request: Request) {
       return rateLimitResponse;
     }
 
-    const role = (body?.role === 'MENTOR' ? 'MENTOR' : 'STUDENT') as 'STUDENT' | 'MENTOR';
+    const body = await request.json().catch(() => ({}));
+    
+    // Parse/Validate input using Zod Schema
+    const parsed = onboardingRoleSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid sync parameter formats.' }, { status: 400 });
+    }
+
+    const { role } = parsed.data;
 
     if (!isAllowedCollegeEmail(email)) {
       return NextResponse.json(
@@ -215,9 +182,9 @@ export async function POST(request: Request) {
       );
     }
 
-    const { user, token } = await syncClerkUser(email, role);
+    const { user, token } = await syncClerkUser(email, clerkUser, role);
 
-    const name = user.studentProfile?.name || user.mentorProfile?.name || email.split('@')[0];
+    const name = user.studentProfile?.name || user.mentorProfile?.name || deriveInitialDisplayName(clerkUser, email);
 
     const response = NextResponse.json({
       success: true,

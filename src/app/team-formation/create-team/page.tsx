@@ -316,10 +316,10 @@ export default function CreateTeamPage() {
                   </div>
                 </div>
 
-                {/* Problem Statement Track */}
+                {/* Theme Selection */}
                 <div className="space-y-4">
                   <SelectField
-                    label="Primary Problem Statement Track"
+                    label="Primary Theme"
                     value={trackId}
                     onChange={(e) => setTrackId(e.target.value)}
                   >
@@ -328,7 +328,7 @@ export default function CreateTeamPage() {
                         {track.problemStatementCode} — {track.name}
                       </option>
                     ))}
-                    <option value="custom">Other / Custom Problem Statement</option>
+                    <option value="custom">Other / Custom Theme</option>
                   </SelectField>
 
                   {trackId === 'custom' && (
@@ -337,23 +337,23 @@ export default function CreateTeamPage() {
                       animate={{ opacity: 1, y: 0 }}
                       className="space-y-4 rounded-2xl border border-[rgba(209,199,189,0.8)] bg-[rgba(239,233,225,0.45)] p-4"
                     >
-                      <h3 className="text-xs font-bold uppercase text-muted tracking-wider">Primary Custom Problem Statement Details</h3>
+                      <h3 className="text-xs font-bold uppercase text-muted tracking-wider">Primary Custom Theme Details</h3>
                       <Field
-                        label="Problem Statement ID (PS ID)"
+                        label="Theme / Problem Statement ID"
                         required
                         value={customPsCode}
                         onChange={(e) => setCustomPsCode(e.target.value)}
                         hint="e.g. SIH1540"
                       />
                       <Field
-                        label="Problem Statement Theme"
+                        label="Theme Name / Title"
                         required
                         value={customPsName}
                         onChange={(e) => setCustomPsName(e.target.value)}
-                        hint="e.g. Nexa Smart Solutions"
+                        hint="e.g. Smart Agri Solutions"
                       />
                       <SelectField
-                        label="Problem Statement Type"
+                        label="Theme Category"
                         value={customPsCategory}
                         onChange={(e) => setCustomPsCategory(e.target.value)}
                       >
@@ -365,7 +365,7 @@ export default function CreateTeamPage() {
                   )}
 
                   <SelectField
-                    label="Secondary Problem Statement Track"
+                    label="Secondary Theme"
                     value={secondaryTrackId}
                     onChange={(e) => setSecondaryTrackId(e.target.value)}
                   >
@@ -374,7 +374,7 @@ export default function CreateTeamPage() {
                         {track.problemStatementCode} — {track.name}
                       </option>
                     ))}
-                    <option value="custom">Other / Custom Problem Statement</option>
+                    <option value="custom">Other / Custom Theme</option>
                   </SelectField>
 
                   {secondaryTrackId === 'custom' && (
@@ -383,23 +383,23 @@ export default function CreateTeamPage() {
                       animate={{ opacity: 1, y: 0 }}
                       className="space-y-4 rounded-2xl border border-[rgba(209,199,189,0.8)] bg-[rgba(239,233,225,0.45)] p-4"
                     >
-                      <h3 className="text-xs font-bold uppercase text-muted tracking-wider">Secondary Custom Problem Statement Details</h3>
+                      <h3 className="text-xs font-bold uppercase text-muted tracking-wider">Secondary Custom Theme Details</h3>
                       <Field
-                        label="Problem Statement ID (PS ID)"
+                        label="Theme / Problem Statement ID"
                         required
                         value={customSecondaryPsCode}
                         onChange={(e) => setCustomSecondaryPsCode(e.target.value)}
                         hint="e.g. SIH1541"
                       />
                       <Field
-                        label="Problem Statement Theme"
+                        label="Theme Name / Title"
                         required
                         value={customSecondaryPsName}
                         onChange={(e) => setCustomSecondaryPsName(e.target.value)}
-                        hint="e.g. Nexa Secondary Solutions"
+                        hint="e.g. Secondary Tech Solution"
                       />
                       <SelectField
-                        label="Problem Statement Type"
+                        label="Theme Category"
                         value={customSecondaryPsCategory}
                         onChange={(e) => setCustomSecondaryPsCategory(e.target.value)}
                       >

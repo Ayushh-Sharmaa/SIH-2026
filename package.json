@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "test": "tsx --test tests/**/*.test.ts",
     "test:contrast": "node scripts/contrast.mjs",
-    "verify": "npm run typecheck && npm run test && npm run test:contrast"
+    "audit:perf": "tsx scripts/performance-audit.ts",
+    "verify": "npm run typecheck && npm run test && npm run test:contrast && npm run audit:perf"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.6.4",

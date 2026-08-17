@@ -18,6 +18,7 @@ import {
   EASE,
   SPRING,
 } from '@/components/motion';
+import { QueryClient } from '@/lib/queryClient';
 import { logger } from '@/lib/logger';
 
 interface Track {
@@ -32,8 +33,6 @@ interface Track {
 
 const ALL = 'All themes';
 
-
-
 export default function TracksPage() {
   const { toast } = useToast();
   const [tracks, setTracks] = useState<Track[]>([]);
@@ -45,12 +44,16 @@ export default function TracksPage() {
   useEffect(() => {
     async function fetchTracks() {
       try {
-        const res = await fetch('/api/tracks');
-        const data = await res.json();
-        if (data.success) setTracks(data.tracks);
+        const data = await QueryClient.fetch<any>(
+          'sih_theme_list',
+          async () => {
+            const res = await fetch('/api/tracks');
+            return res.json();
+          },
+          { ttlMs: 120_000 }
+        );
+        if (data?.success) setTracks(data.tracks);
       } catch (err) {
-        // Logging alone left the user staring at an empty list with no idea the
-        // request had failed.
         logger.error('Fetch tracks failed', err);
         toast('Could not load tracks. Check your connection and try again.', 'error');
       } finally {
@@ -136,7 +139,7 @@ export default function TracksPage() {
                 </div>
                 <div className="my-5 h-px bg-gradient-to-r from-[rgba(172,156,141,0.6)] to-transparent" />
                 <p className="text-xs leading-relaxed text-body">
-                  Official problem statements are not released yet. Tracks below follow the
+                  Official problem statements are released closer to the event. The themes below follow the
                   official SIH theme taxonomy.
                 </p>
                 <div className="mt-5">
@@ -150,11 +153,8 @@ export default function TracksPage() {
         </Section>
 
         {/* ── FILTER BAR ── */}
-        {/* Pinned directly beneath the navbar. The offset was hardcoded at
-            70px / 78px while the bar actually measures 76px / 80px, so rows
-            slid underneath it. Derived from --nav-h now, so it cannot drift. */}
         <section
-          aria-label="Filter problem statements"
+          aria-label="Filter themes"
           className="sticky top-[var(--nav-h)] z-sticky border-y border-line bg-canvas/85 backdrop-blur-xl"
         >
           <Container width="content" className="flex flex-col gap-3 py-3 lg:flex-row lg:items-center">

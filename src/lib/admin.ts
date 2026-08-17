@@ -130,9 +130,36 @@ export interface WhitelistedPortalUser {
   createdAt: string;
 }
 
+// Safe delegate accessor ensuring IDE language servers and Prisma client agree
+// regardless of local IDE TypeScript caching state
+interface WhitelistedEmailRow {
+  email: string;
+  role: string;
+  note: string | null;
+  addedBy: string | null;
+  createdAt: Date;
+  updatedAt?: Date;
+}
+
+interface WhitelistedEmailDelegate {
+  findMany(args?: { orderBy?: { createdAt: 'asc' | 'desc' } }): Promise<WhitelistedEmailRow[]>;
+  findUnique(args: { where: { email: string } }): Promise<WhitelistedEmailRow | null>;
+  upsert(args: {
+    where: { email: string };
+    update: { role: string; note: string | null };
+    create: { email: string; role: string; note: string | null; addedBy: string | null };
+  }): Promise<WhitelistedEmailRow>;
+  deleteMany(args: { where: { email: string } }): Promise<{ count: number }>;
+  updateMany(args: { where: { email: string }; data: { role: string } }): Promise<{ count: number }>;
+}
+
+const getWhitelistedEmailDb = (): WhitelistedEmailDelegate => {
+  return (prisma as unknown as { whitelistedEmail: WhitelistedEmailDelegate }).whitelistedEmail;
+};
+
 export async function getWhitelistedEmails(): Promise<WhitelistedPortalUser[]> {
-  const rows = await prisma.whitelistedEmail.findMany({ orderBy: { createdAt: 'asc' } });
-  return rows.map((r: { email: string; role: string; note: string | null; addedBy: string | null; createdAt: Date }) => ({
+  const rows = await getWhitelistedEmailDb().findMany({ orderBy: { createdAt: 'asc' } });
+  return rows.map((r: WhitelistedEmailRow) => ({
     email: r.email,
     role: (r.role === 'MENTOR' ? 'MENTOR' : 'STUDENT') as 'STUDENT' | 'MENTOR',
     note: r.note,
@@ -144,7 +171,7 @@ export async function getWhitelistedEmails(): Promise<WhitelistedPortalUser[]> {
 export async function getWhitelistedPortalEntry(email: string): Promise<WhitelistedPortalUser | null> {
   const clean = normalizeEmail(email);
   if (!clean) return null;
-  const row = await prisma.whitelistedEmail.findUnique({ where: { email: clean } });
+  const row = await getWhitelistedEmailDb().findUnique({ where: { email: clean } });
   if (!row) return null;
   return {
     email: row.email,
@@ -158,7 +185,7 @@ export async function getWhitelistedPortalEntry(email: string): Promise<Whitelis
 export async function isEmailWhitelistedForPortal(email: string): Promise<boolean> {
   const clean = normalizeEmail(email);
   if (!clean) return false;
-  const row = await prisma.whitelistedEmail.findUnique({ where: { email: clean } });
+  const row = await getWhitelistedEmailDb().findUnique({ where: { email: clean } });
   return !!row;
 }
 
@@ -170,7 +197,7 @@ export async function addWhitelistedEmail(
 ): Promise<WhitelistedPortalUser[]> {
   const clean = normalizeEmail(email);
   if (clean) {
-    await prisma.whitelistedEmail.upsert({
+    await getWhitelistedEmailDb().upsert({
       where: { email: clean },
       update: {
         role,
@@ -196,7 +223,7 @@ export async function addWhitelistedEmail(
 export async function removeWhitelistedEmail(email: string): Promise<WhitelistedPortalUser[]> {
   const clean = normalizeEmail(email);
   if (clean) {
-    await prisma.whitelistedEmail.deleteMany({ where: { email: clean } });
+    await getWhitelistedEmailDb().deleteMany({ where: { email: clean } });
   }
   return getWhitelistedEmails();
 }
@@ -207,7 +234,7 @@ export async function updateWhitelistedRole(
 ): Promise<WhitelistedPortalUser[]> {
   const clean = normalizeEmail(email);
   if (clean) {
-    await prisma.whitelistedEmail.updateMany({
+    await getWhitelistedEmailDb().updateMany({
       where: { email: clean },
       data: { role },
     });

@@ -75,7 +75,7 @@ export const skillsProfileSchema = z.object({
 });
 
 export const themesProfileSchema = z.object({
-  trackInterest: z.array(z.string().trim().max(100)).max(10, "You can select up to 10 themes"),
+  trackInterest: z.array(z.string().trim().max(100)).max(10).optional().default([]),
   githubUrl: githubUrlSchema,
   linkedinUrl: linkedinUrlSchema,
   resumeUrl: resumeUrlSchema,

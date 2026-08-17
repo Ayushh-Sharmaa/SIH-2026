@@ -552,7 +552,7 @@ function SkillsFluencyModal({
   );
 }
 
-/** 3. Themes & Links Modal */
+/** 3. Portfolio & Socials Links Modal */
 function ThemesLinksModal({
   initialData,
   onClose,
@@ -563,18 +563,9 @@ function ThemesLinksModal({
   onSuccess: (updated: any) => void;
 }) {
   const { toast } = useToast();
-  const initialTracks = Array.isArray(initialData?.trackInterest)
-    ? initialData.trackInterest
-    : Array.isArray(initialData?.tracksDetailed)
-    ? initialData.tracksDetailed.map((t: any) => t.id)
-    : Array.isArray(initialData?.tracks)
-    ? initialData.tracks.map((t: any) => (typeof t === 'string' ? t : t.id))
-    : [];
-  const [selectedTracks, setSelectedTracks] = useState<string[]>(initialTracks);
   const [githubUrl, setGithubUrl] = useState(initialData?.githubUrl || '');
   const [linkedinUrl, setLinkedinUrl] = useState(initialData?.linkedinUrl || '');
   const [resumeUrl, setResumeUrl] = useState(initialData?.resumeUrl || '');
-  const [tracks, setTracks] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -582,37 +573,8 @@ function ThemesLinksModal({
   useScrollLock(true);
   useEscapeKey(true, onClose);
 
-  useEffect(() => {
-    QueryClient.fetch<{ success: boolean; tracks: any[] }>(
-      'sih_theme_list',
-      async () => {
-        const res = await fetch('/api/tracks');
-        return res.json();
-      },
-      { ttlMs: 300_000 }
-    ).then((d) => {
-      if (d?.success && d.tracks) setTracks(d.tracks);
-    }).catch(() => undefined);
-  }, []);
-
-  const toggleTrack = (id: string) => {
-    setError('');
-    setSelectedTracks((prev) => {
-      if (prev.includes(id)) return prev.filter((t) => t !== id);
-      if (prev.length >= 2) {
-        return [prev[1], id]; // Keep latest 2
-      }
-      return [...prev, id];
-    });
-  };
-
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (selectedTracks.length !== 2) {
-      setError('Please select exactly 2 SIH themes according to platform guidelines.');
-      return;
-    }
-
     setSaving(true);
     setError('');
 
@@ -621,7 +583,6 @@ function ThemesLinksModal({
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          trackInterest: selectedTracks,
           githubUrl: githubUrl.trim() || undefined,
           linkedinUrl: linkedinUrl.trim() || undefined,
           resumeUrl: resumeUrl.trim() || undefined,
@@ -629,18 +590,18 @@ function ThemesLinksModal({
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to save themes and links');
+      if (!res.ok) throw new Error(data.error || 'Failed to save portfolio links');
 
-      toast('Themes & links updated successfully.', 'success');
+      toast('Portfolio links updated successfully.', 'success');
       onSuccess({
         ...data.themes,
-        trackInterest: data.themes?.trackInterest || selectedTracks,
-        tracksDetailed: data.themes?.tracksDetailed || tracks.filter((t) => selectedTracks.includes(t.id)),
-        tracks: data.themes?.tracksDetailed || tracks.filter((t) => selectedTracks.includes(t.id)),
+        githubUrl: data.themes?.githubUrl || githubUrl.trim(),
+        linkedinUrl: data.themes?.linkedinUrl || linkedinUrl.trim(),
+        resumeUrl: data.themes?.resumeUrl || resumeUrl.trim(),
       });
       onClose();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to save themes.');
+      setError(err instanceof Error ? err.message : 'Failed to save links.');
     } finally {
       setSaving(false);
     }
@@ -655,7 +616,7 @@ function ThemesLinksModal({
         <div className="flex items-center justify-between border-b border-[rgba(209,199,189,0.5)] pb-4">
           <div>
             <span className="text-label uppercase tracking-wider text-primary font-bold">Tile 03</span>
-            <h3 className="mt-0.5 text-feature font-extrabold text-foreground">Edit Themes & Links</h3>
+            <h3 className="mt-0.5 text-feature font-extrabold text-foreground">Edit Portfolio & Social Links</h3>
           </div>
           <button onClick={onClose} aria-label="Close dialog" className="text-muted hover:text-foreground">
             <X className="size-5" />
@@ -664,40 +625,6 @@ function ThemesLinksModal({
 
         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
           {error && <div className="rounded-xl border border-[rgba(114,56,61,0.3)] bg-[rgba(114,56,61,0.08)] p-3 text-xs font-bold text-primary">{error}</div>}
-
-          {/* Theme Selection */}
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <Label>SIH Themes / Interests</Label>
-              <span className="text-[11px] font-bold text-primary bg-[rgba(114,56,61,0.08)] px-2 py-0.5 rounded-md">
-                {selectedTracks.length} / 2 Selected
-              </span>
-            </div>
-            <p className="text-[11px] text-muted mb-2">Select your 2 preferred official SIH problem statement themes.</p>
-            <div className="space-y-1.5 max-h-52 overflow-y-auto p-2.5 rounded-2xl bg-[rgba(248,246,242,0.6)] border border-[rgba(209,199,189,0.6)]">
-              {tracks.map((track) => {
-                const selected = selectedTracks.includes(track.id);
-                return (
-                  <button
-                    key={track.id}
-                    type="button"
-                    onClick={() => toggleTrack(track.id)}
-                    className={`w-full text-left p-2.5 rounded-xl border text-xs transition-all flex items-center justify-between gap-2 ${
-                      selected
-                        ? 'border-primary bg-[rgba(114,56,61,0.08)] text-primary font-bold'
-                        : 'border-[rgba(209,199,189,0.6)] bg-white/60 text-body hover:border-primary'
-                    }`}
-                  >
-                    <span className="truncate">
-                      <span className="font-bold text-foreground">{track.name}</span>{' '}
-                      <span className="text-[11px] text-muted font-normal">({track.problemStatementCode})</span>
-                    </span>
-                    {selected && <CheckCircle2 className="size-4 shrink-0 text-primary" />}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
 
           <div>
             <Label>GitHub Profile URL (Optional)</Label>
@@ -728,7 +655,7 @@ function ThemesLinksModal({
               Cancel
             </PremiumButton>
             <PremiumButton type="submit" size="sm" loading={saving}>
-              Save Themes & Links
+              Save Links
             </PremiumButton>
           </div>
         </form>
@@ -1864,7 +1791,7 @@ export default function DashboardPage() {
                     </div>
                   </SpotlightCard>
 
-                  {/* Tile 3: Themes & Links */}
+                  {/* Tile 3: Portfolio & Links */}
                   <SpotlightCard className="rounded-3xl" intensity={0.14}>
                     <div
                       onClick={() => setActiveModal('themes')}
@@ -1884,32 +1811,32 @@ export default function DashboardPage() {
                         </span>
                       </div>
 
-                      <h3 className="text-feature font-extrabold text-foreground mb-1">Themes & Links</h3>
+                      <h3 className="text-feature font-extrabold text-foreground mb-1">Portfolio & Socials</h3>
                       <p className="text-xs text-muted mb-4">
-                        Selected SIH themes, GitHub profile, LinkedIn, and portfolio link.
+                        GitHub profile, LinkedIn, and resume / portfolio link.
                       </p>
 
                       <div className="flex flex-wrap gap-1.5">
-                        {themesSummary?.tracksDetailed && themesSummary.tracksDetailed.length > 0 ? (
-                          themesSummary.tracksDetailed.slice(0, 2).map((t: any) => (
-                            <span
-                              key={t.id || t.problemStatementCode}
-                              className="rounded-lg border border-[rgba(114,56,61,0.25)] bg-[rgba(114,56,61,0.07)] px-2 py-0.5 text-[11px] font-semibold text-primary truncate max-w-[200px]"
-                            >
-                              {t.name || t.problemStatementCode}
-                            </span>
-                          ))
-                        ) : themesSummary?.trackInterest && themesSummary.trackInterest.length > 0 ? (
-                          themesSummary.trackInterest.slice(0, 2).map((t: any) => (
-                            <span
-                              key={typeof t === 'string' ? t : t.id}
-                              className="rounded-lg border border-[rgba(114,56,61,0.25)] bg-[rgba(114,56,61,0.07)] px-2 py-0.5 text-[11px] font-semibold text-primary truncate max-w-[200px]"
-                            >
-                              {typeof t === 'string' ? t : t.name || t.problemStatementCode}
-                            </span>
-                          ))
+                        {themesSummary?.githubUrl || themesSummary?.linkedinUrl || themesSummary?.resumeUrl ? (
+                          <>
+                            {themesSummary.githubUrl && (
+                              <span className="rounded-lg border border-[rgba(114,56,61,0.25)] bg-[rgba(114,56,61,0.07)] px-2 py-0.5 text-[11px] font-semibold text-primary">
+                                GitHub
+                              </span>
+                            )}
+                            {themesSummary.linkedinUrl && (
+                              <span className="rounded-lg border border-[rgba(114,56,61,0.25)] bg-[rgba(114,56,61,0.07)] px-2 py-0.5 text-[11px] font-semibold text-primary">
+                                LinkedIn
+                              </span>
+                            )}
+                            {themesSummary.resumeUrl && (
+                              <span className="rounded-lg border border-[rgba(114,56,61,0.25)] bg-[rgba(114,56,61,0.07)] px-2 py-0.5 text-[11px] font-semibold text-primary">
+                                Resume
+                              </span>
+                            )}
+                          </>
                         ) : (
-                          <span className="text-xs text-muted italic">Click to select SIH themes</span>
+                          <span className="text-xs text-muted italic">Click to add portfolio links</span>
                         )}
                       </div>
                     </div>

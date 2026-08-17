@@ -266,7 +266,7 @@ export default function FindMentorsPage() {
         if (filters.expertise) queryParams.append('expertise', filters.expertise);
         queryParams.append('page', String(page));
 
-        const cacheKey = `mentors:${filters.name}:${filters.expertise}:${page}`;
+        const cacheKey = `mentors:${(filters.name || '').trim().toLowerCase()}:${(filters.expertise || '').trim().toLowerCase()}:${page}`;
         const data = await QueryClient.fetch<any>(
           cacheKey,
           async () => {
@@ -388,8 +388,8 @@ export default function FindMentorsPage() {
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Mentor name or Team ID (SIH100)..."
-                    aria-label="Search mentor name or team ID"
+                    placeholder="Mentor name or Team Code (GLB100)..."
+                    aria-label="Search mentor name or team code"
                     className="w-full rounded-full border border-[rgba(209,199,189,0.85)] bg-[rgba(248,246,242,0.75)] py-2.5 pl-11 pr-4 text-sm text-foreground outline-none transition-[border-color,box-shadow,background-color] duration-250 focus:border-primary focus:bg-[rgba(248,246,242,0.96)] focus:shadow-[0_0_0_4px_rgba(114,56,61,0.10)]"
                   />
                   <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted" />

@@ -70,11 +70,14 @@ export default function ContactPage() {
 
   const matchesQuery = (c: { name: string; role?: string; department?: string; phone?: string; email?: string }) => {
     if (!q) return true;
+    const qCleanPhone = q.replace(/[^0-9]/g, '');
+    const cCleanPhone = c.phone ? c.phone.replace(/[^0-9]/g, '') : '';
     return (
       c.name.toLowerCase().includes(q) ||
       (c.role && c.role.toLowerCase().includes(q)) ||
       (c.department && c.department.toLowerCase().includes(q)) ||
-      (c.phone && c.phone.includes(q)) ||
+      (c.phone && c.phone.toLowerCase().includes(q)) ||
+      (qCleanPhone.length >= 3 && cCleanPhone.includes(qCleanPhone)) ||
       (c.email && c.email.toLowerCase().includes(q))
     );
   };

@@ -268,7 +268,7 @@ export default function FindTeamsPage() {
         if (filters.status) queryParams.append('status', filters.status);
         queryParams.append('page', String(page));
 
-        const cacheKey = `teams:${filters.search}:${filters.domain}:${filters.skill}:${filters.leader}:${filters.size}:${filters.status}:${page}`;
+        const cacheKey = `teams:${(filters.search || '').trim().toLowerCase()}:${(filters.domain || '').trim().toLowerCase()}:${(filters.skill || '').trim().toLowerCase()}:${(filters.leader || '').trim().toLowerCase()}:${filters.size || ''}:${(filters.status || '').trim().toLowerCase()}:${page}`;
         const data = await QueryClient.fetch<any>(
           cacheKey,
           async () => {

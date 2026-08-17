@@ -306,6 +306,8 @@ export default function AdminDashboardPage() {
   const [allFemaleFilter, setAllFemaleFilter] = useState(false);
 
   const [psSearch, setPsSearch] = useState('');
+  const [mentorSearch, setMentorSearch] = useState('');
+  const [mentorStatusFilter, setMentorStatusFilter] = useState<'ALL' | 'VERIFIED' | 'PENDING'>('ALL');
   const [expandedTrackIds, setExpandedTrackIds] = useState<Record<string, boolean>>({});
 
   const toggleTrackExpand = (id: string) => {
@@ -707,17 +709,27 @@ export default function AdminDashboardPage() {
   };
 
   const filteredStudents = students.filter((s) => {
-    const q = studentSearch.toLowerCase();
+    const q = studentSearch.trim().toLowerCase();
     const matchesSearch =
-      s.name.toLowerCase().includes(q) ||
-      s.email.toLowerCase().includes(q) ||
-      s.rollNo.toLowerCase().includes(q) ||
-      s.branch.toLowerCase().includes(q) ||
-      s.teamCode?.toLowerCase().includes(q);
+      !q ||
+      s.name?.toLowerCase().includes(q) ||
+      s.email?.toLowerCase().includes(q) ||
+      s.rollNo?.toLowerCase().includes(q) ||
+      s.branch?.toLowerCase().includes(q) ||
+      s.section?.toLowerCase().includes(q) ||
+      s.teamCode?.toLowerCase().includes(q) ||
+      s.teamName?.toLowerCase().includes(q) ||
+      s.skills?.some((sk) => sk.toLowerCase().includes(q));
 
-    const matchesYear = studentYearFilter === 'ALL' || s.year === studentYearFilter;
-    const matchesBranch = studentBranchFilter === 'ALL' || s.branch === studentBranchFilter;
-    const matchesSection = studentSectionFilter === 'ALL' || s.section === studentSectionFilter;
+    const matchesYear =
+      studentYearFilter === 'ALL' ||
+      s.year?.toLowerCase() === studentYearFilter.toLowerCase();
+    const matchesBranch =
+      studentBranchFilter === 'ALL' ||
+      s.branch?.toLowerCase() === studentBranchFilter.toLowerCase();
+    const matchesSection =
+      studentSectionFilter === 'ALL' ||
+      s.section?.toLowerCase() === studentSectionFilter.toLowerCase();
     const matchesGender =
       studentGenderFilter === 'ALL' ||
       s.gender?.toLowerCase() === studentGenderFilter.toLowerCase();
@@ -726,45 +738,79 @@ export default function AdminDashboardPage() {
       (studentStatusFilter === 'BANNED' ? s.isBanned : !s.isBanned);
 
     return (
-      matchesSearch && matchesYear && matchesBranch && matchesSection && matchesGender && matchesStatus
+      matchesSearch &&
+      matchesYear &&
+      matchesBranch &&
+      matchesSection &&
+      matchesGender &&
+      matchesStatus
     );
   });
 
   const filteredTeams = teams.filter((t) => {
-    const q = teamSearch.toLowerCase();
+    const q = teamSearch.trim().toLowerCase();
     const matchesSearch =
-      t.name.toLowerCase().includes(q) ||
-      t.teamCode.toLowerCase().includes(q) ||
-      t.trackName.toLowerCase().includes(q) ||
-      t.leaderName.toLowerCase().includes(q) ||
-      t.members.some((m) => m.name.toLowerCase().includes(q));
+      !q ||
+      t.name?.toLowerCase().includes(q) ||
+      t.teamCode?.toLowerCase().includes(q) ||
+      t.trackName?.toLowerCase().includes(q) ||
+      t.trackCode?.toLowerCase().includes(q) ||
+      t.leaderName?.toLowerCase().includes(q) ||
+      t.skillsCovered?.some((sk) => sk.toLowerCase().includes(q)) ||
+      t.skillsNeeded?.some((sk) => sk.toLowerCase().includes(q)) ||
+      t.members?.some((m) => m.name?.toLowerCase().includes(q) || m.branch?.toLowerCase().includes(q));
 
-    const matchesStatus = teamStatusFilter === 'ALL' || t.status === teamStatusFilter;
+    const matchesStatus =
+      teamStatusFilter === 'ALL' ||
+      t.status?.toLowerCase() === teamStatusFilter.toLowerCase();
     const matchesTrack =
-      teamTrackFilter === 'ALL' || t.trackId === teamTrackFilter || t.trackCode === teamTrackFilter;
+      teamTrackFilter === 'ALL' ||
+      t.trackId === teamTrackFilter ||
+      t.trackCode?.toLowerCase() === teamTrackFilter.toLowerCase() ||
+      t.trackName?.toLowerCase().includes(teamTrackFilter.toLowerCase());
     const matchesAllFemale = !allFemaleFilter || t.isAllFemale;
 
     return matchesSearch && matchesStatus && matchesTrack && matchesAllFemale;
   });
 
   const filteredPSTracks = problemStatementStats.filter((tr) => {
-    const q = psSearch.toLowerCase();
+    const q = psSearch.trim().toLowerCase();
+    if (!q) return true;
     return (
-      tr.code.toLowerCase().includes(q) ||
-      tr.name.toLowerCase().includes(q) ||
-      tr.category.toLowerCase().includes(q)
+      tr.code?.toLowerCase().includes(q) ||
+      tr.name?.toLowerCase().includes(q) ||
+      tr.category?.toLowerCase().includes(q) ||
+      tr.description?.toLowerCase().includes(q)
     );
   });
 
   const filteredWhitelistedEmails = whitelistedEmails.filter((w) => {
-    const q = portalSearch.toLowerCase();
+    const q = portalSearch.trim().toLowerCase();
     const matchesSearch =
-      w.email.toLowerCase().includes(q) ||
+      !q ||
+      w.email?.toLowerCase().includes(q) ||
       (w.note && w.note.toLowerCase().includes(q)) ||
       (w.addedBy && w.addedBy.toLowerCase().includes(q));
 
     const matchesRole = portalRoleFilter === 'ALL' || w.role === portalRoleFilter;
     return matchesSearch && matchesRole;
+  });
+
+  const filteredMentors = mentors.filter((m) => {
+    const q = mentorSearch.trim().toLowerCase();
+    const matchesSearch =
+      !q ||
+      m.name?.toLowerCase().includes(q) ||
+      m.email?.toLowerCase().includes(q) ||
+      m.designation?.toLowerCase().includes(q) ||
+      m.organization?.toLowerCase().includes(q) ||
+      m.expertise?.some((e) => e.toLowerCase().includes(q));
+
+    const matchesStatus =
+      mentorStatusFilter === 'ALL' ||
+      (mentorStatusFilter === 'VERIFIED' ? m.verified : !m.verified);
+
+    return matchesSearch && matchesStatus;
   });
 
   const resetStudentFilters = () => {
@@ -1891,17 +1937,61 @@ export default function AdminDashboardPage() {
                     </>
                   )}
 
-                  {activeTab === 'mentors' && mentors.length === 0 && (
-                    <EmptyState
-                      icon={UserCheck}
-                      title="No mentors registered yet"
-                      description="Faculty mentors will appear here once they complete onboarding."
-                    />
-                  )}
-
                   {activeTab === 'mentors' && (
-                    <RevealGroup className="grid gap-4 sm:grid-cols-2" stagger={0.06}>
-                      {mentors.map((mentor) => (
+                    <>
+                      <div className="surface-raised mb-6 space-y-4 rounded-3xl p-5 border border-[rgba(209,199,189,0.7)] shadow-sm">
+                        <div className="flex flex-col gap-3 sm:flex-row items-center justify-between">
+                          <div className="relative flex-1 w-full">
+                            <input
+                              type="text"
+                              value={mentorSearch}
+                              onChange={(e) => setMentorSearch(e.target.value)}
+                              placeholder="Search mentors by name, email, designation, organization, or skills..."
+                              className="w-full rounded-2xl border border-[rgba(209,199,189,0.85)] bg-[rgba(248,246,242,0.75)] py-2.5 pl-10 pr-4 text-xs text-foreground outline-none transition-all focus:border-primary focus:bg-white"
+                            />
+                            <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted" />
+                          </div>
+
+                          <div className="flex items-center gap-1.5 w-full sm:w-auto shrink-0">
+                            {(['ALL', 'VERIFIED', 'PENDING'] as const).map((role) => (
+                              <button
+                                key={role}
+                                type="button"
+                                onClick={() => setMentorStatusFilter(role)}
+                                className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-all ${
+                                  mentorStatusFilter === role
+                                    ? 'bg-primary text-on-accent shadow-sm'
+                                    : 'border border-[rgba(209,199,189,0.7)] bg-[rgba(248,246,242,0.6)] text-body hover:border-primary'
+                                }`}
+                              >
+                                {role === 'ALL' ? 'All Mentors' : role === 'VERIFIED' ? 'Verified' : 'Pending'}
+                              </button>
+                            ))}
+                            {(mentorSearch || mentorStatusFilter !== 'ALL') && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setMentorSearch('');
+                                  setMentorStatusFilter('ALL');
+                                }}
+                                className="text-xs text-primary hover:underline px-2 py-1"
+                              >
+                                Clear
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {filteredMentors.length === 0 ? (
+                        <EmptyState
+                          icon={UserCheck}
+                          title="No matching mentors found"
+                          description="Try broadening your search query or switching the verification filter."
+                        />
+                      ) : (
+                        <RevealGroup className="grid gap-4 sm:grid-cols-2" stagger={0.06}>
+                          {filteredMentors.map((mentor) => (
                         <RevealItem key={mentor.id}>
                           <TiltCard intensity={5}>
                             <div className="surface-raised h-full space-y-3 rounded-3xl p-5 flex flex-col justify-between">
@@ -1976,7 +2066,9 @@ export default function AdminDashboardPage() {
                           </TiltCard>
                         </RevealItem>
                       ))}
-                    </RevealGroup>
+                        </RevealGroup>
+                      )}
+                    </>
                   )}
                 </m.div>
               </AnimatePresence>

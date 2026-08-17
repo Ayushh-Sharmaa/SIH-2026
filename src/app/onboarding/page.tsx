@@ -144,16 +144,16 @@ export default function OnboardingPage() {
                     <span className="text-label uppercase tracking-widest text-primary font-bold">Path 01</span>
                     <h2 className="text-heading text-foreground mt-1 mb-3">Student Participant</h2>
                     <p className="text-body text-sm leading-relaxed mb-6">
-                      Discover collaborators, form hackathon teams, showcase your technical skills, and choose problem statements/themes.
+                      Discover collaborators, form hackathon teams, showcase your technical skills, and connect with peers and mentors.
                     </p>
                     <ul className="space-y-2.5 text-xs text-muted mb-8">
                       <li className="flex items-center gap-2">
                         <span className="size-1.5 rounded-full bg-primary" />
-                        <span>Build team roster or recruit teammates</span>
+                        <span>Build your technical skills and portfolio</span>
                       </li>
                       <li className="flex items-center gap-2">
                         <span className="size-1.5 rounded-full bg-primary" />
-                        <span>Select primary & secondary SIH themes</span>
+                        <span>Create a team as Leader or join an existing roster</span>
                       </li>
                       <li className="flex items-center gap-2">
                         <span className="size-1.5 rounded-full bg-primary" />

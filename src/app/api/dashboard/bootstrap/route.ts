@@ -170,11 +170,12 @@ export async function GET(request: Request) {
       (student.languages && student.languages.length > 0)
     );
     const themesComplete = Boolean(
-      (student.trackInterest && student.trackInterest.length > 0) ||
       student.githubUrl ||
-      student.linkedinUrl
+      student.linkedinUrl ||
+      student.resumeUrl ||
+      (student.trackInterest && student.trackInterest.length > 0)
     );
-    const onboardingComplete = personalInfoComplete && skillsComplete && themesComplete;
+    const onboardingComplete = personalInfoComplete && skillsComplete;
 
     const team = student.team;
     const isLeader = team ? team.leaderId === student.userId : false;

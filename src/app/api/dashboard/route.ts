@@ -39,8 +39,30 @@ export async function GET(request: Request) {
     if (decoded.role === 'ADMIN') {
       if (roleOverride === 'MENTOR') {
         const [mentors, allTeams] = await Promise.all([
-          prisma.mentorProfile.findMany({ take: 1 }),
-          prisma.team.findMany(),
+          prisma.mentorProfile.findMany({
+            select: {
+              userId: true,
+              name: true,
+              designation: true,
+              organization: true,
+              expertise: true,
+              verified: true,
+              bio: true,
+              linkedinUrl: true,
+            },
+            take: 1,
+          }),
+          prisma.team.findMany({
+            select: {
+              id: true,
+              name: true,
+              status: true,
+              trackId: true,
+              memberCount: true,
+              mentorId: true,
+            },
+            take: 10,
+          }),
         ]);
         const mentor = mentors[0] || {
           name: 'Faculty Mentor Preview',
@@ -91,8 +113,25 @@ export async function GET(request: Request) {
       }
 
       // Default Admin Student Preview Mode
-      const students = await prisma.studentProfile.findMany();
-      const firstStudent = students[0];
+      const firstStudent = await prisma.studentProfile.findFirst({
+        select: {
+          userId: true,
+          name: true,
+          branch: true,
+          year: true,
+          gender: true,
+          rollNo: true,
+          section: true,
+          skills: true,
+          softSkills: true,
+          languages: true,
+          avatarUrl: true,
+          githubUrl: true,
+          linkedinUrl: true,
+          resumeUrl: true,
+          teamId: true,
+        },
+      });
 
       return NextResponse.json({
         success: true,

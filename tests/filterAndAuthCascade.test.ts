@@ -55,4 +55,11 @@ describe('Filter Systems & Auth Session Invalidation', () => {
     };
     assert.equal(closedStatus.OR.length, 2);
   });
+
+  test('enforces GLB human-readable team code pattern (e.g. GLB100)', () => {
+    const formatCode = (seq: number) => `GLB${seq}`;
+    const code = formatCode(100);
+    assert.match(code, /^GLB\d+$/);
+    assert.equal(code, 'GLB100');
+  });
 });

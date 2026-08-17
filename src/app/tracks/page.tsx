@@ -71,12 +71,14 @@ export default function TracksPage() {
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
     return tracks.filter((t) => {
-      const matchesCategory = category === ALL || t.category === category;
+      const matchesCategory =
+        category === ALL || t.category.toLowerCase() === category.toLowerCase();
       const matchesQuery =
         !q ||
         t.name.toLowerCase().includes(q) ||
         t.description.toLowerCase().includes(q) ||
-        t.problemStatementCode.toLowerCase().includes(q);
+        t.problemStatementCode.toLowerCase().includes(q) ||
+        t.category.toLowerCase().includes(q);
       return matchesCategory && matchesQuery;
     });
   }, [tracks, category, query]);

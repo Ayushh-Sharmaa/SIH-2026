@@ -75,14 +75,17 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: errorMsg }, { status: 400 });
     }
 
-    const { trackInterest, githubUrl, linkedinUrl, resumeUrl } = parsed.data;
+    const { trackInterest = [], githubUrl, linkedinUrl, resumeUrl } = parsed.data;
 
-    // Fetch valid track IDs from database (dynamic authoritative source)
-    const validTracks = await prisma.track.findMany({
-      where: { id: { in: trackInterest } },
-      select: { id: true },
-    });
-    const validTrackIds = validTracks.map((t) => t.id);
+    // Fetch valid track IDs if trackInterest was provided
+    let validTrackIds: string[] = [];
+    if (trackInterest && trackInterest.length > 0) {
+      const validTracks = await prisma.track.findMany({
+        where: { id: { in: trackInterest } },
+        select: { id: true },
+      });
+      validTrackIds = validTracks.map((t) => t.id);
+    }
 
     const updated = await prisma.$transaction(async (tx) => {
       const studentProfile = await tx.studentProfile.update({
@@ -91,9 +94,11 @@ export async function PATCH(request: Request) {
           githubUrl: safeUrl(githubUrl),
           linkedinUrl: safeUrl(linkedinUrl),
           resumeUrl: safeUrl(resumeUrl),
-          trackInterest: {
-            set: validTrackIds.map((id) => ({ id })),
-          },
+          ...(trackInterest !== undefined && {
+            trackInterest: {
+              set: validTrackIds.map((id) => ({ id })),
+            },
+          }),
         },
         select: {
           githubUrl: true,

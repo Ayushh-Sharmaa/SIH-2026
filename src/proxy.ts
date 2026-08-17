@@ -15,6 +15,7 @@ const PUBLIC_PATHS = [
   /^\/signup/,
   /^\/api\/auth/,
   /^\/tracks/,
+  /^\/contact/,
   // The page pattern above does not cover this: `/^\/tracks/` is anchored at the
   // start, so it misses `/api/tracks`, and the matcher below gates every `/api/*`
   // path explicitly. That left the public /tracks page redirecting its own data

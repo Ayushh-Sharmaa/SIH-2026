@@ -30,6 +30,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.9,
     },
     {
+      url: `${SITE_URL}/contact`,
+      lastModified: BUILD_TIME,
+      changeFrequency: 'weekly',
+      priority: 0.8,
+    },
+    {
       url: `${SITE_URL}/login`,
       lastModified: BUILD_TIME,
       changeFrequency: 'monthly',

@@ -18,6 +18,7 @@ const LINK_GROUPS = [
       { label: 'Browse Teammates', href: '/team-formation/browse-teammates' },
       { label: 'Browse Teams', href: '/team-formation/browse-teams' },
       { label: 'Browse Mentors', href: '/team-formation/browse-mentors' },
+      { label: 'Contact Us', href: '/contact' },
     ],
   },
   {
@@ -187,8 +188,17 @@ export default function Footer() {
                 Behind the Build
               </h3>
               <p className="mt-3 text-sm leading-relaxed text-muted max-w-sm">
-                Have a question about SIH, found an issue, or need help with the portal? Get in touch with the people behind the platform.
+                Have a question about SIH, found an issue, or need help with the portal? Get in touch with the student leads or view the institutional coordinator directory.
               </p>
+              <Link
+                href="/contact"
+                className="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-primary transition-colors duration-250 hover:underline"
+              >
+                <span>View Full Contact Directory</span>
+                <svg viewBox="0 0 24 24" fill="none" className="size-3">
+                  <path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </Link>
             </div>
             
             <div className="grid gap-4 sm:grid-cols-2">

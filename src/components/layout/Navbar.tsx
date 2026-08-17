@@ -17,6 +17,7 @@ const NAV_LINKS = [
   { name: 'Browse Teammates', path: '/team-formation/browse-teammates' },
   { name: 'Browse Mentors', path: '/team-formation/browse-mentors' },
   { name: 'Tracks', path: '/tracks' },
+  { name: 'Contact', path: '/contact' },
 ];
 
 interface Notification {

@@ -210,6 +210,18 @@ model AdminEmail {
   createdAt DateTime @default(now())
 }
 
+// Portal Access allowlist. Allows specific external/non-college emails (e.g. @gmail.com)
+// to access the portal as either STUDENT or MENTOR. Stored lowercased.
+// Note: This does NOT grant /admin console access.
+model WhitelistedEmail {
+  email     String   @id
+  role      Role     @default(STUDENT)
+  note      String?
+  addedBy   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 // Revoked accounts. Blocks login regardless of valid credentials. Stored lowercased.
 model BannedEmail {
   email     String   @id

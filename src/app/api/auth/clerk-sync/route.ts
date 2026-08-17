@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { currentUser } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
 import { signToken, normalizeEmail, isAllowedCollegeEmail, deriveInitialDisplayName } from '@/lib/auth';
-import { isUserBanned } from '@/lib/admin';
+import { isUserBanned, getWhitelistedPortalEntry } from '@/lib/admin';
 import { checkAuthRateLimit } from '@/lib/rateLimit';
 import { onboardingRoleSchema } from '@/lib/validation';
 import { clerkCircuitBreaker } from '@/lib/circuitBreaker';
@@ -103,7 +103,10 @@ export async function GET(request: Request) {
       return NextResponse.redirect(new URL('/login?error=rate_limited', request.url));
     }
 
-    if (!isAllowedCollegeEmail(email)) {
+    const isCollege = isAllowedCollegeEmail(email);
+    const whitelisted = await getWhitelistedPortalEntry(email);
+
+    if (!isCollege && !whitelisted) {
       return NextResponse.redirect(new URL('/login?error=domain_not_allowed', request.url));
     }
 
@@ -111,7 +114,8 @@ export async function GET(request: Request) {
       return NextResponse.redirect(new URL('/login?error=account_suspended', request.url));
     }
 
-    const { token, isOnboarded } = await syncClerkUser(email, clerkUser);
+    const assignedRole = whitelisted?.role || 'STUDENT';
+    const { token, isOnboarded } = await syncClerkUser(email, clerkUser, assignedRole);
 
     const redirectPath = isOnboarded ? '/dashboard' : '/onboarding';
     const response = NextResponse.redirect(new URL(redirectPath, request.url));
@@ -168,9 +172,12 @@ export async function POST(request: Request) {
 
     const { role } = parsed.data;
 
-    if (!isAllowedCollegeEmail(email)) {
+    const isCollege = isAllowedCollegeEmail(email);
+    const whitelisted = await getWhitelistedPortalEntry(email);
+
+    if (!isCollege && !whitelisted) {
       return NextResponse.json(
-        { error: 'Access restricted. Please use your official GL Bajaj email ID.' },
+        { error: 'Access restricted: Please use your official GL Bajaj email ID or request portal access from an administrator.' },
         { status: 403 }
       );
     }
@@ -182,7 +189,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const { user, token } = await syncClerkUser(email, clerkUser, role);
+    const assignedRole = whitelisted?.role || role;
+    const { user, token } = await syncClerkUser(email, clerkUser, assignedRole);
 
     const name = user.studentProfile?.name || user.mentorProfile?.name || deriveInitialDisplayName(clerkUser, email);
 

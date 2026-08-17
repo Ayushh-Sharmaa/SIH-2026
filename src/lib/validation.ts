@@ -210,6 +210,13 @@ export const adminAccessSchema = z.object({
   action: z.enum(['add', 'remove']),
 });
 
+export const adminPortalAccessSchema = z.object({
+  email: z.string().trim().toLowerCase().email().max(255),
+  action: z.enum(['add', 'remove', 'update_role']),
+  role: z.enum(['STUDENT', 'MENTOR']).optional(),
+  note: z.string().trim().max(255).optional(),
+});
+
 export const teamMemberActionSchema = z.object({
   action: z.enum(['leave', 'kick']),
   targetUserId: z.string().trim().min(1).max(100).optional(),

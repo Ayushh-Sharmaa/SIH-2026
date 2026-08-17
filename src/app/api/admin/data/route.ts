@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
-import { getAdminEmails, getBannedEmails, isAuthorizedAdminEmail } from '@/lib/admin';
+import { getAdminEmails, getBannedEmails, isAuthorizedAdminEmail, getWhitelistedEmails } from '@/lib/admin';
 import { checkUserRateLimit } from '@/lib/rateLimit';
 import { logger } from '@/lib/logger';
 
@@ -29,6 +29,7 @@ export async function GET(request: Request) {
     const [
       adminEmails,
       bannedEmailList,
+      whitelistedEmails,
       allUsers,
       allStudentProfiles,
       allMentorProfiles,
@@ -37,6 +38,7 @@ export async function GET(request: Request) {
     ] = await Promise.all([
       getAdminEmails(),
       getBannedEmails(),
+      getWhitelistedEmails(),
       prisma.user.findMany(),
       prisma.studentProfile.findMany({ where: { isDemo: false } }),
       prisma.mentorProfile.findMany({ where: { isDemo: false } }),
@@ -158,12 +160,16 @@ export async function GET(request: Request) {
       totalMentors: mentors.length,
       verifiedMentors: mentors.filter((m) => m.verified).length,
       totalAuthorizedAdmins: adminEmails.length,
+      totalWhitelistedUsers: whitelistedEmails.length,
+      whitelistedStudents: whitelistedEmails.filter((w) => w.role === 'STUDENT').length,
+      whitelistedMentors: whitelistedEmails.filter((w) => w.role === 'MENTOR').length,
     };
 
     return NextResponse.json({
       success: true,
       stats,
       adminEmails,
+      whitelistedEmails,
       teams,
       students,
       mentors,

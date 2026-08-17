@@ -121,3 +121,101 @@ export async function unbanUserEmail(email: string, unbannedBy?: string): Promis
   });
   return getBannedEmails();
 }
+
+export interface WhitelistedPortalUser {
+  email: string;
+  role: 'STUDENT' | 'MENTOR';
+  note: string | null;
+  addedBy: string | null;
+  createdAt: string;
+}
+
+export async function getWhitelistedEmails(): Promise<WhitelistedPortalUser[]> {
+  const rows = await prisma.whitelistedEmail.findMany({ orderBy: { createdAt: 'asc' } });
+  return rows.map((r: { email: string; role: string; note: string | null; addedBy: string | null; createdAt: Date }) => ({
+    email: r.email,
+    role: (r.role === 'MENTOR' ? 'MENTOR' : 'STUDENT') as 'STUDENT' | 'MENTOR',
+    note: r.note,
+    addedBy: r.addedBy,
+    createdAt: r.createdAt.toISOString(),
+  }));
+}
+
+export async function getWhitelistedPortalEntry(email: string): Promise<WhitelistedPortalUser | null> {
+  const clean = normalizeEmail(email);
+  if (!clean) return null;
+  const row = await prisma.whitelistedEmail.findUnique({ where: { email: clean } });
+  if (!row) return null;
+  return {
+    email: row.email,
+    role: (row.role === 'MENTOR' ? 'MENTOR' : 'STUDENT') as 'STUDENT' | 'MENTOR',
+    note: row.note,
+    addedBy: row.addedBy,
+    createdAt: row.createdAt.toISOString(),
+  };
+}
+
+export async function isEmailWhitelistedForPortal(email: string): Promise<boolean> {
+  const clean = normalizeEmail(email);
+  if (!clean) return false;
+  const row = await prisma.whitelistedEmail.findUnique({ where: { email: clean } });
+  return !!row;
+}
+
+export async function addWhitelistedEmail(
+  email: string,
+  role: 'STUDENT' | 'MENTOR' = 'STUDENT',
+  addedBy?: string,
+  note?: string
+): Promise<WhitelistedPortalUser[]> {
+  const clean = normalizeEmail(email);
+  if (clean) {
+    await prisma.whitelistedEmail.upsert({
+      where: { email: clean },
+      update: {
+        role,
+        note: note ?? null,
+      },
+      create: {
+        email: clean,
+        role,
+        note: note ?? null,
+        addedBy: addedBy ? normalizeEmail(addedBy) : null,
+      },
+    });
+
+    // If user already registered as non-admin, ensure their role is synced
+    await prisma.user.updateMany({
+      where: { email: clean, role: { not: 'ADMIN' } },
+      data: { role },
+    });
+  }
+  return getWhitelistedEmails();
+}
+
+export async function removeWhitelistedEmail(email: string): Promise<WhitelistedPortalUser[]> {
+  const clean = normalizeEmail(email);
+  if (clean) {
+    await prisma.whitelistedEmail.deleteMany({ where: { email: clean } });
+  }
+  return getWhitelistedEmails();
+}
+
+export async function updateWhitelistedRole(
+  email: string,
+  role: 'STUDENT' | 'MENTOR'
+): Promise<WhitelistedPortalUser[]> {
+  const clean = normalizeEmail(email);
+  if (clean) {
+    await prisma.whitelistedEmail.updateMany({
+      where: { email: clean },
+      data: { role },
+    });
+
+    await prisma.user.updateMany({
+      where: { email: clean, role: { not: 'ADMIN' } },
+      data: { role },
+    });
+  }
+  return getWhitelistedEmails();
+}

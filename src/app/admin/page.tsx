@@ -10,8 +10,13 @@ import {
   ChevronUp,
   GraduationCap,
   Layers,
+  Search,
+  ShieldAlert,
+  ShieldCheck,
+  Sparkles,
   Trash2,
   UserCheck,
+  UserPlus,
   Users,
 } from 'lucide-react';
 import Icon from '@/components/ui/Icon';
@@ -37,10 +42,11 @@ import {
 import { logger } from '@/lib/logger';
 import { userFacingMessage } from '@/lib/errors';
 
-type TabKey = 'access' | 'teams' | 'students' | 'ps_tracks' | 'mentors';
+type TabKey = 'access' | 'portal_access' | 'teams' | 'students' | 'ps_tracks' | 'mentors';
 
 const TABS: { key: TabKey; label: string; blurb: string }[] = [
   { key: 'access', label: 'Admin access', blurb: 'Grant or revoke console permissions' },
+  { key: 'portal_access', label: 'Portal access', blurb: 'Whitelist external emails (@gmail.com, etc.) for Student or Mentor access' },
   { key: 'teams', label: 'Teams', blurb: 'Roster, status and disband controls' },
   { key: 'students', label: 'Students', blurb: 'Directory with multi-attribute filters' },
   { key: 'ps_tracks', label: 'Participation', blurb: 'Theme-by-theme team distribution' },
@@ -158,6 +164,17 @@ interface AdminStats {
   totalMentors: number;
   verifiedMentors: number;
   totalAuthorizedAdmins: number;
+  totalWhitelistedUsers?: number;
+  whitelistedStudents?: number;
+  whitelistedMentors?: number;
+}
+
+interface WhitelistedEmailData {
+  email: string;
+  role: 'STUDENT' | 'MENTOR';
+  note: string | null;
+  addedBy: string | null;
+  createdAt: string;
 }
 
 interface StudentData {
@@ -255,6 +272,7 @@ export default function AdminDashboardPage() {
 
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [adminEmails, setAdminEmails] = useState<string[]>([]);
+  const [whitelistedEmails, setWhitelistedEmails] = useState<WhitelistedEmailData[]>([]);
   const [teams, setTeams] = useState<TeamData[]>([]);
   const [students, setStudents] = useState<StudentData[]>([]);
   const [mentors, setMentors] = useState<MentorData[]>([]);
@@ -265,6 +283,14 @@ export default function AdminDashboardPage() {
 
   const [newAdminEmail, setNewAdminEmail] = useState('');
   const [granting, setGranting] = useState(false);
+
+  const [newWhitelistEmail, setNewWhitelistEmail] = useState('');
+  const [newWhitelistRole, setNewWhitelistRole] = useState<'STUDENT' | 'MENTOR'>('STUDENT');
+  const [newWhitelistNote, setNewWhitelistNote] = useState('');
+  const [grantingPortal, setGrantingPortal] = useState(false);
+
+  const [portalSearch, setPortalSearch] = useState('');
+  const [portalRoleFilter, setPortalRoleFilter] = useState<'ALL' | 'STUDENT' | 'MENTOR'>('ALL');
 
   const [studentSearch, setStudentSearch] = useState('');
   const [studentYearFilter, setStudentYearFilter] = useState('ALL');
@@ -316,6 +342,7 @@ export default function AdminDashboardPage() {
 
       setStats(data.stats);
       setAdminEmails(data.adminEmails || []);
+      setWhitelistedEmails(data.whitelistedEmails || []);
       setTeams(data.teams || []);
       setStudents(data.students || []);
       setMentors(data.mentors || []);
@@ -380,6 +407,105 @@ export default function AdminDashboardPage() {
       fetchAdminData(false);
     } catch (err) {
       toast(userFacingMessage(err, 'Could not revoke access. Please try again.'), 'error');
+    }
+  };
+
+  const handleGrantPortalAccess = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!newWhitelistEmail) return;
+
+    setGrantingPortal(true);
+    const targetEmail = newWhitelistEmail.trim().toLowerCase();
+    const assignedRole = newWhitelistRole;
+    const note = newWhitelistNote.trim() || undefined;
+
+    // Optimistic update
+    setWhitelistedEmails((prev) => {
+      const filtered = prev.filter((p) => p.email.toLowerCase() !== targetEmail);
+      return [
+        {
+          email: targetEmail,
+          role: assignedRole,
+          note: note || null,
+          addedBy: 'Admin',
+          createdAt: new Date().toISOString(),
+        },
+        ...filtered,
+      ];
+    });
+
+    try {
+      const res = await fetch('/api/admin/portal-access', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'add', email: targetEmail, role: assignedRole, note }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error || 'Failed to grant portal access');
+
+      setWhitelistedEmails(data.whitelistedEmails);
+      setNewWhitelistEmail('');
+      setNewWhitelistNote('');
+      toast(data.message || `Granted ${assignedRole} portal access to ${targetEmail}`, 'success');
+      fetchAdminData(false);
+    } catch (err) {
+      toast(userFacingMessage(err, 'Could not grant portal access. Please try again.'), 'error');
+      fetchAdminData(false);
+    } finally {
+      setGrantingPortal(false);
+    }
+  };
+
+  const handleRevokePortalAccess = async (emailToRevoke: string) => {
+    const targetEmail = emailToRevoke.trim().toLowerCase();
+    // Optimistic update
+    setWhitelistedEmails((prev) => prev.filter((p) => p.email.toLowerCase() !== targetEmail));
+
+    try {
+      const res = await fetch('/api/admin/portal-access', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'remove', email: targetEmail }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error || 'Failed to revoke portal access');
+
+      setWhitelistedEmails(data.whitelistedEmails);
+      toast(`Revoked portal access from ${targetEmail}`, 'success');
+      fetchAdminData(false);
+    } catch (err) {
+      toast(userFacingMessage(err, 'Could not revoke portal access. Please try again.'), 'error');
+      fetchAdminData(false);
+    }
+  };
+
+  const handleTogglePortalRole = async (emailToToggle: string, currentRole: 'STUDENT' | 'MENTOR') => {
+    const targetEmail = emailToToggle.trim().toLowerCase();
+    const newRole: 'STUDENT' | 'MENTOR' = currentRole === 'STUDENT' ? 'MENTOR' : 'STUDENT';
+
+    // Optimistic update
+    setWhitelistedEmails((prev) =>
+      prev.map((p) => (p.email.toLowerCase() === targetEmail ? { ...p, role: newRole } : p))
+    );
+
+    try {
+      const res = await fetch('/api/admin/portal-access', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'update_role', email: targetEmail, role: newRole }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error || 'Failed to update portal role');
+
+      setWhitelistedEmails(data.whitelistedEmails);
+      toast(`Updated portal role for ${targetEmail} to ${newRole}`, 'success');
+      fetchAdminData(false);
+    } catch (err) {
+      toast(userFacingMessage(err, 'Could not update role. Please try again.'), 'error');
+      fetchAdminData(false);
     }
   };
 
@@ -604,6 +730,17 @@ export default function AdminDashboardPage() {
     );
   });
 
+  const filteredWhitelistedEmails = whitelistedEmails.filter((w) => {
+    const q = portalSearch.toLowerCase();
+    const matchesSearch =
+      w.email.toLowerCase().includes(q) ||
+      (w.note && w.note.toLowerCase().includes(q)) ||
+      (w.addedBy && w.addedBy.toLowerCase().includes(q));
+
+    const matchesRole = portalRoleFilter === 'ALL' || w.role === portalRoleFilter;
+    return matchesSearch && matchesRole;
+  });
+
   const resetStudentFilters = () => {
     setStudentSearch('');
     setStudentYearFilter('ALL');
@@ -655,6 +792,12 @@ export default function AdminDashboardPage() {
       foot: `${stats?.verifiedMentors || 0} verified`,
     },
     {
+      tab: 'portal_access',
+      label: 'Portal Whitelist',
+      value: stats?.totalWhitelistedUsers ?? whitelistedEmails.length,
+      foot: `${whitelistedEmails.filter((w) => w.role === 'STUDENT').length} students · ${whitelistedEmails.filter((w) => w.role === 'MENTOR').length} mentors`,
+    },
+    {
       tab: 'access',
       label: 'Admins',
       value: stats?.totalAuthorizedAdmins || 1,
@@ -672,33 +815,31 @@ export default function AdminDashboardPage() {
           <Aurora variant="rose" spotlight />
           <div aria-hidden className="grid-lines absolute inset-0" />
 
-          <Container width="wide" className="relative py-12">
-            <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+          <Container width="wide" className="relative py-10 sm:py-14">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
               <div>
-                <Reveal direction="none" blur={false}>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Chip tone="primary">Admin console</Chip>
-                    <Chip tone="accent">Session active</Chip>
+                <Reveal direction="down">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-[rgba(114,56,61,0.25)] bg-[rgba(114,56,61,0.08)] px-3 py-0.5 text-xs font-bold text-primary">
+                    <span className="size-1.5 rounded-full bg-primary" />
+                    Admin Command Console
                   </div>
                 </Reveal>
 
-                <SplitText
-                  as="h1"
-                  text="Administration"
-                  className="mt-4 text-title text-foreground"
-                  delay={0.08}
-                />
+                <Reveal delay={0.08} className="mt-3">
+                  <h1 className="text-display font-extrabold tracking-tight text-foreground">
+                    Operations
+                  </h1>
+                </Reveal>
 
-                <Reveal delay={0.3} className="mt-3">
-                  <p className="max-w-xl text-sm leading-relaxed text-muted">
-                    Student verification, team management, problem-statement participation and
-                    console permissions — all in one place.
+                <Reveal delay={0.14} className="mt-2">
+                  <p className="max-w-2xl text-sm leading-relaxed text-muted">
+                    Roster controls, student filtering, theme distributions, external portal whitelisting, and faculty verifications.
                   </p>
                 </Reveal>
               </div>
 
-              <Reveal direction="left" delay={0.18}>
-                <div className="flex flex-wrap gap-2.5">
+              <Reveal delay={0.16}>
+                <div className="flex flex-wrap items-center gap-2">
                   <PremiumButton
                     variant="glass"
                     size="sm"
@@ -724,7 +865,7 @@ export default function AdminDashboardPage() {
             </div>
 
             <RevealGroup
-              className="mt-9 grid grid-cols-2 gap-3 md:grid-cols-4"
+              className="mt-9 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5"
               stagger={0.07}
               delay={0.2}
             >
@@ -897,6 +1038,236 @@ export default function AdminDashboardPage() {
                             );
                           })}
                         </ul>
+                      </Panel>
+                    </>
+                  )}
+
+                  {activeTab === 'portal_access' && (
+                    <>
+                      {/* Security Notice */}
+                      <div className="rounded-3xl border border-[rgba(114,56,61,0.25)] bg-[rgba(114,56,61,0.06)] p-5 sm:p-6 shadow-sm">
+                        <div className="flex items-start gap-4">
+                          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                            <ShieldAlert className="size-5" />
+                          </div>
+                          <div className="space-y-1 text-xs">
+                            <h3 className="text-sm font-black text-foreground">
+                              Portal Access Whitelist (Strictly Isolated from Admin Console)
+                            </h3>
+                            <p className="leading-relaxed text-body">
+                              By default, platform authentication is restricted to official college accounts (<span className="font-bold">@glbajajgroup.org</span>). Whitelisting an external email (e.g. <span className="font-bold">@gmail.com</span>, external evaluators, or guest mentors) grants login access to the portal as a <span className="font-bold text-primary">Student</span> or <span className="font-bold text-primary">Mentor</span>.
+                            </p>
+                            <p className="font-semibold text-muted pt-1">
+                              Note: Whitelisting an account here will <span className="underline font-bold">NEVER</span> grant them Admin Dashboard access. Admin console permissions remain exclusively governed under the &ldquo;Admin access&rdquo; tab.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Whitelist External Account Form */}
+                      <Panel
+                        title="Whitelist external account"
+                        description="Grant Student or Mentor portal access to specific external emails (such as @gmail.com or personal academic accounts)."
+                      >
+                        <form
+                          onSubmit={handleGrantPortalAccess}
+                          className="space-y-4 max-w-2xl"
+                        >
+                          <div className="grid gap-3 sm:grid-cols-[1.5fr_1fr]">
+                            <div>
+                              <label className="block text-caption font-bold text-muted mb-1.5">
+                                User Email Address <span className="text-primary">*</span>
+                              </label>
+                              <input
+                                type="email"
+                                required
+                                placeholder="user@gmail.com or external domain"
+                                aria-label="Email address to whitelist"
+                                value={newWhitelistEmail}
+                                onChange={(e) => setNewWhitelistEmail(e.target.value)}
+                                className={CONTROL}
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-caption font-bold text-muted mb-1.5">
+                                Assigned Portal Role <span className="text-primary">*</span>
+                              </label>
+                              <div className="flex gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setNewWhitelistRole('STUDENT')}
+                                  className={`flex-1 rounded-xl py-2 px-3 text-xs font-bold transition-colors cursor-pointer ${
+                                    newWhitelistRole === 'STUDENT'
+                                      ? 'bg-primary text-on-accent shadow-sm'
+                                      : 'border border-[rgba(209,199,189,0.8)] bg-white/60 text-muted hover:text-foreground'
+                                  }`}
+                                >
+                                  Student
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setNewWhitelistRole('MENTOR')}
+                                  className={`flex-1 rounded-xl py-2 px-3 text-xs font-bold transition-colors cursor-pointer ${
+                                    newWhitelistRole === 'MENTOR'
+                                      ? 'bg-primary text-on-accent shadow-sm'
+                                      : 'border border-[rgba(209,199,189,0.8)] bg-white/60 text-muted hover:text-foreground'
+                                  }`}
+                                >
+                                  Mentor
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="grid gap-3 sm:grid-cols-[1fr_auto] items-end">
+                            <div>
+                              <label className="block text-caption font-bold text-muted mb-1.5">
+                                Note / Reason (Optional)
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="e.g. Industry Judge, External Participant, Faculty Guest"
+                                aria-label="Optional note"
+                                value={newWhitelistNote}
+                                onChange={(e) => setNewWhitelistNote(e.target.value)}
+                                className={CONTROL}
+                              />
+                            </div>
+
+                            <PremiumButton
+                              type="submit"
+                              size="sm"
+                              loading={grantingPortal}
+                              magnetic={false}
+                              className="shrink-0"
+                            >
+                              <UserPlus className="size-3.5 mr-1.5" />
+                              Grant Portal Access
+                            </PremiumButton>
+                          </div>
+                        </form>
+                      </Panel>
+
+                      {/* Whitelisted Accounts Directory */}
+                      <Panel
+                        title={`Whitelisted Portal Accounts (${whitelistedEmails.length})`}
+                        description="External accounts permitted to sign in to the SIH student and mentor spaces."
+                        action={
+                          <div className="flex flex-wrap items-center gap-2">
+                            <div className="relative min-w-[200px]">
+                              <input
+                                type="text"
+                                value={portalSearch}
+                                onChange={(e) => setPortalSearch(e.target.value)}
+                                placeholder="Search email or note..."
+                                aria-label="Search whitelist"
+                                className="w-full rounded-xl border border-[rgba(209,199,189,0.8)] bg-white/70 py-1.5 pl-8 pr-3 text-xs outline-none focus:border-primary"
+                              />
+                              <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted" />
+                            </div>
+
+                            <div className="flex gap-1">
+                              {(['ALL', 'STUDENT', 'MENTOR'] as const).map((r) => (
+                                <button
+                                  key={r}
+                                  type="button"
+                                  onClick={() => setPortalRoleFilter(r)}
+                                  className={`rounded-lg px-2.5 py-1 text-[11px] font-bold cursor-pointer transition-colors ${
+                                    portalRoleFilter === r
+                                      ? 'bg-primary text-on-accent'
+                                      : 'border border-[rgba(209,199,189,0.8)] bg-white/50 text-muted hover:text-foreground'
+                                  }`}
+                                >
+                                  {r === 'ALL' ? 'All' : r === 'STUDENT' ? 'Students' : 'Mentors'}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        }
+                      >
+                        {filteredWhitelistedEmails.length === 0 ? (
+                          <div className="rounded-2xl border border-[rgba(209,199,189,0.7)] bg-[rgba(248,246,242,0.4)] p-8 text-center">
+                            <p className="text-sm font-bold text-foreground">
+                              {whitelistedEmails.length === 0
+                                ? 'No external accounts whitelisted yet'
+                                : 'No whitelisted accounts match your search'}
+                            </p>
+                            <p className="mt-1 text-xs text-muted">
+                              {whitelistedEmails.length === 0
+                                ? 'Use the form above to grant portal access to @gmail.com or other external email addresses.'
+                                : 'Try clearing your search query or role filter.'}
+                            </p>
+                          </div>
+                        ) : (
+                          <ul className="divide-y divide-[rgba(209,199,189,0.7)] overflow-hidden rounded-2xl border border-[rgba(209,199,189,0.7)]">
+                            {filteredWhitelistedEmails.map((entry) => (
+                              <li
+                                key={entry.email}
+                                className="flex flex-wrap items-center justify-between gap-4 bg-[rgba(248,246,242,0.5)] p-4 transition-colors duration-250 hover:bg-[rgba(248,246,242,0.85)]"
+                              >
+                                <div className="space-y-1 min-w-0">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="font-bold text-sm text-foreground truncate">
+                                      {entry.email}
+                                    </span>
+                                    <span
+                                      className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-black uppercase tracking-wider ${
+                                        entry.role === 'MENTOR'
+                                          ? 'border border-[rgba(114,56,61,0.25)] bg-[rgba(114,56,61,0.1)] text-primary'
+                                          : 'border border-[rgba(172,156,141,0.4)] bg-[rgba(172,156,141,0.15)] text-foreground'
+                                      }`}
+                                    >
+                                      {entry.role === 'MENTOR' ? (
+                                        <GraduationCap className="size-3" />
+                                      ) : (
+                                        <UserCheck className="size-3" />
+                                      )}
+                                      {entry.role}
+                                    </span>
+                                  </div>
+
+                                  <div className="flex flex-wrap items-center gap-x-3 text-caption text-muted">
+                                    {entry.note && (
+                                      <span>Note: <span className="text-body font-medium">{entry.note}</span></span>
+                                    )}
+                                    {entry.addedBy && (
+                                      <span>Added by: <span className="text-body">{entry.addedBy}</span></span>
+                                    )}
+                                    <span>Added: {new Date(entry.createdAt).toLocaleDateString()}</span>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleTogglePortalRole(entry.email, entry.role)}
+                                    className="rounded-xl border border-[rgba(209,199,189,0.8)] bg-white/80 px-2.5 py-1.5 text-caption font-bold text-muted hover:text-primary hover:border-primary/40 transition-colors cursor-pointer"
+                                    title={`Switch role to ${entry.role === 'STUDENT' ? 'Mentor' : 'Student'}`}
+                                  >
+                                    Switch to {entry.role === 'STUDENT' ? 'Mentor' : 'Student'}
+                                  </button>
+
+                                  <PremiumButton
+                                    variant="ghost"
+                                    size="sm"
+                                    magnetic={false}
+                                    onClick={() =>
+                                      setConfirmState({
+                                        title: 'Revoke Portal Access?',
+                                        body: `${entry.email} will no longer be able to log in to the portal with this external account.`,
+                                        confirmLabel: 'Revoke Access',
+                                        onConfirm: () => handleRevokePortalAccess(entry.email),
+                                      })
+                                    }
+                                  >
+                                    Revoke
+                                  </PremiumButton>
+                                </div>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
                       </Panel>
                     </>
                   )}

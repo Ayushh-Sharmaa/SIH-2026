@@ -57,7 +57,7 @@ export async function GET(request: Request) {
 
     const andConditions: Prisma.StudentProfileWhereInput[] = [];
 
-    if (search && search.length >= 2) {
+    if (search) {
       const searchSkillVariants = resolveSkillVariants(search);
       const searchSoftVariants = resolveSoftSkillVariants(search);
       const searchLangVariants = resolveLanguageVariants(search);

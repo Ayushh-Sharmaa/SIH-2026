@@ -74,15 +74,45 @@ export const LANGUAGE_OPTIONS = [
   'Gujarati',
 ] as const;
 
+const SKILL_SYNONYMS: Record<string, string[]> = {
+  ml: ['Machine Learning', 'AI/ML', 'Machine learning', 'ML'],
+  ai: ['AI/ML', 'Artificial Intelligence', 'AI', 'Machine Learning'],
+  'ai/ml': ['AI/ML', 'Machine Learning', 'AI', 'ML'],
+  'machine learning': ['Machine Learning', 'AI/ML', 'ML', 'Machine learning'],
+  js: ['JavaScript', 'Javascript', 'JS'],
+  ts: ['TypeScript', 'Typescript', 'TS'],
+  py: ['Python', 'python'],
+  cpp: ['C++', 'CPP', 'c++'],
+  'c++': ['C++', 'CPP', 'cpp'],
+  react: ['React', 'React.js', 'ReactJS', 'React Native'],
+  node: ['Node.js', 'NodeJS', 'Node'],
+  'node.js': ['Node.js', 'NodeJS', 'Node'],
+  next: ['Next.js', 'NextJS', 'Next'],
+  'next.js': ['Next.js', 'NextJS', 'Next'],
+  frontend: ['React', 'Next.js', 'Vue', 'Angular', 'HTML', 'CSS', 'Tailwind', 'JavaScript', 'TypeScript'],
+  backend: ['Node.js', 'Express', 'Django', 'Spring Boot', 'Go', 'Java', 'Python', 'PostgreSQL', 'MongoDB'],
+  database: ['PostgreSQL', 'MongoDB', 'SQL', 'MySQL'],
+  db: ['PostgreSQL', 'MongoDB', 'SQL'],
+  ui: ['UI/UX Design', 'Figma', 'Canva', 'Adobe XD', 'Prototyping', 'Wireframing'],
+  'ui/ux': ['UI/UX Design', 'Figma', 'Canva', 'Adobe XD', 'Prototyping', 'Wireframing'],
+  ux: ['UI/UX Design', 'User Research', 'Figma', 'Wireframing'],
+};
+
 /**
- * Resolves a search term against canonical skill values and variations
- * to ensure deterministic, case-insensitive PostgreSQL array queries.
+ * Resolves technical skill variations for robust PostgreSQL array matching.
  */
 export function resolveSkillVariants(query: string): string[] {
   if (!query || !query.trim()) return [];
   const qClean = query.trim();
   const qLower = qClean.toLowerCase();
   const variants = new Set<string>([qClean]);
+
+  // Check synonym mappings
+  if (SKILL_SYNONYMS[qLower]) {
+    for (const syn of SKILL_SYNONYMS[qLower]) {
+      variants.add(syn);
+    }
+  }
 
   // Match from known standard skills
   for (const skill of STANDARD_SKILLS) {

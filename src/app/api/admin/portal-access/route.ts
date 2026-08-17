@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { checkUserRateLimit } from '@/lib/rateLimit';
 import { adminPortalAccessSchema } from '@/lib/validation';
+import { recalculateTeamSkills } from '@/lib/derived';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import {
   isAuthorizedAdminEmail,
   addWhitelistedEmail,
@@ -80,9 +83,47 @@ export async function POST(request: Request) {
 
     if (action === 'remove') {
       const updatedList = await removeWhitelistedEmail(targetEmail);
+
+      // If user exists in DB, delete their account and associations so their session is immediately invalidated
+      const existingUser = await prisma.user.findUnique({
+        where: { email: targetEmail },
+        include: {
+          studentProfile: {
+            include: { team: true },
+          },
+        },
+      });
+
+      if (existingUser) {
+        const team = existingUser.studentProfile?.team;
+        if (team) {
+          if (team.leaderId === existingUser.id) {
+            await prisma.studentProfile.updateMany({
+              where: { teamId: team.id, userId: { not: existingUser.id } },
+              data: { teamId: null, teamStatus: 'OPEN', roleInTeam: 'Member' },
+            });
+            await prisma.team.delete({ where: { id: team.id } }).catch(() => {});
+          } else {
+            await prisma.team.update({
+              where: { id: team.id },
+              data: { memberCount: { decrement: 1 } },
+            }).catch(() => {});
+            await recalculateTeamSkills(team.id).catch(() => {});
+          }
+        }
+
+        await prisma.user.delete({ where: { id: existingUser.id } }).catch(() => {});
+      }
+
+      revalidateTag('students', { expire: 0 });
+      revalidateTag('teams', { expire: 0 });
+      revalidatePath('/admin');
+      revalidatePath('/team-formation/browse-teammates');
+      revalidatePath('/team-formation/browse-teams');
+
       return NextResponse.json({
         success: true,
-        message: `Revoked portal access from ${targetEmail}`,
+        message: `Revoked portal access and logged out ${targetEmail}`,
         whitelistedEmails: updatedList,
       });
     }

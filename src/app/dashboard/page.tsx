@@ -1139,7 +1139,9 @@ export default function DashboardPage() {
       );
 
       if (!data?.success) {
-        throw new Error(data?.error || 'Failed to load dashboard');
+        QueryClient.clear();
+        router.push('/login');
+        return;
       }
 
       setUser(data.user);

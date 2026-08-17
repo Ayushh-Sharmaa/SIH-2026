@@ -41,6 +41,7 @@ import {
 } from '@/components/motion';
 import { logger } from '@/lib/logger';
 import { userFacingMessage } from '@/lib/errors';
+import { QueryClient } from '@/lib/queryClient';
 
 type TabKey = 'access' | 'portal_access' | 'teams' | 'students' | 'ps_tracks' | 'mentors';
 
@@ -324,10 +325,36 @@ export default function AdminDashboardPage() {
   };
 
   const fetchAdminData = useCallback(async (isInitial = false) => {
-    if (isInitial) {
+    // Check if we have cached data first so warm navigations display instantly
+    const cached = QueryClient.get<{
+      success: boolean;
+      stats: AdminStats;
+      adminEmails: string[];
+      whitelistedEmails: WhitelistedEmailData[];
+      teams: TeamData[];
+      students: StudentData[];
+      mentors: MentorData[];
+      problemStatementStats: PSStat[];
+    }>('/api/admin/data');
+
+    if (cached) {
+      setStats(cached.stats);
+      setAdminEmails(cached.adminEmails || []);
+      setWhitelistedEmails(cached.whitelistedEmails || []);
+      setTeams(cached.teams || []);
+      setStudents(cached.students || []);
+      setMentors(cached.mentors || []);
+      setProblemStatementStats(cached.problemStatementStats || []);
+      setLoading(false);
+    } else if (isInitial) {
       setLoading(true);
     }
+
     try {
+      if (!isInitial) {
+        QueryClient.invalidate('/api/admin/data');
+      }
+
       const res = await fetch('/api/admin/data', { cache: 'no-store' });
       const data = await res.json();
 
@@ -340,6 +367,7 @@ export default function AdminDashboardPage() {
         throw new Error(data.error || 'Failed to fetch admin data.');
       }
 
+      QueryClient.set('/api/admin/data', data);
       setStats(data.stats);
       setAdminEmails(data.adminEmails || []);
       setWhitelistedEmails(data.whitelistedEmails || []);
@@ -351,9 +379,7 @@ export default function AdminDashboardPage() {
       logger.error('Admin fetch error', err);
       toast(userFacingMessage(err, 'Error loading admin dashboard.'), 'error');
     } finally {
-      if (isInitial) {
-        setLoading(false);
-      }
+      setLoading(false);
     }
   }, [router, toast]);
 

@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { checkUserRateLimit } from '@/lib/rateLimit';
+import { clearSessionCookie } from '@/lib/sessionCookie';
 import { logger } from '@/lib/logger';
 
 export async function GET(request: Request) {
@@ -112,7 +113,9 @@ export async function GET(request: Request) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      const res = NextResponse.json({ error: 'User account not found or was removed by administrator.', code: 'USER_DELETED' }, { status: 401 });
+      clearSessionCookie(res.cookies);
+      return res;
     }
 
     // Mentor bootstrap path

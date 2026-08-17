@@ -6,6 +6,7 @@ import { checkUserRateLimit } from '@/lib/rateLimit';
 import { createTeamSchema, deleteTeamSchema, updateTeamDetailsSchema } from '@/lib/validation';
 import { nextTeamCode } from '@/lib/teamCode';
 import { recalculateTeamSkills } from '@/lib/derived';
+import { resolveSkillVariants } from '@/lib/skills';
 import { TeamStatus, Prisma } from '@prisma/client';
 import { sanitizeAvatarUrl } from '@/lib/avatar';
 import { logger } from '@/lib/logger';
@@ -45,35 +46,43 @@ export async function GET(request: Request) {
     if (size) {
       const parsedSize = parseInt(size, 10);
       if (!isNaN(parsedSize)) {
-        where.memberCount = parsedSize;
+        andConditions.push({ memberCount: parsedSize });
       }
     }
 
     if (status) {
       if (status === 'open') {
-        where.status = 'forming';
-        where.memberCount = { lt: 6 };
+        andConditions.push({
+          status: 'forming',
+          memberCount: { lt: 6 },
+        });
       } else if (status === 'closed') {
-        where.OR = [
-          { status: { not: 'forming' } },
-          { memberCount: { gte: 6 } },
-        ];
+        andConditions.push({
+          OR: [
+            { status: { not: 'forming' } },
+            { memberCount: { gte: 6 } },
+          ],
+        });
       }
     }
 
     if (domain) {
       andConditions.push({
-        track: {
-          category: { contains: domain, mode: 'insensitive' },
-        },
+        OR: [
+          { track: { category: { contains: domain, mode: 'insensitive' } } },
+          { track: { name: { contains: domain, mode: 'insensitive' } } },
+          { secondaryTrack: { category: { contains: domain, mode: 'insensitive' } } },
+          { secondaryTrack: { name: { contains: domain, mode: 'insensitive' } } },
+        ],
       });
     }
 
     if (skill) {
+      const variants = resolveSkillVariants(skill);
       andConditions.push({
         OR: [
-          { skillsCovered: { has: skill } },
-          { skillsNeeded: { has: skill } },
+          { skillsCovered: { hasSome: variants } },
+          { skillsNeeded: { hasSome: variants } },
         ],
       });
     }
@@ -88,17 +97,20 @@ export async function GET(request: Request) {
       });
     }
 
-    if (search && search.length >= 2) {
+    if (search) {
+      const searchVariants = resolveSkillVariants(search);
       andConditions.push({
         OR: [
           { name: { contains: search, mode: 'insensitive' } },
           { teamCode: { contains: search, mode: 'insensitive' } },
-          { skillsCovered: { has: search } },
-          { skillsNeeded: { has: search } },
+          { skillsCovered: { hasSome: searchVariants } },
+          { skillsNeeded: { hasSome: searchVariants } },
           { track: { name: { contains: search, mode: 'insensitive' } } },
           { track: { problemStatementCode: { contains: search, mode: 'insensitive' } } },
+          { track: { category: { contains: search, mode: 'insensitive' } } },
           { secondaryTrack: { name: { contains: search, mode: 'insensitive' } } },
           { secondaryTrack: { problemStatementCode: { contains: search, mode: 'insensitive' } } },
+          { secondaryTrack: { category: { contains: search, mode: 'insensitive' } } },
           { members: { some: { name: { contains: search, mode: 'insensitive' } } } },
         ],
       });

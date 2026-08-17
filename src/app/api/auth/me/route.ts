@@ -5,6 +5,8 @@ import { verifyToken, type SessionClaims } from '@/lib/auth';
 import { checkPublicRateLimit } from '@/lib/rateLimit';
 import { logger } from '@/lib/logger';
 
+import { clearSessionCookie } from '@/lib/sessionCookie';
+
 export async function GET(request: Request) {
   try {
     const rateLimitResponse = await checkPublicRateLimit(request);
@@ -19,19 +21,6 @@ export async function GET(request: Request) {
     if (token) {
       decoded = verifyToken(token);
     }
-
-    // There was an "auto-sync recovery" here: when no session cookie was
-    // present, it read the Clerk session and minted a new one on the spot.
-    //
-    // It made signing out impossible. /api/auth/logout clears this app's cookie
-    // but does not end the Clerk session, so the very next call to this
-    // endpoint saw a live Clerk user and silently signed the person back in.
-    // To the user that reads as "it says I'm logged in when I never logged in",
-    // and as a sign-out button that does nothing.
-    //
-    // Establishing a session is the job of the sign-in routes, which is where
-    // it can be done deliberately and visibly. A read-only session check must
-    // not have the side effect of creating one.
 
     if (!decoded) {
       return NextResponse.json(
@@ -67,7 +56,9 @@ export async function GET(request: Request) {
     });
 
     if (!user) {
-      return NextResponse.json({ authenticated: false }, { status: 200 });
+      const res = NextResponse.json({ authenticated: false, error: 'User deleted' }, { status: 200 });
+      clearSessionCookie(res.cookies);
+      return res;
     }
 
     const profile = user.studentProfile || user.mentorProfile;

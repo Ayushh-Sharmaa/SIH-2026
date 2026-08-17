@@ -274,34 +274,12 @@ export default function FindTeammatesPage() {
 
   // Debounced search when user types or changes filters
   useEffect(() => {
-    const isFilterActive = Boolean(
-      (name && name.trim().length >= 2) ||
-      (skill && skill.trim().length >= 2) ||
-      branch ||
-      year ||
-      softSkill ||
-      language ||
-      trackId ||
-      college
-    );
-
-    if (!isFilterActive) {
-      if (hasSearched && !name && !skill && !branch && !year && !softSkill && !language && !trackId && !college) {
-        // Reset back to empty state
-        setStudents([]);
-        setHasSearched(false);
-        setSearchError(null);
-        setTotalCount(0);
-      }
-      return;
-    }
-
     const timer = setTimeout(() => {
       executeSearch({ name, college, branch, year, skill, softSkill, language, trackId }, 1);
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [name, college, branch, year, skill, softSkill, language, trackId, executeSearch, hasSearched]);
+  }, [name, college, branch, year, skill, softSkill, language, trackId, executeSearch]);
 
   const handleSearchSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -317,10 +295,7 @@ export default function FindTeammatesPage() {
     setSoftSkill('');
     setLanguage('');
     setTrackId('');
-    setStudents([]);
-    setHasSearched(false);
-    setSearchError(null);
-    setTotalCount(0);
+    executeSearch(EMPTY_TEAMMATE_FILTERS, 1);
   };
 
   const handleSuggestionClick = (keyword: string) => {

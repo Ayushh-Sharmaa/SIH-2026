@@ -88,6 +88,12 @@ export class QueryClient {
     }
   }
 
+  /** Clear all cache entries */
+  static clear(): void {
+    MEMORY_CACHE.clear();
+    IN_FLIGHT_PROMISES.clear();
+  }
+
   /**
    * Deduplicated fetch with Stale-While-Revalidate semantics.
    * If cached & fresh: returns cached data.

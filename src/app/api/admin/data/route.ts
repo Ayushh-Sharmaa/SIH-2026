@@ -39,11 +39,64 @@ export async function GET(request: Request) {
       getAdminEmails(),
       getBannedEmails(),
       getWhitelistedEmails(),
-      prisma.user.findMany(),
-      prisma.studentProfile.findMany({ where: { isDemo: false } }),
-      prisma.mentorProfile.findMany({ where: { isDemo: false } }),
-      prisma.team.findMany(),
-      prisma.track.findMany(),
+      prisma.user.findMany({
+        select: { id: true, email: true, role: true },
+      }),
+      prisma.studentProfile.findMany({
+        where: { isDemo: false },
+        select: {
+          userId: true,
+          name: true,
+          rollNo: true,
+          section: true,
+          branch: true,
+          year: true,
+          gender: true,
+          isDemo: true,
+          teamId: true,
+          teamStatus: true,
+          skills: true,
+          softSkills: true,
+          languages: true,
+          resumeUrl: true,
+          githubUrl: true,
+          linkedinUrl: true,
+        },
+      }),
+      prisma.mentorProfile.findMany({
+        where: { isDemo: false },
+        select: {
+          userId: true,
+          name: true,
+          designation: true,
+          organization: true,
+          verified: true,
+          isDemo: true,
+          expertise: true,
+        },
+      }),
+      prisma.team.findMany({
+        select: {
+          id: true,
+          teamCode: true,
+          name: true,
+          status: true,
+          trackId: true,
+          leaderId: true,
+          mentorId: true,
+          skillsCovered: true,
+          skillsNeeded: true,
+        },
+      }),
+      prisma.track.findMany({
+        select: {
+          id: true,
+          problemStatementCode: true,
+          name: true,
+          category: true,
+          description: true,
+        },
+      }),
     ]);
     const bannedEmails = new Set(bannedEmailList);
 
@@ -73,7 +126,7 @@ export async function GET(request: Request) {
         resumeUrl: sp.resumeUrl || null,
         githubUrl: sp.githubUrl || null,
         linkedinUrl: sp.linkedinUrl || null,
-        avatarUrl: sp.avatarUrl || null,
+        avatarUrl: `/api/avatar/${sp.userId}`,
         isBanned: bannedEmails.has(email.toLowerCase()),
         verified: true,
       };

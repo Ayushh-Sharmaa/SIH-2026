@@ -5,6 +5,7 @@ import { verifyToken } from '@/lib/auth';
 import { checkUserRateLimit } from '@/lib/rateLimit';
 import { mentorSearchQuerySchema, parseQuery } from '@/lib/validation';
 import { sanitizeAvatarUrl } from '@/lib/avatar';
+import { resolveSkillVariants } from '@/lib/skills';
 import { logger } from '@/lib/logger';
 import { Prisma } from '@prisma/client';
 
@@ -39,31 +40,49 @@ export async function GET(request: Request) {
     const cursor = url.searchParams.get('cursor')?.trim() || null;
     const PAGE_SIZE = 24;
 
-    const where: Prisma.MentorProfileWhereInput = {
-      verified: true,
-    };
+    const where: Prisma.MentorProfileWhereInput = {};
     const andConditions: Prisma.MentorProfileWhereInput[] = [];
 
     if (nameQuery) {
       andConditions.push({
-        name: { contains: nameQuery, mode: 'insensitive' },
+        OR: [
+          { name: { contains: nameQuery, mode: 'insensitive' } },
+          { designation: { contains: nameQuery, mode: 'insensitive' } },
+          { organization: { contains: nameQuery, mode: 'insensitive' } },
+          {
+            teams: {
+              some: {
+                OR: [
+                  { name: { contains: nameQuery, mode: 'insensitive' } },
+                  { teamCode: { contains: nameQuery, mode: 'insensitive' } },
+                ],
+              },
+            },
+          },
+        ],
       });
     }
 
     if (expertiseQuery) {
+      const expertiseVariants = resolveSkillVariants(expertiseQuery);
       andConditions.push({
-        expertise: { has: expertiseQuery },
+        OR: [
+          { expertise: { hasSome: expertiseVariants } },
+          { bio: { contains: expertiseQuery, mode: 'insensitive' } },
+          { designation: { contains: expertiseQuery, mode: 'insensitive' } },
+        ],
       });
     }
 
-    if (search && search.length >= 2) {
+    if (search) {
+      const searchVariants = resolveSkillVariants(search);
       andConditions.push({
         OR: [
           { name: { contains: search, mode: 'insensitive' } },
           { designation: { contains: search, mode: 'insensitive' } },
           { organization: { contains: search, mode: 'insensitive' } },
           { bio: { contains: search, mode: 'insensitive' } },
-          { expertise: { has: search } },
+          { expertise: { hasSome: searchVariants } },
           {
             teams: {
               some: {

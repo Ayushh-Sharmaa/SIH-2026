@@ -591,13 +591,13 @@ export default function FindTeamsPage() {
                                         <div className="mt-2 space-y-1">
                                           <p className="flex items-center gap-1.5 text-caption text-primary font-bold">
                                             <Briefcase className="size-3 shrink-0" />
-                                            <span>Primary PS:</span>
+                                            <span>Primary Theme:</span>
                                             <span className="bg-primary/10 px-1.5 py-0.5 rounded text-[10px]">{team.track.problemStatementCode}</span>
                                             <span className="truncate font-normal text-body">{team.track.name}</span>
                                           </p>
                                           <p className="flex items-center gap-1.5 text-caption text-muted font-bold">
                                             <Briefcase className="size-3 shrink-0 opacity-60" />
-                                            <span>Secondary PS:</span>
+                                            <span>Secondary Theme:</span>
                                             {team.secondaryTrack ? (
                                               <>
                                                 <span className="bg-muted/20 px-1.5 py-0.5 rounded text-[10px] text-body">{team.secondaryTrack.problemStatementCode}</span>

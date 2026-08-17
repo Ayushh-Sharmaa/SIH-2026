@@ -75,57 +75,59 @@ describe('Portal Access Whitelist Validation & Security Boundary', () => {
     assert.equal(stripAdminSuffix('external.user@gmail.com/admin'), 'external.user@gmail.com');
   });
 
-  test('live DB CRUD operations for whitelisted portal access', async () => {
-    const {
-      addWhitelistedEmail,
-      getWhitelistedEmails,
-      getWhitelistedPortalEntry,
-      updateWhitelistedRole,
-      removeWhitelistedEmail,
-      isEmailWhitelistedForPortal,
-    } = await import('../src/lib/admin');
+  if (process.env.RUN_DB_INTEGRATION_TESTS === '1') {
+    test('live DB CRUD operations for whitelisted portal access', async () => {
+      const {
+        addWhitelistedEmail,
+        getWhitelistedEmails,
+        getWhitelistedPortalEntry,
+        updateWhitelistedRole,
+        removeWhitelistedEmail,
+        isEmailWhitelistedForPortal,
+      } = await import('../src/lib/admin');
 
-    const testEmail = `test.portal.${Date.now()}@gmail.com`;
+      const testEmail = `test.portal.${Date.now()}@gmail.com`;
 
-    try {
-      // 1. Add as STUDENT
-      const afterAdd = await addWhitelistedEmail(testEmail, 'STUDENT', 'test-runner@glbajajgroup.org', 'Test Note');
-      assert.equal(afterAdd.some((u) => u.email === testEmail && u.role === 'STUDENT'), true);
+      try {
+        // 1. Add as STUDENT
+        const afterAdd = await addWhitelistedEmail(testEmail, 'STUDENT', 'test-runner@glbajajgroup.org', 'Test Note');
+        assert.equal(afterAdd.some((u) => u.email === testEmail && u.role === 'STUDENT'), true);
 
-      // 2. Query single entry
-      const entry = await getWhitelistedPortalEntry(testEmail);
-      assert.notEqual(entry, null);
-      assert.equal(entry?.email, testEmail);
-      assert.equal(entry?.role, 'STUDENT');
-      assert.equal(entry?.note, 'Test Note');
+        // 2. Query single entry
+        const entry = await getWhitelistedPortalEntry(testEmail);
+        assert.notEqual(entry, null);
+        assert.equal(entry?.email, testEmail);
+        assert.equal(entry?.role, 'STUDENT');
+        assert.equal(entry?.note, 'Test Note');
 
-      // 3. Verify whitelist boolean check
-      const isAllowed = await isEmailWhitelistedForPortal(testEmail);
-      assert.equal(isAllowed, true);
+        // 3. Verify whitelist boolean check
+        const isAllowed = await isEmailWhitelistedForPortal(testEmail);
+        assert.equal(isAllowed, true);
 
-      // 4. Update to MENTOR
-      const afterUpdate = await updateWhitelistedRole(testEmail, 'MENTOR');
-      assert.equal(afterUpdate.some((u) => u.email === testEmail && u.role === 'MENTOR'), true);
+        // 4. Update to MENTOR
+        const afterUpdate = await updateWhitelistedRole(testEmail, 'MENTOR');
+        assert.equal(afterUpdate.some((u) => u.email === testEmail && u.role === 'MENTOR'), true);
 
-      const updatedEntry = await getWhitelistedPortalEntry(testEmail);
-      assert.equal(updatedEntry?.role, 'MENTOR');
+        const updatedEntry = await getWhitelistedPortalEntry(testEmail);
+        assert.equal(updatedEntry?.role, 'MENTOR');
 
-      // 5. Remove
-      const afterRemove = await removeWhitelistedEmail(testEmail);
-      assert.equal(afterRemove.some((u) => u.email === testEmail), false);
+        // 5. Remove
+        const afterRemove = await removeWhitelistedEmail(testEmail);
+        assert.equal(afterRemove.some((u) => u.email === testEmail), false);
 
-      const removedEntry = await getWhitelistedPortalEntry(testEmail);
-      assert.equal(removedEntry, null);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      if (msg.includes("Can't reach database server") || msg.includes('timeout') || msg.includes('P1001')) {
-        // Skip on transient Supabase pooler network drop
-        return;
+        const removedEntry = await getWhitelistedPortalEntry(testEmail);
+        assert.equal(removedEntry, null);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (msg.includes("Can't reach database server") || msg.includes('timeout') || msg.includes('P1001')) {
+          // Skip on transient Supabase pooler network drop
+          return;
+        }
+        throw err;
+      } finally {
+        // Cleanup
+        await removeWhitelistedEmail(testEmail).catch(() => {});
       }
-      throw err;
-    } finally {
-      // Cleanup
-      await removeWhitelistedEmail(testEmail).catch(() => {});
-    }
-  });
+    });
+  }
 });

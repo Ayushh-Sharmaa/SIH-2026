@@ -1571,7 +1571,7 @@ export default function DashboardPage() {
                           <MailOpen className="size-12 mx-auto text-muted mb-3 opacity-60" />
                           <h3 className="text-feature font-bold text-foreground mb-1">No Pending Requests</h3>
                           <p className="text-xs text-muted max-w-sm mx-auto">
-                            When student teams request your guidance, their problem statements and team pitches will appear here.
+                            When student teams request your guidance, their selected themes and project pitches will appear here.
                           </p>
                         </div>
                       ) : (

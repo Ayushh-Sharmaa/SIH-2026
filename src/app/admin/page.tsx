@@ -1377,10 +1377,10 @@ export default function AdminDashboardPage() {
                           <select
                             value={teamTrackFilter}
                             onChange={(e) => setTeamTrackFilter(e.target.value)}
-                            aria-label="Problem statement"
+                            aria-label="Filter by theme"
                             className={CONTROL}
                           >
-                            <option value="ALL">All problem statements</option>
+                            <option value="ALL">All Themes</option>
                             {problemStatementStats.map((tr) => (
                               <option key={tr.id} value={tr.code}>
                                 {tr.code} — {tr.name}
@@ -1737,8 +1737,8 @@ export default function AdminDashboardPage() {
                   {activeTab === 'ps_tracks' && (
                     <>
                       <Panel
-                        title="Participation by theme"
-                        description="Click on any problem statement or theme below to view all registered teams, leaders, and roster capacity."
+                        title="Participation by Theme"
+                        description="Click on any theme area below to view all registered teams, leaders, and roster capacity."
                         action={
                           <div className="flex flex-wrap items-center gap-3">
                             <button
@@ -1764,8 +1764,8 @@ export default function AdminDashboardPage() {
                       >
                         <input
                           type="text"
-                          placeholder="Filter by code, theme name or category"
-                          aria-label="Filter problem statements"
+                          placeholder="Filter by theme code, title, or category"
+                          aria-label="Filter themes"
                           value={psSearch}
                           onChange={(e) => setPsSearch(e.target.value)}
                           className={`${CONTROL} sm:max-w-md`}
@@ -1776,7 +1776,7 @@ export default function AdminDashboardPage() {
                         <EmptyState
                           icon={Layers}
                           size="compact"
-                          title="No problem statements match this search"
+                          title="No themes match this search"
                           description={`Try a different keyword, or clear the search to see all ${problemStatementStats.length || 17} official themes.`}
                         />
                       )}
@@ -1851,7 +1851,7 @@ export default function AdminDashboardPage() {
                                       <div className="border-t border-[rgba(209,199,189,0.65)] bg-[rgba(239,233,225,0.35)] p-5 space-y-4">
                                         <div>
                                           <p className="text-label uppercase text-muted mb-1 font-bold">
-                                            Problem Statement Overview
+                                            Theme Overview
                                           </p>
                                           <p className="text-xs leading-relaxed text-body bg-[rgba(248,246,242,0.7)] p-3 rounded-xl border border-[rgba(209,199,189,0.6)]">
                                             {track.description}

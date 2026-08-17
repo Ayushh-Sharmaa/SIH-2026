@@ -107,17 +107,17 @@ export default function CreateTeamPage() {
     setError('');
 
     if (!trackId) {
-      setError('Primary Problem Statement Track is mandatory. Please select a primary PS.');
+      setError('Primary Theme is mandatory. Please select a primary theme.');
       return;
     }
 
     if (!secondaryTrackId || secondaryTrackId === 'none') {
-      setError('Secondary Problem Statement Track is mandatory. Please select a secondary PS.');
+      setError('Secondary Theme is mandatory. Please select a secondary theme.');
       return;
     }
 
     if (trackId === secondaryTrackId && trackId !== 'custom') {
-      setError('Primary and Secondary Problem Statements must be different tracks.');
+      setError('Primary and Secondary Themes must be different.');
       return;
     }
 
@@ -125,12 +125,12 @@ export default function CreateTeamPage() {
 
     if (trackId === 'custom') {
       if (!customPsCode.trim()) {
-        setError('Primary Problem Statement ID (PS ID) is required for custom statements.');
+        setError('Primary Custom Theme ID is required.');
         setLoading(false);
         return;
       }
       if (!customPsName.trim()) {
-        setError('Primary Problem Statement Theme is required for custom statements.');
+        setError('Primary Custom Theme Title is required.');
         setLoading(false);
         return;
       }
@@ -138,12 +138,12 @@ export default function CreateTeamPage() {
 
     if (secondaryTrackId === 'custom') {
       if (!customSecondaryPsCode.trim()) {
-        setError('Secondary Problem Statement ID (PS ID) is required for custom statements.');
+        setError('Secondary Custom Theme ID is required.');
         setLoading(false);
         return;
       }
       if (!customSecondaryPsName.trim()) {
-        setError('Secondary Problem Statement Theme is required for custom statements.');
+        setError('Secondary Custom Theme Title is required.');
         setLoading(false);
         return;
       }

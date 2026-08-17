@@ -115,9 +115,9 @@ export async function GET(request: Request) {
     }
 
     const assignedRole = whitelisted?.role || 'STUDENT';
-    const { user, token, isOnboarded } = await syncClerkUser(email, clerkUser, assignedRole);
+    const { token, isOnboarded } = await syncClerkUser(email, clerkUser, assignedRole);
 
-    const redirectPath = user.role === 'ADMIN' ? '/admin' : (isOnboarded ? '/dashboard' : '/onboarding');
+    const redirectPath = isOnboarded ? '/dashboard' : '/onboarding';
     const response = NextResponse.redirect(new URL(redirectPath, request.url));
 
     setSessionCookie(response.cookies, token);
@@ -131,23 +131,20 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json().catch(() => ({}));
-    let email: string | undefined = typeof body?.email === 'string' && body.email.includes('@') ? body.email.trim() : undefined;
+    // The email MUST come from the verified Clerk session and nothing else.
+    let email: string | undefined;
     let clerkUser: Awaited<ReturnType<typeof currentUser>> = null;
-
-    if (!email) {
-      try {
-        clerkUser = await clerkCircuitBreaker.execute(
-          () => currentUser(),
-          async () => {
-            logger.warn('Clerk API circuit breaker tripped open. Falling back.');
-            return null;
-          }
-        );
-        email = clerkUser?.emailAddresses?.[0]?.emailAddress;
-      } catch (e) {
-        logger.error('Clerk currentUser() failed.', e);
-      }
+    try {
+      clerkUser = await clerkCircuitBreaker.execute(
+        () => currentUser(),
+        async () => {
+          logger.warn('Clerk API circuit breaker tripped open. Falling back.');
+          return null;
+        }
+      );
+      email = clerkUser?.emailAddresses?.[0]?.emailAddress;
+    } catch (e) {
+      logger.error('Clerk currentUser() failed.', e);
     }
 
     if (!email) {
@@ -165,9 +162,15 @@ export async function POST(request: Request) {
       return rateLimitResponse;
     }
 
+    const body = await request.json().catch(() => ({}));
+    
     // Parse/Validate input using Zod Schema
     const parsed = onboardingRoleSchema.safeParse(body);
-    const role = parsed.success ? parsed.data.role : 'STUDENT';
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid sync parameter formats.' }, { status: 400 });
+    }
+
+    const { role } = parsed.data;
 
     const isCollege = isAllowedCollegeEmail(email);
     const whitelisted = await getWhitelistedPortalEntry(email);
@@ -187,20 +190,17 @@ export async function POST(request: Request) {
     }
 
     const assignedRole = whitelisted?.role || role;
-    const { user, token, isOnboarded } = await syncClerkUser(email, clerkUser, assignedRole);
+    const { user, token } = await syncClerkUser(email, clerkUser, assignedRole);
 
     const name = user.studentProfile?.name || user.mentorProfile?.name || deriveInitialDisplayName(clerkUser, email);
-    const redirectUrl = user.role === 'ADMIN' ? '/admin' : (isOnboarded ? '/dashboard' : '/onboarding');
 
     const response = NextResponse.json({
       success: true,
-      redirectUrl,
       user: {
         id: user.id,
         email: user.email,
         role: user.role,
         name,
-        isOnboarded,
       },
     });
 

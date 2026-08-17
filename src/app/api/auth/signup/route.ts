@@ -166,7 +166,6 @@ export async function POST(request: Request) {
 
     const response = NextResponse.json({
       success: true,
-      redirectUrl: '/onboarding',
       user: {
         id: newUser.id,
         email: newUser.email,

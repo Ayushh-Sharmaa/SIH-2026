@@ -68,6 +68,8 @@ function SignUpContent() {
   const urlError = searchParams?.get('error');
 
   const clerk = useClerk();
+  const clerkUser = clerk.user;
+  const clerkSignOut = clerk.signOut;
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -85,6 +87,14 @@ function SignUpContent() {
     }
   }, [urlError]);
 
+  // If the user reaches this page (meaning the app session is gone),
+  // but Clerk thinks they are still signed in, drop the Clerk session to sync state.
+  useEffect(() => {
+    if (clerkUser) {
+      clerkSignOut();
+    }
+  }, [clerkUser, clerkSignOut]);
+
   const handleGoogleSignUp = async () => {
     setError('');
     setLoading(true);
@@ -93,7 +103,7 @@ function SignUpContent() {
         await clerk.client.signUp.authenticateWithRedirect({
           strategy: 'oauth_google',
           redirectUrl: '/sso-callback',
-          redirectUrlComplete: '/sso-callback',
+          redirectUrlComplete: '/api/auth/clerk-sync',
           continueSignUp: true,
         });
         return;
@@ -103,7 +113,7 @@ function SignUpContent() {
         await clerk.client.signIn.authenticateWithRedirect({
           strategy: 'oauth_google',
           redirectUrl: '/sso-callback',
-          redirectUrlComplete: '/sso-callback',
+          redirectUrlComplete: '/api/auth/clerk-sync',
           continueSignUp: true,
         });
         return;

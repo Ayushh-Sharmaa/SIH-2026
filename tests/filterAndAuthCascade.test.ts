@@ -62,18 +62,4 @@ describe('Filter Systems & Auth Session Invalidation', () => {
     assert.match(code, /^GLB\d+$/);
     assert.equal(code, 'GLB100');
   });
-
-  test('determines correct post-auth redirect for onboarded vs new students', () => {
-    const resolveRedirect = (role: string, isOnboarded: boolean) => {
-      if (role === 'ADMIN') return '/admin';
-      return isOnboarded ? '/dashboard' : '/onboarding';
-    };
-
-    assert.equal(resolveRedirect('STUDENT', false), '/onboarding');
-    assert.equal(resolveRedirect('STUDENT', true), '/dashboard');
-    assert.equal(resolveRedirect('MENTOR', false), '/onboarding');
-    assert.equal(resolveRedirect('MENTOR', true), '/dashboard');
-    assert.equal(resolveRedirect('ADMIN', false), '/admin');
-    assert.equal(resolveRedirect('ADMIN', true), '/admin');
-  });
 });

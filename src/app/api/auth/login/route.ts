@@ -141,13 +141,11 @@ export async function POST(request: Request) {
       userRole === 'STUDENT'
         ? Boolean(user.studentProfile?.branch)
         : Boolean(user.mentorProfile?.designation);
-    const redirectUrl = isOnboarded ? '/dashboard' : '/onboarding';
     const token = signToken({ userId: user.id, email: user.email, role: userRole });
 
     return setTokenCookie(
       NextResponse.json({
         success: true,
-        redirectUrl,
         user: { id: user.id, email: user.email, role: userRole, name, isOnboarded },
       }),
       token

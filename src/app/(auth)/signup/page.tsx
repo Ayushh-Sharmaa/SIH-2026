@@ -103,7 +103,7 @@ function SignUpContent() {
         await clerk.client.signUp.authenticateWithRedirect({
           strategy: 'oauth_google',
           redirectUrl: '/sso-callback',
-          redirectUrlComplete: '/api/auth/clerk-sync',
+          redirectUrlComplete: '/sso-callback',
           continueSignUp: true,
         });
         return;
@@ -113,7 +113,7 @@ function SignUpContent() {
         await clerk.client.signIn.authenticateWithRedirect({
           strategy: 'oauth_google',
           redirectUrl: '/sso-callback',
-          redirectUrlComplete: '/api/auth/clerk-sync',
+          redirectUrlComplete: '/sso-callback',
           continueSignUp: true,
         });
         return;

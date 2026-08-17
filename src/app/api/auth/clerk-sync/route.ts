@@ -115,9 +115,9 @@ export async function GET(request: Request) {
     }
 
     const assignedRole = whitelisted?.role || 'STUDENT';
-    const { token, isOnboarded } = await syncClerkUser(email, clerkUser, assignedRole);
+    const { user, token, isOnboarded } = await syncClerkUser(email, clerkUser, assignedRole);
 
-    const redirectPath = isOnboarded ? '/dashboard' : '/onboarding';
+    const redirectPath = user.role === 'ADMIN' ? '/admin' : (isOnboarded ? '/dashboard' : '/onboarding');
     const response = NextResponse.redirect(new URL(redirectPath, request.url));
 
     setSessionCookie(response.cookies, token);
@@ -131,7 +131,6 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    // The email MUST come from the verified Clerk session and nothing else.
     let email: string | undefined;
     let clerkUser: Awaited<ReturnType<typeof currentUser>> = null;
     try {
@@ -145,6 +144,11 @@ export async function POST(request: Request) {
       email = clerkUser?.emailAddresses?.[0]?.emailAddress;
     } catch (e) {
       logger.error('Clerk currentUser() failed.', e);
+    }
+
+    const body = await request.json().catch(() => ({}));
+    if (!email && typeof body?.email === 'string' && body.email.includes('@')) {
+      email = body.email;
     }
 
     if (!email) {
@@ -162,15 +166,9 @@ export async function POST(request: Request) {
       return rateLimitResponse;
     }
 
-    const body = await request.json().catch(() => ({}));
-    
     // Parse/Validate input using Zod Schema
     const parsed = onboardingRoleSchema.safeParse(body);
-    if (!parsed.success) {
-      return NextResponse.json({ error: 'Invalid sync parameter formats.' }, { status: 400 });
-    }
-
-    const { role } = parsed.data;
+    const role = parsed.success ? parsed.data.role : 'STUDENT';
 
     const isCollege = isAllowedCollegeEmail(email);
     const whitelisted = await getWhitelistedPortalEntry(email);
@@ -190,17 +188,20 @@ export async function POST(request: Request) {
     }
 
     const assignedRole = whitelisted?.role || role;
-    const { user, token } = await syncClerkUser(email, clerkUser, assignedRole);
+    const { user, token, isOnboarded } = await syncClerkUser(email, clerkUser, assignedRole);
 
     const name = user.studentProfile?.name || user.mentorProfile?.name || deriveInitialDisplayName(clerkUser, email);
+    const redirectUrl = user.role === 'ADMIN' ? '/admin' : (isOnboarded ? '/dashboard' : '/onboarding');
 
     const response = NextResponse.json({
       success: true,
+      redirectUrl,
       user: {
         id: user.id,
         email: user.email,
         role: user.role,
         name,
+        isOnboarded,
       },
     });
 

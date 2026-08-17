@@ -74,4 +74,51 @@ describe('Portal Access Whitelist Validation & Security Boundary', () => {
     assert.equal(isSuperAdmin('external.user@gmail.com/admin'), false);
     assert.equal(stripAdminSuffix('external.user@gmail.com/admin'), 'external.user@gmail.com');
   });
+
+  test('live DB CRUD operations for whitelisted portal access', async () => {
+    const {
+      addWhitelistedEmail,
+      getWhitelistedEmails,
+      getWhitelistedPortalEntry,
+      updateWhitelistedRole,
+      removeWhitelistedEmail,
+      isEmailWhitelistedForPortal,
+    } = await import('../src/lib/admin');
+
+    const testEmail = `test.portal.${Date.now()}@gmail.com`;
+
+    try {
+      // 1. Add as STUDENT
+      const afterAdd = await addWhitelistedEmail(testEmail, 'STUDENT', 'test-runner@glbajajgroup.org', 'Test Note');
+      assert.equal(afterAdd.some((u) => u.email === testEmail && u.role === 'STUDENT'), true);
+
+      // 2. Query single entry
+      const entry = await getWhitelistedPortalEntry(testEmail);
+      assert.notEqual(entry, null);
+      assert.equal(entry?.email, testEmail);
+      assert.equal(entry?.role, 'STUDENT');
+      assert.equal(entry?.note, 'Test Note');
+
+      // 3. Verify whitelist boolean check
+      const isAllowed = await isEmailWhitelistedForPortal(testEmail);
+      assert.equal(isAllowed, true);
+
+      // 4. Update to MENTOR
+      const afterUpdate = await updateWhitelistedRole(testEmail, 'MENTOR');
+      assert.equal(afterUpdate.some((u) => u.email === testEmail && u.role === 'MENTOR'), true);
+
+      const updatedEntry = await getWhitelistedPortalEntry(testEmail);
+      assert.equal(updatedEntry?.role, 'MENTOR');
+
+      // 5. Remove
+      const afterRemove = await removeWhitelistedEmail(testEmail);
+      assert.equal(afterRemove.some((u) => u.email === testEmail), false);
+
+      const isRemoved = await isEmailWhitelistedForPortal(testEmail);
+      assert.equal(isRemoved, false);
+    } finally {
+      // Cleanup
+      await removeWhitelistedEmail(testEmail).catch(() => {});
+    }
+  });
 });

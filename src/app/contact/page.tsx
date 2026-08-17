@@ -196,46 +196,60 @@ export default function ContactPage() {
                     </div>
                   </div>
 
-                  {spocContact.phone && (
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto shrink-0">
-                      <a
-                        href={`tel:${cleanPhone(spocContact.phone)}`}
-                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-on-accent shadow-[0_4px_14px_rgba(114,56,61,0.25)] transition-all hover:bg-[var(--primary-hover)] active:scale-98"
-                      >
-                        <Phone className="size-4" />
-                        <span>Call SPOC</span>
-                      </a>
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto shrink-0 flex-wrap">
+                    {spocContact.phone && (
+                      <>
+                        <a
+                          href={`tel:${cleanPhone(spocContact.phone)}`}
+                          className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-on-accent shadow-[0_4px_14px_rgba(114,56,61,0.25)] transition-all hover:bg-[var(--primary-hover)] active:scale-98"
+                        >
+                          <Phone className="size-3.5" />
+                          <span>Call SPOC</span>
+                        </a>
 
-                      <a
-                        href={`https://wa.me/${cleanPhone(spocContact.phone)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-green-600/30 bg-green-50 px-4 py-3 text-sm font-bold text-green-700 hover:bg-green-100 transition-colors"
-                      >
-                        <MessageCircle className="size-4" />
-                        <span>WhatsApp</span>
-                      </a>
+                        <a
+                          href={`https://wa.me/${cleanPhone(spocContact.phone)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center justify-center gap-2 rounded-xl border border-green-600/30 bg-green-50 px-3.5 py-2.5 text-xs font-bold text-green-700 hover:bg-green-100 transition-colors"
+                        >
+                          <MessageCircle className="size-3.5" />
+                          <span>WhatsApp</span>
+                        </a>
+                      </>
+                    )}
 
+                    {spocContact.email && (
+                      <a
+                        href={`mailto:${spocContact.email}`}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-primary/25 bg-primary/10 px-3.5 py-2.5 text-xs font-bold text-primary hover:bg-primary hover:text-on-accent transition-colors"
+                      >
+                        <Mail className="size-3.5" />
+                        <span>Email</span>
+                      </a>
+                    )}
+
+                    {spocContact.phone && (
                       <button
                         type="button"
                         onClick={() => handleCopy(spocContact.phone!, 'SPOC Contact', 'spoc-phone')}
-                        className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-[rgba(209,199,189,0.8)] bg-white/80 px-3.5 py-3 text-xs font-bold text-body hover:text-primary transition-colors cursor-pointer"
+                        className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-[rgba(209,199,189,0.8)] bg-white/80 px-3 py-2.5 text-xs font-bold text-body hover:text-primary transition-colors cursor-pointer"
                         title="Copy mobile number"
                       >
                         {copiedKey === 'spoc-phone' ? (
                           <>
-                            <Check className="size-4 text-green-600" />
+                            <Check className="size-3.5 text-green-600" />
                             <span className="text-green-700">Copied</span>
                           </>
                         ) : (
                           <>
-                            <Copy className="size-4" />
+                            <Copy className="size-3.5" />
                             <span>{spocContact.phone}</span>
                           </>
                         )}
                       </button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
             </Reveal>
@@ -332,7 +346,7 @@ export default function ContactPage() {
             <section className="space-y-6">
               <div className="border-b border-[rgba(209,199,189,0.7)] pb-4">
                 <span className="text-label uppercase text-primary font-bold tracking-wider">
-                  NexaSphere Technical &amp; Operational Leads
+                  Student Technical &amp; Operational Leads
                 </span>
                 <h2 className="mt-1 text-heading text-foreground font-black">
                   Student Coordinators &amp; Platform Leads
@@ -408,11 +422,11 @@ export default function ContactPage() {
                     Email queries directly to the internal SIH coordination team:
                   </p>
                   <a
-                    href="mailto:sih@glbitm.ac.in"
+                    href="mailto:iic@glbajajgroup.org"
                     className="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:underline"
                   >
                     <Mail className="size-3.5" />
-                    <span>sih@glbitm.ac.in</span>
+                    <span>iic@glbajajgroup.org</span>
                   </a>
                 </div>
               </div>
@@ -459,7 +473,8 @@ function FacultyCard({
   onCopy: (text: string, label: string, key: string) => void;
 }) {
   const cleanPhone = faculty.phone ? faculty.phone.replace(/[^0-9]/g, '') : '';
-  const copyKey = `fac-${faculty.name}`;
+  const phoneCopyKey = `fac-phone-${faculty.name}`;
+  const emailCopyKey = `fac-email-${faculty.name}`;
 
   return (
     <SpotlightCard className="h-full rounded-2xl">
@@ -485,44 +500,68 @@ function FacultyCard({
           </p>
         </div>
 
-        {faculty.phone ? (
-          <div className="pt-3 border-t border-[rgba(209,199,189,0.5)] flex flex-wrap items-center gap-2">
-            <a
-              href={`tel:${cleanPhone}`}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 py-1.5 text-xs font-bold text-primary hover:bg-primary hover:text-on-accent transition-colors"
-            >
-              <Phone className="size-3" />
-              <span>Call</span>
-            </a>
+        {faculty.phone || faculty.email ? (
+          <div className="space-y-2 pt-3 border-t border-[rgba(209,199,189,0.5)]">
+            {faculty.phone && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <a
+                  href={`tel:${cleanPhone}`}
+                  className="inline-flex items-center gap-1 rounded-lg bg-primary/10 px-2 py-1 text-xs font-bold text-primary hover:bg-primary hover:text-on-accent transition-colors"
+                >
+                  <Phone className="size-3" />
+                  <span>Call</span>
+                </a>
 
-            <a
-              href={`https://wa.me/${cleanPhone}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-green-50 px-2.5 py-1.5 text-xs font-bold text-green-700 hover:bg-green-100 transition-colors"
-            >
-              <MessageCircle className="size-3" />
-              <span>WhatsApp</span>
-            </a>
+                <a
+                  href={`https://wa.me/${cleanPhone}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 rounded-lg bg-green-50 px-2 py-1 text-xs font-bold text-green-700 hover:bg-green-100 transition-colors"
+                >
+                  <MessageCircle className="size-3" />
+                  <span>WhatsApp</span>
+                </a>
 
-            <button
-              type="button"
-              onClick={() => onCopy(faculty.phone!, `${faculty.name}'s contact`, copyKey)}
-              className="ml-auto inline-flex items-center gap-1 rounded-lg border border-[rgba(209,199,189,0.7)] bg-white/80 px-2 py-1.5 text-[11px] font-semibold text-body hover:text-primary transition-colors cursor-pointer"
-              title="Copy mobile number"
-            >
-              {copiedKey === copyKey ? (
-                <>
-                  <Check className="size-3 text-green-600" />
-                  <span className="text-green-700">Copied</span>
-                </>
-              ) : (
-                <>
-                  <Copy className="size-3" />
+                <button
+                  type="button"
+                  onClick={() => onCopy(faculty.phone!, `${faculty.name}'s phone`, phoneCopyKey)}
+                  className="ml-auto inline-flex items-center gap-1 rounded-lg border border-[rgba(209,199,189,0.7)] bg-white/80 px-2 py-1 text-[11px] font-semibold text-body hover:text-primary transition-colors cursor-pointer"
+                  title="Copy phone"
+                >
+                  {copiedKey === phoneCopyKey ? (
+                    <Check className="size-3 text-green-600" />
+                  ) : (
+                    <Copy className="size-3" />
+                  )}
                   <span>{faculty.phone}</span>
-                </>
-              )}
-            </button>
+                </button>
+              </div>
+            )}
+
+            {faculty.email && (
+              <div className="flex items-center justify-between gap-1.5 pt-1">
+                <a
+                  href={`mailto:${faculty.email}`}
+                  className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline truncate"
+                >
+                  <Mail className="size-3 shrink-0" />
+                  <span className="truncate">{faculty.email}</span>
+                </a>
+
+                <button
+                  type="button"
+                  onClick={() => onCopy(faculty.email!, `${faculty.name}'s email`, emailCopyKey)}
+                  className="shrink-0 inline-flex items-center gap-1 text-[10px] text-muted hover:text-primary transition-colors cursor-pointer"
+                  title="Copy email"
+                >
+                  {copiedKey === emailCopyKey ? (
+                    <Check className="size-3 text-green-600" />
+                  ) : (
+                    <Copy className="size-3" />
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="pt-3 border-t border-[rgba(209,199,189,0.5)]">
@@ -538,12 +577,11 @@ function FacultyCard({
 
 function StudentLeadCard({
   student,
-  index,
   copiedKey,
   onCopy,
 }: {
   student: StudentLead;
-  index: number;
+  index?: number;
   copiedKey: string | null;
   onCopy: (text: string, label: string, key: string) => void;
 }) {
@@ -555,16 +593,6 @@ function StudentLeadCard({
     <SpotlightCard className="h-full rounded-3xl">
       <div className="surface-raised rounded-3xl p-6 sm:p-7 border border-[rgba(209,199,189,0.75)] flex flex-col justify-between h-full space-y-5 shadow-sm hover:border-primary/40 transition-colors">
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-2.5 py-0.5 text-caption font-bold uppercase tracking-wider text-primary">
-              <Sparkles className="size-3" />
-              Lead {index + 1}
-            </span>
-            <span className="text-caption font-semibold text-muted">
-              NexaSphere Core Team
-            </span>
-          </div>
-
           <div>
             <h3 className="text-xl font-black text-foreground">
               {student.name}

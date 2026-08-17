@@ -45,7 +45,7 @@ export function SiteStructuredData() {
     contactPoint: {
       '@type': 'ContactPoint',
       contactType: 'Smart India Hackathon cell',
-      email: 'sih@glbitm.ac.in',
+      email: 'iic@glbajajgroup.org',
       availableLanguage: ['en', 'hi'],
     },
   };

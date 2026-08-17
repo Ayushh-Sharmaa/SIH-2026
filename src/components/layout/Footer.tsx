@@ -46,7 +46,7 @@ const SOCIALS = [
   },
   {
     label: 'Email',
-    href: 'mailto:sih@glbitm.ac.in',
+    href: 'mailto:iic@glbajajgroup.org',
     path: 'M3 7.5A2.5 2.5 0 0 1 5.5 5h13A2.5 2.5 0 0 1 21 7.5v9a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 16.5v-9Zm0 .5 9 6 9-6',
   },
 ];

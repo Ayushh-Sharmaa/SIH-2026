@@ -242,10 +242,18 @@ function LoginContent() {
             />
           </Reveal>
 
-          <Reveal delay={0.24} className="mt-6 text-center">
+          <Reveal delay={0.24} className="mt-6 text-center space-y-3">
             <p className="text-xs text-muted">
               Only official <span className="font-semibold text-foreground">@glbajajgroup.org</span> accounts are permitted.
             </p>
+            <div className="pt-2 border-t border-[rgba(209,199,189,0.55)]">
+              <p className="text-xs text-muted">
+                New to the portal?{' '}
+                <Link href="/signup" className="font-bold text-primary hover:underline">
+                  Create an account
+                </Link>
+              </p>
+            </div>
           </Reveal>
         </div>
       </main>

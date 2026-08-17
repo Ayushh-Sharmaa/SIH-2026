@@ -26,6 +26,7 @@ export const FACULTY_CONTACTS: FacultyContact[] = [
     department: 'Smart India Hackathon 2026, GLBGOI',
     category: 'SPOC',
     phone: '+91 8953239022',
+    email: 'brijesh.umar@glbajajgroup.org',
     isSpoc: true,
   },
   {
@@ -34,6 +35,7 @@ export const FACULTY_CONTACTS: FacultyContact[] = [
     designation: 'Assistant Professor',
     department: 'Department of Management Studies',
     category: 'MBA',
+    email: 'parul.jain@glbajajgroup.org',
   },
   {
     name: 'Mr. Anurag Kumar Singh',
@@ -48,6 +50,7 @@ export const FACULTY_CONTACTS: FacultyContact[] = [
     designation: 'Assistant Professor',
     department: 'Department of Computer Science and Engineering',
     category: 'BTech 3rd & 4th Year',
+    email: 'rahul.anjana@glbajajgroup.org',
   },
   {
     name: 'Ms. Swati Pandit',
@@ -55,6 +58,7 @@ export const FACULTY_CONTACTS: FacultyContact[] = [
     designation: 'Assistant Professor',
     department: 'Department of Computer Science and Engineering',
     category: 'BTech 2nd Year',
+    email: 'swati.pandit@glbajajgroup.org',
   },
   {
     name: 'Ms. Srishti Mishra',
@@ -63,6 +67,7 @@ export const FACULTY_CONTACTS: FacultyContact[] = [
     department: 'Department of Computer Science and Engineering',
     category: 'BTech 2nd Year',
     phone: '+91 7505925103',
+    email: 'srishti.mishra@glbajajgroup.org',
   },
   {
     name: 'Mr. Anurag Singh',

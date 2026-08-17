@@ -48,39 +48,42 @@ async function runAudit() {
   });
 
   // 2. Audit: Browse Teams DB Query & Sanitized Payload
+  const hasDb = Boolean(process.env.DATABASE_URL);
   const t2 = performance.now();
-  const teams = await prisma.team.findMany({
-    where: {
-      AND: [
-        { status: 'forming' },
-        { skillsNeeded: { hasSome: ['React', 'Node.js'] } }
-      ]
-    },
-    select: {
-      id: true,
-      teamCode: true,
-      name: true,
-      status: true,
-      memberCount: true,
-      skillsCovered: true,
-      skillsNeeded: true,
-      logoUrl: true,
-      track: { select: { id: true, name: true, problemStatementCode: true } },
-      members: {
-        select: {
-          userId: true,
-          name: true,
-          avatarUrl: true,
-          branch: true,
-          year: true,
-          roleInTeam: true,
+  const teams = hasDb
+    ? await prisma.team.findMany({
+        where: {
+          AND: [
+            { status: 'forming' },
+            { skillsNeeded: { hasSome: ['React', 'Node.js'] } },
+          ],
         },
-        take: 6,
-      },
-    },
-    take: 24,
-    orderBy: { teamCode: 'asc' }
-  });
+        select: {
+          id: true,
+          teamCode: true,
+          name: true,
+          status: true,
+          memberCount: true,
+          skillsCovered: true,
+          skillsNeeded: true,
+          logoUrl: true,
+          track: { select: { id: true, name: true, problemStatementCode: true } },
+          members: {
+            select: {
+              userId: true,
+              name: true,
+              avatarUrl: true,
+              branch: true,
+              year: true,
+              roleInTeam: true,
+            },
+            take: 6,
+          },
+        },
+        take: 24,
+        orderBy: { teamCode: 'asc' },
+      })
+    : [];
   const t3 = performance.now();
 
   const formattedTeams = teams.map((team) => ({
@@ -97,7 +100,7 @@ async function runAudit() {
   auditResults.push({
     route: 'GET /api/teams?skill=React&status=forming',
     description: 'Teams Discovery (Bounded take: 24, Sanitized DTO)',
-    dbQueries: 1,
+    dbQueries: hasDb ? 1 : 0,
     payloadBytes: Buffer.byteLength(teamsPayload, 'utf8'),
     execTimeMs: (t3 - t2).toFixed(2),
     cacheStrategy: 'Client QueryClient (30s Fresh / Stale-While-Revalidate)',
@@ -106,30 +109,32 @@ async function runAudit() {
 
   // 3. Audit: Browse Mentors DB Query & Privacy Check
   const t4 = performance.now();
-  const mentors = await prisma.mentorProfile.findMany({
-    where: {
-      expertise: { hasSome: ['AI/ML', 'Web Development'] }
-    },
-    select: {
-      userId: true,
-      name: true,
-      designation: true,
-      organization: true,
-      expertise: true,
-      bio: true,
-      linkedinUrl: true,
-      avatarUrl: true,
-      verified: true,
-      _count: { select: { teams: true } },
-      teams: {
-        select: { id: true, teamCode: true, name: true },
-        take: 5,
-        orderBy: { teamCode: 'asc' },
-      },
-    },
-    take: 24,
-    orderBy: { name: 'asc' }
-  });
+  const mentors = hasDb
+    ? await prisma.mentorProfile.findMany({
+        where: {
+          expertise: { hasSome: ['AI/ML', 'Web Development'] },
+        },
+        select: {
+          userId: true,
+          name: true,
+          designation: true,
+          organization: true,
+          expertise: true,
+          bio: true,
+          linkedinUrl: true,
+          avatarUrl: true,
+          verified: true,
+          _count: { select: { teams: true } },
+          teams: {
+            select: { id: true, teamCode: true, name: true },
+            take: 5,
+            orderBy: { teamCode: 'asc' },
+          },
+        },
+        take: 24,
+        orderBy: { name: 'asc' },
+      })
+    : [];
   const t5 = performance.now();
 
   const formattedMentors = mentors.map((m) => ({
@@ -148,12 +153,13 @@ async function runAudit() {
   const mentorsPayload = JSON.stringify({ success: true, mentors: formattedMentors, total: mentors.length, page: 1, pageSize: 24 });
 
   // Privacy verification: verify 'contact' is NOT present in any mentor record returned
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const hasLeakedContact = mentors.some((m: any) => 'contact' in m && m.contact !== undefined);
 
   auditResults.push({
     route: 'GET /api/mentors?expertise=AI/ML',
     description: 'Mentor Directory (Sanitized DTO, bounded 24)',
-    dbQueries: 1,
+    dbQueries: hasDb ? 1 : 0,
     payloadBytes: Buffer.byteLength(mentorsPayload, 'utf8'),
     execTimeMs: (t5 - t4).toFixed(2),
     cacheStrategy: 'Client QueryClient (30s Fresh / Debounced)',
@@ -162,36 +168,38 @@ async function runAudit() {
 
   // 4. Audit: Teammates Search DB Query & Privacy Check
   const t6 = performance.now();
-  const students = await prisma.studentProfile.findMany({
-    where: {
-      skills: { hasSome: ['TypeScript', 'Python'] }
-    },
-    select: {
-      userId: true,
-      name: true,
-      year: true,
-      branch: true,
-      skills: true,
-      languages: true,
-      softSkills: true,
-      avatarUrl: true,
-      teamStatus: true,
-      user: {
-        select: {
-          college: true,
+  const students = hasDb
+    ? await prisma.studentProfile.findMany({
+        where: {
+          skills: { hasSome: ['TypeScript', 'Python'] },
         },
-      },
-      trackInterest: {
         select: {
-          id: true,
+          userId: true,
           name: true,
-          problemStatementCode: true,
+          year: true,
+          branch: true,
+          skills: true,
+          languages: true,
+          softSkills: true,
+          avatarUrl: true,
+          teamStatus: true,
+          user: {
+            select: {
+              college: true,
+            },
+          },
+          trackInterest: {
+            select: {
+              id: true,
+              name: true,
+              problemStatementCode: true,
+            },
+          },
         },
-      },
-    },
-    take: 24,
-    orderBy: { userId: 'asc' }
-  });
+        take: 24,
+        orderBy: { userId: 'asc' },
+      })
+    : [];
   const t7 = performance.now();
 
   const formattedStudents = students.map((s) => ({
@@ -229,22 +237,24 @@ async function runAudit() {
 
   // 5. Audit: Stage 1 Dashboard Bootstrap Query Breakdown
   const t8 = performance.now();
-  const firstStudent = await prisma.studentProfile.findFirst({
-    select: {
-      userId: true,
-      name: true,
-      branch: true,
-      year: true,
-      rollNo: true,
-      contact: true,
-      skills: true,
-      trackInterest: true,
-      githubUrl: true,
-      linkedinUrl: true,
-      user: { select: { email: true, role: true } },
-      team: { select: { id: true, teamCode: true, name: true, memberCount: true, status: true, mentorId: true } }
-    }
-  });
+  const firstStudent = hasDb
+    ? await prisma.studentProfile.findFirst({
+        select: {
+          userId: true,
+          name: true,
+          branch: true,
+          year: true,
+          rollNo: true,
+          contact: true,
+          skills: true,
+          trackInterest: true,
+          githubUrl: true,
+          linkedinUrl: true,
+          user: { select: { email: true, role: true } },
+          team: { select: { id: true, teamCode: true, name: true, memberCount: true, status: true, mentorId: true } },
+        },
+      })
+    : null;
   const t9 = performance.now();
   const tSerializationStart = performance.now();
   const bootstrapPayload = JSON.stringify({

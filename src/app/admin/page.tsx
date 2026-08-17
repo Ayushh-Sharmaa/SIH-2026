@@ -297,8 +297,10 @@ export default function AdminDashboardPage() {
     setExpandedTrackIds({});
   };
 
-  const fetchAdminData = useCallback(async () => {
-    setLoading(true);
+  const fetchAdminData = useCallback(async (isInitial = false) => {
+    if (isInitial) {
+      setLoading(true);
+    }
     try {
       const res = await fetch('/api/admin/data', { cache: 'no-store' });
       const data = await res.json();
@@ -322,13 +324,15 @@ export default function AdminDashboardPage() {
       logger.error('Admin fetch error', err);
       toast(userFacingMessage(err, 'Error loading admin dashboard.'), 'error');
     } finally {
-      setLoading(false);
+      if (isInitial) {
+        setLoading(false);
+      }
     }
   }, [router, toast]);
 
   useEffect(() => {
     const handle = requestAnimationFrame(() => {
-      fetchAdminData();
+      fetchAdminData(true);
     });
     return () => cancelAnimationFrame(handle);
   }, [fetchAdminData]);
@@ -352,7 +356,7 @@ export default function AdminDashboardPage() {
       setAdminEmails(data.adminEmails);
       setNewAdminEmail('');
       toast(data.message, 'success');
-      fetchAdminData();
+      fetchAdminData(false);
     } catch (err) {
       toast(userFacingMessage(err, 'Could not grant admin access. Please try again.'), 'error');
     } finally {
@@ -373,13 +377,21 @@ export default function AdminDashboardPage() {
 
       setAdminEmails(data.adminEmails);
       toast(`Revoked admin access from ${emailToRevoke}`, 'success');
-      fetchAdminData();
+      fetchAdminData(false);
     } catch (err) {
       toast(userFacingMessage(err, 'Could not revoke access. Please try again.'), 'error');
     }
   };
 
   const handleApproveMentor = async (mentorId: string) => {
+    // Optimistic update
+    setMentors((prev) =>
+      prev.map((m) => (m.userId === mentorId ? { ...m, verified: true } : m))
+    );
+    setStats((prev) =>
+      prev ? { ...prev, verifiedMentors: (prev.verifiedMentors || 0) + 1 } : prev
+    );
+
     try {
       const res = await fetch('/api/admin/mentor/approve', {
         method: 'POST',
@@ -391,13 +403,20 @@ export default function AdminDashboardPage() {
       if (!res.ok) throw new Error(data.error || 'Failed to approve mentor');
 
       toast(data.message || 'Mentor approved successfully.', 'success');
-      fetchAdminData();
+      fetchAdminData(false);
     } catch (err) {
       toast(userFacingMessage(err, 'Could not approve mentor. Please try again.'), 'error');
+      fetchAdminData(false);
     }
   };
 
   const handleDeleteMentor = async (mentorId: string) => {
+    // Optimistic update
+    setMentors((prev) => prev.filter((m) => m.userId !== mentorId));
+    setStats((prev) =>
+      prev ? { ...prev, totalMentors: Math.max(0, (prev.totalMentors || 1) - 1) } : prev
+    );
+
     try {
       const res = await fetch('/api/admin/mentor/delete', {
         method: 'POST',
@@ -409,9 +428,10 @@ export default function AdminDashboardPage() {
       if (!res.ok) throw new Error(data.error || 'Failed to delete mentor');
 
       toast(data.message || 'Mentor profile removed successfully.', 'success');
-      fetchAdminData();
+      fetchAdminData(false);
     } catch (err) {
       toast(userFacingMessage(err, 'Could not delete mentor profile. Please try again.'), 'error');
+      fetchAdminData(false);
     }
   };
 
@@ -419,6 +439,29 @@ export default function AdminDashboardPage() {
     studentEmail: string,
     action: 'ban' | 'restore' | 'delete'
   ) => {
+    // Optimistic update
+    if (action === 'delete') {
+      setStudents((prev) =>
+        prev.filter((s) => s.email.toLowerCase() !== studentEmail.toLowerCase())
+      );
+      setStats((prev) =>
+        prev ? { ...prev, totalStudents: Math.max(0, (prev.totalStudents || 1) - 1) } : prev
+      );
+    } else if (action === 'ban') {
+      setStudents((prev) =>
+        prev.map((s) =>
+          s.email.toLowerCase() === studentEmail.toLowerCase() ? { ...s, isBanned: true } : s
+        )
+      );
+    } else if (action === 'restore') {
+      setStudents((prev) =>
+        prev.map((s) =>
+          s.email.toLowerCase() === studentEmail.toLowerCase() ? { ...s, isBanned: false } : s
+        )
+      );
+    }
+    setSelectedStudent(null);
+
     try {
       const res = await fetch('/api/admin/student', {
         method: 'POST',
@@ -430,14 +473,19 @@ export default function AdminDashboardPage() {
       if (!res.ok) throw new Error(data.error || 'Failed to update student access');
 
       toast(data.message, 'success');
-      setSelectedStudent(null);
-      fetchAdminData();
+      fetchAdminData(false);
     } catch (err) {
       toast(userFacingMessage(err, 'Could not update student access. Please try again.'), 'error');
+      fetchAdminData(false);
     }
   };
 
   const handleUpdateTeamStatus = async (teamId: string, status: string) => {
+    // Optimistic update
+    setTeams((prev) =>
+      prev.map((t) => (t.id === teamId ? { ...t, status } : t))
+    );
+
     try {
       const res = await fetch('/api/admin/team', {
         method: 'POST',
@@ -446,13 +494,26 @@ export default function AdminDashboardPage() {
       });
       if (!res.ok) throw new Error('Failed to update team status');
       toast(`Team status set to ${status}.`, 'success');
-      fetchAdminData();
+      fetchAdminData(false);
     } catch (err) {
       toast(userFacingMessage(err, 'Could not update team status. Please try again.'), 'error');
+      fetchAdminData(false);
     }
   };
 
   const disbandTeam = async (teamId: string) => {
+    // Optimistic update
+    setTeams((prev) => prev.filter((t) => t.id !== teamId));
+    setStudents((prev) =>
+      prev.map((s) =>
+        s.teamId === teamId ? { ...s, teamId: null, teamCode: null, teamStatus: 'OPEN' } : s
+      )
+    );
+    setStats((prev) =>
+      prev ? { ...prev, totalTeams: Math.max(0, (prev.totalTeams || 1) - 1) } : prev
+    );
+    setSelectedTeam(null);
+
     try {
       const res = await fetch('/api/admin/team', {
         method: 'POST',
@@ -460,11 +521,11 @@ export default function AdminDashboardPage() {
         body: JSON.stringify({ teamId, action: 'delete' }),
       });
       if (!res.ok) throw new Error('Failed to disband team');
-      setSelectedTeam(null);
       toast('Team disbanded. Members returned to looking-for-team.', 'success');
-      fetchAdminData();
+      fetchAdminData(false);
     } catch (err) {
       toast(userFacingMessage(err, 'Could not disband the team. Please try again.'), 'error');
+      fetchAdminData(false);
     }
   };
 
@@ -652,7 +713,7 @@ export default function AdminDashboardPage() {
                   >
                     View Mentor Dashboard
                   </PremiumButton>
-                  <PremiumButton variant="glass" size="sm" onClick={fetchAdminData}>
+                  <PremiumButton variant="glass" size="sm" onClick={() => fetchAdminData(false)}>
                     Refresh
                   </PremiumButton>
                   <PremiumButton variant="ghost" size="sm" onClick={handleSignOut}>

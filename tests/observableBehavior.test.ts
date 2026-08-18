@@ -82,10 +82,19 @@ describe('Contact Configurations & Ordering', () => {
     const anurag = FACULTY_COORDINATORS.find((f) => f.name.includes('Anurag Kumar Singh'));
     assert.ok(anurag, 'Faculty member Anurag Kumar Singh must be present');
     assert.equal(anurag?.phone, '892914465');
+    assert.equal(anurag?.email, 'anurag.singh@glbajajgroup.org');
+
+    const rahul = FACULTY_COORDINATORS.find((f) => f.name.includes('Rahul Anjana'));
+    assert.ok(rahul, 'Faculty member Rahul Anjana must be present');
+    assert.equal(rahul?.phone, '9981468558');
 
     const swati = FACULTY_COORDINATORS.find((f) => f.name.includes('Swati'));
     assert.ok(swati, 'Faculty member Swati must be present');
     assert.equal(swati?.phone, '9058441616');
+
+    const anuragJunior = FACULTY_COORDINATORS.find((f) => f.name === 'Mr. Anurag Singh' && f.category === 'BTech 2nd Year');
+    assert.ok(anuragJunior, 'Faculty member Anurag Singh (2nd Year) must be present');
+    assert.equal(anuragJunior?.email, 'anuragsingh@glbajajgroup.org');
   });
 
   it('preserves institutional SPOC and Helpdesk metadata without invented personal details', () => {

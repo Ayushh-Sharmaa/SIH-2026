@@ -45,6 +45,7 @@ export const FACULTY_CONTACTS: FacultyContact[] = [
     department: 'Department of Computer Science and Engineering',
     category: 'BTech 3rd & 4th Year',
     phone: '892914465',
+    email: 'anurag.singh@glbajajgroup.org',
   },
   {
     name: 'Mr. Rahul Anjana',
@@ -52,6 +53,7 @@ export const FACULTY_CONTACTS: FacultyContact[] = [
     designation: 'Assistant Professor',
     department: 'Department of Computer Science and Engineering',
     category: 'BTech 3rd & 4th Year',
+    phone: '9981468558',
     email: 'rahul.anjana@glbajajgroup.org',
   },
   {
@@ -79,6 +81,7 @@ export const FACULTY_CONTACTS: FacultyContact[] = [
     department: 'Department of Computer Science and Engineering',
     category: 'BTech 2nd Year',
     phone: '+91 8953668442',
+    email: 'anuragsingh@glbajajgroup.org',
   },
 ];
 

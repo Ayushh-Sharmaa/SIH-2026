@@ -35,7 +35,7 @@ export const FACULTY_CONTACTS: FacultyContact[] = [
     designation: 'Assistant Professor',
     department: 'Department of Management Studies',
     category: 'MBA',
-    phone: '8302344690',
+    phone: '+91 8302344690',
     email: 'parul.jain@glbajajgroup.org',
   },
   {
@@ -44,7 +44,7 @@ export const FACULTY_CONTACTS: FacultyContact[] = [
     designation: 'Assistant Professor',
     department: 'Department of Computer Science and Engineering',
     category: 'BTech 3rd & 4th Year',
-    phone: '892914465',
+    phone: '+91 892914465',
     email: 'anurag.singh@glbajajgroup.org',
   },
   {
@@ -53,7 +53,7 @@ export const FACULTY_CONTACTS: FacultyContact[] = [
     designation: 'Assistant Professor',
     department: 'Department of Computer Science and Engineering',
     category: 'BTech 3rd & 4th Year',
-    phone: '9981468558',
+    phone: '+91 9981468558',
     email: 'rahul.anjana@glbajajgroup.org',
   },
   {
@@ -62,7 +62,7 @@ export const FACULTY_CONTACTS: FacultyContact[] = [
     designation: 'Assistant Professor',
     department: 'Department of Computer Science and Engineering',
     category: 'BTech 2nd Year',
-    phone: '9058441616',
+    phone: '+91 9058441616',
     email: 'swati.pandit@glbajajgroup.org',
   },
   {
@@ -104,7 +104,7 @@ export const FOOTER_CONTACTS: StudentLead[] = [
     title: 'SIH Lead & Platform Operations',
     linkedin: 'https://www.linkedin.com/in/ayushh-sharmaa/',
     email: 'ayush.sharma2025@glbajajgroup.org',
-    phone: '+91 89239995135',
+    phone: '+91 8923995135',
   },
 ];
 
@@ -117,7 +117,7 @@ export const STUDENT_LEADS: StudentLead[] = [
     title: 'Platform Architecture & Lead',
     linkedin: 'https://www.linkedin.com/in/ayushh-sharmaa/',
     email: 'ayush.sharma2025@glbajajgroup.org',
-    phone: '+91 89239995135',
+    phone: '+91 8923995135',
   },
   {
     name: 'Tanishk Bansal',

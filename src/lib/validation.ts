@@ -25,6 +25,76 @@ const githubUrlSchema = optionalUrlSchema(/github\.com/, 'GitHub profile must be
 const linkedinUrlSchema = optionalUrlSchema(/linkedin\.com/, 'LinkedIn profile URL is invalid');
 const resumeUrlSchema = optionalUrlSchema(undefined, 'Resume link must be a valid public URL');
 
+/**
+ * Strict 10-digit phone number validator.
+ * Accepts exactly 10 digits (with optional leading +91, 91, or 0, and optional spaces/dashes).
+ * Rejects any number that does not contain exactly 10 core phone digits.
+ */
+export function isValidTenDigitPhone(val: unknown): boolean {
+  if (val === null || val === undefined) return true;
+  if (typeof val !== 'string') return false;
+  const trimmed = val.trim();
+  if (trimmed === '') return true;
+
+  const digitsOnly = trimmed.replace(/\D/g, '');
+  if (digitsOnly.length === 10) {
+    return /^[6-9]\d{9}$/.test(digitsOnly);
+  }
+  if (digitsOnly.length === 12 && digitsOnly.startsWith('91')) {
+    return /^[6-9]\d{9}$/.test(digitsOnly.slice(2));
+  }
+  if (digitsOnly.length === 11 && digitsOnly.startsWith('0')) {
+    return /^[6-9]\d{9}$/.test(digitsOnly.slice(1));
+  }
+  return false;
+}
+
+/** Formats any 10-digit phone number into standard international format +91 XXXXXXXXXX */
+export function formatToPlus91(val: unknown): string | null {
+  if (val === null || val === undefined) return null;
+  if (typeof val !== 'string') return null;
+  const trimmed = val.trim();
+  if (!trimmed) return null;
+
+  const digitsOnly = trimmed.replace(/\D/g, '');
+  let tenDigits = digitsOnly;
+  if (digitsOnly.length === 12 && digitsOnly.startsWith('91')) {
+    tenDigits = digitsOnly.slice(2);
+  } else if (digitsOnly.length === 11 && digitsOnly.startsWith('0')) {
+    tenDigits = digitsOnly.slice(1);
+  }
+  if (tenDigits.length === 10) {
+    return `+91 ${tenDigits}`;
+  }
+  return trimmed;
+}
+
+export const optionalPhoneSchema = z.preprocess(
+  (val) => {
+    if (val === null || val === undefined) return undefined;
+    if (typeof val === 'string') {
+      const trimmed = val.trim();
+      return trimmed === '' ? undefined : trimmed;
+    }
+    return val;
+  },
+  z
+    .string()
+    .refine((v) => isValidTenDigitPhone(v), {
+      message: 'Phone number must contain exactly 10 digits (e.g. 9876543210 or +91 9876543210)',
+    })
+    .optional()
+    .nullable()
+);
+
+export const phoneSchema = z
+  .string()
+  .trim()
+  .min(1, 'Phone number is required')
+  .refine((v) => isValidTenDigitPhone(v) && v.trim() !== '', {
+    message: 'Phone number must contain exactly 10 digits (e.g. 9876543210 or +91 9876543210)',
+  });
+
 // 1. Authentication
 export const loginSchema = z
   .object({
@@ -64,7 +134,7 @@ export const personalProfileSchema = z.object({
   branch: z.string().trim().min(1, "Course/branch is required").max(40),
   section: z.string().trim().max(10).optional().nullable(),
   category: z.string().trim().max(40).optional().nullable(),
-  contact: z.string().trim().max(40).optional().nullable(),
+  contact: optionalPhoneSchema,
   avatarUrl: z.string().max(3_000_000).optional().nullable(),
 });
 
@@ -89,7 +159,7 @@ export const studentProfileSchema = z.object({
   rollNo: z.string().trim().max(40).optional(),
   section: z.string().trim().max(10).optional(),
   category: z.string().trim().max(40).optional(),
-  contact: z.string().trim().max(40).optional(),
+  contact: optionalPhoneSchema,
   college: z.string().trim().min(2).max(150).optional(),
   skills: z.array(z.string().trim().max(100)).max(100, "You can select at most 100 technical skills"),
   languages: z.array(z.string().trim().max(100)).max(30, "You can select at most 30 languages"),
@@ -109,7 +179,7 @@ export const mentorProfileSchema = z.object({
   name: z.string().trim().min(2).max(100),
   designation: z.string().trim().min(2).max(100),
   organization: z.string().trim().min(2).max(100),
-  contact: z.string().trim().max(40).optional(),
+  contact: optionalPhoneSchema,
   expertise: z.array(z.string().trim().max(100)).max(100, "You can select at most 100 expertise tags"),
   bio: z.string().trim().max(2000).optional(),
   linkedinUrl: linkedinUrlSchema,
@@ -122,11 +192,11 @@ export const createTeamSchema = z.object({
   name: z.string().trim().min(2).max(100),
   trackId: z.string().trim().min(1).max(100),
   secondaryTrackId: z.string().trim().max(100).nullable().optional(),
-  whatsapp: z.string().trim().max(40).optional(),
+  whatsapp: optionalPhoneSchema,
   logoUrl: z.string().optional(),
   customMentorName: z.string().trim().max(100).optional(),
   customMentorDesignation: z.string().trim().max(100).optional(),
-  customMentorMobile: z.string().trim().max(40).optional(),
+  customMentorMobile: optionalPhoneSchema,
   customMentorEmail: z.string().trim().max(100).optional(),
   customPsCode: z.string().trim().max(40).optional(),
   customPsName: z.string().trim().max(200).optional(),
@@ -142,11 +212,11 @@ export const updateTeamDetailsSchema = z.object({
   name: z.string().trim().min(2).max(100),
   trackId: z.string().trim().min(1).max(100),
   secondaryTrackId: z.string().trim().max(100).nullable().optional(),
-  whatsapp: z.string().trim().max(40).optional(),
+  whatsapp: optionalPhoneSchema,
   logoUrl: z.string().max(3_000_000).nullable().optional(),
   customMentorName: z.string().trim().max(100).optional(),
   customMentorDesignation: z.string().trim().max(100).optional(),
-  customMentorMobile: z.string().trim().max(40).optional(),
+  customMentorMobile: optionalPhoneSchema,
   customMentorEmail: z.string().trim().email().max(100).or(z.literal('')).optional(),
   customSecondaryPsCode: z.string().trim().max(40).optional(),
   customSecondaryPsName: z.string().trim().max(200).optional(),

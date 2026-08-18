@@ -56,7 +56,7 @@ describe('Contact Configurations & Ordering', () => {
     assert.equal(FOOTER_CONTACTS[0].name, 'Tanishk Bansal');
     assert.equal(FOOTER_CONTACTS[0].phone, '+91 8534998412');
     assert.equal(FOOTER_CONTACTS[1].name, 'Ayush Sharma');
-    assert.equal(FOOTER_CONTACTS[1].phone, '+91 89239995135');
+    assert.equal(FOOTER_CONTACTS[1].phone, '+91 8923995135');
   });
 
   it('orders Contact Page student coordinators as Ayush Sharma first, Tanishk Bansal second', () => {
@@ -77,30 +77,92 @@ describe('Contact Configurations & Ordering', () => {
 
     const parul = FACULTY_COORDINATORS.find((f) => f.name.includes('Parul'));
     assert.ok(parul, 'Faculty member Parul must be present');
-    assert.equal(parul?.phone, '8302344690');
+    assert.equal(parul?.phone, '+91 8302344690');
 
     const anurag = FACULTY_COORDINATORS.find((f) => f.name.includes('Anurag Kumar Singh'));
     assert.ok(anurag, 'Faculty member Anurag Kumar Singh must be present');
-    assert.equal(anurag?.phone, '892914465');
+    assert.equal(anurag?.phone, '+91 892914465');
     assert.equal(anurag?.email, 'anurag.singh@glbajajgroup.org');
 
     const rahul = FACULTY_COORDINATORS.find((f) => f.name.includes('Rahul Anjana'));
     assert.ok(rahul, 'Faculty member Rahul Anjana must be present');
-    assert.equal(rahul?.phone, '9981468558');
+    assert.equal(rahul?.phone, '+91 9981468558');
 
     const swati = FACULTY_COORDINATORS.find((f) => f.name.includes('Swati'));
     assert.ok(swati, 'Faculty member Swati must be present');
-    assert.equal(swati?.phone, '9058441616');
+    assert.equal(swati?.phone, '+91 9058441616');
 
     const anuragJunior = FACULTY_COORDINATORS.find((f) => f.name === 'Mr. Anurag Singh' && f.category === 'BTech 2nd Year');
     assert.ok(anuragJunior, 'Faculty member Anurag Singh (2nd Year) must be present');
     assert.equal(anuragJunior?.email, 'anuragsingh@glbajajgroup.org');
+    assert.equal(anuragJunior?.phone, '+91 8953668442');
   });
 
   it('preserves institutional SPOC and Helpdesk metadata without invented personal details', () => {
     assert.ok(SPOC_INFO.title.includes('SIH SPOC'));
     assert.ok(SPOC_INFO.organization.includes('GL Bajaj'));
     assert.ok(HELPDESK_INFO.title.includes('Campus & Hackathon Lab Helpdesk'));
+  });
+
+  it('formats all directory phone numbers with +91 prefix', () => {
+    FOOTER_CONTACTS.forEach((contact) => {
+      assert.ok(contact.phone.startsWith('+91 '), `Footer contact ${contact.name} phone must start with +91`);
+    });
+
+    STUDENT_COORDINATORS.forEach((coord) => {
+      assert.ok(coord.phone.startsWith('+91 '), `Student coordinator ${coord.name} phone must start with +91`);
+    });
+
+    FACULTY_COORDINATORS.forEach((faculty) => {
+      if (faculty.phone) {
+        assert.ok(faculty.phone.startsWith('+91 '), `Faculty ${faculty.name} phone must start with +91`);
+      }
+    });
+  });
+});
+
+describe('10-Digit Phone Number Limiter & Validation Boundary', () => {
+  it('accepts valid 10-digit mobile numbers in various standard formats', async () => {
+    const { isValidTenDigitPhone, optionalPhoneSchema } = await import('../src/lib/validation');
+
+    assert.equal(isValidTenDigitPhone('9876543210'), true);
+    assert.equal(isValidTenDigitPhone('+91 9876543210'), true);
+    assert.equal(isValidTenDigitPhone('+919876543210'), true);
+    assert.equal(isValidTenDigitPhone('09876543210'), true);
+    assert.equal(isValidTenDigitPhone('91-9876543210'), true);
+    assert.equal(isValidTenDigitPhone(''), true); // optional/empty is allowed
+    assert.equal(isValidTenDigitPhone(null), true);
+
+    assert.equal(optionalPhoneSchema.safeParse('9876543210').success, true);
+    assert.equal(optionalPhoneSchema.safeParse('+91 9876543210').success, true);
+    assert.equal(optionalPhoneSchema.safeParse('').success, true);
+  });
+
+  it('rejects numbers without exactly 10 digits as invalid queries', async () => {
+    const { isValidTenDigitPhone, optionalPhoneSchema, personalProfileSchema } = await import('../src/lib/validation');
+
+    // Too short (fewer than 10 digits)
+    assert.equal(isValidTenDigitPhone('12345'), false);
+    assert.equal(isValidTenDigitPhone('89291446'), false);
+    assert.equal(optionalPhoneSchema.safeParse('12345').success, false);
+
+    // Too long (more than 10 digits without country code)
+    assert.equal(isValidTenDigitPhone('987654321012345'), false);
+    assert.equal(optionalPhoneSchema.safeParse('987654321012345').success, false);
+
+    // Non-numeric or invalid mobile prefix
+    assert.equal(isValidTenDigitPhone('abcdefghij'), false);
+    assert.equal(isValidTenDigitPhone('1234567890'), false); // starts with 1
+    assert.equal(optionalPhoneSchema.safeParse('abcdefghij').success, false);
+
+    // Profile schema rejects invalid phone numbers
+    const invalidProfile = {
+      name: 'Test Student',
+      year: '3rd Year',
+      branch: 'CSE',
+      contact: '12345', // invalid phone
+    };
+    assert.equal(personalProfileSchema.safeParse(invalidProfile).success, false);
   });
 });
 

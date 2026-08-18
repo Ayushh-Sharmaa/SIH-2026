@@ -586,21 +586,23 @@ export default function FindTeammatesPage() {
                         <div className="surface-raised h-full rounded-3xl p-6 border border-[rgba(209,199,189,0.7)] flex flex-col justify-between shadow-e2 transition-all hover:shadow-e4">
                           <div>
                             {/* Identity Section */}
-                            <div className="flex items-start justify-between gap-3 mb-4">
-                              <div className="flex items-center gap-3">
-                                <ProfileAvatar avatarUrl={student.avatarUrl} name={student.name} />
-                                <div>
-                                  <h3 className="text-feature font-bold text-foreground truncate max-w-[180px]">
+                            <div className="flex items-start justify-between gap-2.5 mb-4">
+                              <div className="flex items-center gap-3 min-w-0 flex-1">
+                                <div className="shrink-0">
+                                  <ProfileAvatar avatarUrl={student.avatarUrl} name={student.name} />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <h3 className="text-feature font-bold text-foreground truncate">
                                     {student.name}
                                   </h3>
-                                  <p className="text-xs text-muted flex items-center gap-1 mt-0.5">
-                                    <GraduationCap className="size-3.5" />
-                                    <span>{student.branch || 'Student'} • {student.year || 'General'}</span>
+                                  <p className="text-xs text-muted flex items-center gap-1 mt-0.5 truncate">
+                                    <GraduationCap className="size-3.5 shrink-0" />
+                                    <span className="truncate">{student.branch || 'Student'} • {student.year || 'General'}</span>
                                   </p>
                                 </div>
                               </div>
 
-                              <span className="inline-flex items-center gap-1 rounded-full border border-[rgba(172,156,141,0.5)] bg-[rgba(248,246,242,0.8)] px-2.5 py-0.5 text-[11px] font-semibold text-primary">
+                              <span className="shrink-0 self-start inline-flex items-center gap-1 rounded-full border border-[rgba(172,156,141,0.5)] bg-[rgba(248,246,242,0.8)] px-2.5 py-0.5 text-[11px] font-semibold text-primary">
                                 <ShieldCheck className="size-3" />
                                 <span>Available</span>
                               </span>

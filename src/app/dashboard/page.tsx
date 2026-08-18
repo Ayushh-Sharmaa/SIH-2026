@@ -1257,7 +1257,7 @@ export default function DashboardPage() {
 
       <main className="relative flex-1 py-8 sm:py-10">
         <Aurora />
-        <Container>
+        <Container width="wide">
           {user?.role === 'MENTOR' ? (
             /* ========================================================= */
             /* FACULTY MENTOR DASHBOARD VIEW                             */

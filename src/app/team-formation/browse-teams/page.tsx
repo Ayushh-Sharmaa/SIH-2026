@@ -238,6 +238,7 @@ export default function FindTeamsPage() {
   });
 
   // Search & Filter state
+  const [hasSearched, setHasSearched] = useState(false);
   const [search, setSearch] = useState('');
   const [domain, setDomain] = useState('');
   const [skill, setSkill] = useState('');
@@ -258,6 +259,7 @@ export default function FindTeamsPage() {
       const signal = abortRef.current.signal;
 
       setRefreshing(true);
+      setHasSearched(true);
       try {
         const queryParams = new URLSearchParams();
         if (filters.search) queryParams.append('search', filters.search);
@@ -294,8 +296,29 @@ export default function FindTeamsPage() {
     [toast]
   );
 
-  // 300ms Debounced search
+  // 300ms Debounced search on active filters
   useEffect(() => {
+    const isFilterActive = Boolean(
+      (search && search.trim().length >= 2) ||
+      domain ||
+      skill ||
+      leader ||
+      size ||
+      status
+    );
+
+    if (!isFilterActive) {
+      if (hasSearched && !search && !domain && !skill && !leader && !size && !status) {
+        setTeams([]);
+        setHasSearched(false);
+        setLoading(false);
+        setPagination({ total: 0, totalPages: 1, page: 1 });
+      } else {
+        setLoading(false);
+      }
+      return;
+    }
+
     const handler = setTimeout(() => {
       fetchTeams({ search, domain, skill, leader, size, status }, currentPage).finally(() => {
         setLoading(false);
@@ -303,7 +326,7 @@ export default function FindTeamsPage() {
     }, 300);
 
     return () => clearTimeout(handler);
-  }, [search, domain, skill, leader, size, status, currentPage, fetchTeams]);
+  }, [search, domain, skill, leader, size, status, currentPage, fetchTeams, hasSearched]);
 
   const handleSearchSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -320,7 +343,9 @@ export default function FindTeamsPage() {
     setLeader('');
     setSize('');
     setStatus('');
-    fetchTeams(EMPTY_FILTERS);
+    setTeams([]);
+    setHasSearched(false);
+    setPagination({ total: 0, totalPages: 1, page: 1 });
   };
 
   const submitJoinRequest = async (message: string) => {
@@ -815,11 +840,23 @@ export default function FindTeamsPage() {
                     </div>
                   )}
                 </>
+              ) : !hasSearched ? (
+                <EmptyState
+                  icon={Search}
+                  title="Find your hackathon team"
+                  description="Search forming teams by ministry theme, required technical skills, leader name, or team title."
+                  action={
+                    <PremiumButton size="sm" onClick={() => fetchTeams({ search: '', domain: '', skill: '', leader: '', size: '', status: '' })}>
+                      Browse All Forming Teams
+                    </PremiumButton>
+                  }
+                  className="max-w-2xl mx-auto w-full"
+                />
               ) : (
                 <EmptyState
                   icon={Users}
-                  title="No hackathon teams match these filters."
-                  description="Adjust your search term or domain category to discover more teams."
+                  title="No teams match these filters."
+                  description="Adjust your search keywords or domain category to discover active teams."
                   action={
                     <PremiumButton variant="glass" size="sm" onClick={handleReset}>
                       Reset filters

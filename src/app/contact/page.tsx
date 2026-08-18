@@ -18,6 +18,8 @@ import {
   UserCheck,
   MessageCircle,
   ExternalLink,
+  Users,
+  ArrowUpRight,
 } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -36,11 +38,19 @@ import {
 } from '@/components/motion';
 import { FACULTY_CONTACTS, STUDENT_LEADS, type FacultyContact, type StudentLead } from '@/config/contacts';
 
+function LinkedInIcon({ className = 'size-4' }: { className?: string }) {
+  return (
+    <svg className={`${className} shrink-0 fill-current`} viewBox="0 0 24 24">
+      <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z" />
+    </svg>
+  );
+}
+
 const CATEGORIES = [
   { id: 'all', label: 'All Contacts' },
   { id: 'spoc', label: 'SIH SPOC' },
   { id: 'faculty', label: 'Faculty Coordinators' },
-  { id: 'students', label: 'Student Leads' },
+  { id: 'students', label: 'Student Coordinators & Leads' },
   { id: 'location', label: 'Campus & Helpdesk' },
 ] as const;
 
@@ -117,7 +127,7 @@ export default function ContactPage() {
 
               <Reveal delay={0.2} className="mt-4">
                 <p className="text-base sm:text-lg leading-relaxed text-body max-w-2xl mx-auto">
-                  Connect with the Single Point of Contact (SPOC), department faculty coordinators, and student technical leads at GL Bajaj Group of Institutions for internal evaluations, problem statements, and mentorship guidance.
+                  Connect with the Single Point of Contact (SPOC), department faculty coordinators, and student platform leads at GL Bajaj Group of Institutions for internal evaluations, problem statements, and mentorship guidance.
                 </p>
               </Reveal>
 
@@ -199,58 +209,38 @@ export default function ContactPage() {
                     </div>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto shrink-0 flex-wrap">
+                  <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
                     {spocContact.phone && (
-                      <>
+                      <div className="flex items-center gap-2 rounded-2xl border border-[rgba(209,199,189,0.85)] bg-white/80 p-2 shadow-xs">
+                        <span className="font-mono text-sm font-bold text-foreground px-3">
+                          {spocContact.phone}
+                        </span>
                         <a
                           href={`tel:${cleanPhone(spocContact.phone)}`}
-                          className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-on-accent shadow-[0_4px_14px_rgba(114,56,61,0.25)] transition-all hover:bg-[var(--primary-hover)] active:scale-98"
+                          className="flex size-9 items-center justify-center rounded-xl bg-primary text-on-accent transition-transform hover:scale-105"
+                          title="Call SPOC"
                         >
-                          <Phone className="size-3.5" />
-                          <span>Call SPOC</span>
+                          <Phone className="size-4" />
                         </a>
-
-                        <a
-                          href={`https://wa.me/${cleanPhone(spocContact.phone)}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center justify-center gap-2 rounded-xl border border-green-600/30 bg-green-50 px-3.5 py-2.5 text-xs font-bold text-green-700 hover:bg-green-100 transition-colors"
+                        <button
+                          type="button"
+                          onClick={() => handleCopy(spocContact.phone!, 'Phone number', 'spoc-phone')}
+                          className="flex size-9 items-center justify-center rounded-xl border border-[rgba(209,199,189,0.7)] bg-white text-body hover:text-primary transition-colors"
+                          title="Copy phone"
                         >
-                          <MessageCircle className="size-3.5" />
-                          <span>WhatsApp</span>
-                        </a>
-                      </>
+                          {copiedKey === 'spoc-phone' ? <Check className="size-4 text-emerald-600" /> : <Copy className="size-4" />}
+                        </button>
+                      </div>
                     )}
 
                     {spocContact.email && (
                       <a
                         href={`mailto:${spocContact.email}`}
-                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-primary/25 bg-primary/10 px-3.5 py-2.5 text-xs font-bold text-primary hover:bg-primary hover:text-on-accent transition-colors"
+                        className="inline-flex items-center gap-2 rounded-2xl border border-primary/20 bg-primary/10 px-4 py-3 text-xs font-bold text-primary transition-all hover:bg-primary/20"
                       >
-                        <Mail className="size-3.5" />
-                        <span>Email</span>
+                        <Mail className="size-4" />
+                        <span>Email SPOC</span>
                       </a>
-                    )}
-
-                    {spocContact.phone && (
-                      <button
-                        type="button"
-                        onClick={() => handleCopy(spocContact.phone!, 'SPOC Contact', 'spoc-phone')}
-                        className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-[rgba(209,199,189,0.8)] bg-white/80 px-3 py-2.5 text-xs font-bold text-body hover:text-primary transition-colors cursor-pointer"
-                        title="Copy mobile number"
-                      >
-                        {copiedKey === 'spoc-phone' ? (
-                          <>
-                            <Check className="size-3.5 text-green-600" />
-                            <span className="text-green-700">Copied</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="size-3.5" />
-                            <span>{spocContact.phone}</span>
-                          </>
-                        )}
-                      </button>
                     )}
                   </div>
                 </div>
@@ -258,200 +248,245 @@ export default function ContactPage() {
             </Reveal>
           )}
 
-          {/* ── 2. FACULTY COORDINATORS ── */}
+          {/* ── 2. DEPARTMENT FACULTY COORDINATORS ── */}
           {showFaculty && (
-            <section className="space-y-8">
-              <div className="border-b border-[rgba(209,199,189,0.7)] pb-4">
-                <span className="text-label uppercase text-primary font-bold tracking-wider">
-                  Academic Mentors &amp; Branch Incharges
-                </span>
-                <h2 className="mt-1 text-heading text-foreground font-black">
-                  Faculty Coordinators
-                </h2>
-                <p className="mt-1 text-sm text-muted">
-                  Department-wise faculty coordinators responsible for student eligibility, idea screening, and domain guidance.
+            <div className="space-y-8">
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b border-[rgba(209,199,189,0.7)] pb-4">
+                <div>
+                  <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-widest">
+                    <GraduationCap className="size-4" />
+                    <span>Department Mentors</span>
+                  </div>
+                  <h2 className="text-heading text-foreground font-black tracking-tight mt-1">
+                    Department Faculty Coordinators
+                  </h2>
+                </div>
+                <p className="text-xs text-muted max-w-md sm:text-right">
+                  Reach out to your department faculty coordinator for internal verification, review rounds, and problem statement mapping.
                 </p>
               </div>
 
-              {/* MBA Section */}
-              {(activeTab === 'all' || activeTab === 'faculty') && mbaContacts.some(matchesQuery) && (
+              {/* MBA Coordinator */}
+              {mbaContacts.filter(matchesQuery).length > 0 && (
                 <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <GraduationCap className="size-4 text-primary" />
-                    <h3 className="text-feature text-foreground font-bold">
-                      Department of Management Studies (MBA)
-                    </h3>
-                  </div>
-
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {mbaContacts.filter(matchesQuery).map((faculty) => (
-                      <FacultyCard
-                        key={faculty.name}
-                        faculty={faculty}
-                        copiedKey={copiedKey}
-                        onCopy={handleCopy}
-                      />
+                  <span className="inline-block text-[11px] font-black uppercase tracking-[0.14em] text-primary bg-[rgba(114,56,61,0.08)] border border-[rgba(114,56,61,0.2)] px-3 py-1 rounded-full">
+                    Department of Management Studies (MBA)
+                  </span>
+                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    {mbaContacts.filter(matchesQuery).map((fc) => (
+                      <FacultyCard key={fc.name} contact={fc} copiedKey={copiedKey} onCopy={handleCopy} />
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* B.Tech 3rd & 4th Year Section */}
-              {(activeTab === 'all' || activeTab === 'faculty') && btechSeniorContacts.some(matchesQuery) && (
+              {/* BTech 3rd & 4th Year Coordinators */}
+              {btechSeniorContacts.filter(matchesQuery).length > 0 && (
                 <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <GraduationCap className="size-4 text-primary" />
-                    <h3 className="text-feature text-foreground font-bold">
-                      B.Tech 3rd Year &amp; 4th Year Coordinators
-                    </h3>
-                  </div>
-
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {btechSeniorContacts.filter(matchesQuery).map((faculty) => (
-                      <FacultyCard
-                        key={faculty.name}
-                        faculty={faculty}
-                        copiedKey={copiedKey}
-                        onCopy={handleCopy}
-                      />
+                  <span className="inline-block text-[11px] font-black uppercase tracking-[0.14em] text-primary bg-[rgba(114,56,61,0.08)] border border-[rgba(114,56,61,0.2)] px-3 py-1 rounded-full">
+                    B.Tech 3rd &amp; 4th Year (CSE &amp; Allied Branches)
+                  </span>
+                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    {btechSeniorContacts.filter(matchesQuery).map((fc) => (
+                      <FacultyCard key={fc.name} contact={fc} copiedKey={copiedKey} onCopy={handleCopy} />
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* B.Tech 2nd Year Section */}
-              {(activeTab === 'all' || activeTab === 'faculty') && btechJuniorContacts.some(matchesQuery) && (
+              {/* BTech 2nd Year Coordinators */}
+              {btechJuniorContacts.filter(matchesQuery).length > 0 && (
                 <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <GraduationCap className="size-4 text-primary" />
-                    <h3 className="text-feature text-foreground font-bold">
-                      B.Tech 2nd Year Coordinators
-                    </h3>
-                  </div>
-
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {btechJuniorContacts.filter(matchesQuery).map((faculty) => (
-                      <FacultyCard
-                        key={faculty.name}
-                        faculty={faculty}
-                        copiedKey={copiedKey}
-                        onCopy={handleCopy}
-                      />
+                  <span className="inline-block text-[11px] font-black uppercase tracking-[0.14em] text-primary bg-[rgba(114,56,61,0.08)] border border-[rgba(114,56,61,0.2)] px-3 py-1 rounded-full">
+                    B.Tech 2nd Year (CSE &amp; Allied Branches)
+                  </span>
+                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    {btechJuniorContacts.filter(matchesQuery).map((fc) => (
+                      <FacultyCard key={fc.name} contact={fc} copiedKey={copiedKey} onCopy={handleCopy} />
                     ))}
                   </div>
                 </div>
               )}
-            </section>
+            </div>
           )}
 
-          {/* ── 3. STUDENT LEADS (AYUSH FIRST, THEN TANISHK) ── */}
+          {/* ── 3. STUDENT TECHNICAL LEADS & COORDINATORS ── */}
           {showStudents && (
-            <section className="space-y-6">
-              <div className="border-b border-[rgba(209,199,189,0.7)] pb-4">
-                <span className="text-label uppercase text-primary font-bold tracking-wider">
-                  Student Technical &amp; Operational Leads
-                </span>
-                <h2 className="mt-1 text-heading text-foreground font-black">
-                  Student Coordinators &amp; Platform Leads
-                </h2>
-                <p className="mt-1 text-sm text-muted">
-                  Get in touch with student leads for portal support, team formation assistance, rule clarifications, or system feedback.
+            <div className="space-y-8">
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b border-[rgba(209,199,189,0.7)] pb-4">
+                <div>
+                  <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-widest">
+                    <UserCheck className="size-4" />
+                    <span>Technical Architecture &amp; Operations</span>
+                  </div>
+                  <h2 className="text-heading text-foreground font-black tracking-tight mt-1">
+                    Student Coordinators &amp; Platform Leads
+                  </h2>
+                </div>
+                <p className="text-xs text-muted max-w-md sm:text-right">
+                  Get in touch for platform bug reports, portal onboarding, password/login assistance, team formation queries, or technical guidance.
                 </p>
               </div>
 
-              <div className="grid gap-6 md:grid-cols-2">
-                {filteredStudents.map((student, idx) => (
-                  <StudentLeadCard
-                    key={student.name}
-                    student={student}
-                    index={idx}
-                    copiedKey={copiedKey}
-                    onCopy={handleCopy}
-                  />
+              <RevealGroup className="grid gap-6 sm:grid-cols-2" stagger={0.1}>
+                {filteredStudents.map((lead) => (
+                  <RevealItem key={lead.name}>
+                    <SpotlightCard className="h-full rounded-3xl" intensity={0.18}>
+                      <div className="surface-raised rounded-3xl p-7 h-full flex flex-col justify-between border border-[rgba(209,199,189,0.7)] shadow-e2 hover:shadow-e4 transition-all duration-300">
+                        <div className="space-y-5">
+                          <div className="flex items-start justify-between gap-4">
+                            <div>
+                              <span className="text-[10px] font-black uppercase tracking-[0.14em] text-primary bg-[rgba(114,56,61,0.08)] border border-[rgba(114,56,61,0.2)] px-2.5 py-0.5 rounded-full">
+                                {lead.title}
+                              </span>
+                              <h3 className="text-2xl font-black text-foreground mt-2 tracking-tight">
+                                {lead.name}
+                              </h3>
+                              <p className="text-xs font-semibold text-muted">
+                                {lead.role} · GL Bajaj Group of Institutions
+                              </p>
+                            </div>
+
+                            <a
+                              href={lead.linkedin}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex size-10 items-center justify-center rounded-2xl border border-[rgba(209,199,189,0.7)] bg-white/70 text-primary hover:bg-primary/10 transition-transform hover:scale-105"
+                              title="LinkedIn Profile"
+                            >
+                              <LinkedInIcon className="size-4" />
+                            </a>
+                          </div>
+
+                          <div className="space-y-2 pt-2 text-xs border-t border-[rgba(209,199,189,0.4)]">
+                            <div className="flex items-center justify-between gap-2 p-2.5 rounded-2xl bg-white/60 border border-[rgba(209,199,189,0.5)]">
+                              <span className="flex items-center gap-2 font-mono text-foreground font-bold">
+                                <Phone className="size-3.5 text-primary" />
+                                {lead.phone}
+                              </span>
+                              <div className="flex items-center gap-1">
+                                <a
+                                  href={`tel:${cleanPhone(lead.phone)}`}
+                                  className="rounded-lg border border-[rgba(114,56,61,0.25)] bg-primary/10 px-2.5 py-1 text-[11px] font-bold text-primary hover:bg-primary/20 transition-colors"
+                                >
+                                  Call
+                                </a>
+                                <a
+                                  href={`https://wa.me/${cleanPhone(lead.phone)}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-bold text-emerald-700 hover:bg-emerald-500/20 transition-colors inline-flex items-center gap-1"
+                                >
+                                  <MessageCircle className="size-3" />
+                                  <span>WhatsApp</span>
+                                </a>
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopy(lead.phone, `${lead.name}'s phone`, `lead-phone-${lead.name}`)}
+                                  className="rounded-lg border border-[rgba(209,199,189,0.7)] bg-white px-2 py-1 text-[11px] font-bold text-body hover:text-foreground transition-colors"
+                                >
+                                  {copiedKey === `lead-phone-${lead.name}` ? <Check className="size-3 text-emerald-600" /> : 'Copy'}
+                                </button>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between gap-2 p-2.5 rounded-2xl bg-white/60 border border-[rgba(209,199,189,0.5)]">
+                              <span className="flex items-center gap-2 text-foreground font-medium truncate">
+                                <Mail className="size-3.5 text-primary shrink-0" />
+                                <span className="truncate">{lead.email}</span>
+                              </span>
+                              <div className="flex items-center gap-1 shrink-0">
+                                <a
+                                  href={`mailto:${lead.email}`}
+                                  className="rounded-lg border border-[rgba(114,56,61,0.25)] bg-primary/10 px-2.5 py-1 text-[11px] font-bold text-primary hover:bg-primary/20 transition-colors"
+                                >
+                                  Email
+                                </a>
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopy(lead.email, `${lead.name}'s email`, `lead-email-${lead.name}`)}
+                                  className="rounded-lg border border-[rgba(209,199,189,0.7)] bg-white px-2 py-1 text-[11px] font-bold text-body hover:text-foreground transition-colors"
+                                >
+                                  {copiedKey === `lead-email-${lead.name}` ? <Check className="size-3 text-emerald-600" /> : 'Copy'}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="mt-6 pt-4 border-t border-[rgba(209,199,189,0.4)] flex items-center justify-between text-xs">
+                          <a
+                            href={lead.linkedin}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 font-bold text-primary hover:underline"
+                          >
+                            <LinkedInIcon className="size-3.5" />
+                            <span>Connect on LinkedIn</span>
+                            <ArrowUpRight className="size-3" />
+                          </a>
+                          <span className="text-[10px] text-muted uppercase font-bold">NexaSphere Core</span>
+                        </div>
+                      </div>
+                    </SpotlightCard>
+                  </RevealItem>
                 ))}
-              </div>
-            </section>
+              </RevealGroup>
+            </div>
           )}
 
-          {/* ── 4. CAMPUS LOCATION & INSTITUTIONAL HELPDESK ── */}
+          {/* ── 4. CAMPUS LOCATION & HELPDESK ── */}
           {showLocation && (
-            <section className="rounded-3xl border border-[rgba(209,199,189,0.7)] bg-[rgba(248,246,242,0.6)] p-6 sm:p-10 shadow-e1">
-              <div className="grid gap-8 lg:grid-cols-3">
-                <div className="space-y-3">
-                  <span className="text-label uppercase text-primary font-bold">
-                    Campus Location
-                  </span>
-                  <h3 className="text-feature text-foreground font-bold">
-                    GL Bajaj Group of Institutions
-                  </h3>
-                  <p className="text-xs leading-relaxed text-body">
-                    NH-19, Mathura-Delhi Road, Akbarpur, Mathura, Uttar Pradesh 281406
-                  </p>
-                  <a
-                    href="https://maps.google.com/?q=GL+Bajaj+Group+of+Institutions+Mathura"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:underline pt-1"
-                  >
-                    <MapPin className="size-3.5" />
-                    <span>View on Google Maps</span>
-                    <ExternalLink className="size-3" />
-                  </a>
-                </div>
+            <div className="grid gap-6 md:grid-cols-2">
+              <SpotlightCard className="rounded-3xl">
+                <div className="surface-raised rounded-3xl p-7 border border-[rgba(209,199,189,0.7)] space-y-4 h-full flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-widest mb-1">
+                      <MapPin className="size-4" />
+                      <span>Campus Helpdesk Location</span>
+                    </div>
+                    <h3 className="text-xl font-bold text-foreground">
+                      GL Bajaj Group of Institutions
+                    </h3>
+                    <p className="text-xs text-muted mt-1 font-semibold">
+                      NH# 19, Mathura-Delhi Road, PO-Chaumuhan, Mathura, UP - 281406
+                    </p>
+                    <p className="text-xs text-body mt-3 leading-relaxed">
+                      For offline registration inquiries, physical team workspace access, and hardware project labs, visit the SIH Technical Operations Room in the Academic Block.
+                    </p>
+                  </div>
 
-                <div className="space-y-3 border-t border-[rgba(209,199,189,0.6)] pt-6 lg:border-t-0 lg:border-l lg:pl-8 lg:pt-0">
-                  <span className="text-label uppercase text-primary font-bold">
-                    Hackathon Helpdesk
-                  </span>
-                  <h3 className="text-feature text-foreground font-bold">
-                    Office &amp; Support Hours
-                  </h3>
-                  <p className="text-xs leading-relaxed text-body">
-                    Monday to Saturday: 9:00 AM – 5:00 PM IST
-                  </p>
-                  <p className="text-xs text-muted">
-                    For emergency team changes or SPOC approvals during active evaluation cycles, reach out via the official WhatsApp channels.
-                  </p>
+                  <div className="pt-4 border-t border-[rgba(209,199,189,0.4)] flex items-center justify-between text-xs">
+                    <span className="text-muted font-medium">Lab Timing</span>
+                    <span className="font-bold text-primary">09:00 AM – 05:00 PM IST</span>
+                  </div>
                 </div>
+              </SpotlightCard>
 
-                <div className="space-y-3 border-t border-[rgba(209,199,189,0.6)] pt-6 lg:border-t-0 lg:border-l lg:pl-8 lg:pt-0">
-                  <span className="text-label uppercase text-primary font-bold">
-                    Official Inquiries
-                  </span>
-                  <h3 className="text-feature text-foreground font-bold">
-                    Institutional Email
-                  </h3>
-                  <p className="text-xs leading-relaxed text-body">
-                    Email queries directly to the internal SIH coordination team:
-                  </p>
-                  <a
-                    href="mailto:iic@glbajajgroup.org"
-                    className="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:underline"
-                  >
-                    <Mail className="size-3.5" />
-                    <span>iic@glbajajgroup.org</span>
-                  </a>
+              <SpotlightCard className="rounded-3xl">
+                <div className="surface-raised rounded-3xl p-7 border border-[rgba(209,199,189,0.7)] space-y-4 h-full flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-widest mb-1">
+                      <Building className="size-4" />
+                      <span>Behind the Build</span>
+                    </div>
+                    <h3 className="text-xl font-bold text-foreground">
+                      Engineered by NexaSphere
+                    </h3>
+                    <p className="text-xs text-muted mt-1 font-semibold">
+                      Autonomous Developer Tools &amp; Student Hackathon Portals
+                    </p>
+                    <p className="text-xs text-body mt-3 leading-relaxed">
+                      The SIH@GLBGOI platform was engineered by NexaSphere to automate team matching, mentor oversight, and progressive registrations for GL Bajaj.
+                    </p>
+                  </div>
+
+                  <div className="pt-4 border-t border-[rgba(209,199,189,0.4)] flex items-center justify-between text-xs">
+                    <span className="text-muted font-medium">Supported By</span>
+                    <span className="font-bold text-foreground">GLBGOI Mathura</span>
+                  </div>
                 </div>
-              </div>
-            </section>
-          )}
-
-          {/* No results fallback */}
-          {q && !showSpoc && !showFaculty && !showStudents && (
-            <div className="text-center py-16 space-y-3">
-              <p className="text-base font-bold text-foreground">
-                No coordinators matched “{searchQuery}”.
-              </p>
-              <p className="text-xs text-muted">
-                Try searching by first name, last name, branch (MBA, CSE), or mobile number.
-              </p>
-              <button
-                type="button"
-                onClick={() => setSearchQuery('')}
-                className="mt-2 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-on-accent"
-              >
-                Clear Search
-              </button>
+              </SpotlightCard>
             </div>
           )}
         </Container>
@@ -462,220 +497,86 @@ export default function ContactPage() {
   );
 }
 
-/* ─────────────────────────────────────────────────────────────
- * SUBCOMPONENTS
- * ──────────────────────────────────────────────────────────── */
-
 function FacultyCard({
-  faculty,
+  contact,
   copiedKey,
   onCopy,
 }: {
-  faculty: FacultyContact;
+  contact: FacultyContact;
   copiedKey: string | null;
   onCopy: (text: string, label: string, key: string) => void;
 }) {
-  const cleanPhone = faculty.phone ? faculty.phone.replace(/[^0-9]/g, '') : '';
-  const phoneCopyKey = `fac-phone-${faculty.name}`;
-  const emailCopyKey = `fac-email-${faculty.name}`;
+  const cleanPhone = (phone?: string) => (phone ? phone.replace(/[^0-9]/g, '') : '');
 
   return (
-    <SpotlightCard className="h-full rounded-2xl">
-      <div className="surface-raised rounded-2xl p-5 border border-[rgba(209,199,189,0.7)] flex flex-col justify-between h-full space-y-4 shadow-sm hover:border-primary/40 transition-colors">
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="inline-flex items-center gap-1 text-[10px] uppercase font-extrabold tracking-wider text-primary rounded-md bg-[rgba(114,56,61,0.08)] px-2 py-0.5">
-              <UserCheck className="size-3" />
-              {faculty.category}
-            </span>
+    <SpotlightCard className="h-full rounded-3xl" intensity={0.14}>
+      <div className="surface-raised rounded-3xl p-6 h-full flex flex-col justify-between border border-[rgba(209,199,189,0.7)] shadow-e1 hover:shadow-e3 transition-all duration-300">
+        <div className="space-y-4">
+          <div className="flex items-start gap-3.5">
+            <div className="size-11 rounded-2xl bg-[rgba(114,56,61,0.08)] border border-[rgba(114,56,61,0.2)] flex items-center justify-center text-primary font-black text-sm shrink-0">
+              {contact.name.replace(/^(Dr\.|Mr\.|Ms\.|Er\.)\s*/, '')[0]}
+            </div>
+            <div className="min-w-0">
+              <h3 className="text-base font-black text-foreground truncate">{contact.name}</h3>
+              <p className="text-xs font-semibold text-primary">{contact.role}</p>
+              <p className="text-[11px] text-muted truncate mt-0.5">{contact.department}</p>
+            </div>
           </div>
 
-          <h4 className="text-base font-black text-foreground">
-            {faculty.name}
-          </h4>
-
-          <p className="text-xs font-semibold text-primary">
-            {faculty.designation}
-          </p>
-
-          <p className="text-xs text-muted leading-relaxed">
-            {faculty.department}
-          </p>
-        </div>
-
-        {faculty.phone || faculty.email ? (
-          <div className="space-y-2 pt-3 border-t border-[rgba(209,199,189,0.5)]">
-            {faculty.phone && (
-              <div className="flex flex-wrap items-center gap-1.5">
-                <a
-                  href={`tel:${cleanPhone}`}
-                  className="inline-flex items-center gap-1 rounded-lg bg-primary/10 px-2 py-1 text-xs font-bold text-primary hover:bg-primary hover:text-on-accent transition-colors"
-                >
-                  <Phone className="size-3" />
-                  <span>Call</span>
-                </a>
-
-                <a
-                  href={`https://wa.me/${cleanPhone}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 rounded-lg bg-green-50 px-2 py-1 text-xs font-bold text-green-700 hover:bg-green-100 transition-colors"
-                >
-                  <MessageCircle className="size-3" />
-                  <span>WhatsApp</span>
-                </a>
-
-                <button
-                  type="button"
-                  onClick={() => onCopy(faculty.phone!, `${faculty.name}'s phone`, phoneCopyKey)}
-                  className="ml-auto inline-flex items-center gap-1 rounded-lg border border-[rgba(209,199,189,0.7)] bg-white/80 px-2 py-1 text-[11px] font-semibold text-body hover:text-primary transition-colors cursor-pointer"
-                  title="Copy phone"
-                >
-                  {copiedKey === phoneCopyKey ? (
-                    <Check className="size-3 text-green-600" />
-                  ) : (
-                    <Copy className="size-3" />
-                  )}
-                  <span>{faculty.phone}</span>
-                </button>
+          <div className="space-y-2 pt-2 text-xs border-t border-[rgba(209,199,189,0.4)]">
+            {contact.phone && (
+              <div className="flex items-center justify-between gap-2 p-2 rounded-2xl bg-white/60 border border-[rgba(209,199,189,0.5)]">
+                <span className="font-mono text-xs font-bold text-foreground flex items-center gap-1.5">
+                  <Phone className="size-3.5 text-primary shrink-0" />
+                  {contact.phone}
+                </span>
+                <div className="flex items-center gap-1">
+                  <a
+                    href={`tel:${cleanPhone(contact.phone)}`}
+                    className="rounded-lg border border-[rgba(114,56,61,0.25)] bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary hover:bg-primary/20 transition-colors"
+                  >
+                    Call
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => onCopy(contact.phone!, `${contact.name}'s phone`, `faculty-phone-${contact.name}`)}
+                    className="rounded-lg border border-[rgba(209,199,189,0.7)] bg-white px-2 py-0.5 text-[10px] font-bold text-body hover:text-foreground transition-colors"
+                  >
+                    {copiedKey === `faculty-phone-${contact.name}` ? <Check className="size-3 text-emerald-600" /> : 'Copy'}
+                  </button>
+                </div>
               </div>
             )}
 
-            {faculty.email && (
-              <div className="flex items-center justify-between gap-1.5 pt-1">
-                <a
-                  href={`mailto:${faculty.email}`}
-                  className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline truncate"
-                >
-                  <Mail className="size-3 shrink-0" />
-                  <span className="truncate">{faculty.email}</span>
-                </a>
-
-                <button
-                  type="button"
-                  onClick={() => onCopy(faculty.email!, `${faculty.name}'s email`, emailCopyKey)}
-                  className="shrink-0 inline-flex items-center gap-1 text-[10px] text-muted hover:text-primary transition-colors cursor-pointer"
-                  title="Copy email"
-                >
-                  {copiedKey === emailCopyKey ? (
-                    <Check className="size-3 text-green-600" />
-                  ) : (
-                    <Copy className="size-3" />
-                  )}
-                </button>
+            {contact.email && (
+              <div className="flex items-center justify-between gap-2 p-2 rounded-2xl bg-white/60 border border-[rgba(209,199,189,0.5)]">
+                <span className="text-xs font-medium text-foreground truncate flex items-center gap-1.5 min-w-0">
+                  <Mail className="size-3.5 text-primary shrink-0" />
+                  <span className="truncate">{contact.email}</span>
+                </span>
+                <div className="flex items-center gap-1 shrink-0">
+                  <a
+                    href={`mailto:${contact.email}`}
+                    className="rounded-lg border border-[rgba(114,56,61,0.25)] bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary hover:bg-primary/20 transition-colors"
+                  >
+                    Email
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => onCopy(contact.email!, `${contact.name}'s email`, `faculty-email-${contact.name}`)}
+                    className="rounded-lg border border-[rgba(209,199,189,0.7)] bg-white px-2 py-0.5 text-[10px] font-bold text-body hover:text-foreground transition-colors"
+                  >
+                    {copiedKey === `faculty-email-${contact.name}` ? <Check className="size-3 text-emerald-600" /> : 'Copy'}
+                  </button>
+                </div>
               </div>
             )}
           </div>
-        ) : (
-          <div className="pt-3 border-t border-[rgba(209,199,189,0.5)]">
-            <span className="text-[11px] text-muted italic">
-              Available via Department Incharge Desk
-            </span>
-          </div>
-        )}
-      </div>
-    </SpotlightCard>
-  );
-}
-
-function StudentLeadCard({
-  student,
-  copiedKey,
-  onCopy,
-}: {
-  student: StudentLead;
-  index?: number;
-  copiedKey: string | null;
-  onCopy: (text: string, label: string, key: string) => void;
-}) {
-  const cleanPhone = student.phone.replace(/[^0-9]/g, '');
-  const phoneKey = `student-phone-${student.name}`;
-  const emailKey = `student-email-${student.name}`;
-
-  return (
-    <SpotlightCard className="h-full rounded-3xl">
-      <div className="surface-raised rounded-3xl p-6 sm:p-7 border border-[rgba(209,199,189,0.75)] flex flex-col justify-between h-full space-y-5 shadow-sm hover:border-primary/40 transition-colors">
-        <div className="space-y-3">
-          <div>
-            <h3 className="text-xl font-black text-foreground">
-              {student.name}
-            </h3>
-            <p className="text-xs font-bold text-primary mt-0.5">
-              {student.title}
-            </p>
-          </div>
-
-          <p className="text-xs text-muted leading-relaxed">
-            Leading internal hackathon operations, team registration systems, and mentor matching for Smart India Hackathon 2026.
-          </p>
         </div>
 
-        <div className="space-y-2.5 pt-4 border-t border-[rgba(209,199,189,0.6)]">
-          {/* LinkedIn Button */}
-          <a
-            href={student.linkedin}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-between rounded-xl border border-[rgba(209,199,189,0.7)] bg-white/80 px-3.5 py-2.5 text-xs font-bold text-foreground hover:bg-white hover:border-primary/40 hover:text-primary transition-all cursor-pointer"
-          >
-            <span className="flex items-center gap-2">
-              <svg className="size-4 text-primary shrink-0" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.779-1.75-1.75s.784-1.75 1.75-1.75 1.75.779 1.75 1.75-.784 1.75-1.75 1.75zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
-              </svg>
-              <span>Connect on LinkedIn</span>
-            </span>
-            <ExternalLink className="size-3 text-muted" />
-          </a>
-
-          {/* Contact Row */}
-          <div className="grid grid-cols-2 gap-2">
-            <a
-              href={`tel:${cleanPhone}`}
-              className="flex items-center justify-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-xs font-bold text-on-accent shadow-sm hover:bg-[var(--primary-hover)] transition-colors"
-            >
-              <Phone className="size-3.5" />
-              <span>Call</span>
-            </a>
-
-            <a
-              href={`https://wa.me/${cleanPhone}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-1.5 rounded-xl border border-green-600/30 bg-green-50 px-3 py-2 text-xs font-bold text-green-700 hover:bg-green-100 transition-colors"
-            >
-              <MessageCircle className="size-3.5" />
-              <span>WhatsApp</span>
-            </a>
-          </div>
-
-          {/* Copyable Quick Info */}
-          <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-            <button
-              type="button"
-              onClick={() => onCopy(student.phone, `${student.name}'s phone`, phoneKey)}
-              className="inline-flex items-center gap-1 text-caption text-muted hover:text-primary transition-colors cursor-pointer"
-            >
-              {copiedKey === phoneKey ? (
-                <Check className="size-3 text-green-600" />
-              ) : (
-                <Copy className="size-3" />
-              )}
-              <span>{student.phone}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => onCopy(student.email, `${student.name}'s email`, emailKey)}
-              className="inline-flex items-center gap-1 text-caption text-muted hover:text-primary transition-colors cursor-pointer truncate max-w-[200px]"
-            >
-              {copiedKey === emailKey ? (
-                <Check className="size-3 text-green-600" />
-              ) : (
-                <Mail className="size-3" />
-              )}
-              <span className="truncate">{student.email}</span>
-            </button>
-          </div>
+        <div className="mt-4 pt-3 border-t border-[rgba(209,199,189,0.35)] flex items-center justify-between text-[10px] text-muted font-semibold">
+          <span>{contact.designation}</span>
+          <span>GLBGOI</span>
         </div>
       </div>
     </SpotlightCard>

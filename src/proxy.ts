@@ -25,6 +25,7 @@ const PUBLIC_PATHS = [
   /^\/api\/tracks/,
   /^\/api\/statistics/,
   /^\/sso-callback/,
+  /^\/contact/,
 ];
 
 function isPublicRoute(pathname: string): boolean {

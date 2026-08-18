@@ -7,7 +7,7 @@ import { m, type Variants } from 'framer-motion';
 import Reveal, { RevealGroup, RevealItem } from '@/components/motion/Reveal';
 import { EASE } from '@/components/motion/tokens';
 import { Container, Modal, useToast } from '@/components/ui';
-import { CONTACTS, Contact } from '@/config/contacts';
+import { FOOTER_CONTACTS, Contact } from '@/config/contacts';
 
 const LINK_GROUPS = [
   {
@@ -18,7 +18,7 @@ const LINK_GROUPS = [
       { label: 'Browse Teammates', href: '/team-formation/browse-teammates' },
       { label: 'Browse Teams', href: '/team-formation/browse-teams' },
       { label: 'Browse Mentors', href: '/team-formation/browse-mentors' },
-      { label: 'Contact Us', href: '/contact' },
+      { label: 'Contact Directory', href: '/contact' },
     ],
   },
   {
@@ -202,7 +202,7 @@ export default function Footer() {
             </div>
             
             <div className="grid gap-4 sm:grid-cols-2">
-              {CONTACTS.map((contact) => (
+              {FOOTER_CONTACTS.map((contact) => (
                 <m.button
                   key={contact.name}
                   onClick={() => setSelectedContact(contact)}
@@ -299,7 +299,7 @@ export default function Footer() {
                   </div>
                 </m.a>
                 <m.button
-                  onClick={() => handleCopy(selectedContact.email, 'Email')}
+                  onClick={() => handleCopy(selectedContact.email || '', 'Email')}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   title="Copy email to clipboard"

@@ -1,73 +1,29 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { AnimatePresence, m } from 'framer-motion';
-import { ArrowUpRight, Users, User, Briefcase, Plus, Search, Filter, ShieldAlert } from 'lucide-react';
-import { Container, EmptyState, TeamCardSkeleton } from '@/components/ui';
-import Icon from '@/components/ui/Icon';
+import { Search } from 'lucide-react';
+import { Container, TeamCardSkeleton } from '@/components/ui';
 import { useToast } from '@/components/ui/Toast';
-import Image from 'next/image';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { useEscapeKey, useFocusTrap, useScrollLock } from '@/hooks/useFocusTrap';
 import {
-  Aurora,
-  Counter,
   PremiumButton,
-  Reveal,
-  SplitText,
-  TiltCard,
-  SpotlightCard,
   DURATION,
   EASE,
-  SPRING,
 } from '@/components/motion';
+import {
+  DirectoryHero,
+  DirectorySearchDeck,
+  DirectoryResultsBar,
+  DirectoryPagination,
+  DirectoryEmptyState,
+  TeamCard,
+  type Team,
+} from '@/components/directory';
 import { QueryClient } from '@/lib/queryClient';
 import { logger } from '@/lib/logger';
-
-interface TeamMember {
-  userId: string;
-  name: string;
-  branch: string;
-  year: string;
-  avatarUrl?: string | null;
-  roleInTeam: string;
-}
-
-interface Team {
-  id: string;
-  teamCode: string;
-  name: string;
-  leaderId: string;
-  memberCount: number;
-  status: string; // 'forming' | 'locked'
-  skillsCovered: string[];
-  skillsNeeded: string[];
-  whatsapp?: string | null;
-  logoUrl?: string | null;
-  track: {
-    id: string;
-    problemStatementCode: string;
-    name: string;
-    category: string;
-  };
-  secondaryTrack?: {
-    id: string;
-    problemStatementCode: string;
-    name: string;
-    category: string;
-  } | null;
-  recruitmentNotices?: {
-    id: string;
-    role: string;
-    gender: string;
-    abilities: string[];
-    requirements?: string | null;
-  }[];
-  members: TeamMember[];
-}
 
 interface TeamFilters {
   search: string;
@@ -93,54 +49,16 @@ const EMPTY_FILTERS: TeamFilters = {
   status: '',
 };
 
-const AVATAR_WASHES = [
-  'from-[#AC9C8D] to-[#D1C7BD]',
-  'from-[#D1C7BD] to-[#D9D9D9]',
-  'from-[#D9D9D9] to-[#AC9C8D]',
-  'from-[#EFE9E1] to-[#D1C7BD]',
-];
-
-function ProfileAvatar({ avatarUrl, name, size = 10 }: { avatarUrl?: string | null; name: string; size?: number }) {
-  const sizeClass = `size-${size}`;
-  if (avatarUrl?.startsWith('data:image/') || avatarUrl?.startsWith('http')) {
-    return (
-      <Image
-        unoptimized
-        src={avatarUrl}
-        alt={`${name}'s profile`}
-        width={40}
-        height={40}
-        className={`${sizeClass} rounded-xl object-cover`}
-      />
-    );
-  }
-
-  const wash = AVATAR_WASHES[name.length % AVATAR_WASHES.length];
-  return (
-    <span
-      aria-label={`${name}'s profile`}
-      className={`flex ${sizeClass} shrink-0 items-center justify-center rounded-xl border border-[rgba(209,199,189,0.7)] bg-gradient-to-br ${wash} text-[10px] font-black text-foreground`}
-    >
-      {name
-        .split(' ')
-        .map((part) => part[0])
-        .join('')
-        .slice(0, 2)
-        .toUpperCase()}
-    </span>
-  );
-}
-
 function FilterLabel({ children }: { children: string }) {
   return (
-    <span className="mb-1.5 block text-label uppercase text-muted">
+    <span className="mb-1.5 block text-label uppercase text-muted font-bold">
       {children}
     </span>
   );
 }
 
 const CONTROL =
-  'w-full rounded-xl border border-[rgba(209,199,189,0.8)] bg-[rgba(248,246,242,0.65)] px-3.5 py-2 text-sm text-foreground outline-none transition-[border-color,box-shadow,background-color] duration-250 focus:border-primary focus:bg-[rgba(248,246,242,0.95)] focus:shadow-[0_0_0_4px_rgba(114,56,61,0.10)]';
+  'w-full rounded-xl border border-[rgba(209,199,189,0.8)] bg-[rgba(248,246,242,0.65)] px-3.5 py-2 text-sm text-foreground outline-none transition-[border-color,box-shadow,background-color] duration-200 focus:border-primary focus:bg-[rgba(248,246,242,0.95)] focus:shadow-[0_0_0_4px_rgba(114,56,61,0.10)]';
 
 function JoinRequestModal({
   team,
@@ -190,7 +108,7 @@ function JoinRequestModal({
         transition={{ duration: DURATION.card, ease: EASE.outExpo }}
         className="surface-overlay relative max-h-[88vh] w-full max-w-md overflow-y-auto rounded-container p-6 text-foreground shadow-[0_12px_40px_rgba(50,45,41,0.22)]"
       >
-        <h3 id="join-team-title" className="text-feature text-foreground">
+        <h3 id="join-team-title" className="text-feature font-bold text-foreground">
           Join {team.name}
         </h3>
         <p className="mt-2 text-xs text-muted leading-relaxed">
@@ -224,12 +142,11 @@ function JoinRequestModal({
 }
 
 export default function FindTeamsPage() {
-  const router = useRouter();
   const { toast } = useToast();
 
   const [teams, setTeams] = useState<Team[]>([]);
   const [viewer, setViewer] = useState<TeamViewer | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [pagination, setPagination] = useState<{ total: number; totalPages: number; page: number }>({
     total: 0,
@@ -284,6 +201,7 @@ export default function FindTeamsPage() {
           setTeams(data.teams || []);
           setViewer(data.viewer || null);
           setPagination(data.pagination || { total: data.teams?.length || 0, totalPages: 1, page });
+          setCurrentPage(page);
         }
       } catch (err: unknown) {
         if (err instanceof Error && err.name === 'AbortError') return;
@@ -330,11 +248,10 @@ export default function FindTeamsPage() {
 
   const handleSearchSubmit = (e: FormEvent) => {
     e.preventDefault();
-    fetchTeams({ search, domain, skill, leader, size, status });
+    fetchTeams({ search, domain, skill, leader, size, status }, 1);
   };
 
   const totalPages = Math.max(1, pagination.totalPages);
-  const paginatedTeams = teams;
 
   const handleReset = () => {
     setSearch('');
@@ -346,6 +263,17 @@ export default function FindTeamsPage() {
     setTeams([]);
     setHasSearched(false);
     setPagination({ total: 0, totalPages: 1, page: 1 });
+    setCurrentPage(1);
+  };
+
+  const handleSuggestionClick = (field: 'domain' | 'skill' | 'status', value: string) => {
+    if (field === 'domain') setDomain(value);
+    if (field === 'skill') setSkill(value);
+    if (field === 'status') setStatus(value);
+    fetchTeams({
+      ...EMPTY_FILTERS,
+      [field]: value,
+    }, 1);
   };
 
   const submitJoinRequest = async (message: string) => {
@@ -380,490 +308,211 @@ export default function FindTeamsPage() {
   const activeFilters = [search, domain, skill, leader, size, status].filter(Boolean).length;
   const userHasTeam = viewer?.hasTeam ?? false;
 
+  const suggestions = [
+    { label: 'Health / MedTech', onClick: () => handleSuggestionClick('domain', 'Health') },
+    { label: 'Agriculture / IoT', onClick: () => handleSuggestionClick('domain', 'Agriculture') },
+    { label: 'Python', onClick: () => handleSuggestionClick('skill', 'Python') },
+    { label: 'React', onClick: () => handleSuggestionClick('skill', 'React') },
+    { label: 'Open (forming)', onClick: () => handleSuggestionClick('status', 'open') },
+    { label: 'Security / DevTools', onClick: () => handleSuggestionClick('domain', 'Security') },
+  ];
+
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
       <Navbar />
 
       <main id="main" className="flex-1">
-        {/* Header Block */}
-        <section className="section-dune relative overflow-hidden">
-          <Aurora variant="warm" spotlight={false} />
-          <Container width="wide" className="relative flex flex-col gap-6 py-12 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <Reveal direction="none" blur={false}>
-                <span className="text-label uppercase text-primary">
-                  Team directory
-                </span>
-              </Reveal>
-              <SplitText
-                as="h1"
-                text="Browse teams"
-                className="mt-3 text-title text-foreground"
-                delay={0.08}
-              />
-              <Reveal delay={0.28} className="mt-3">
-                <p className="max-w-xl text-sm leading-relaxed text-body">
-                  Explore hackathon teams looking for new members. Apply to join or invite teammates to your project.
-                </p>
-              </Reveal>
-            </div>
+        {/* Unified Directory Hero */}
+        <DirectoryHero
+          eyebrow="Team directory"
+          title="Browse teams"
+          description="Explore hackathon teams looking for new members. Apply to join or invite teammates to your project."
+          totalCount={pagination.total || teams.length}
+          totalCountLabel="teams shown"
+          activeFiltersCount={activeFilters}
+          activeFiltersLabel="filters active"
+        />
 
-            <Reveal direction="left" delay={0.2}>
-              <div className="surface-raised flex items-center gap-5 rounded-2xl px-5 py-4">
-                <div>
-                  <div className="text-3xl font-extrabold tracking-tight text-foreground">
-                    <Counter to={teams.length} duration={1.2} />
-                  </div>
-                  <div className="text-label uppercase text-muted">
-                    teams shown
-                  </div>
-                </div>
-                <div className="h-10 w-px bg-[rgba(172,156,141,0.5)]" />
-                <div>
-                  <div className="text-3xl font-extrabold tracking-tight text-foreground">
-                    {activeFilters}
-                  </div>
-                  <div className="text-label uppercase text-muted">
-                    filters active
-                  </div>
-                </div>
+        {/* Directory Workspace: Search-First Deck & Results */}
+        <section className="surface-sunken border-t border-[rgba(209,199,189,0.5)] py-10">
+          <Container width="wide" className="space-y-8">
+            {/* Primary Search Command Deck */}
+            <DirectorySearchDeck
+              heading="Search & Refine Teams"
+              subheading="Filter forming teams by domain categories, technical skills, leader name, or team size"
+              searchValue={search}
+              onSearchChange={setSearch}
+              searchPlaceholder="Search team name, problem statement, or track keyword (e.g. Smart Vehicles, MedTech)..."
+              onSubmit={handleSearchSubmit}
+              onReset={handleReset}
+              hasActiveFilters={activeFilters > 0}
+              activeFiltersCount={activeFilters}
+              isSearching={refreshing}
+              suggestions={suggestions}
+            >
+              {/* Responsive Filter Grid */}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                <label className="block">
+                  <FilterLabel>Tech Skill Needed</FilterLabel>
+                  <input
+                    type="text"
+                    placeholder="e.g. Python, Figma"
+                    value={skill}
+                    onChange={(e) => setSkill(e.target.value)}
+                    className={CONTROL}
+                  />
+                </label>
+
+                <label className="block">
+                  <FilterLabel>Team Leader</FilterLabel>
+                  <input
+                    type="text"
+                    placeholder="Leader's name"
+                    value={leader}
+                    onChange={(e) => setLeader(e.target.value)}
+                    className={CONTROL}
+                  />
+                </label>
+
+                <label className="block">
+                  <FilterLabel>Domain (Category)</FilterLabel>
+                  <select
+                    value={domain}
+                    onChange={(e) => setDomain(e.target.value)}
+                    className={CONTROL}
+                  >
+                    <option value="">All Categories</option>
+                    <option value="Health">Health / MedTech</option>
+                    <option value="Agriculture">Agriculture / IoT</option>
+                    <option value="Education">EdTech</option>
+                    <option value="Smart Vehicle">Smart Vehicles</option>
+                    <option value="Security">Security / DevTools</option>
+                    <option value="Clean Water">Water Management</option>
+                    <option value="Miscellaneous">Miscellaneous</option>
+                  </select>
+                </label>
+
+                <label className="block">
+                  <FilterLabel>Team Size</FilterLabel>
+                  <select
+                    value={size}
+                    onChange={(e) => setSize(e.target.value)}
+                    className={CONTROL}
+                  >
+                    <option value="">Any Size</option>
+                    <option value="1">1 Member</option>
+                    <option value="2">2 Members</option>
+                    <option value="3">3 Members</option>
+                    <option value="4">4 Members</option>
+                    <option value="5">5 Members</option>
+                  </select>
+                </label>
+
+                <label className="block">
+                  <FilterLabel>Recruitment</FilterLabel>
+                  <select
+                    value={status}
+                    onChange={(e) => setStatus(e.target.value)}
+                    className={CONTROL}
+                  >
+                    <option value="">All status</option>
+                    <option value="open">Open (forming)</option>
+                    <option value="closed">Closed / Full</option>
+                  </select>
+                </label>
               </div>
-            </Reveal>
-          </Container>
-        </section>
+            </DirectorySearchDeck>
 
-        {/* Workspace: Filters & List */}
-        <section className="surface-sunken">
-          <Container width="wide" className="grid grid-cols-1 gap-6 py-10 lg:grid-cols-[280px_1fr]">
-            {/* Filters panel */}
-            <Reveal direction="right">
-              <form
-                onSubmit={handleSearchSubmit}
-                className="surface-raised rounded-3xl p-6 lg:sticky lg:top-28"
-              >
-                <div className="flex items-center justify-between">
-                  <h2 className="text-feature text-foreground">Refine</h2>
-                  <Icon icon={Filter} className="text-muted" size="sm" />
-                </div>
-                <div className="my-5 h-px bg-gradient-to-r from-[rgba(172,156,141,0.55)] to-transparent" />
-
-                <div className="space-y-4">
-                  <label className="block">
-                    <FilterLabel>Search keyword</FilterLabel>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        placeholder="Name, track, technology..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className={`${CONTROL} pr-9`}
-                      />
-                      <Search className="absolute right-3.5 top-1/2 size-4 -translate-y-1/2 text-muted pointer-events-none" />
-                    </div>
-                  </label>
-
-                  <label className="block">
-                    <FilterLabel>Tech Skill Needed</FilterLabel>
-                    <input
-                      type="text"
-                      placeholder="e.g. Python, Figma"
-                      value={skill}
-                      onChange={(e) => setSkill(e.target.value)}
-                      className={CONTROL}
-                    />
-                  </label>
-
-                  <label className="block">
-                    <FilterLabel>Team Leader</FilterLabel>
-                    <input
-                      type="text"
-                      placeholder="Leader's name"
-                      value={leader}
-                      onChange={(e) => setLeader(e.target.value)}
-                      className={CONTROL}
-                    />
-                  </label>
-
-                  <label className="block">
-                    <FilterLabel>Domain (Category)</FilterLabel>
-                    <select
-                      value={domain}
-                      onChange={(e) => setDomain(e.target.value)}
-                      className={CONTROL}
-                    >
-                      <option value="">All Categories</option>
-                      <option value="Health">Health / MedTech</option>
-                      <option value="Agriculture">Agriculture / IoT</option>
-                      <option value="Education">EdTech</option>
-                      <option value="Smart Vehicle">Smart Vehicles</option>
-                      <option value="Security">Security / DevTools</option>
-                      <option value="Clean Water">Water Management</option>
-                      <option value="Miscellaneous">Miscellaneous</option>
-                    </select>
-                  </label>
-
-                  <label className="block">
-                    <FilterLabel>Team Size</FilterLabel>
-                    <select
-                      value={size}
-                      onChange={(e) => setSize(e.target.value)}
-                      className={CONTROL}
-                    >
-                      <option value="">Any Size</option>
-                      <option value="1">1 Member</option>
-                      <option value="2">2 Members</option>
-                      <option value="3">3 Members</option>
-                      <option value="4">4 Members</option>
-                      <option value="5">5 Members</option>
-                    </select>
-                  </label>
-
-                  <label className="block">
-                    <FilterLabel>Recruitment</FilterLabel>
-                    <select
-                      value={status}
-                      onChange={(e) => setStatus(e.target.value)}
-                      className={CONTROL}
-                    >
-                      <option value="">All status</option>
-                      <option value="open">Open (forming)</option>
-                      <option value="closed">Closed / Full</option>
-                    </select>
-                  </label>
-                </div>
-
-                <div className="mt-6 flex gap-2">
-                  <PremiumButton
-                    type="submit"
-                    size="sm"
-                    loading={refreshing}
-                    className="flex-1"
-                  >
-                    Apply
-                  </PremiumButton>
-                  <PremiumButton
-                    variant="glass"
-                    size="sm"
-                    onClick={handleReset}
-                    className="flex-1"
-                  >
-                    Reset
-                  </PremiumButton>
-                </div>
-              </form>
-            </Reveal>
-
-            {/* Results list */}
+            {/* Results Section */}
             <div>
               {loading ? (
-                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                  {Array.from({ length: 4 }, (_, i) => (
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  {Array.from({ length: 6 }, (_, i) => (
                     <TeamCardSkeleton key={i} />
                   ))}
                 </div>
-              ) : paginatedTeams.length > 0 ? (
-                <>
-                  <m.div
-                  layout
-                  className="grid grid-cols-1 gap-6 md:grid-cols-2"
-                >
-                  <AnimatePresence mode="popLayout" initial={false}>
-                    {paginatedTeams.map((team, i) => {
-                      const isClosed = team.status !== 'forming' || team.memberCount >= 6;
-                      const leader = team.members.find((m) => m.userId === team.leaderId);
-                      const state = submittingRequest[team.id];
+              ) : !hasSearched ? (
+                /* Unsearched Discovery Prompt */
+                <DirectoryEmptyState
+                  variant="unsearched"
+                  title="Find your hackathon team"
+                  description="Search forming teams by ministry theme, required technical skills, leader name, or team title using the search command deck above."
+                  action={
+                    <PremiumButton
+                      size="sm"
+                      onClick={() => fetchTeams(EMPTY_FILTERS, 1)}
+                      className="bg-primary text-on-accent"
+                    >
+                      <Search className="size-3.5" />
+                      <span>Browse All Forming Teams</span>
+                    </PremiumButton>
+                  }
+                  suggestions={suggestions.slice(0, 4)}
+                />
+              ) : teams.length === 0 ? (
+                /* 0-Match Empty State */
+                <DirectoryEmptyState
+                  variant="no-results"
+                  title="No teams match these filters"
+                  description="Try adjusting your search keywords, clearing domain filters, or searching for open forming teams."
+                  onReset={handleReset}
+                />
+              ) : (
+                /* Results Grid */
+                <div>
+                  <DirectoryResultsBar
+                    count={pagination.total || teams.length}
+                    itemLabel="teams"
+                    isSearching={refreshing}
+                    hasActiveFilters={activeFilters > 0}
+                  />
 
-                      return (
+                  <m.div
+                    layout
+                    className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"
+                  >
+                    <AnimatePresence mode="popLayout" initial={false}>
+                      {teams.map((team, i) => (
                         <m.div
                           key={team.id}
                           layout
-                          initial={{ opacity: 0, y: 20, filter: 'blur(8px)' }}
+                          initial={{ opacity: 0, y: 16, filter: 'blur(6px)' }}
                           animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                          exit={{ opacity: 0, scale: 0.96, filter: 'blur(8px)' }}
+                          exit={{ opacity: 0, scale: 0.97, filter: 'blur(6px)' }}
                           transition={{
                             duration: DURATION.card,
                             ease: EASE.outExpo,
-                            delay: Math.min(i * 0.04, 0.4),
+                            delay: Math.min(i * 0.03, 0.3),
                           }}
                         >
-                          <TiltCard intensity={4} className="h-full">
-                            <SpotlightCard className="h-full rounded-3xl" intensity={0.1}>
-                              <article className="surface-raised flex h-full flex-col justify-between rounded-3xl p-6">
-                                <div>
-                                  {/* Title & Status */}
-                                  <div className="flex items-start justify-between gap-4">
-                                    <div className="flex items-center gap-3 min-w-0">
-                                      <div
-                                        onClick={() => router.push(`/teams/${team.id}`)}
-                                        className="size-11 shrink-0 overflow-hidden rounded-xl border border-[rgba(114,56,61,0.25)] bg-gradient-to-br from-[rgba(114,56,61,0.08)] to-[rgba(114,56,61,0.02)] flex items-center justify-center font-black text-primary text-xs cursor-pointer hover:border-primary transition-colors"
-                                      >
-                                        {team.logoUrl ? (
-                                          <img src={team.logoUrl} alt="Logo" className="size-full object-cover" />
-                                        ) : (
-                                          team.name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase() || 'NS'
-                                        )}
-                                      </div>
-                                      <div className="min-w-0">
-                                        <h3
-                                          onClick={() => router.push(`/teams/${team.id}`)}
-                                          className="truncate text-feature text-foreground font-extrabold cursor-pointer hover:text-primary transition-colors"
-                                        >
-                                          {team.name}
-                                        </h3>
-                                        <span className="mt-0.5 block text-[10px] font-black uppercase tracking-[0.16em] text-primary">
-                                          {team.teamCode}
-                                        </span>
-                                        <div className="mt-2 space-y-1">
-                                          <p className="flex items-center gap-1.5 text-caption text-primary font-bold">
-                                            <Briefcase className="size-3 shrink-0" />
-                                            <span>Primary Theme:</span>
-                                            <span className="bg-primary/10 px-1.5 py-0.5 rounded text-[10px]">{team.track.problemStatementCode}</span>
-                                            <span className="truncate font-normal text-body">{team.track.name}</span>
-                                          </p>
-                                          <p className="flex items-center gap-1.5 text-caption text-muted font-bold">
-                                            <Briefcase className="size-3 shrink-0 opacity-60" />
-                                            <span>Secondary Theme:</span>
-                                            {team.secondaryTrack ? (
-                                              <>
-                                                <span className="bg-muted/20 px-1.5 py-0.5 rounded text-[10px] text-body">{team.secondaryTrack.problemStatementCode}</span>
-                                                <span className="truncate font-normal text-muted">{team.secondaryTrack.name}</span>
-                                              </>
-                                            ) : (
-                                              <span className="font-normal text-muted">None</span>
-                                            )}
-                                          </p>
-                                        </div>
-                                      </div>
-                                    </div>
-                                    <span
-                                      className={`rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider ${
-                                        isClosed
-                                          ? 'bg-[rgba(172,156,141,0.22)] text-muted'
-                                          : 'bg-[rgba(114,56,61,0.08)] text-primary border border-[rgba(114,56,61,0.2)]'
-                                      }`}
-                                    >
-                                      {isClosed ? 'Closed' : 'Open'}
-                                    </span>
-                                  </div>
-
-                                  <div className="my-4 h-px bg-[rgba(209,199,189,0.5)]" />
-
-                                  {/* Leader Info */}
-                                  <div className="flex items-center gap-3">
-                                    {leader ? (
-                                      <div
-                                        onClick={() => router.push(`/students/${leader.userId}`)}
-                                        className="flex items-center gap-3 cursor-pointer group/leader"
-                                      >
-                                        <ProfileAvatar
-                                          avatarUrl={leader.avatarUrl}
-                                          name={leader.name}
-                                          size={7}
-                                        />
-                                        <div className="min-w-0">
-                                          <span className="block text-caption font-bold text-foreground truncate group-hover/leader:text-primary transition-colors">
-                                            {leader.name}
-                                          </span>
-                                          <span className="block text-[9px] text-muted uppercase tracking-wider mt-0.5">
-                                            Team Leader
-                                          </span>
-                                        </div>
-                                      </div>
-                                    ) : (
-                                      <span className="text-caption text-muted">No leader assigned</span>
-                                    )}
-                                  </div>
-
-                                  {/* Member Slots dials */}
-                                  <div className="mt-5">
-                                    <span className="text-[10px] font-black uppercase tracking-wider text-muted">
-                                      Team Roster ({team.memberCount} / 6)
-                                    </span>
-                                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                                      {Array.from({ length: 6 }).map((_, idx) => {
-                                        const mem = team.members[idx];
-                                        return mem ? (
-                                          <m.div
-                                            key={mem.userId}
-                                            whileHover={{ y: -2 }}
-                                            onClick={() => router.push(`/students/${mem.userId}`)}
-                                            className="group relative cursor-pointer"
-                                          >
-                                            <ProfileAvatar
-                                              avatarUrl={mem.avatarUrl}
-                                              name={mem.name}
-                                              size={8}
-                                            />
-                                            {/* Tooltip */}
-                                            <span className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 rounded bg-foreground px-2 py-1 text-[9px] font-black text-background opacity-0 transition-opacity duration-250 group-hover:opacity-100 whitespace-nowrap">
-                                              {mem.name} ({mem.roleInTeam || 'Member'})
-                                            </span>
-                                          </m.div>
-                                        ) : (
-                                          <div
-                                            key={`empty-${idx}`}
-                                            className="size-8 rounded-lg border border-dashed border-[rgba(172,156,141,0.65)] bg-[rgba(172,156,141,0.06)] flex items-center justify-center text-[10px] text-muted font-bold"
-                                            title="Empty slot"
-                                          >
-                                            +
-                                          </div>
-                                        );
-                                      })}
-                                    </div>
-                                  </div>
-
-                                  {/* Skills cover */}
-                                  {team.skillsCovered.length > 0 && (
-                                    <div className="mt-5">
-                                      <span className="text-[10px] font-black uppercase tracking-wider text-muted">
-                                        Skills covered
-                                      </span>
-                                      <div className="mt-2.5 flex flex-wrap gap-1">
-                                        {team.skillsCovered.map((s) => (
-                                          <span
-                                            key={s}
-                                            className="rounded-md border border-[rgba(172,156,141,0.55)] bg-[rgba(172,156,141,0.18)] px-2 py-0.5 text-caption font-semibold text-foreground"
-                                          >
-                                            {s}
-                                          </span>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  )}
-
-                                  {/* Recruitment Notices */}
-                                  {team.recruitmentNotices && team.recruitmentNotices.length > 0 && (
-                                    <div className="mt-5">
-                                      <span className="text-[10px] font-black uppercase tracking-wider text-primary">
-                                        We are recruiting
-                                      </span>
-                                      <div className="mt-2 space-y-2">
-                                        {team.recruitmentNotices.map((notice) => (
-                                          <div
-                                            key={notice.id}
-                                            className="rounded-2xl border border-[rgba(209,199,189,0.6)] bg-[rgba(239,233,225,0.3)] p-3 text-[11px]"
-                                          >
-                                            <div className="flex items-center justify-between font-bold text-foreground">
-                                              <span>{notice.role}</span>
-                                              <span className="text-[9px] uppercase tracking-wider text-primary bg-primary/5 px-1.5 py-0.5 rounded">
-                                                {notice.gender === 'OPEN' ? 'Open' : notice.gender}
-                                              </span>
-                                            </div>
-                                            {notice.abilities.length > 0 && (
-                                              <div className="mt-1.5 flex flex-wrap gap-1">
-                                                {notice.abilities.map((a: string) => (
-                                                  <span key={a} className="bg-white/60 text-muted border border-[rgba(172,156,141,0.3)] px-1.5 py-0.2 rounded-md text-[9px]">
-                                                    {a}
-                                                  </span>
-                                                ))}
-                                              </div>
-                                            )}
-                                            {notice.requirements && (
-                                              <p className="mt-1.5 text-muted leading-relaxed">
-                                                {notice.requirements}
-                                              </p>
-                                            )}
-                                          </div>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-
-                                {/* Join Actions */}
-                                <div className="mt-6 border-t border-[rgba(209,199,189,0.6)] pt-4 flex items-center justify-between gap-2">
-                                  <Link
-                                    href={`/teams/${team.id}`}
-                                    className="px-3.5 py-1.5 rounded-2xl border border-[rgba(209,199,189,0.8)] bg-white/60 text-xs font-bold text-body hover:border-primary hover:text-primary transition-all text-center inline-flex items-center gap-1"
-                                  >
-                                    <span>View Team</span>
-                                    <ArrowUpRight className="size-3" />
-                                  </Link>
-
-                                  {userHasTeam ? (
-                                    <span className="text-xs font-semibold text-muted flex items-center gap-1">
-                                      <ShieldAlert className="size-3.5" /> Already in a team
-                                    </span>
-                                  ) : (
-                                    <PremiumButton
-                                      size="sm"
-                                      variant={state === 'sent' ? 'glass' : 'primary'}
-                                      loading={state === 'sending'}
-                                      disabled={isClosed || Boolean(state)}
-                                      onClick={() => setActiveRequestTeam(team)}
-                                    >
-                                      {isClosed ? 'Full' : state === 'sent' ? 'Request Sent' : 'Join Team'}
-                                    </PremiumButton>
-                                  )}
-                                </div>
-                              </article>
-                            </SpotlightCard>
-                          </TiltCard>
+                          <TeamCard
+                            team={team}
+                            userHasTeam={userHasTeam}
+                            requestState={submittingRequest[team.id]}
+                            onRequestJoin={setActiveRequestTeam}
+                          />
                         </m.div>
-                      );
-                    })}
-                  </AnimatePresence>
+                      ))}
+                    </AnimatePresence>
                   </m.div>
 
-                  {/* Pagination Controls */}
-                  {totalPages > 1 && (
-                    <div className="mt-10 flex items-center justify-center gap-2">
-                      <button
-                        disabled={currentPage === 1}
-                        onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                        className="rounded-xl border border-[rgba(114,56,61,0.2)] bg-[rgba(248,246,242,0.7)] px-4 py-2 text-caption font-bold text-primary transition-all duration-200 hover:bg-[rgba(114,56,61,0.08)] disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Previous
-                      </button>
-
-                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                        <button
-                          key={page}
-                          onClick={() => setCurrentPage(page)}
-                          className={`size-10 rounded-xl font-bold transition-all duration-200 flex items-center justify-center ${
-                            currentPage === page
-                              ? 'bg-primary text-on-accent shadow-[0_4px_12px_rgba(114,56,61,0.25)]'
-                              : 'border border-[rgba(114,56,61,0.2)] bg-[rgba(248,246,242,0.7)] text-muted hover:border-primary hover:text-primary'
-                          }`}
-                        >
-                          {page}
-                        </button>
-                      ))}
-
-                      <button
-                        disabled={currentPage === totalPages}
-                        onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                        className="rounded-xl border border-[rgba(114,56,61,0.2)] bg-[rgba(248,246,242,0.7)] px-4 py-2 text-caption font-bold text-primary transition-all duration-200 hover:bg-[rgba(114,56,61,0.08)] disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Next
-                      </button>
-                    </div>
-                  )}
-                </>
-              ) : !hasSearched ? (
-                <EmptyState
-                  icon={Search}
-                  title="Find your hackathon team"
-                  description="Search forming teams by ministry theme, required technical skills, leader name, or team title."
-                  action={
-                    <PremiumButton size="sm" onClick={() => fetchTeams({ search: '', domain: '', skill: '', leader: '', size: '', status: '' })}>
-                      Browse All Forming Teams
-                    </PremiumButton>
-                  }
-                  className="max-w-2xl mx-auto w-full"
-                />
-              ) : (
-                <EmptyState
-                  icon={Users}
-                  title="No teams match these filters."
-                  description="Adjust your search keywords or domain category to discover active teams."
-                  action={
-                    <PremiumButton variant="glass" size="sm" onClick={handleReset}>
-                      Reset filters
-                    </PremiumButton>
-                  }
-                  className="max-w-2xl mx-auto w-full"
-                />
+                  {/* Bounded Cursor/Page Navigation */}
+                  <DirectoryPagination
+                    hasPrevious={currentPage > 1}
+                    hasNext={currentPage < totalPages}
+                    onPrevious={() => {
+                      const prev = Math.max(1, currentPage - 1);
+                      setCurrentPage(prev);
+                      fetchTeams({ search, domain, skill, leader, size, status }, prev);
+                    }}
+                    onNext={() => {
+                      const next = currentPage + 1;
+                      setCurrentPage(next);
+                      fetchTeams({ search, domain, skill, leader, size, status }, next);
+                    }}
+                    itemSummary={totalPages > 1 ? `Page ${currentPage} of ${totalPages}` : undefined}
+                  />
+                </div>
               )}
             </div>
           </Container>

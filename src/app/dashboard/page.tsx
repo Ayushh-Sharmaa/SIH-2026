@@ -1055,7 +1055,7 @@ export default function DashboardPage() {
   // 1. Critical Path Bootstrap Fetch
   const loadBootstrapData = useCallback(async () => {
     try {
-      const cacheKey = 'sih_dashboard_bootstrap';
+      const cacheKey = 'dashboard:bootstrap';
       const data = await QueryClient.fetch<any>(
         cacheKey,
         async () => {
@@ -1125,7 +1125,7 @@ export default function DashboardPage() {
 
   // Save callbacks with cache invalidation
   const handlePersonalSaved = (updated: any) => {
-    QueryClient.invalidate('sih_dashboard_bootstrap');
+    QueryClient.invalidate('dashboard:bootstrap');
     QueryClient.invalidate('teammates:');
     setPersonalSummary(updated);
     setUser((prev: any) => ({ ...prev, name: updated.name, avatarUrl: updated.avatarUrl, branch: updated.branch, year: updated.year }));
@@ -1136,7 +1136,7 @@ export default function DashboardPage() {
   };
 
   const handleSkillsSaved = (updated: any) => {
-    QueryClient.invalidate('sih_dashboard_bootstrap');
+    QueryClient.invalidate('dashboard:bootstrap');
     QueryClient.invalidate('teammates:');
     setSkillsSummary(updated);
     setCompletion((prev: any) => ({
@@ -1146,7 +1146,7 @@ export default function DashboardPage() {
   };
 
   const handleThemesSaved = (updated: any) => {
-    QueryClient.invalidate('sih_dashboard_bootstrap');
+    QueryClient.invalidate('dashboard:bootstrap');
     QueryClient.invalidate('teammates:');
     setThemesSummary(updated);
     setCompletion((prev: any) => ({
@@ -1157,7 +1157,7 @@ export default function DashboardPage() {
 
   // Mentor profile section handlers
   const handleMentorProfileSaved = (updated: any) => {
-    QueryClient.invalidate('sih_dashboard_bootstrap');
+    QueryClient.invalidate('dashboard:bootstrap');
     QueryClient.invalidate('mentors:');
     setUser((prev: any) => ({ ...prev, ...updated }));
     setCompletion({
@@ -1178,7 +1178,7 @@ export default function DashboardPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to update request.');
 
-      QueryClient.invalidate('sih_dashboard_bootstrap');
+      QueryClient.invalidate('dashboard:bootstrap');
       QueryClient.invalidate('mentors:');
       toast(`Mentorship request ${action === 'accept' ? 'accepted' : action === 'decline' ? 'declined' : 'updated'}.`, 'success');
       setMentorRequests((prev) => prev.filter((r) => r.id !== requestId));
@@ -1199,7 +1199,7 @@ export default function DashboardPage() {
         body: JSON.stringify({ inviteId, action }),
       });
       if (res.ok) {
-        QueryClient.invalidate('sih_dashboard_bootstrap');
+        QueryClient.invalidate('dashboard:bootstrap');
         QueryClient.invalidate('teams:');
         toast(`Invite ${action}ed successfully.`, 'success');
         setReceivedInvites((prev) => prev.filter((i) => i.id !== inviteId));
@@ -1219,7 +1219,7 @@ export default function DashboardPage() {
         body: JSON.stringify({ requestId, action }),
       });
       if (res.ok) {
-        QueryClient.invalidate('sih_dashboard_bootstrap');
+        QueryClient.invalidate('dashboard:bootstrap');
         QueryClient.invalidate('teams:');
         toast(`Request ${action}ed.`, 'success');
         if (teamDetails?.joinRequests) {

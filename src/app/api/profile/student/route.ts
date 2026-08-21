@@ -11,6 +11,7 @@ import {
   tagArray,
 } from '@/lib/validate';
 import { SIH_OFFICIAL_18_THEMES } from '@/lib/tracks';
+import { sanitizeAvatarUrl } from '@/lib/avatar';
 import { logger } from '@/lib/logger';
 
 const VALID_TRACK_IDS = new Set(SIH_OFFICIAL_18_THEMES.map((t) => t.id));
@@ -220,7 +221,7 @@ export async function GET(request: Request) {
       resumeUrl: student.resumeUrl,
       githubUrl: student.githubUrl,
       linkedinUrl: student.linkedinUrl,
-      avatarUrl: student.avatarUrl,
+      avatarUrl: sanitizeAvatarUrl(student.avatarUrl, student.userId),
       teamStatus: student.teamStatus,
       roleInTeam: student.roleInTeam,
       team: student.team

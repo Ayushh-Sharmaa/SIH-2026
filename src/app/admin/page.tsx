@@ -310,6 +310,22 @@ export default function AdminDashboardPage() {
   const [mentorStatusFilter, setMentorStatusFilter] = useState<'ALL' | 'VERIFIED' | 'PENDING'>('ALL');
   const [expandedTrackIds, setExpandedTrackIds] = useState<Record<string, boolean>>({});
 
+  // Bounded pagination & async query state
+  const [studentPage, setStudentPage] = useState(1);
+  const [totalStudentPages, setTotalStudentPages] = useState(1);
+  const [totalStudentCount, setTotalStudentCount] = useState(0);
+  const [studentsLoading, setStudentsLoading] = useState(false);
+
+  const [teamPage, setTeamPage] = useState(1);
+  const [totalTeamPages, setTotalTeamPages] = useState(1);
+  const [totalTeamCount, setTotalTeamCount] = useState(0);
+  const [teamsLoading, setTeamsLoading] = useState(false);
+
+  const [mentorPage, setMentorPage] = useState(1);
+  const [totalMentorPages, setTotalMentorPages] = useState(1);
+  const [totalMentorCount, setTotalMentorCount] = useState(0);
+  const [mentorsLoading, setMentorsLoading] = useState(false);
+
   const toggleTrackExpand = (id: string) => {
     setExpandedTrackIds((prev) => ({ ...prev, [id]: !prev[id] }));
   };
@@ -391,6 +407,147 @@ export default function AdminDashboardPage() {
     });
     return () => cancelAnimationFrame(handle);
   }, [fetchAdminData]);
+
+  // Debounced server-side query for Students
+  useEffect(() => {
+    if (activeTab !== 'students') return;
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      setStudentsLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (studentSearch.trim()) params.set('search', studentSearch.trim());
+        if (studentYearFilter !== 'ALL') params.set('year', studentYearFilter);
+        if (studentBranchFilter !== 'ALL') params.set('branch', studentBranchFilter);
+        if (studentSectionFilter !== 'ALL') params.set('section', studentSectionFilter);
+        if (studentGenderFilter !== 'ALL') params.set('gender', studentGenderFilter);
+        if (studentStatusFilter !== 'ALL') params.set('status', studentStatusFilter);
+        params.set('page', String(studentPage));
+
+        const res = await fetch(`/api/admin/students?${params.toString()}`, {
+          signal: controller.signal,
+        });
+        const data = await res.json();
+        if (data.success) {
+          setStudents(data.students || []);
+          if (data.pagination) {
+            setTotalStudentPages(data.pagination.totalPages || 1);
+            setTotalStudentCount(data.pagination.total || 0);
+          }
+        }
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') {
+          logger.error('Failed to fetch admin students', err);
+        }
+      } finally {
+        setStudentsLoading(false);
+      }
+    }, 200);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [
+    activeTab,
+    studentSearch,
+    studentYearFilter,
+    studentBranchFilter,
+    studentSectionFilter,
+    studentGenderFilter,
+    studentStatusFilter,
+    studentPage,
+  ]);
+
+  // Debounced server-side query for Teams
+  useEffect(() => {
+    if (activeTab !== 'teams') return;
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      setTeamsLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (teamSearch.trim()) params.set('search', teamSearch.trim());
+        if (teamStatusFilter !== 'ALL') params.set('status', teamStatusFilter);
+        if (teamTrackFilter !== 'ALL') params.set('trackId', teamTrackFilter);
+        if (allFemaleFilter) params.set('allFemale', 'true');
+        params.set('page', String(teamPage));
+
+        const res = await fetch(`/api/admin/teams?${params.toString()}`, {
+          signal: controller.signal,
+        });
+        const data = await res.json();
+        if (data.success) {
+          setTeams(data.teams || []);
+          if (data.pagination) {
+            setTotalTeamPages(data.pagination.totalPages || 1);
+            setTotalTeamCount(data.pagination.total || 0);
+          }
+        }
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') {
+          logger.error('Failed to fetch admin teams', err);
+        }
+      } finally {
+        setTeamsLoading(false);
+      }
+    }, 200);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [
+    activeTab,
+    teamSearch,
+    teamStatusFilter,
+    teamTrackFilter,
+    allFemaleFilter,
+    teamPage,
+  ]);
+
+  // Debounced server-side query for Mentors
+  useEffect(() => {
+    if (activeTab !== 'mentors') return;
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      setMentorsLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (mentorSearch.trim()) params.set('search', mentorSearch.trim());
+        if (mentorStatusFilter !== 'ALL') params.set('status', mentorStatusFilter);
+        params.set('page', String(mentorPage));
+
+        const res = await fetch(`/api/admin/mentors?${params.toString()}`, {
+          signal: controller.signal,
+        });
+        const data = await res.json();
+        if (data.success) {
+          setMentors(data.mentors || []);
+          if (data.pagination) {
+            setTotalMentorPages(data.pagination.totalPages || 1);
+            setTotalMentorCount(data.pagination.total || 0);
+          }
+        }
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') {
+          logger.error('Failed to fetch admin mentors', err);
+        }
+      } finally {
+        setMentorsLoading(false);
+      }
+    }, 200);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [
+    activeTab,
+    mentorSearch,
+    mentorStatusFilter,
+    mentorPage,
+  ]);
 
   const handleGrantAdminAccess = async (e: FormEvent) => {
     e.preventDefault();
@@ -1529,6 +1686,30 @@ export default function AdminDashboardPage() {
                           ))}
                         </AnimatePresence>
                       </m.div>
+
+                      {totalTeamPages > 1 && (
+                        <div className="flex items-center justify-between pt-4">
+                          <PremiumButton
+                            variant="glass"
+                            size="sm"
+                            disabled={teamPage <= 1 || teamsLoading}
+                            onClick={() => setTeamPage((p) => Math.max(1, p - 1))}
+                          >
+                            Previous
+                          </PremiumButton>
+                          <span className="text-xs font-bold text-muted">
+                            Page {teamPage} of {totalTeamPages} ({totalTeamCount} total)
+                          </span>
+                          <PremiumButton
+                            variant="glass"
+                            size="sm"
+                            disabled={teamPage >= totalTeamPages || teamsLoading}
+                            onClick={() => setTeamPage((p) => Math.min(totalTeamPages, p + 1))}
+                          >
+                            Next
+                          </PremiumButton>
+                        </div>
+                      )}
                     </>
                   )}
 
@@ -1731,6 +1912,30 @@ export default function AdminDashboardPage() {
                           ))}
                         </AnimatePresence>
                       </m.ul>
+
+                      {totalStudentPages > 1 && (
+                        <div className="flex items-center justify-between pt-4">
+                          <PremiumButton
+                            variant="glass"
+                            size="sm"
+                            disabled={studentPage <= 1 || studentsLoading}
+                            onClick={() => setStudentPage((p) => Math.max(1, p - 1))}
+                          >
+                            Previous
+                          </PremiumButton>
+                          <span className="text-xs font-bold text-muted">
+                            Page {studentPage} of {totalStudentPages} ({totalStudentCount} total)
+                          </span>
+                          <PremiumButton
+                            variant="glass"
+                            size="sm"
+                            disabled={studentPage >= totalStudentPages || studentsLoading}
+                            onClick={() => setStudentPage((p) => Math.min(totalStudentPages, p + 1))}
+                          >
+                            Next
+                          </PremiumButton>
+                        </div>
+                      )}
                     </>
                   )}
 
@@ -2067,6 +2272,30 @@ export default function AdminDashboardPage() {
                         </RevealItem>
                       ))}
                         </RevealGroup>
+                      )}
+
+                      {totalMentorPages > 1 && (
+                        <div className="flex items-center justify-between pt-4">
+                          <PremiumButton
+                            variant="glass"
+                            size="sm"
+                            disabled={mentorPage <= 1 || mentorsLoading}
+                            onClick={() => setMentorPage((p) => Math.max(1, p - 1))}
+                          >
+                            Previous
+                          </PremiumButton>
+                          <span className="text-xs font-bold text-muted">
+                            Page {mentorPage} of {totalMentorPages} ({totalMentorCount} total)
+                          </span>
+                          <PremiumButton
+                            variant="glass"
+                            size="sm"
+                            disabled={mentorPage >= totalMentorPages || mentorsLoading}
+                            onClick={() => setMentorPage((p) => Math.min(totalMentorPages, p + 1))}
+                          >
+                            Next
+                          </PremiumButton>
+                        </div>
                       )}
                     </>
                   )}

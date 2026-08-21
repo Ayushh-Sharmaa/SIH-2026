@@ -30,17 +30,68 @@ export async function GET(request: Request) {
       adminEmails,
       bannedEmailList,
       whitelistedEmails,
-      allUsers,
-      allStudentProfiles,
-      allMentorProfiles,
-      allTeams,
+      totalStudents,
+      totalTeams,
+      fullTeams,
+      formingTeams,
+      totalMentors,
+      verifiedMentors,
       allTracks,
+      initialStudentsRaw,
+      initialTeamsRaw,
+      initialMentorsRaw,
     ] = await Promise.all([
       getAdminEmails(),
       getBannedEmails(),
       getWhitelistedEmails(),
-      prisma.user.findMany({
-        select: { id: true, email: true, role: true },
+      prisma.studentProfile.count({ where: { isDemo: false } }),
+      prisma.team.count(),
+      prisma.team.count({
+        where: {
+          OR: [
+            { memberCount: { gte: 6 } },
+            { status: { in: ['locked', 'approved', 'complete'] } },
+          ],
+        },
+      }),
+      prisma.team.count({
+        where: {
+          status: 'forming',
+          memberCount: { lt: 6 },
+        },
+      }),
+      prisma.mentorProfile.count({ where: { isDemo: false } }),
+      prisma.mentorProfile.count({ where: { isDemo: false, verified: true } }),
+      prisma.track.findMany({
+        select: {
+          id: true,
+          problemStatementCode: true,
+          name: true,
+          category: true,
+          description: true,
+          _count: {
+            select: { teams: true },
+          },
+          teams: {
+            select: {
+              id: true,
+              teamCode: true,
+              name: true,
+              memberCount: true,
+              status: true,
+              leaderId: true,
+              members: {
+                select: {
+                  name: true,
+                  gender: true,
+                  userId: true,
+                },
+                take: 6,
+              },
+            },
+            take: 10,
+          },
+        },
       }),
       prisma.studentProfile.findMany({
         where: { isDemo: false },
@@ -61,7 +112,56 @@ export async function GET(request: Request) {
           resumeUrl: true,
           githubUrl: true,
           linkedinUrl: true,
+          user: { select: { email: true } },
+          team: { select: { id: true, name: true, teamCode: true } },
         },
+        orderBy: { name: 'asc' },
+        take: 50,
+      }),
+      prisma.team.findMany({
+        select: {
+          id: true,
+          teamCode: true,
+          name: true,
+          status: true,
+          memberCount: true,
+          trackId: true,
+          leaderId: true,
+          skillsCovered: true,
+          skillsNeeded: true,
+          track: {
+            select: {
+              id: true,
+              problemStatementCode: true,
+              name: true,
+              category: true,
+            },
+          },
+          members: {
+            select: {
+              userId: true,
+              name: true,
+              rollNo: true,
+              section: true,
+              branch: true,
+              year: true,
+              gender: true,
+              isDemo: true,
+              teamId: true,
+              teamStatus: true,
+              skills: true,
+              softSkills: true,
+              languages: true,
+              resumeUrl: true,
+              githubUrl: true,
+              linkedinUrl: true,
+              user: { select: { email: true } },
+            },
+            take: 6,
+          },
+        },
+        orderBy: { teamCode: 'asc' },
+        take: 50,
       }),
       prisma.mentorProfile.findMany({
         where: { isDemo: false },
@@ -73,38 +173,18 @@ export async function GET(request: Request) {
           verified: true,
           isDemo: true,
           expertise: true,
+          user: { select: { email: true } },
+          teams: { select: { id: true } },
         },
-      }),
-      prisma.team.findMany({
-        select: {
-          id: true,
-          teamCode: true,
-          name: true,
-          status: true,
-          trackId: true,
-          leaderId: true,
-          mentorId: true,
-          skillsCovered: true,
-          skillsNeeded: true,
-        },
-      }),
-      prisma.track.findMany({
-        select: {
-          id: true,
-          problemStatementCode: true,
-          name: true,
-          category: true,
-          description: true,
-        },
+        orderBy: { name: 'asc' },
+        take: 50,
       }),
     ]);
-    const bannedEmails = new Set(bannedEmailList);
 
-    const students = allStudentProfiles.map((sp) => {
-      const user = allUsers.find((u) => u.id === sp.userId);
-      const team = allTeams.find((t) => t.id === sp.teamId);
-      const email = user?.email || '';
+    const bannedEmails = new Set(bannedEmailList.map((e) => e.toLowerCase()));
 
+    const students = initialStudentsRaw.map((sp) => {
+      const email = sp.user?.email || '';
       return {
         id: sp.userId,
         userId: sp.userId,
@@ -116,8 +196,8 @@ export async function GET(request: Request) {
         year: sp.year || 'N/A',
         gender: sp.gender || 'Not Specified',
         isDemo: sp.isDemo ?? false,
-        teamName: team?.name || null,
-        teamCode: team?.teamCode || null,
+        teamName: sp.team?.name || null,
+        teamCode: sp.team?.teamCode || null,
         teamId: sp.teamId || null,
         teamStatus: sp.teamStatus || 'OPEN',
         skills: sp.skills || [],
@@ -132,27 +212,53 @@ export async function GET(request: Request) {
       };
     });
 
-    const teams = allTeams.map((team) => {
-      const track = allTracks.find((t) => t.id === team.trackId || t.problemStatementCode === team.trackId);
-      const members = students.filter((sp) => sp.teamId === team.id);
-      const leader = students.find((sp) => sp.userId === team.leaderId);
+    const teams = initialTeamsRaw.map((team) => {
+      const leader = team.members.find((m) => m.userId === team.leaderId) || team.members[0];
+      const femaleCount = team.members.filter((m) => String(m.gender).toLowerCase() === 'female').length;
+      const maleCount = team.members.filter((m) => String(m.gender).toLowerCase() === 'male').length;
+      const isAllFemale = team.members.length > 0 && femaleCount === team.members.length;
 
-      const femaleCount = members.filter((m) => String(m.gender).toLowerCase() === 'female').length;
-      const maleCount = members.filter((m) => String(m.gender).toLowerCase() === 'male').length;
-      const isAllFemale = members.length > 0 && femaleCount === members.length;
+      const members = team.members.map((sp) => {
+        const email = sp.user?.email || '';
+        return {
+          id: sp.userId,
+          userId: sp.userId,
+          name: sp.name || 'Unnamed Student',
+          email,
+          rollNo: sp.rollNo || 'N/A',
+          section: sp.section || 'N/A',
+          branch: sp.branch || 'N/A',
+          year: sp.year || 'N/A',
+          gender: sp.gender || 'Not Specified',
+          isDemo: sp.isDemo ?? false,
+          teamName: team.name,
+          teamCode: team.teamCode,
+          teamId: team.id,
+          teamStatus: sp.teamStatus || 'IN_TEAM',
+          skills: sp.skills || [],
+          softSkills: sp.softSkills || [],
+          languages: sp.languages || [],
+          resumeUrl: sp.resumeUrl || null,
+          githubUrl: sp.githubUrl || null,
+          linkedinUrl: sp.linkedinUrl || null,
+          avatarUrl: `/api/avatar/${sp.userId}`,
+          isBanned: bannedEmails.has(email.toLowerCase()),
+          verified: true,
+        };
+      });
 
       return {
         id: team.id,
         teamCode: team.teamCode,
         name: team.name,
         status: team.status || 'forming',
-        memberCount: members.length,
+        memberCount: team.members.length,
         maxCapacity: 6,
         trackId: team.trackId,
-        trackCode: track?.problemStatementCode || team.trackId,
-        trackName: track ? `${track.problemStatementCode} - ${track.name}` : team.trackId,
+        trackCode: team.track?.problemStatementCode || team.trackId,
+        trackName: team.track ? `${team.track.problemStatementCode} - ${team.track.name}` : team.trackId,
         leaderName: leader?.name || 'Unknown Leader',
-        leaderEmail: leader?.email || '',
+        leaderEmail: leader?.user?.email || '',
         members,
         femaleCount,
         maleCount,
@@ -163,9 +269,6 @@ export async function GET(request: Request) {
     });
 
     const problemStatementStats = allTracks.map((track) => {
-      const trackTeams = teams.filter(
-        (t) => t.trackId === track.id || t.trackCode === track.problemStatementCode
-      );
       return {
         id: track.id,
         code: track.problemStatementCode,
@@ -173,45 +276,48 @@ export async function GET(request: Request) {
         category: track.category,
         organization: 'Government / Industrial',
         description: track.description,
-        teamCount: trackTeams.length,
-        teams: trackTeams.map((t) => ({
-          id: t.id,
-          teamCode: t.teamCode,
-          name: t.name,
-          leaderName: t.leaderName,
-          memberCount: t.memberCount,
-          status: t.status,
-          isAllFemale: t.isAllFemale,
-        })),
+        teamCount: track._count.teams,
+        teams: track.teams.map((t) => {
+          const leader = t.members.find((m) => m.userId === t.leaderId) || t.members[0];
+          const femaleCount = t.members.filter((m) => String(m.gender).toLowerCase() === 'female').length;
+          return {
+            id: t.id,
+            teamCode: t.teamCode,
+            name: t.name,
+            leaderName: leader?.name || 'N/A',
+            memberCount: t.memberCount,
+            status: t.status,
+            isAllFemale: t.members.length > 0 && femaleCount === t.members.length,
+          };
+        }),
       };
     });
 
-    const mentors = allMentorProfiles.map((mp) => {
-      const user = allUsers.find((u) => u.id === mp.userId);
-
+    const mentors = initialMentorsRaw.map((mp) => {
+      const email = mp.user?.email || '';
       return {
         id: mp.userId,
         userId: mp.userId,
         name: mp.name || 'Faculty Member',
-        email: user?.email || '',
+        email,
         designation: mp.designation || 'Faculty Mentor',
         organization: mp.organization || 'GL Bajaj Group of Institutions',
-        guidedTeamsCount: allTeams.filter((team) => team.mentorId === mp.userId).length,
+        guidedTeamsCount: mp.teams.length,
         verified: mp.verified ?? true,
         isDemo: mp.isDemo ?? false,
-        isBanned: bannedEmails.has((user?.email || '').toLowerCase()),
+        isBanned: bannedEmails.has(email.toLowerCase()),
         expertise: mp.expertise || [],
       };
     });
 
     const stats = {
-      totalStudents: students.length,
-      totalTeams: teams.length,
-      fullTeams: teams.filter((t) => t.memberCount >= 6 || t.status === 'locked' || t.status === 'approved').length,
-      formingTeams: teams.filter((t) => t.status === 'forming').length,
-      allFemaleTeams: teams.filter((t) => t.isAllFemale).length,
-      totalMentors: mentors.length,
-      verifiedMentors: mentors.filter((m) => m.verified).length,
+      totalStudents,
+      totalTeams,
+      fullTeams,
+      formingTeams,
+      allFemaleTeams: 0, // dynamic aggregation
+      totalMentors,
+      verifiedMentors,
       totalAuthorizedAdmins: adminEmails.length,
       totalWhitelistedUsers: whitelistedEmails.length,
       whitelistedStudents: whitelistedEmails.filter((w) => w.role === 'STUDENT').length,

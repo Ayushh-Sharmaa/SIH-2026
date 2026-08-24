@@ -136,7 +136,7 @@ export default function TracksPage() {
                     <Counter to={tracks.length} duration={1.4} />
                   </span>
                   <span className="text-xs font-bold uppercase tracking-[0.14em] text-muted">
-                    tracks listed
+                    themes listed
                   </span>
                 </div>
                 <div className="my-5 h-px bg-gradient-to-r from-[rgba(172,156,141,0.6)] to-transparent" />

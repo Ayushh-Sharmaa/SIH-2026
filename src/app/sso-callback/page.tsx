@@ -40,7 +40,11 @@ function CallbackBridge() {
           const data = await res.json().catch(() => ({}));
 
           if (res.ok) {
-            window.location.replace('/dashboard');
+            if (data.isOnboarded) {
+              window.location.replace('/dashboard');
+            } else {
+              window.location.replace('/onboarding');
+            }
             return;
           }
 
@@ -52,7 +56,7 @@ function CallbackBridge() {
           window.location.replace('/login?error=oauth_failed');
         } catch (err) {
           console.error('Sync error:', err);
-          window.location.replace('/dashboard');
+          window.location.replace('/onboarding');
         }
       };
 

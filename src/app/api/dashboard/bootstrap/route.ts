@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { checkUserRateLimit } from '@/lib/rateLimit';
 import { clearSessionCookie } from '@/lib/sessionCookie';
+import { sanitizeAvatarUrl } from '@/lib/avatar';
 import { logger } from '@/lib/logger';
 
 export async function GET(request: Request) {
@@ -142,7 +143,7 @@ export async function GET(request: Request) {
           verified: mentor.verified,
           bio: mentor.bio,
           linkedinUrl: mentor.linkedinUrl,
-          avatarUrl: mentor.avatarUrl,
+          avatarUrl: sanitizeAvatarUrl(mentor.avatarUrl, mentor.userId),
           contact: mentor.contact || null,
           identityComplete,
           expertiseComplete,
@@ -182,6 +183,8 @@ export async function GET(request: Request) {
     const openSeats = team ? Math.max(0, 6 - team.memberCount) : 6;
     const hasRecruitmentNotice = team ? team.recruitmentNotices.length > 0 : false;
 
+    const sanitizedStudentAvatar = sanitizeAvatarUrl(student.avatarUrl, student.userId);
+
     return NextResponse.json({
       success: true,
       role: 'STUDENT',
@@ -191,7 +194,7 @@ export async function GET(request: Request) {
         name: student.name,
         branch: student.branch,
         year: student.year,
-        avatarUrl: student.avatarUrl,
+        avatarUrl: sanitizedStudentAvatar,
         teamStatus: student.teamStatus,
         teamId: student.teamId,
       },
@@ -238,7 +241,7 @@ export async function GET(request: Request) {
         section: student.section,
         category: student.category,
         contact: student.contact,
-        avatarUrl: student.avatarUrl,
+        avatarUrl: sanitizedStudentAvatar,
       },
     });
   } catch (error) {

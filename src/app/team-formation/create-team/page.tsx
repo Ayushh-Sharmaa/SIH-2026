@@ -22,6 +22,7 @@ import {
 } from '@/components/motion';
 import { logger } from '@/lib/logger';
 import { userFacingMessage } from '@/lib/errors';
+import { QueryClient } from '@/lib/queryClient';
 
 interface Track {
   id: string;
@@ -68,9 +69,15 @@ export default function CreateTeamPage() {
   useEffect(() => {
     async function fetchTracks() {
       try {
-        const res = await fetch('/api/tracks');
-        const data = await res.json();
-        if (data.success) {
+        const data = await QueryClient.fetch<{ success: boolean; tracks: Track[] }>(
+          'sih_theme_list',
+          async () => {
+            const res = await fetch('/api/tracks');
+            return res.json();
+          },
+          { ttlMs: 300_000 }
+        );
+        if (data?.success && data.tracks) {
           setTracks(data.tracks);
           if (data.tracks.length > 0) {
             setTrackId(data.tracks[0].id);

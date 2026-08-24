@@ -190,12 +190,13 @@ export async function POST(request: Request) {
     }
 
     const assignedRole = whitelisted?.role || role;
-    const { user, token } = await syncClerkUser(email, clerkUser, assignedRole);
+    const { user, token, isOnboarded } = await syncClerkUser(email, clerkUser, assignedRole);
 
     const name = user.studentProfile?.name || user.mentorProfile?.name || deriveInitialDisplayName(clerkUser, email);
 
     const response = NextResponse.json({
       success: true,
+      isOnboarded,
       user: {
         id: user.id,
         email: user.email,

@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { checkUserRateLimit } from '@/lib/rateLimit';
+import { sanitizeAvatarUrl } from '@/lib/avatar';
 import { logger } from '@/lib/logger';
 
 export async function GET(
@@ -105,7 +106,7 @@ export async function GET(
         skills: m.skills,
         languages: m.languages,
         softSkills: m.softSkills,
-        avatarUrl: m.avatarUrl,
+        avatarUrl: sanitizeAvatarUrl(m.avatarUrl, m.userId),
         roleInTeam: m.roleInTeam,
         college: m.user.college,
         githubUrl: m.githubUrl,
@@ -146,7 +147,7 @@ export async function GET(
         reservedSeatForFemale,
         capacity: 6,
         whatsapp: (isMemberOfTeam || isMentorOfTeam || isAdmin) ? team.whatsapp : null,
-        logoUrl: team.logoUrl,
+        logoUrl: sanitizeAvatarUrl(team.logoUrl, team.id),
         skillsCovered: team.skillsCovered,
         skillsNeeded: team.skillsNeeded,
         trackId: team.trackId,
@@ -161,7 +162,7 @@ export async function GET(
               designation: team.mentor.designation,
               organization: team.mentor.organization,
               expertise: team.mentor.expertise,
-              avatarUrl: team.mentor.avatarUrl,
+              avatarUrl: sanitizeAvatarUrl(team.mentor.avatarUrl, team.mentor.userId),
               linkedinUrl: team.mentor.linkedinUrl,
               email: team.mentor.user?.email || null,
               contact: team.mentor.contact || null,

@@ -13,6 +13,7 @@ const LINK_GROUPS = [
   {
     title: 'Platform',
     links: [
+      { label: 'Events', href: '/events' },
       { label: 'Dashboard', href: '/dashboard' },
       { label: 'Problem Tracks', href: '/tracks' },
       { label: 'Browse Teammates', href: '/team-formation/browse-teammates' },
@@ -92,8 +93,8 @@ export default function Footer() {
             <div className="flex items-center gap-3">
               <span className="flex size-11 items-center justify-center rounded-2xl border border-[rgba(209,199,189,0.6)] bg-white/60 p-1.5">
                 <Image
-                  src="/Logo/GL-BAJAJ-LOGO-3.png"
-                  alt="GL Bajaj Group of Institutions"
+                  src="/Logo/NexaSphere Icon without Background.png"
+                  alt="Arena by NexaSphere"
                   width={32}
                   height={32}
                   className="object-contain"
@@ -101,7 +102,7 @@ export default function Footer() {
               </span>
               <span className="flex flex-col leading-none">
                 <span className="text-gradient-luxe text-lg font-extrabold tracking-tight">
-                  SIH@GLBGOI
+                  Arena
                 </span>
                 <span className="mt-1.5 text-label uppercase text-muted">
                   Powered by NexaSphere
@@ -109,8 +110,9 @@ export default function Footer() {
               </span>
             </div>
             <p className="mt-5 max-w-sm text-sm leading-relaxed text-muted">
-              The official Smart India Hackathon internal portal of GL Bajaj Group of
-              Institutions, Mathura — where teams form, mentors connect, and ideas take flight.
+              The multi-event hackathon platform of GL Bajaj Group of
+              Institutions, Mathura — where teams form, mentors connect, and
+              ideas take flight across every hackathon that matters.
             </p>
             <div className="mt-6 flex gap-2.5">
               {SOCIALS.map((s) => (
@@ -236,10 +238,10 @@ export default function Footer() {
           <div className="h-px w-full bg-gradient-to-r from-transparent via-[rgba(172,156,141,0.55)] to-transparent" />
           <div className="flex flex-col items-center justify-between gap-3 pt-6 sm:flex-row">
             <p className="text-xs text-muted">
-              © {new Date().getFullYear()} GL Bajaj Group of Institutions, Mathura.
+              &copy; {new Date().getFullYear()} GL Bajaj Group of Institutions, Mathura.
             </p>
             <p className="text-label uppercase text-muted">
-              Crafted by NexaSphere
+              Arena &mdash; Crafted by NexaSphere
             </p>
           </div>
         </Reveal>

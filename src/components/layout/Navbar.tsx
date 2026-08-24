@@ -12,6 +12,7 @@ import { useSession } from '@/lib/session';
 import { useUser } from '@clerk/nextjs';
 
 const NAV_LINKS = [
+  { name: 'Events', path: '/events' },
   { name: 'Dashboard', path: '/dashboard' },
   { name: 'Browse Teams', path: '/team-formation/browse-teams' },
   { name: 'Browse Teammates', path: '/team-formation/browse-teammates' },
@@ -237,10 +238,10 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
 
   const visibleLinks = NAV_LINKS.filter((link) => {
     if (user?.role === 'MENTOR') {
-      return link.path === '/dashboard' || link.path === '/tracks';
+      return link.path === '/events' || link.path === '/dashboard' || link.path === '/tracks';
     }
     if (user?.role === 'ADMIN') {
-      return link.path === '/dashboard';
+      return link.path === '/events' || link.path === '/dashboard';
     }
     return true;
   });
@@ -341,7 +342,7 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
             </span>
             <span className="flex flex-col leading-none">
               <span className="text-gradient-luxe text-sm font-extrabold tracking-tight">
-                SIH@GLBGOI
+                Arena
               </span>
               <span className="mt-1 text-label uppercase text-muted">
                 by NexaSphere

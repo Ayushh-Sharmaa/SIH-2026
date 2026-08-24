@@ -46,6 +46,24 @@ async function main() {
 
   await prisma.$transaction(keyUpserts);
   console.log('Mentor keys seeded successfully.');
+
+  // 3. Seed the SIH Internal 2026 event
+  await prisma.event.upsert({
+    where: { slug: 'sih-internal-2026' },
+    update: {},
+    create: {
+      name: 'SIH Internal 2026',
+      slug: 'sih-internal-2026',
+      tagline: 'GL Bajaj Smart India Hackathon — Internal Round',
+      description:
+        'The official internal round of Smart India Hackathon 2026 at GL Bajaj Group of Institutions, Mathura. Form balanced teams, close skill gaps, and match with verified faculty mentors before the national finale.',
+      startDate: new Date('2026-06-01T00:00:00.000Z'),
+      endDate: new Date('2026-12-31T00:00:00.000Z'),
+      isActive: true,
+      createdBy: 'system',
+    },
+  });
+  console.log('SIH Internal 2026 event seeded successfully.');
 }
 
 main()

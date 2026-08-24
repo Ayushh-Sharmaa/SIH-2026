@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { AnimatePresence, m } from 'framer-motion';
 import {
   ArrowUpRight,
+  Calendar,
   Check,
   ChevronDown,
   ChevronUp,
@@ -43,9 +44,10 @@ import { logger } from '@/lib/logger';
 import { userFacingMessage } from '@/lib/errors';
 import { QueryClient } from '@/lib/queryClient';
 
-type TabKey = 'access' | 'portal_access' | 'teams' | 'students' | 'ps_tracks' | 'mentors';
+type TabKey = 'events' | 'access' | 'portal_access' | 'teams' | 'students' | 'ps_tracks' | 'mentors';
 
 const TABS: { key: TabKey; label: string; blurb: string }[] = [
+  { key: 'events', label: 'Events', blurb: 'Create and manage hackathon events' },
   { key: 'access', label: 'Admin access', blurb: 'Grant or revoke console permissions' },
   { key: 'portal_access', label: 'Portal access', blurb: 'Whitelist external emails (@gmail.com, etc.) for Student or Mentor access' },
   { key: 'teams', label: 'Teams', blurb: 'Roster, status and disband controls' },
@@ -256,6 +258,20 @@ interface MentorData {
   expertise: string[];
 }
 
+interface EventData {
+  id: string;
+  name: string;
+  slug: string;
+  tagline: string | null;
+  description: string;
+  bannerUrl: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  isActive: boolean;
+  createdBy: string | null;
+  createdAt: string;
+}
+
 interface ConfirmState {
   title: string;
   body: string;
@@ -281,6 +297,17 @@ export default function AdminDashboardPage() {
 
   const [selectedStudent, setSelectedStudent] = useState<StudentData | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<TeamData | null>(null);
+
+  const [events, setEvents] = useState<EventData[]>([]);
+  const [eventSearch, setEventSearch] = useState('');
+  const [newEventName, setNewEventName] = useState('');
+  const [newEventSlug, setNewEventSlug] = useState('');
+  const [newEventTagline, setNewEventTagline] = useState('');
+  const [newEventDescription, setNewEventDescription] = useState('');
+  const [newEventStartDate, setNewEventStartDate] = useState('');
+  const [newEventEndDate, setNewEventEndDate] = useState('');
+  const [newEventIsActive, setNewEventIsActive] = useState(true);
+  const [creatingEvent, setCreatingEvent] = useState(false);
 
   const [newAdminEmail, setNewAdminEmail] = useState('');
   const [granting, setGranting] = useState(false);
@@ -357,16 +384,24 @@ export default function AdminDashboardPage() {
         QueryClient.invalidate('/api/admin/data');
       }
 
-      const res = await fetch('/api/admin/data', { cache: 'no-store' });
-      const data = await res.json();
+      const [adminRes, eventsRes] = await Promise.all([
+        fetch('/api/admin/data', { cache: 'no-store' }),
+        fetch('/api/events', { cache: 'no-store' }),
+      ]);
+      const data = await adminRes.json();
+      const eventsData = await eventsRes.json();
 
-      if (!res.ok) {
-        if (res.status === 401 || res.status === 403) {
+      if (!adminRes.ok) {
+        if (adminRes.status === 401 || adminRes.status === 403) {
           toast(data.error || 'Admin permissions required.', 'error');
           router.push('/login');
           return;
         }
         throw new Error(data.error || 'Failed to fetch admin data.');
+      }
+
+      if (eventsData.success) {
+        setEvents(eventsData.events || []);
       }
 
       QueryClient.set('/api/admin/data', data);
@@ -391,6 +426,90 @@ export default function AdminDashboardPage() {
     });
     return () => cancelAnimationFrame(handle);
   }, [fetchAdminData]);
+
+  const handleEventNameChange = (val: string) => {
+    setNewEventName(val);
+    const generated = val
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-');
+    setNewEventSlug(generated);
+  };
+
+  const handleCreateEvent = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!newEventName || !newEventSlug || !newEventDescription) return;
+
+    setCreatingEvent(true);
+    try {
+      const res = await fetch('/api/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newEventName,
+          slug: newEventSlug,
+          tagline: newEventTagline || undefined,
+          description: newEventDescription,
+          startDate: newEventStartDate || undefined,
+          endDate: newEventEndDate || undefined,
+          isActive: newEventIsActive,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to create event');
+
+      toast('Event created successfully!', 'success');
+      setNewEventName('');
+      setNewEventSlug('');
+      setNewEventTagline('');
+      setNewEventDescription('');
+      setNewEventStartDate('');
+      setNewEventEndDate('');
+      setNewEventIsActive(true);
+      fetchAdminData(false);
+    } catch (err) {
+      toast(userFacingMessage(err, 'Could not create event. Please try again.'), 'error');
+    } finally {
+      setCreatingEvent(false);
+    }
+  };
+
+  const handleToggleEventActive = async (eventId: string, currentActive: boolean) => {
+    setEvents((prev) =>
+      prev.map((ev) => (ev.id === eventId ? { ...ev, isActive: !currentActive } : ev))
+    );
+    try {
+      const res = await fetch('/api/events', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: eventId, isActive: !currentActive }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update event');
+      toast(`Event ${!currentActive ? 'activated' : 'deactivated'}.`, 'success');
+      fetchAdminData(false);
+    } catch (err) {
+      toast(userFacingMessage(err, 'Could not update event status.'), 'error');
+      fetchAdminData(false);
+    }
+  };
+
+  const handleDeleteEvent = async (eventId: string) => {
+    setEvents((prev) => prev.filter((ev) => ev.id !== eventId));
+    try {
+      const res = await fetch(`/api/events?id=${encodeURIComponent(eventId)}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to delete event');
+      toast('Event deleted successfully.', 'success');
+      fetchAdminData(false);
+    } catch (err) {
+      toast(userFacingMessage(err, 'Could not delete event.'), 'error');
+      fetchAdminData(false);
+    }
+  };
 
   const handleGrantAdminAccess = async (e: FormEvent) => {
     e.preventDefault();
@@ -844,6 +963,12 @@ export default function AdminDashboardPage() {
 
   const METRICS: { tab: TabKey; label: string; value: number; foot: string }[] = [
     {
+      tab: 'events',
+      label: 'Events',
+      value: events.length,
+      foot: `${events.filter((e) => e.isActive).length} active · ${events.length} total`,
+    },
+    {
       tab: 'students',
       label: 'Students',
       value: stats?.totalStudents || 0,
@@ -1036,6 +1161,226 @@ export default function AdminDashboardPage() {
                   transition={{ duration: DURATION.card, ease: EASE.outExpo }}
                   className="space-y-6"
                 >
+                  {activeTab === 'events' && (
+                    <>
+                      <Panel
+                        title="Create New Hackathon Event"
+                        description="Add a new event to the Arena platform. Each event will have its own dedicated page at /events/[slug]."
+                      >
+                        <form onSubmit={handleCreateEvent} className="space-y-4 max-w-2xl">
+                          <div className="grid gap-4 sm:grid-cols-2">
+                            <div>
+                              <label className="block text-caption font-bold text-muted mb-1.5">
+                                Event Name <span className="text-primary">*</span>
+                              </label>
+                              <input
+                                type="text"
+                                required
+                                placeholder="e.g. SIH Internal 2026"
+                                value={newEventName}
+                                onChange={(e) => handleEventNameChange(e.target.value)}
+                                className={CONTROL}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-caption font-bold text-muted mb-1.5">
+                                URL Slug <span className="text-primary">*</span> (lowercase, hyphens)
+                              </label>
+                              <input
+                                type="text"
+                                required
+                                placeholder="e.g. sih-internal-2026"
+                                value={newEventSlug}
+                                onChange={(e) =>
+                                  setNewEventSlug(
+                                    e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '')
+                                  )
+                                }
+                                className={CONTROL}
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-caption font-bold text-muted mb-1.5">
+                              Tagline (Optional)
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="e.g. GL Bajaj Smart India Hackathon — Internal Round"
+                              value={newEventTagline}
+                              onChange={(e) => setNewEventTagline(e.target.value)}
+                              className={CONTROL}
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-caption font-bold text-muted mb-1.5">
+                              Description <span className="text-primary">*</span>
+                            </label>
+                            <textarea
+                              required
+                              rows={3}
+                              placeholder="Detailed description of the hackathon event, target participants, and key details..."
+                              value={newEventDescription}
+                              onChange={(e) => setNewEventDescription(e.target.value)}
+                              className={`${CONTROL} resize-none`}
+                            />
+                          </div>
+
+                          <div className="grid gap-4 sm:grid-cols-2">
+                            <div>
+                              <label className="block text-caption font-bold text-muted mb-1.5">
+                                Start Date (Optional)
+                              </label>
+                              <input
+                                type="date"
+                                value={newEventStartDate}
+                                onChange={(e) => setNewEventStartDate(e.target.value)}
+                                className={CONTROL}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-caption font-bold text-muted mb-1.5">
+                                End Date (Optional)
+                              </label>
+                              <input
+                                type="date"
+                                value={newEventEndDate}
+                                onChange={(e) => setNewEventEndDate(e.target.value)}
+                                className={CONTROL}
+                              />
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-3 pt-2">
+                            <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-foreground">
+                              <input
+                                type="checkbox"
+                                checked={newEventIsActive}
+                                onChange={(e) => setNewEventIsActive(e.target.checked)}
+                                className="size-4 rounded accent-primary"
+                              />
+                              Publish event immediately (Active)
+                            </label>
+                          </div>
+
+                          <div className="pt-2">
+                            <PremiumButton
+                              type="submit"
+                              size="sm"
+                              loading={creatingEvent}
+                              magnetic={false}
+                            >
+                              Create Event
+                            </PremiumButton>
+                          </div>
+                        </form>
+                      </Panel>
+
+                      <Panel
+                        title={`All Events (${events.length})`}
+                        description="Manage active status, preview public pages, and remove events."
+                      >
+                        <div className="mb-4">
+                          <input
+                            type="search"
+                            placeholder="Search events by name, slug, or description..."
+                            value={eventSearch}
+                            onChange={(e) => setEventSearch(e.target.value)}
+                            className={`${CONTROL} max-w-md`}
+                          />
+                        </div>
+
+                        {events.length === 0 ? (
+                          <EmptyState
+                            icon={Calendar}
+                            title="No events yet"
+                            description="Create your first hackathon event using the form above."
+                          />
+                        ) : (
+                          <div className="space-y-3">
+                            {events
+                              .filter((ev) => {
+                                if (!eventSearch) return true;
+                                const q = eventSearch.toLowerCase();
+                                return (
+                                  ev.name.toLowerCase().includes(q) ||
+                                  ev.slug.toLowerCase().includes(q) ||
+                                  ev.description.toLowerCase().includes(q)
+                                );
+                              })
+                              .map((ev) => (
+                                <div
+                                  key={ev.id}
+                                  className="flex flex-col gap-3 rounded-2xl border border-[rgba(209,199,189,0.7)] bg-[rgba(248,246,242,0.5)] p-4 transition-colors hover:bg-[rgba(248,246,242,0.85)] sm:flex-row sm:items-center sm:justify-between"
+                                >
+                                  <div className="min-w-0 space-y-1">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <span className="font-bold text-sm text-foreground">
+                                        {ev.name}
+                                      </span>
+                                      <code className="rounded bg-[rgba(114,56,61,0.08)] px-1.5 py-0.5 font-mono text-[10px] text-primary">
+                                        /events/{ev.slug}
+                                      </code>
+                                      <Chip tone={ev.isActive ? 'primary' : 'neutral'}>
+                                        {ev.isActive ? 'Active' : 'Draft / Closed'}
+                                      </Chip>
+                                    </div>
+                                    {ev.tagline && (
+                                      <p className="text-caption text-primary font-medium">
+                                        {ev.tagline}
+                                      </p>
+                                    )}
+                                    <p className="text-caption text-muted line-clamp-2 max-w-2xl">
+                                      {ev.description}
+                                    </p>
+                                  </div>
+
+                                  <div className="flex shrink-0 items-center gap-2 pt-2 sm:pt-0">
+                                    <a
+                                      href={`/events/${ev.slug}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1 rounded-lg border border-[rgba(209,199,189,0.7)] bg-white/60 px-2.5 py-1.5 text-caption font-bold text-foreground hover:bg-white transition-colors"
+                                    >
+                                      View <ArrowUpRight className="size-3" />
+                                    </a>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleToggleEventActive(ev.id, ev.isActive)}
+                                      className={`rounded-lg border px-2.5 py-1.5 text-caption font-bold transition-colors ${
+                                        ev.isActive
+                                          ? 'border-[rgba(172,156,141,0.6)] bg-white/40 text-muted hover:bg-white'
+                                          : 'border-[rgba(114,56,61,0.25)] bg-[rgba(114,56,61,0.08)] text-primary hover:bg-[rgba(114,56,61,0.15)]'
+                                      }`}
+                                    >
+                                      {ev.isActive ? 'Deactivate' : 'Activate'}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setConfirmState({
+                                          title: `Delete event "${ev.name}"?`,
+                                          body: 'This will permanently remove the event from Arena.',
+                                          confirmLabel: 'Delete Event',
+                                          onConfirm: () => handleDeleteEvent(ev.id),
+                                        })
+                                      }
+                                      className="rounded-lg border border-red-200 bg-red-50/50 p-1.5 text-red-700 hover:bg-red-100 transition-colors"
+                                      aria-label={`Delete event ${ev.name}`}
+                                    >
+                                      <Trash2 className="size-3.5" />
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                          </div>
+                        )}
+                      </Panel>
+                    </>
+                  )}
+
                   {activeTab === 'access' && (
                     <>
                       <Panel

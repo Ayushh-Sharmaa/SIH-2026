@@ -177,8 +177,8 @@ export async function POST(request: Request) {
 
     if (!isCollege && !whitelisted) {
       return NextResponse.json(
-        { error: 'Access restricted: Please use your official GL Bajaj email ID or request portal access from an administrator.' },
-        { status: 403 }
+        { error: 'Please sign in with a valid email address.' },
+        { status: 400 }
       );
     }
 

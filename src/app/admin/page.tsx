@@ -1629,7 +1629,7 @@ export default function AdminDashboardPage() {
                               Portal Access Whitelist (Strictly Isolated from Admin Console)
                             </h3>
                             <p className="leading-relaxed text-body">
-                              By default, platform authentication is restricted to official college accounts (<span className="font-bold">@glbajajgroup.org</span>). Whitelisting an external email (e.g. <span className="font-bold">@gmail.com</span>, external evaluators, or guest mentors) grants login access to the portal as a <span className="font-bold text-primary">Student</span> or <span className="font-bold text-primary">Mentor</span>.
+                              Platform authentication is open to students and participants across all institutions. The Portal Access Whitelist allows administrators to pre-assign specific roles (such as verified <span className="font-bold text-primary">Mentor</span>) to guest evaluators or external members.
                             </p>
                             <p className="font-semibold text-muted pt-1">
                               Note: Whitelisting an account here will <span className="underline font-bold">NEVER</span> grant them Admin Dashboard access. Admin console permissions remain exclusively governed under the &ldquo;Admin access&rdquo; tab.

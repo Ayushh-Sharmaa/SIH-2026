@@ -50,7 +50,7 @@ export async function POST(request: Request) {
 
     if (!isAllowedCollegeEmail(email)) {
       recordAuthFailure(request, email);
-      return NextResponse.json({ error: 'Access restricted. Please use your official GL Bajaj email ID.' }, { status: 400 });
+      return NextResponse.json({ error: 'Please enter a valid email address.' }, { status: 400 });
     }
 
     const existingUser = await prisma.user.findUnique({

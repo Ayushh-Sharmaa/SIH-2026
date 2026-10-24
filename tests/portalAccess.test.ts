@@ -62,11 +62,14 @@ describe('Portal Access Whitelist Validation & Security Boundary', () => {
     assert.equal(invalidAction.success, false);
   });
 
-  test('enforces strict boundary between college domain and external domain', () => {
+  test('permits users from all institutions and domains while checking format', () => {
     assert.equal(isAllowedCollegeEmail('student@glbajajgroup.org'), true);
     assert.equal(isAllowedCollegeEmail('faculty@glbajajgroup.org'), true);
-    assert.equal(isAllowedCollegeEmail('guest@gmail.com'), false);
-    assert.equal(isAllowedCollegeEmail('mentor@yahoo.com'), false);
+    assert.equal(isAllowedCollegeEmail('student@iitd.ac.in'), true);
+    assert.equal(isAllowedCollegeEmail('guest@gmail.com'), true);
+    assert.equal(isAllowedCollegeEmail('mentor@yahoo.com'), true);
+    assert.equal(isAllowedCollegeEmail('invalid-email'), false);
+    assert.equal(isAllowedCollegeEmail(''), false);
   });
 
   test('guarantees portal whitelist does NOT grant superadmin privileges', () => {

@@ -1,16 +1,17 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { m } from 'framer-motion';
-import { Calendar, ArrowRight, Search } from 'lucide-react';
+import Image from 'next/image';
+import { Calendar, ArrowRight, Search, Users, Sparkles } from 'lucide-react';
 
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import Aurora from '@/components/motion/Aurora';
+import SpotlightCard from '@/components/motion/SpotlightCard';
 import Reveal, { RevealGroup, RevealItem } from '@/components/motion/Reveal';
 import SplitText from '@/components/motion/SplitText';
-import SpotlightCard from '@/components/motion/SpotlightCard';
 import { TiltCard } from '@/components/motion/Magnetic';
 import { EASE } from '@/components/motion/tokens';
 import { Container, Section } from '@/components/ui';
@@ -25,6 +26,9 @@ interface ArenaEvent {
   startDate: string | null;
   endDate: string | null;
   isActive: boolean;
+  organizer?: string;
+  teamSize?: string;
+  category?: string;
 }
 
 function EventCard({ event }: { event: ArenaEvent }) {
@@ -45,7 +49,8 @@ function EventCard({ event }: { event: ArenaEvent }) {
             href={`/events/${event.slug}`}
             className="surface-claymorphic group relative flex h-full flex-col gap-5 overflow-hidden p-6 sm:p-8 transition-shadow duration-400"
           >
-            <div className="flex items-center justify-between">
+            {/* Top row: Status Badge & Team Size / Date */}
+            <div className="flex items-center justify-between gap-2">
               <span
                 className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-caption font-bold ${
                   event.isActive
@@ -56,30 +61,69 @@ function EventCard({ event }: { event: ArenaEvent }) {
                 <span className={`size-1.5 rounded-full ${event.isActive ? 'bg-primary animate-pulse' : 'bg-muted'}`} />
                 {event.isActive ? 'Active' : 'Closed'}
               </span>
-              {dateRange && (
+
+              {event.teamSize ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-[rgba(209,199,189,0.75)] bg-white/70 px-2.5 py-0.5 text-caption font-bold text-foreground">
+                  <Users className="size-3 text-primary" />
+                  {event.teamSize}
+                </span>
+              ) : dateRange ? (
                 <span className="flex items-center gap-1 text-caption text-muted">
                   <Calendar className="size-3" />
                   {dateRange}
                 </span>
-              )}
+              ) : null}
             </div>
 
-            <div className="flex-1">
-              <h2 className="text-heading text-foreground font-extrabold tracking-tight">
-                {event.name}
-              </h2>
-              {event.tagline && (
-                <p className="mt-2 text-sm font-medium text-primary">{event.tagline}</p>
+            {/* Logo + Header */}
+            <div className="flex items-start gap-4">
+              {event.bannerUrl && (
+                <div className="relative flex size-16 shrink-0 items-center justify-center rounded-2xl border border-[rgba(209,199,189,0.7)] bg-white/80 p-2 shadow-sm transition-transform duration-300 group-hover:scale-105">
+                  <Image
+                    src={event.bannerUrl}
+                    alt={`${event.name} logo`}
+                    width={56}
+                    height={56}
+                    className="size-full object-contain"
+                  />
+                </div>
               )}
-              <p className="mt-3 text-sm leading-relaxed text-muted line-clamp-4">
+              <div className="min-w-0 flex-1">
+                <h2 className="text-heading text-foreground font-extrabold tracking-tight">
+                  {event.name}
+                </h2>
+                {event.tagline && (
+                  <p className="mt-1 text-xs font-semibold text-primary line-clamp-1">{event.tagline}</p>
+                )}
+                {event.organizer && (
+                  <p className="mt-0.5 text-[11px] font-medium text-muted line-clamp-1">{event.organizer}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Description */}
+            <div className="flex-1">
+              <p className="text-sm leading-relaxed text-muted line-clamp-4">
                 {event.description}
               </p>
             </div>
 
-            <span className="inline-flex items-center gap-2 text-label uppercase text-primary transition-all duration-300 group-hover:gap-3">
-              Enter Event
-              <ArrowRight className="size-3.5 transition-transform duration-300 group-hover:translate-x-1" />
-            </span>
+            {/* Bottom Meta & Action */}
+            <div className="pt-3 border-t border-[rgba(209,199,189,0.5)] flex items-center justify-between">
+              {event.category ? (
+                <span className="text-caption font-semibold text-muted flex items-center gap-1.5">
+                  <Sparkles className="size-3 text-primary" />
+                  {event.category.split('&')[0].trim()}
+                </span>
+              ) : (
+                <span className="text-caption text-muted">Open Event</span>
+              )}
+
+              <span className="inline-flex items-center gap-2 text-label uppercase text-primary font-bold transition-all duration-300 group-hover:gap-3">
+                Enter Event
+                <ArrowRight className="size-3.5 transition-transform duration-300 group-hover:translate-x-1" />
+              </span>
+            </div>
           </Link>
         </SpotlightCard>
       </TiltCard>

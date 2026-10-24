@@ -4,7 +4,27 @@ import { Suspense, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { useParams } from 'next/navigation';
 import { AnimatePresence, m, useScroll, useTransform } from 'framer-motion';
-import { ArrowLeft, Calendar } from 'lucide-react';
+import {
+  ArrowLeft,
+  Calendar,
+  Users,
+  MapPin,
+  Clock,
+  Sparkles,
+  ArrowRight,
+  CheckCircle2,
+  Award,
+  Gift,
+  ExternalLink,
+  MessageSquare,
+  Mail,
+  Phone,
+  Code2,
+  Terminal,
+  Check,
+  ChevronRight,
+  ShieldCheck,
+} from 'lucide-react';
 import Link from 'next/link';
 
 import Navbar from '@/components/layout/Navbar';
@@ -24,27 +44,23 @@ import { ALL_THEME_SETS, FAQS, SIH_MILESTONES } from '@/lib/content';
 import { FaqStructuredData } from '@/components/seo/StructuredData';
 import { Container, Section } from '@/components/ui';
 import MilestoneIcon from '@/components/MilestoneIcon';
+import type { ArenaEventDetail } from '@/lib/eventsData';
 
-interface ArenaEvent {
-  id: string;
-  name: string;
-  slug: string;
-  tagline: string | null;
-  description: string;
-  bannerUrl: string | null;
-  startDate: string | null;
-  endDate: string | null;
-  isActive: boolean;
-}
-
-const TOP_STATS = [
+const SIH_TOP_STATS = [
   { value: 17, suffix: '', label: 'Official Themes' },
   { value: 11, suffix: '', label: 'Timeline Phases' },
   { value: 6, suffix: '', label: 'Members per Team' },
   { value: 36, suffix: 'h', label: 'Grand Finale' },
 ];
 
-const HIGHLIGHTS = [
+const HUSTLE_TOP_STATS = [
+  { value: 2, suffix: '', label: 'Max Team Size' },
+  { value: 6, suffix: 'h', label: 'On-Campus Sprint' },
+  { value: 35, suffix: '%', label: 'Shortlisted to Finale' },
+  { value: 2, suffix: '', label: 'Event Rounds' },
+];
+
+const SIH_HIGHLIGHTS = [
   {
     title: 'Form the right team',
     desc: 'Browse students by track and skill, spot the gaps in your roster, and invite the people who close them.',
@@ -65,6 +81,57 @@ const HIGHLIGHTS = [
     href: '/tracks',
     cta: 'Explore tracks',
     path: 'M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01',
+  },
+];
+
+const HUSTLE_HIGHLIGHTS = [
+  {
+    title: 'Open Innovation Freedom',
+    desc: 'No predefined problem statements. Identify real-world friction and build creative, technology-driven solutions across any domain.',
+    href: '#domains',
+    cta: 'Explore domains',
+    icon: Sparkles,
+  },
+  {
+    title: 'Git & AI Tools Workshop',
+    desc: 'Master professional Git workflows, collaborative pull requests, and modern AI engineering tools during interactive hands-on sessions.',
+    href: '#rounds',
+    cta: 'View workshop details',
+    icon: Terminal,
+  },
+  {
+    title: 'Live Pitch & Industry Perks',
+    desc: 'Demo your working prototype before industry judges, earn official certificates, and take home custom event merchandise goodies.',
+    href: '#perks',
+    cta: 'See participant perks',
+    icon: Gift,
+  },
+];
+
+const HUSTLE_CARNIVAL_FAQS = [
+  {
+    q: 'Who is eligible to participate in Hustle Carnival?',
+    a: 'Hustle Carnival is open to all undergraduate students from B.Tech departments (including CSE, IT, ECE, AI/ML) as well as MBA students across all participating colleges.',
+  },
+  {
+    q: 'What is the team size requirement?',
+    a: 'Teams can consist of 1 to 2 members. Solo builders and duo partnerships are both fully permitted.',
+  },
+  {
+    q: 'Are there predefined problem statements?',
+    a: 'No. Hustle Carnival is an Open Innovation Buildathon. Participating teams are encouraged to choose their own problem statements, target challenges, and technical architecture.',
+  },
+  {
+    q: 'What are the submission requirements for Round 1?',
+    a: 'Teams must prepare and submit a PowerPoint Presentation (PPT) and a concise project video showcasing their concept, problem, architecture, and impact by 22 October 2026 at 2:00 PM IST. Teams should also share their project on LinkedIn with official hashtags #ellusion #hustlecarnival #glbajajmathura.',
+  },
+  {
+    q: 'How does Phase 2 confirmation work?',
+    a: 'Phase 1 results are announced on 23 October 2026 at 10:00 AM IST. The top ~35% shortlisted teams must confirm their participation by 23 October 2026 at 11:00 PM IST following payment instructions shared in the official WhatsApp group.',
+  },
+  {
+    q: 'What takes place during the Round 2 On-Campus Finale?',
+    a: 'Shortlisted teams will participate in an intensive 6-hour build sprint on 24 October 2026 (9:20 AM – 4:30 PM) at Block A & B, GL Bajaj Group of Institutions, Mathura, featuring mentor check-ins, a Git & AI Tools workshop, and live pitch demos.',
   },
 ];
 
@@ -112,12 +179,13 @@ export default function EventDetailPage() {
   const slug = params?.slug;
 
   const { status } = useSession();
-  const [event, setEvent] = useState<ArenaEvent | null>(null);
+  const [event, setEvent] = useState<ArenaEventDetail | null>(null);
   const [eventLoading, setEventLoading] = useState(true);
   const [eventNotFound, setEventNotFound] = useState(false);
 
   const [activeSet, setActiveSet] = useState(0);
   const [activePhase, setActivePhase] = useState(0);
+  const [activeRound, setActiveRound] = useState(0);
   const [liveStats, setLiveStats] = useState<{
     totalParticipants: number;
     teamsCount: number;
@@ -133,22 +201,43 @@ export default function EventDetailPage() {
     let active = true;
     fetch(`/api/events/${slug}`)
       .then((r) => {
-        if (r.status === 404) { if (active) setEventNotFound(true); return null; }
+        if (r.status === 404) {
+          if (active) setEventNotFound(true);
+          return null;
+        }
         return r.json();
       })
-      .then((d) => { if (active && d?.success) setEvent(d.event); })
+      .then((d) => {
+        if (active && d?.success) setEvent(d.event);
+      })
       .catch(() => {})
-      .finally(() => { if (active) setEventLoading(false); });
-    return () => { active = false; };
+      .finally(() => {
+        if (active) setEventLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, [slug]);
 
   useEffect(() => {
     let active = true;
     fetch('/api/statistics')
       .then((r) => r.json())
-      .then((d) => { if (active) { setLiveStats(d); setStatsLoading(false); } })
-      .catch(() => { if (active) { setStatsError(true); setStatsLoading(false); } });
-    return () => { active = false; };
+      .then((d) => {
+        if (active) {
+          setLiveStats(d);
+          setStatsLoading(false);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setStatsError(true);
+          setStatsLoading(false);
+        }
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   const heroRef = useRef<HTMLElement>(null);
@@ -158,8 +247,29 @@ export default function EventDetailPage() {
   const heroY = useTransform(scrollYProgress, [0, 1], [0, 90]);
   const heroFade = useTransform(scrollYProgress, [0, 0.75], [1, 0]);
 
+  const isHustleCarnival =
+    event?.slug === 'hustle-carnival-2026' ||
+    event?.slug === 'hustle-carnival' ||
+    Boolean(event?.rounds && event.rounds.length > 0);
+
   const phase = SIH_MILESTONES[activePhase];
-  const marqueeItems = ALL_THEME_SETS.flatMap((s) => s.themes.map((t) => t.name));
+  const marqueeItems = isHustleCarnival
+    ? [
+        'Hustle Beyond',
+        'Open Innovation Buildathon',
+        'AI & Machine Learning',
+        'Git & AI Tools Workshop',
+        'Web & Mobile Engineering',
+        'Block A & B, GL Bajaj',
+        'Club Ellusion',
+        'Prototype & Pitch',
+        'Exclusive Goodies & Merch',
+        'Industry Mentorship',
+        'Physical & E-Certificates',
+      ]
+    : ALL_THEME_SETS.flatMap((s) => s.themes.map((t) => t.name));
+
+  const topStats = isHustleCarnival ? HUSTLE_TOP_STATS : SIH_TOP_STATS;
 
   const bottomStats = [
     { value: liveStats?.totalParticipants ?? 0, suffix: '', label: 'Total Participants Registered' },
@@ -187,9 +297,7 @@ export default function EventDetailPage() {
         <div className="flex min-h-[60vh] flex-col items-center justify-center gap-6 px-4 text-center">
           <Calendar className="size-12 text-muted" />
           <h1 className="text-heading text-foreground">Event Not Found</h1>
-          <p className="text-sm text-muted max-w-sm">
-            This event does not exist or is no longer active.
-          </p>
+          <p className="text-sm text-muted max-w-sm">This event does not exist or is no longer active.</p>
           <Link
             href="/events"
             className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-on-accent"
@@ -240,20 +348,29 @@ export default function EventDetailPage() {
                 </Link>
               </m.div>
 
-              <m.span
+              <m.div
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.7, ease: EASE.outExpo }}
-                className="inline-flex items-center gap-2 rounded-full border border-[rgba(114,56,61,0.2)] bg-[rgba(255,255,255,0.6)] px-3.5 py-1.5 text-label uppercase text-primary backdrop-blur-md"
+                className="flex flex-wrap items-center gap-2"
               >
-                <span className="relative flex size-1.5">
-                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-60" />
-                  <span className="relative inline-flex size-1.5 rounded-full bg-primary" />
+                <span className="inline-flex items-center gap-2 rounded-full border border-[rgba(114,56,61,0.2)] bg-[rgba(255,255,255,0.7)] px-3.5 py-1.5 text-label uppercase text-primary backdrop-blur-md">
+                  <span className="relative flex size-1.5">
+                    <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-60" />
+                    <span className="relative inline-flex size-1.5 rounded-full bg-primary" />
+                  </span>
+                  {event.isActive ? 'Active Event' : 'Event'}
+                  {startYear ? ` · ${startYear}` : ''}
                 </span>
-                {event.isActive ? 'Active Event' : 'Event'}{startYear ? ` · ${startYear}` : ''}
-              </m.span>
 
-              <h1 className="mt-7 text-display text-foreground">
+                {event.organizer && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-[rgba(209,199,189,0.8)] bg-white/70 px-3 py-1 text-label uppercase text-muted">
+                    {event.organizer}
+                  </span>
+                )}
+              </m.div>
+
+              <h1 className="mt-6 text-display text-foreground">
                 <SplitText text={event.name} as="span" mode="word" delay={0.15} />
               </h1>
 
@@ -268,11 +385,38 @@ export default function EventDetailPage() {
                 </m.p>
               )}
 
+              {/* Event Metadata Chips */}
+              <m.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, delay: 0.5, ease: EASE.outExpo }}
+                className="mt-5 flex flex-wrap items-center gap-2.5"
+              >
+                {event.teamSize && (
+                  <span className="inline-flex items-center gap-1.5 rounded-xl border border-[rgba(209,199,189,0.8)] bg-white/80 px-3 py-1.5 text-xs font-bold text-foreground">
+                    <Users className="size-3.5 text-primary" />
+                    Team Size: {event.teamSize}
+                  </span>
+                )}
+                {event.registrationDeadline && (
+                  <span className="inline-flex items-center gap-1.5 rounded-xl border border-[rgba(209,199,189,0.8)] bg-white/80 px-3 py-1.5 text-xs font-bold text-foreground">
+                    <Clock className="size-3.5 text-primary" />
+                    Registration Deadline: {event.registrationDeadline}
+                  </span>
+                )}
+                {event.venue && (
+                  <span className="inline-flex items-center gap-1.5 rounded-xl border border-[rgba(209,199,189,0.8)] bg-white/80 px-3 py-1.5 text-xs font-bold text-foreground">
+                    <MapPin className="size-3.5 text-primary" />
+                    {event.venue}
+                  </span>
+                )}
+              </m.div>
+
               <m.p
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.6, ease: EASE.outExpo }}
-                className="mt-6 max-w-[52ch] text-base leading-relaxed text-muted sm:text-lg"
+                className="mt-6 max-w-[56ch] text-base leading-relaxed text-muted sm:text-lg"
               >
                 {event.description}
               </m.p>
@@ -281,22 +425,35 @@ export default function EventDetailPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.78, ease: EASE.outExpo }}
-                className="mt-9 flex flex-wrap items-center gap-3"
+                className="mt-8 flex flex-wrap items-center gap-3.5"
               >
-                {status === 'authenticated' ? (
+                {isHustleCarnival && event.whatsappGroup ? (
+                  <>
+                    <a
+                      href={event.whatsappGroup}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2.5 rounded-xl bg-primary px-6 py-3.5 text-sm font-bold text-on-accent shadow-e2 transition-all duration-300 hover:brightness-105"
+                    >
+                      <MessageSquare className="size-4" />
+                      Join Official WhatsApp Group
+                      <ExternalLink className="size-3.5 opacity-80" />
+                    </a>
+
+                    <PremiumButton href="/team-formation/find-teammates" variant="glass" size="lg">
+                      Find Teammates (1–2)
+                    </PremiumButton>
+                  </>
+                ) : status === 'authenticated' ? (
                   <PremiumButton href="/dashboard" size="lg">
                     Go to Dashboard
-                    <svg viewBox="0 0 24 24" fill="none" className="size-4">
-                      <path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
+                    <ArrowRight className="size-4" />
                   </PremiumButton>
                 ) : (
                   <>
                     <PremiumButton href="/login" size="lg">
                       Create your account
-                      <svg viewBox="0 0 24 24" fill="none" className="size-4">
-                        <path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
+                      <ArrowRight className="size-4" />
                     </PremiumButton>
                     <PremiumButton href="/login" variant="glass" size="lg">
                       Enter portal
@@ -311,33 +468,99 @@ export default function EventDetailPage() {
                 transition={{ duration: 0.8, delay: 1 }}
                 className="mt-6 text-xs text-muted"
               >
-                Official problem statements are released closer to the event. All 17 themes are
-                already configured here.
+                {isHustleCarnival
+                  ? 'Round 1 Submission Due: 22 October 2026, 2:00 PM IST · Top ~35% qualify for the on-campus finale.'
+                  : 'Official problem statements are released closer to the event. All 17 themes are already configured here.'}
               </m.p>
             </div>
 
             <div className="lg:col-span-5">
-              {/* Orbit visual */}
+              {/* Orbit visual with dynamic crest */}
               <div className="relative mx-auto flex aspect-square w-full max-w-[26rem] items-center justify-center">
-                <div aria-hidden className="absolute inset-6 rounded-full bg-[radial-gradient(circle,rgba(172,156,141,0.45),transparent_66%)] blur-2xl" />
-                <m.div aria-hidden className="absolute inset-2 rounded-full border border-dashed border-[rgba(172,156,141,0.55)]" animate={reduced ? undefined : { rotate: 360 }} transition={{ duration: 48, repeat: Infinity, ease: 'linear' }} />
-                <m.div aria-hidden className="absolute inset-[18%] rounded-full border border-[rgba(114,56,61,0.22)]" animate={reduced ? undefined : { rotate: -360 }} transition={{ duration: 32, repeat: Infinity, ease: 'linear' }} />
-                <m.div aria-hidden className="absolute inset-[34%] rounded-full border border-dotted border-[rgba(114,56,61,0.38)]" animate={reduced ? undefined : { rotate: 360 }} transition={{ duration: 18, repeat: Infinity, ease: 'linear' }} />
-                <m.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1, delay: 0.35, ease: EASE.outExpo }} className="relative flex size-40 items-center justify-center surface-spatial">
-                  <m.div animate={reduced ? undefined : { y: [0, -8, 0] }} transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}>
-                    <Image src="/Logo/GL-BAJAJ-LOGO-3.png" alt="GL Bajaj Group of Institutions crest" width={92} height={92} className="object-contain" priority />
+                <div
+                  aria-hidden
+                  className="absolute inset-6 rounded-full bg-[radial-gradient(circle,rgba(172,156,141,0.45),transparent_66%)] blur-2xl"
+                />
+                <m.div
+                  aria-hidden
+                  className="absolute inset-2 rounded-full border border-dashed border-[rgba(172,156,141,0.55)]"
+                  animate={reduced ? undefined : { rotate: 360 }}
+                  transition={{ duration: 48, repeat: Infinity, ease: 'linear' }}
+                />
+                <m.div
+                  aria-hidden
+                  className="absolute inset-[18%] rounded-full border border-[rgba(114,56,61,0.22)]"
+                  animate={reduced ? undefined : { rotate: -360 }}
+                  transition={{ duration: 32, repeat: Infinity, ease: 'linear' }}
+                />
+                <m.div
+                  aria-hidden
+                  className="absolute inset-[34%] rounded-full border border-dotted border-[rgba(114,56,61,0.38)]"
+                  animate={reduced ? undefined : { rotate: 360 }}
+                  transition={{ duration: 18, repeat: Infinity, ease: 'linear' }}
+                />
+                <m.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 1, delay: 0.35, ease: EASE.outExpo }}
+                  className="relative flex size-44 items-center justify-center surface-spatial p-3"
+                >
+                  <m.div
+                    animate={reduced ? undefined : { y: [0, -8, 0] }}
+                    transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+                    className="relative size-full flex items-center justify-center"
+                  >
+                    <Image
+                      src={
+                        event.bannerUrl ||
+                        (isHustleCarnival ? '/events/hustle-carnival.png' : '/Logo/GL-BAJAJ-LOGO-3.png')
+                      }
+                      alt={`${event.name} Crest`}
+                      width={128}
+                      height={128}
+                      className="size-full object-contain"
+                      priority
+                    />
                   </m.div>
                 </m.div>
-                {[
-                  { label: 'Teams', top: '4%', left: '50%', delay: 0.7 },
-                  { label: 'Mentors', top: '48%', left: '-2%', delay: 0.85 },
-                  { label: 'Tracks', top: '78%', left: '76%', delay: 1 },
-                ].map((chip) => (
-                  <m.span key={chip.label} initial={{ opacity: 0, scale: 0.6, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.7, delay: chip.delay, ease: EASE.outExpo }} style={{ top: chip.top, left: chip.left }} className="absolute -translate-x-1/2 px-3.5 py-1.5 text-label uppercase text-primary surface-glassmorphic">
-                    <m.span className="block" animate={reduced ? undefined : { y: [0, -5, 0] }} transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: chip.delay }}>{chip.label}</m.span>
+
+                {(isHustleCarnival
+                  ? [
+                      { label: 'Buildathon', top: '4%', left: '50%', delay: 0.7 },
+                      { label: 'Git & AI Tools', top: '48%', left: '-2%', delay: 0.85 },
+                      { label: 'Open Innovation', top: '78%', left: '76%', delay: 1 },
+                    ]
+                  : [
+                      { label: 'Teams', top: '4%', left: '50%', delay: 0.7 },
+                      { label: 'Mentors', top: '48%', left: '-2%', delay: 0.85 },
+                      { label: 'Tracks', top: '78%', left: '76%', delay: 1 },
+                    ]
+                ).map((chip) => (
+                  <m.span
+                    key={chip.label}
+                    initial={{ opacity: 0, scale: 0.6, y: 12 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    transition={{ duration: 0.7, delay: chip.delay, ease: EASE.outExpo }}
+                    style={{ top: chip.top, left: chip.left }}
+                    className="absolute -translate-x-1/2 px-3.5 py-1.5 text-label uppercase text-primary surface-glassmorphic whitespace-nowrap"
+                  >
+                    <m.span
+                      className="block"
+                      animate={reduced ? undefined : { y: [0, -5, 0] }}
+                      transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: chip.delay }}
+                    >
+                      {chip.label}
+                    </m.span>
                   </m.span>
                 ))}
-                <m.div initial={{ opacity: 0, scale: 0 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, delay: 1.2, ease: EASE.outExpo }} aria-hidden className="absolute right-[10%] top-[10%] flex items-center gap-1.5 rounded-full border border-[rgba(114,56,61,0.2)] bg-[rgba(255,255,255,0.75)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-primary shadow-[0_4px_16px_rgba(50,45,41,0.1)] backdrop-blur-md">
+
+                <m.div
+                  initial={{ opacity: 0, scale: 0 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5, delay: 1.2, ease: EASE.outExpo }}
+                  aria-hidden
+                  className="absolute right-[8%] top-[8%] flex items-center gap-1.5 rounded-full border border-[rgba(114,56,61,0.2)] bg-[rgba(255,255,255,0.75)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-primary shadow-[0_4px_16px_rgba(50,45,41,0.1)] backdrop-blur-md"
+                >
                   <span className="relative flex size-1.5">
                     <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-60" />
                     <span className="relative inline-flex size-1.5 rounded-full bg-primary" />
@@ -348,7 +571,14 @@ export default function EventDetailPage() {
             </div>
           </m.div>
 
-          <m.a href="#highlights" aria-label="Scroll to content" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.6, duration: 0.8 }} className="group absolute inset-x-0 bottom-8 z-20 mx-auto flex w-fit flex-col items-center gap-2">
+          <m.a
+            href="#highlights"
+            aria-label="Scroll to content"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.6, duration: 0.8 }}
+            className="group absolute inset-x-0 bottom-8 z-20 mx-auto flex w-fit flex-col items-center gap-2"
+          >
             <span className="text-label uppercase text-muted transition-colors group-hover:text-primary">Scroll</span>
             <span className="flex h-9 w-[22px] justify-center rounded-full border border-[rgba(172,156,141,0.6)] pt-2">
               <span className="scroll-hint-dot block size-1 rounded-full bg-primary" />
@@ -357,7 +587,10 @@ export default function EventDetailPage() {
         </section>
 
         {/* ─────────────── MARQUEE ─────────────── */}
-        <section aria-label="Official SIH theme names" className="relative overflow-hidden border-y border-line bg-pearl/35 py-5">
+        <section
+          aria-label={isHustleCarnival ? 'Hustle Carnival highlights' : 'Official SIH theme names'}
+          className="relative overflow-hidden border-y border-line bg-pearl/35 py-5"
+        >
           <div className="marquee-root marquee-mask">
             <div className="marquee-track" style={{ ['--marquee-duration' as string]: '52s' }}>
               {[0, 1].map((copy) => (
@@ -378,35 +611,60 @@ export default function EventDetailPage() {
         <Section id="highlights" tone="mist" rhythm="spacious" pattern="dots">
           <Container width="wide">
             <Reveal className="max-w-2xl">
-              <span className="text-label uppercase text-primary">What you get</span>
+              <span className="text-label uppercase text-primary">
+                {isHustleCarnival ? 'Why Hustle Carnival' : 'What you get'}
+              </span>
               <h2 className="mt-4 text-heading text-foreground">
-                <SplitText text="Everything the internal round demands, in one place." as="span" onScroll />
+                <SplitText
+                  text={
+                    isHustleCarnival
+                      ? 'Hustle Beyond. Build Beyond. Innovate Without Limits.'
+                      : 'Everything the internal round demands, in one place.'
+                  }
+                  as="span"
+                  onScroll
+                />
               </h2>
             </Reveal>
+
             <RevealGroup stagger={0.1} className="mt-14 grid gap-6 md:grid-cols-3">
-              {HIGHLIGHTS.map((item) => (
-                <RevealItem key={item.title}>
-                  <TiltCard className="h-full">
-                    <SpotlightCard className="h-full rounded-3xl">
-                      <a href={item.href} className="surface-claymorphic group relative flex h-full flex-col gap-4 overflow-hidden p-5 sm:p-7 transition-shadow duration-400">
-                        <span className="flex size-12 items-center justify-center rounded-2xl border border-[rgba(114,56,61,0.18)] bg-[rgba(114,56,61,0.07)] text-primary transition-transform duration-400 group-hover:scale-105">
-                          <svg viewBox="0 0 24 24" fill="none" className="size-5">
-                            <path d={item.path} stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                        </span>
-                        <h3 className="text-feature text-foreground">{item.title}</h3>
-                        <p className="text-sm leading-relaxed text-muted">{item.desc}</p>
-                        <span className="mt-auto inline-flex items-center gap-1.5 pt-2 text-label uppercase text-primary">
-                          {item.cta}
-                          <svg viewBox="0 0 24 24" fill="none" className="size-3.5 transition-transform duration-300 group-hover:translate-x-1">
-                            <path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                        </span>
-                      </a>
-                    </SpotlightCard>
-                  </TiltCard>
-                </RevealItem>
-              ))}
+              {(isHustleCarnival ? HUSTLE_HIGHLIGHTS : SIH_HIGHLIGHTS).map((item) => {
+                const Icon = 'icon' in item ? item.icon : null;
+                return (
+                  <RevealItem key={item.title}>
+                    <TiltCard className="h-full">
+                      <SpotlightCard className="h-full rounded-3xl">
+                        <a
+                          href={item.href}
+                          className="surface-claymorphic group relative flex h-full flex-col gap-4 overflow-hidden p-5 sm:p-7 transition-shadow duration-400"
+                        >
+                          <span className="flex size-12 items-center justify-center rounded-2xl border border-[rgba(114,56,61,0.18)] bg-[rgba(114,56,61,0.07)] text-primary transition-transform duration-400 group-hover:scale-105">
+                            {Icon ? (
+                              <Icon className="size-5" />
+                            ) : (
+                              <svg viewBox="0 0 24 24" fill="none" className="size-5">
+                                <path
+                                  d={(item as any).path}
+                                  stroke="currentColor"
+                                  strokeWidth="1.7"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
+                            )}
+                          </span>
+                          <h3 className="text-feature text-foreground">{item.title}</h3>
+                          <p className="text-sm leading-relaxed text-muted">{item.desc}</p>
+                          <span className="mt-auto inline-flex items-center gap-1.5 pt-2 text-label uppercase text-primary">
+                            {item.cta}
+                            <ArrowRight className="size-3.5 transition-transform duration-300 group-hover:translate-x-1" />
+                          </span>
+                        </a>
+                      </SpotlightCard>
+                    </TiltCard>
+                  </RevealItem>
+                );
+              })}
             </RevealGroup>
           </Container>
         </Section>
@@ -415,7 +673,7 @@ export default function EventDetailPage() {
         <Section tone="dune" rhythm="compact" className="overflow-hidden">
           <Container width="wide" className="space-y-12">
             <RevealGroup stagger={0.08} className="flex flex-wrap justify-center gap-x-12 gap-y-8 md:gap-x-16">
-              {TOP_STATS.map((stat) => (
+              {topStats.map((stat) => (
                 <RevealItem key={stat.label} className="w-[45%] sm:w-[20%] text-center min-w-[140px]">
                   <p className="text-4xl font-extrabold tracking-[-0.03em] text-primary sm:text-5xl">
                     <Counter to={stat.value} suffix={stat.suffix} />
@@ -424,7 +682,9 @@ export default function EventDetailPage() {
                 </RevealItem>
               ))}
             </RevealGroup>
+
             <div className="surface-maximalist max-w-4xl mx-auto my-6" />
+
             <RevealGroup stagger={0.08} className="flex flex-wrap justify-center gap-x-10 gap-y-8 md:gap-x-14">
               {bottomStats.map((stat) => (
                 <RevealItem key={stat.label} className="w-[45%] sm:w-[16%] text-center min-w-[130px]">
@@ -444,116 +704,419 @@ export default function EventDetailPage() {
           </Container>
         </Section>
 
-        {/* ─────────────── TIMELINE ─────────────── */}
-        <Section tone="linen" rhythm="default" pattern="grid">
+        {/* ─────────────── TIMELINE & ROUNDS ─────────────── */}
+        <Section id="rounds" tone="linen" rhythm="default" pattern="grid">
           <Container width="wide">
             <Reveal className="max-w-2xl">
-              <span className="text-label uppercase text-primary">Milestone roadmap</span>
-              <h2 className="mt-4 text-heading text-foreground">The road to the Grand Finale</h2>
+              <span className="text-label uppercase text-primary">Event Structure &amp; Rounds</span>
+              <h2 className="mt-4 text-heading text-foreground">
+                {isHustleCarnival ? 'From Idea to Working Prototype' : 'The road to the Grand Finale'}
+              </h2>
               <p className="mt-4 text-sm leading-relaxed text-muted">
-                Eleven official phases, from SPOC registration in June through to the 36-hour national finale in December.
+                {isHustleCarnival
+                  ? 'A two-phase hybrid buildathon: online video & presentation submission followed by an intensive 6-hour on-campus finale.'
+                  : 'Eleven official phases, from SPOC registration in June through to the 36-hour national finale in December.'}
               </p>
             </Reveal>
 
-            <div className="mt-14 grid gap-8 lg:grid-cols-12">
-              <Reveal direction="right" className="lg:col-span-5">
-                <div className="flex max-h-[30rem] flex-col gap-1.5 overflow-y-auto pr-2" data-lenis-prevent>
-                  {SIH_MILESTONES.map((milestone, i) => {
-                    const isActive = i === activePhase;
+            {isHustleCarnival && event.rounds && event.rounds.length > 0 ? (
+              <div className="mt-14 space-y-10">
+                {/* Rounds grid */}
+                <div className="grid gap-8 lg:grid-cols-2">
+                  {event.rounds.map((round, idx) => (
+                    <TiltCard key={round.phase} className="h-full">
+                      <SpotlightCard className="h-full rounded-3xl">
+                        <div className="surface-claymorphic flex h-full flex-col p-6 sm:p-8">
+                          <div className="flex items-center justify-between gap-2 border-b border-[rgba(209,199,189,0.6)] pb-4">
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-[rgba(114,56,61,0.25)] bg-[rgba(114,56,61,0.08)] px-3 py-1 text-xs font-bold text-primary">
+                              {round.phase}
+                            </span>
+                            <span className="rounded-full border border-[rgba(209,199,189,0.7)] bg-white/70 px-3 py-0.5 text-xs font-semibold text-muted">
+                              {round.mode}
+                            </span>
+                          </div>
+
+                          <h3 className="mt-5 text-title text-foreground font-extrabold">{round.title}</h3>
+
+                          <p className="mt-2 text-xs font-semibold text-primary">{round.date}</p>
+
+                          <p className="mt-4 text-sm leading-relaxed text-muted">{round.description}</p>
+
+                          {round.highlights && (
+                            <ul className="mt-6 space-y-2.5 border-t border-[rgba(209,199,189,0.5)] pt-5">
+                              {round.highlights.map((h, i) => (
+                                <li key={i} className="flex items-start gap-2.5 text-xs text-foreground">
+                                  <Check className="size-4 shrink-0 text-primary mt-0.5" />
+                                  <span>{h}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      </SpotlightCard>
+                    </TiltCard>
+                  ))}
+                </div>
+
+                {/* Important Deadlines Table */}
+                <div className="surface-liquid-glass rounded-3xl p-6 sm:p-8">
+                  <h4 className="text-feature text-foreground font-extrabold flex items-center gap-2">
+                    <Calendar className="size-5 text-primary" />
+                    Key Milestones &amp; Critical Deadlines
+                  </h4>
+                  <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    {[
+                      {
+                        label: 'Final PPT & Video Submission',
+                        time: '22 October 2026, 2:00 PM',
+                        badge: 'Round 1 Submission',
+                      },
+                      {
+                        label: 'Phase 1 Results Declaration',
+                        time: '23 October 2026, 10:00 AM',
+                        badge: 'Top ~35% Shortlist',
+                      },
+                      {
+                        label: 'Phase 2 Confirmation Deadline',
+                        time: '23 October 2026, 11:00 PM',
+                        badge: 'Payment & Slot Booking',
+                      },
+                      {
+                        label: 'On-Campus Finale Sprint',
+                        time: '24 October 2026, 9:20 AM – 4:30 PM',
+                        badge: 'Block A & B, GL Bajaj',
+                      },
+                    ].map((m, i) => (
+                      <div
+                        key={i}
+                        className="rounded-2xl border border-[rgba(209,199,189,0.7)] bg-white/70 p-4 transition-colors"
+                      >
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-primary">{m.badge}</span>
+                        <p className="mt-1.5 text-sm font-bold text-foreground">{m.label}</p>
+                        <p className="mt-1 text-xs text-muted flex items-center gap-1">
+                          <Clock className="size-3 text-primary" />
+                          {m.time}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-14 grid gap-8 lg:grid-cols-12">
+                <Reveal direction="right" className="lg:col-span-5">
+                  <div className="flex max-h-[30rem] flex-col gap-1.5 overflow-y-auto pr-2" data-lenis-prevent>
+                    {SIH_MILESTONES.map((milestone, i) => {
+                      const isActive = i === activePhase;
+                      return (
+                        <button
+                          key={milestone.id}
+                          onClick={() => setActivePhase(i)}
+                          aria-current={isActive}
+                          className="relative flex items-center gap-3.5 rounded-xl px-4 py-3 text-left transition-colors duration-250"
+                        >
+                          {isActive && (
+                            <m.span
+                              layoutId="phasePill"
+                              transition={SPRING.snappy}
+                              className="absolute inset-0 surface-skeuomorphic"
+                            />
+                          )}
+                          <span
+                            className={`relative z-10 flex size-8 shrink-0 items-center justify-center rounded-lg border text-caption font-bold transition-colors duration-250 ${
+                              isActive
+                                ? 'border-[rgba(114,56,61,0.3)] bg-[rgba(114,56,61,0.1)] text-primary'
+                                : 'border-[rgba(209,199,189,0.7)] bg-white/40 text-muted'
+                            }`}
+                          >
+                            {String(milestone.id).padStart(2, '0')}
+                          </span>
+                          <span className="relative z-10 flex min-w-0 flex-col">
+                            <span
+                              className={`truncate text-sm font-bold transition-colors duration-250 ${
+                                isActive ? 'text-foreground' : 'text-muted'
+                              }`}
+                            >
+                              {milestone.title}
+                            </span>
+                            <span className="text-label uppercase text-muted">{milestone.period}</span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </Reveal>
+
+                <Reveal direction="left" delay={0.1} className="lg:col-span-7">
+                  <div className="surface-liquid-glass relative min-h-[19rem] overflow-hidden p-5 sm:p-8">
+                    <AnimatePresence mode="wait">
+                      <m.div
+                        key={phase.id}
+                        initial={{ opacity: 0, y: 16, filter: 'blur(6px)' }}
+                        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                        exit={{ opacity: 0, y: -12, filter: 'blur(6px)' }}
+                        transition={{ duration: 0.4, ease: EASE.outExpo }}
+                      >
+                        <div className="flex items-center gap-3.5">
+                          <span className="flex size-12 items-center justify-center rounded-2xl border border-[rgba(114,56,61,0.18)] bg-[rgba(114,56,61,0.07)] text-primary">
+                            <MilestoneIcon id={phase.id} className="size-5" />
+                          </span>
+                          <div>
+                            <span className="text-label uppercase text-primary">{phase.phase}</span>
+                            <h3 className="text-feature text-foreground">{phase.title}</h3>
+                          </div>
+                        </div>
+                        <p className="mt-6 text-sm leading-relaxed text-muted">{phase.desc}</p>
+                        <div className="surface-sunken mt-7 flex items-center justify-between rounded-xl px-4 py-3">
+                          <span className="text-xs text-muted">
+                            Expected&nbsp;<strong className="font-bold text-foreground">{phase.period}</strong>
+                          </span>
+                          <span className="text-label uppercase text-primary">
+                            Phase {phase.id} / {SIH_MILESTONES.length}
+                          </span>
+                        </div>
+                        <div className="mt-4 h-1 overflow-hidden rounded-full bg-[rgba(172,156,141,0.25)]">
+                          <m.div
+                            className="h-full rounded-full bg-gradient-to-r from-primary to-[#ac9c8d]"
+                            initial={{ scaleX: 0 }}
+                            animate={{ scaleX: (activePhase + 1) / SIH_MILESTONES.length }}
+                            transition={{ duration: 0.6, ease: EASE.outExpo }}
+                            style={{ transformOrigin: 'left' }}
+                          />
+                        </div>
+                      </m.div>
+                    </AnimatePresence>
+                  </div>
+                </Reveal>
+              </div>
+            )}
+          </Container>
+        </Section>
+
+        {/* ─────────────── THEMES / DOMAINS ─────────────── */}
+        <Section id="domains" tone="vellum" rhythm="spacious" className="overflow-hidden">
+          <Aurora variant="taupe" spotlight={false} />
+          <Container width="wide" className="relative">
+            <Reveal className="max-w-2xl">
+              <span className="text-label uppercase text-primary">
+                {isHustleCarnival ? 'Open Innovation Domains' : 'Themes & domains'}
+              </span>
+              <h2 className="mt-4 text-heading text-foreground">
+                {isHustleCarnival ? 'Choose Your Domain. Solve Real Friction.' : 'All 17 official SIH tracks'}
+              </h2>
+              <p className="mt-4 text-sm leading-relaxed text-muted">
+                {isHustleCarnival
+                  ? 'There are no predefined problem statements. Teams have total freedom to conceptualize and build in any vertical.'
+                  : 'Ministry-defined themes spanning health, agriculture, space, security, and more. Pick a direction before the statements drop.'}
+              </p>
+            </Reveal>
+
+            {isHustleCarnival && event.domains && event.domains.length > 0 ? (
+              <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                {event.domains.map((domain, i) => (
+                  <TiltCard key={domain.name} className="h-full">
+                    <SpotlightCard className="h-full rounded-2xl">
+                      <div className="surface-claymorphic flex h-full flex-col justify-between p-6">
+                        <div>
+                          <span className="font-mono text-label uppercase text-primary">
+                            Domain {String(i + 1).padStart(2, '0')}
+                          </span>
+                          <h3 className="mt-2 text-feature text-foreground font-bold">{domain.name}</h3>
+                          <p className="mt-3 text-xs leading-relaxed text-muted">{domain.description}</p>
+                        </div>
+                        <div className="mt-5 pt-3 border-t border-[rgba(209,199,189,0.5)] flex items-center gap-1.5 text-[11px] font-semibold text-primary">
+                          <Sparkles className="size-3" />
+                          Open Innovation Track
+                        </div>
+                      </div>
+                    </SpotlightCard>
+                  </TiltCard>
+                ))}
+              </div>
+            ) : (
+              <div className="mt-14 grid gap-8 lg:grid-cols-12">
+                <div className="flex flex-col gap-2 lg:col-span-4">
+                  {ALL_THEME_SETS.map((set, i) => {
+                    const isActive = i === activeSet;
                     return (
-                      <button key={milestone.id} onClick={() => setActivePhase(i)} aria-current={isActive} className="relative flex items-center gap-3.5 rounded-xl px-4 py-3 text-left transition-colors duration-250">
-                        {isActive && (
-                          <m.span layoutId="phasePill" transition={SPRING.snappy} className="absolute inset-0 surface-skeuomorphic" />
-                        )}
-                        <span className={`relative z-10 flex size-8 shrink-0 items-center justify-center rounded-lg border text-caption font-bold transition-colors duration-250 ${isActive ? 'border-[rgba(114,56,61,0.3)] bg-[rgba(114,56,61,0.1)] text-primary' : 'border-[rgba(209,199,189,0.7)] bg-white/40 text-muted'}`}>
-                          {String(milestone.id).padStart(2, '0')}
+                      <button
+                        key={set.id}
+                        onClick={() => setActiveSet(i)}
+                        aria-current={isActive}
+                        className="group relative flex items-center justify-between gap-3 overflow-hidden text-left transition-all duration-300 surface-brutalist"
+                      >
+                        <span
+                          className={`truncate text-sm font-bold transition-colors ${
+                            isActive ? 'text-foreground' : 'text-muted'
+                          }`}
+                        >
+                          {set.title}
                         </span>
-                        <span className="relative z-10 flex min-w-0 flex-col">
-                          <span className={`truncate text-sm font-bold transition-colors duration-250 ${isActive ? 'text-foreground' : 'text-muted'}`}>{milestone.title}</span>
-                          <span className="text-label uppercase text-muted">{milestone.period}</span>
+                        <span
+                          className={`shrink-0 rounded-full border px-2.5 py-1 text-label uppercase transition-colors ${
+                            isActive
+                              ? 'border-[rgba(114,56,61,0.3)] bg-[rgba(114,56,61,0.1)] text-primary'
+                              : 'border-[rgba(209,199,189,0.8)] text-muted'
+                          }`}
+                        >
+                          Set {String(set.id).padStart(2, '0')}
                         </span>
                       </button>
                     );
                   })}
                 </div>
-              </Reveal>
 
-              <Reveal direction="left" delay={0.1} className="lg:col-span-7">
-                <div className="surface-liquid-glass relative min-h-[19rem] overflow-hidden p-5 sm:p-8">
+                <div className="lg:col-span-8">
                   <AnimatePresence mode="wait">
-                    <m.div key={phase.id} initial={{ opacity: 0, y: 16, filter: 'blur(6px)' }} animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }} exit={{ opacity: 0, y: -12, filter: 'blur(6px)' }} transition={{ duration: 0.4, ease: EASE.outExpo }}>
-                      <div className="flex items-center gap-3.5">
-                        <span className="flex size-12 items-center justify-center rounded-2xl border border-[rgba(114,56,61,0.18)] bg-[rgba(114,56,61,0.07)] text-primary">
-                          <MilestoneIcon id={phase.id} className="size-5" />
-                        </span>
-                        <div>
-                          <span className="text-label uppercase text-primary">{phase.phase}</span>
-                          <h3 className="text-feature text-foreground">{phase.title}</h3>
-                        </div>
-                      </div>
-                      <p className="mt-6 text-sm leading-relaxed text-muted">{phase.desc}</p>
-                      <div className="surface-sunken mt-7 flex items-center justify-between rounded-xl px-4 py-3">
-                        <span className="text-xs text-muted">Expected&nbsp;<strong className="font-bold text-foreground">{phase.period}</strong></span>
-                        <span className="text-label uppercase text-primary">Phase {phase.id} / {SIH_MILESTONES.length}</span>
-                      </div>
-                      <div className="mt-4 h-1 overflow-hidden rounded-full bg-[rgba(172,156,141,0.25)]">
-                        <m.div className="h-full rounded-full bg-gradient-to-r from-primary to-[#ac9c8d]" initial={{ scaleX: 0 }} animate={{ scaleX: (activePhase + 1) / SIH_MILESTONES.length }} transition={{ duration: 0.6, ease: EASE.outExpo }} style={{ transformOrigin: 'left' }} />
-                      </div>
+                    <m.div
+                      key={activeSet}
+                      initial="hidden"
+                      animate="visible"
+                      exit={{ opacity: 0, y: -10, transition: { duration: 0.2 } }}
+                      variants={{ visible: { transition: { staggerChildren: 0.08 } } }}
+                      className="grid gap-5 sm:grid-cols-3"
+                    >
+                      {ALL_THEME_SETS[activeSet].themes.map((theme, i) => (
+                        <m.article
+                          key={theme.name}
+                          variants={{
+                            hidden: { opacity: 0, y: 24, filter: 'blur(8px)' },
+                            visible: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.5, ease: EASE.outExpo } },
+                          }}
+                        >
+                          <TiltCard className="h-full" intensity={5}>
+                            <SpotlightCard className="h-full rounded-2xl">
+                              <div className="surface-liquid-glass flex h-full min-h-[13rem] flex-col justify-between overflow-hidden p-5 sm:p-6">
+                                <div>
+                                  <span className="font-mono text-label uppercase text-primary">
+                                    Theme {String(i + 1).padStart(2, '0')}
+                                  </span>
+                                  <h3 className="mt-2.5 text-feature text-foreground">{theme.name}</h3>
+                                </div>
+                                <p className="mt-4 line-clamp-4 text-xs leading-relaxed text-body">{theme.desc}</p>
+                              </div>
+                            </SpotlightCard>
+                          </TiltCard>
+                        </m.article>
+                      ))}
                     </m.div>
                   </AnimatePresence>
                 </div>
+              </div>
+            )}
+          </Container>
+        </Section>
+
+        {/* ─────────────── PERKS & REWARDS ─────────────── */}
+        {isHustleCarnival && event.perks && (
+          <Section id="perks" tone="mist" rhythm="spacious">
+            <Container width="wide">
+              <Reveal className="max-w-2xl">
+                <span className="text-label uppercase text-primary">Rewards &amp; Benefits</span>
+                <h2 className="mt-4 text-heading text-foreground">What You Take Home</h2>
+                <p className="mt-4 text-sm leading-relaxed text-muted">
+                  Beyond prototype development, Hustle Carnival finalists receive tailored benefits, high-tier goodies, and industry exposure.
+                </p>
               </Reveal>
-            </div>
-          </Container>
-        </Section>
 
-        {/* ─────────────── THEMES ─────────────── */}
-        <Section tone="vellum" rhythm="spacious" className="overflow-hidden">
-          <Aurora variant="taupe" spotlight={false} />
-          <Container width="wide" className="relative">
-            <Reveal className="max-w-2xl">
-              <span className="text-label uppercase text-primary">Themes &amp; domains</span>
-              <h2 className="mt-4 text-heading text-foreground">All 17 official SIH tracks</h2>
-              <p className="mt-4 text-sm leading-relaxed text-muted">Ministry-defined themes spanning health, agriculture, space, security, and more. Pick a direction before the statements drop.</p>
-            </Reveal>
-
-            <div className="mt-14 grid gap-8 lg:grid-cols-12">
-              <div className="flex flex-col gap-2 lg:col-span-4">
-                {ALL_THEME_SETS.map((set, i) => {
-                  const isActive = i === activeSet;
-                  return (
-                    <button key={set.id} onClick={() => setActiveSet(i)} aria-current={isActive} className="group relative flex items-center justify-between gap-3 overflow-hidden text-left transition-all duration-300 surface-brutalist">
-                      <span className={`truncate text-sm font-bold transition-colors ${isActive ? 'text-foreground' : 'text-muted'}`}>{set.title}</span>
-                      <span className={`shrink-0 rounded-full border px-2.5 py-1 text-label uppercase transition-colors ${isActive ? 'border-[rgba(114,56,61,0.3)] bg-[rgba(114,56,61,0.1)] text-primary' : 'border-[rgba(209,199,189,0.8)] text-muted'}`}>Set {String(set.id).padStart(2, '0')}</span>
-                    </button>
-                  );
-                })}
+              <div className="mt-14 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {event.perks.map((perk, idx) => (
+                  <TiltCard key={perk.title} className="h-full">
+                    <SpotlightCard className="h-full rounded-3xl">
+                      <div className="surface-claymorphic flex h-full flex-col p-6 sm:p-7">
+                        <span className="flex size-12 items-center justify-center rounded-2xl border border-[rgba(114,56,61,0.18)] bg-[rgba(114,56,61,0.07)] text-primary">
+                          {idx === 0 ? (
+                            <Gift className="size-5" />
+                          ) : idx === 1 ? (
+                            <Award className="size-5" />
+                          ) : idx === 2 ? (
+                            <Users className="size-5" />
+                          ) : idx === 3 ? (
+                            <Terminal className="size-5" />
+                          ) : (
+                            <Sparkles className="size-5" />
+                          )}
+                        </span>
+                        <h3 className="mt-5 text-feature text-foreground font-bold">{perk.title}</h3>
+                        <p className="mt-3 text-sm leading-relaxed text-muted">{perk.description}</p>
+                      </div>
+                    </SpotlightCard>
+                  </TiltCard>
+                ))}
               </div>
+            </Container>
+          </Section>
+        )}
 
-              <div className="lg:col-span-8">
-                <AnimatePresence mode="wait">
-                  <m.div key={activeSet} initial="hidden" animate="visible" exit={{ opacity: 0, y: -10, transition: { duration: 0.2 } }} variants={{ visible: { transition: { staggerChildren: 0.08 } } }} className="grid gap-5 sm:grid-cols-3">
-                    {ALL_THEME_SETS[activeSet].themes.map((theme, i) => (
-                      <m.article key={theme.name} variants={{ hidden: { opacity: 0, y: 24, filter: 'blur(8px)' }, visible: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.5, ease: EASE.outExpo } } }}>
-                        <TiltCard className="h-full" intensity={5}>
-                          <SpotlightCard className="h-full rounded-2xl">
-                            <div className="surface-liquid-glass flex h-full min-h-[13rem] flex-col justify-between overflow-hidden p-5 sm:p-6">
-                              <div>
-                                <span className="font-mono text-label uppercase text-primary">Theme {String(i + 1).padStart(2, '0')}</span>
-                                <h3 className="mt-2.5 text-feature text-foreground">{theme.name}</h3>
-                              </div>
-                              <p className="mt-4 line-clamp-4 text-xs leading-relaxed text-body">{theme.desc}</p>
-                            </div>
-                          </SpotlightCard>
-                        </TiltCard>
-                      </m.article>
+        {/* ─────────────── COMMUNITY & CONTACT ─────────────── */}
+        {isHustleCarnival && (
+          <Section id="community" tone="dune" rhythm="default">
+            <Container width="wide">
+              <div className="surface-liquid-glass grid gap-10 rounded-3xl p-8 sm:p-12 lg:grid-cols-12">
+                <div className="lg:col-span-7">
+                  <span className="text-label uppercase text-primary">Community &amp; Support</span>
+                  <h3 className="mt-3 text-heading text-foreground font-extrabold">Join the Hustle Carnival Discord &amp; WhatsApp</h3>
+                  <p className="mt-4 text-sm leading-relaxed text-muted max-w-xl">
+                    Stay connected for submission deadlines, presentation guidelines, mentor schedules, and result declarations. All Phase 2 payment instructions will be broadcasted through the official WhatsApp group.
+                  </p>
+
+                  <div className="mt-8 flex flex-wrap items-center gap-4">
+                    {event.whatsappGroup && (
+                      <a
+                        href={event.whatsappGroup}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-on-accent shadow-e2 transition-all hover:brightness-105"
+                      >
+                        <MessageSquare className="size-4" />
+                        Join WhatsApp Group
+                        <ExternalLink className="size-3.5 opacity-80" />
+                      </a>
+                    )}
+                    <a
+                      href="mailto:ellusion@glbajajgroup.org"
+                      className="inline-flex items-center gap-2 rounded-xl border border-[rgba(209,199,189,0.8)] bg-white/70 px-5 py-3 text-sm font-bold text-foreground transition-all hover:bg-white"
+                    >
+                      <Mail className="size-4 text-primary" />
+                      ellusion@glbajajgroup.org
+                    </a>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-[rgba(209,199,189,0.7)] bg-white/60 p-6 lg:col-span-5">
+                  <h4 className="text-sm font-bold text-foreground uppercase tracking-wider">Organizing Team Helpline</h4>
+                  <p className="mt-1 text-xs text-muted">WhatsApp inquiries only:</p>
+
+                  <div className="mt-5 space-y-3">
+                    {event.contacts?.map((c, i) => (
+                      <div key={i} className="flex items-center justify-between text-xs py-1.5 border-b border-[rgba(209,199,189,0.4)] last:border-none">
+                        <span className="font-semibold text-foreground">{c.label}</span>
+                        {c.phone ? (
+                          <a
+                            href={`https://wa.me/${c.phone.replace(/[^0-9]/g, '')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-mono text-primary font-bold hover:underline inline-flex items-center gap-1"
+                          >
+                            <Phone className="size-3" />
+                            {c.phone}
+                          </a>
+                        ) : (
+                          <span className="font-mono text-muted">{c.email}</span>
+                        )}
+                      </div>
                     ))}
-                  </m.div>
-                </AnimatePresence>
+                  </div>
+
+                  <div className="mt-5 rounded-xl border border-[rgba(114,56,61,0.15)] bg-[rgba(114,56,61,0.05)] p-3 text-[11px] text-body">
+                    <strong className="text-primary font-bold block mb-1">LinkedIn Submission Tagging:</strong>
+                    Tag your project with <span className="font-mono text-primary font-bold">#ellusion #hustlecarnival #glbajajmathura</span> using the official event banner.
+                  </div>
+                </div>
               </div>
-            </div>
-          </Container>
-        </Section>
+            </Container>
+          </Section>
+        )}
 
         {/* ─────────────── FAQ ─────────────── */}
         <FaqStructuredData />
@@ -562,10 +1125,14 @@ export default function EventDetailPage() {
             <Reveal className="lg:col-span-4">
               <span className="text-label uppercase text-primary">Questions</span>
               <h2 className="mt-4 text-heading text-foreground">Before you register</h2>
-              <p className="mt-4 text-sm leading-relaxed text-muted">Still unsure about something? Reach out to the SIH cell at GL Bajaj and we will get back to you.</p>
+              <p className="mt-4 text-sm leading-relaxed text-muted">
+                {isHustleCarnival
+                  ? 'Common questions about rules, team formation, submissions, and on-campus attendance.'
+                  : 'Still unsure about something? Reach out to the SIH cell at GL Bajaj and we will get back to you.'}
+              </p>
             </Reveal>
             <RevealGroup stagger={0.07} className="flex flex-col gap-3 lg:col-span-8">
-              {FAQS.map((faq, i) => (
+              {(isHustleCarnival ? HUSTLE_CARNIVAL_FAQS : FAQS).map((faq, i) => (
                 <FaqItem key={faq.q} q={faq.q} a={faq.a} index={i} />
               ))}
             </RevealGroup>
@@ -582,15 +1149,35 @@ export default function EventDetailPage() {
                 <span className="text-gradient-luxe"> worth shipping?</span>
               </h2>
               <p className="mx-auto mt-6 max-w-lg text-base leading-relaxed text-muted">
-                Register, complete your profile, and start assembling the team that takes GL Bajaj to the Grand Finale.
+                {isHustleCarnival
+                  ? 'Bring your ideas to life, build solutions that matter, and showcase your innovation. Hustle Beyond. Build Beyond. Innovate Without Limits.'
+                  : 'Register, complete your profile, and start assembling the team that takes GL Bajaj to the Grand Finale.'}
               </p>
               <div className="mt-9 flex flex-wrap justify-center gap-3">
-                {status === 'authenticated' ? (
-                  <PremiumButton href="/dashboard" size="lg">Go to Dashboard</PremiumButton>
+                {isHustleCarnival && event.whatsappGroup ? (
+                  <>
+                    <a
+                      href={event.whatsappGroup}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3.5 text-sm font-bold text-on-accent shadow-e2 transition-all hover:brightness-105"
+                    >
+                      <MessageSquare className="size-4" />
+                      Join Official Community
+                    </a>
+                    <PremiumButton href="/team-formation/find-teammates" variant="glass" size="lg">
+                      Find Teammates
+                    </PremiumButton>
+                  </>
+                ) : status === 'authenticated' ? (
+                  <PremiumButton href="/dashboard" size="lg">
+                    Go to Dashboard
+                  </PremiumButton>
                 ) : (
-                  <PremiumButton href="/login" size="lg">Get started</PremiumButton>
+                  <PremiumButton href="/login" size="lg">
+                    Get started
+                  </PremiumButton>
                 )}
-                <PremiumButton href="/tracks" variant="glass" size="lg">Browse tracks</PremiumButton>
               </div>
             </Reveal>
           </Container>

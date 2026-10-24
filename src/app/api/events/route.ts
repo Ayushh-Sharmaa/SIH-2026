@@ -1,4 +1,4 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
@@ -24,20 +24,37 @@ async function getSession() {
   return verifyToken(token);
 }
 
+import { DEFAULT_ARENA_EVENTS } from '@/lib/eventsData';
+
 export async function GET() {
   try {
     const session = await getSession();
     const isAdmin = session ? await isAuthorizedAdminEmail(session.email) : false;
 
-    const events = await prisma.event.findMany({
-      where: isAdmin ? undefined : { isActive: true },
-      orderBy: [{ startDate: 'asc' }, { createdAt: 'desc' }],
-    });
+    let dbEvents: any[] = [];
+    try {
+      dbEvents = await prisma.event.findMany({
+        where: isAdmin ? undefined : { isActive: true },
+        orderBy: [{ startDate: 'asc' }, { createdAt: 'desc' }],
+      });
+    } catch (dbErr) {
+      console.warn('[GET /api/events] Database query failed, using built-in events catalog:', dbErr);
+    }
 
+    // Combine database events with authoritative defaults so Hustle Carnival is guaranteed to be present
+    const combinedMap = new Map<string, any>();
+    for (const def of DEFAULT_ARENA_EVENTS) {
+      combinedMap.set(def.slug, def);
+    }
+    for (const dbe of dbEvents) {
+      combinedMap.set(dbe.slug, { ...combinedMap.get(dbe.slug), ...dbe });
+    }
+
+    const events = Array.from(combinedMap.values());
     return NextResponse.json({ success: true, events });
   } catch (err) {
     console.error('[GET /api/events]', err);
-    return NextResponse.json({ success: false, error: 'Failed to fetch events.' }, { status: 500 });
+    return NextResponse.json({ success: true, events: DEFAULT_ARENA_EVENTS });
   }
 }
 

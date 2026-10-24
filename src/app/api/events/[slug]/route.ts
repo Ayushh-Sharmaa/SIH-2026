@@ -1,8 +1,9 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { isAuthorizedAdminEmail } from '@/lib/admin';
+import { DEFAULT_ARENA_EVENTS } from '@/lib/eventsData';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,9 +19,29 @@ export async function GET(
     const decoded = token ? verifyToken(token) : null;
     const isAdmin = decoded ? await isAuthorizedAdminEmail(decoded.email) : false;
 
-    const event = await prisma.event.findUnique({
-      where: { slug },
-    });
+    const defaultEvent = DEFAULT_ARENA_EVENTS.find(
+      (e) => e.slug === slug || (slug === 'hustle-carnival' && e.slug === 'hustle-carnival-2026')
+    );
+
+    let dbEvent = null;
+    try {
+      dbEvent = await prisma.event.findUnique({
+        where: { slug },
+      });
+    } catch {
+      // Fall through to defaultEvent
+    }
+
+    const event = defaultEvent
+      ? {
+          ...defaultEvent,
+          ...(dbEvent
+            ? Object.fromEntries(
+                Object.entries(dbEvent).filter(([_, v]) => v !== null && v !== undefined)
+              )
+            : {}),
+        }
+      : dbEvent;
 
     if (!event || (!event.isActive && !isAdmin)) {
       return NextResponse.json({ error: 'Event not found.' }, { status: 404 });

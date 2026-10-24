@@ -47,7 +47,23 @@ async function main() {
   await prisma.$transaction(keyUpserts);
   console.log('Mentor keys seeded successfully.');
 
-  // 3. Seed the SIH Internal 2026 event
+  // 3. Seed Campus Events (Hustle Carnival 2026 & SIH Internal 2026)
+  await prisma.event.upsert({
+    where: { slug: 'hustle-carnival-2026' },
+    update: {},
+    create: {
+      name: 'Hustle Carnival 2026',
+      slug: 'hustle-carnival-2026',
+      tagline: 'Ellusion Buildathon — ELU04: Student Skill & Team Finder',
+      description:
+        'The flagship campus buildathon under Hustle Carnival 2026 at GL Bajaj Group of Institutions, Mathura. Solving problem statement ELU04 (Education & Student Networking) by Team Ghost. Form balanced teams, discover teammates, and connect with mentors.',
+      startDate: new Date('2026-03-01T00:00:00.000Z'),
+      endDate: new Date('2026-05-30T00:00:00.000Z'),
+      isActive: true,
+      createdBy: 'system',
+    },
+  });
+
   await prisma.event.upsert({
     where: { slug: 'sih-internal-2026' },
     update: {},
@@ -63,7 +79,7 @@ async function main() {
       createdBy: 'system',
     },
   });
-  console.log('SIH Internal 2026 event seeded successfully.');
+  console.log('Campus events seeded successfully.');
 }
 
 main()

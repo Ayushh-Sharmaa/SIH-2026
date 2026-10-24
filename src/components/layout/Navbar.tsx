@@ -344,8 +344,8 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
               <span className="text-gradient-luxe text-sm font-extrabold tracking-tight">
                 Arena
               </span>
-              <span className="mt-1 text-label uppercase text-muted">
-                by NexaSphere
+              <span className="mt-0.5 text-[9px] uppercase font-bold tracking-wider text-muted">
+                Skill &amp; Team Finder
               </span>
             </span>
           </Link>

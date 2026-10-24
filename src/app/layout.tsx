@@ -35,9 +35,9 @@ const geistMono = Geist_Mono({
 });
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://arena.glbajajgroup.org';
-const TITLE = 'Arena | Hackathon Platform — Powered by NexaSphere';
+const TITLE = 'Arena — Student Skill & Team Finder | Hustle Carnival 2026';
 const DESCRIPTION =
-  'Arena is the multi-event hackathon platform of GL Bajaj Group of Institutions, Mathura. Form balanced teams, find verified mentors, and compete across every hackathon that matters. Powered by NexaSphere.';
+  'Arena is the official student skill and team finder platform developed by Team Ghost (NexaSphere) for Hustle Carnival 2026 (Problem Statement ELU04: Education & Student Networking) and campus hackathons at GL Bajaj Group of Institutions, Mathura. Form balanced teams, close skill gaps, and match with verified faculty mentors.';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -49,16 +49,21 @@ export const metadata: Metadata = {
   description: DESCRIPTION,
   applicationName: 'Arena',
   keywords: [
-    'Arena hackathon platform',
-    'Smart India Hackathon',
-    'SIH 2026',
-    'GL Bajaj',
+    'Arena',
+    'Student Skill and Team Finder',
+    'Hustle Carnival 2026',
+    'Ellusion Buildathon',
+    'ELU04',
+    'Team Ghost',
+    'Education & Student Networking',
+    'GL Bajaj Group of Institutions Mathura',
     'GLBGOI',
+    'Smart India Hackathon',
     'team formation',
     'hackathon mentorship',
     'NexaSphere',
   ],
-  authors: [{ name: 'NexaSphere' }],
+  authors: [{ name: 'Team Ghost · NexaSphere' }],
   creator: 'NexaSphere',
   openGraph: {
     type: 'website',

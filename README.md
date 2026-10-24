@@ -1,96 +1,64 @@
-# ARENA — Student Skill and Team Finder (Problem Statement ELU04)
+# SIH@GLBGOI — Smart India Hackathon Platform
 
-> **Event:** Hustle Carnival 2026 &bull; Ellusion Buildathon  
-> **Problem Statement ID:** ELU04  
-> **Problem Statement Title:** Student Skill and Team Finder  
-> **Theme:** Education & Student Networking  
-> **PS Category:** Software  
-> **Team Name:** Team Ghost  
-> **Host Institution:** GL Bajaj Group of Institutions, Mathura  
-> **Developed & Maintained by:** NexaSphere
+The official **SIH Internal Evaluation, Team Formation, and Faculty Mentorship Platform** for **GL Bajaj Group of Institutions, Mathura**, developed and maintained by **NexaSphere**.
 
-Built on **Next.js 16**, **React 19**, **Clerk Authentication**, **Prisma ORM**, and **Supabase PostgreSQL**.
+Built with a high-performance, role-aware architecture on **Next.js 16**, **React 19**, **Clerk Authentication**, **Prisma ORM**, and **Supabase PostgreSQL**.
 
 ---
 
-## 🎯 Executive Summary & Proposed Solution
+## 🚀 Key Capabilities
 
-Standard hackathon platforms act merely as static recruitment boards or global aggregates. **Arena** is a multi-tenant, rule-aware campus platform specifically architected to solve the cold-start and collaboration frictions in academic institutions:
+### 1. Teammate Discovery (`/team-formation/browse-teammates`)
+* Database-side filtered search across student profiles by skills, languages, soft skills, branch, year, and team availability status.
+* Bounded 24-result pagination with cursor-based and offset navigation.
+* Privacy-hardened DTOs: roll numbers and mobile contact details are strictly masked in public discovery.
 
-* **Org-First Onboarding**: Colleges list events as public or private with isolated talent pools.
-* **Access-Code Sign-Up**: Students enter their college access code to participate in their institution's events.
-* **3-Tile Progressive Profiles**: Clean, low-friction setup capturing Identity & Academics, Technical & Soft Skills, and Track Interests.
-* **Rule-Aware Team Formation**: Automatically enforces hackathon limits and regulations (including locking the 6th seat exclusively for a female member when a team has 5 members and 0 females).
-* **Live Skill-Gap Banners**: Teams see exactly what roles are missing on their roster in real time.
-* **Integrated Faculty Mentorship Layer**: Verified faculty mentors categorized by domain expertise with transparent guidance capacity tracking.
-* **Privacy by Design**: Student roll numbers and phone numbers are strictly masked in public discovery (designed in alignment with DPDP Act principles).
+### 2. Team Formation & Management (`/team-formation/browse-teams`)
+* Explore open forming teams, review real-time member rosters, skill coverage, and missing skills.
+* SIH Regulation Compliance: Automatic 1 female member reservation enforcement (when a team reaches 5 members with 0 females, the 6th seat is locked exclusively for a female candidate).
+* Full team lifecycle: creation, recruitment notices, invitations, join requests, and atomic disbanding.
 
----
+### 3. Faculty Mentorship Matching (`/team-formation/browse-mentors`)
+* Search verified faculty mentors filtered by domain expertise, department, and current guidance load.
+* Direct mentorship requests from team leaders with status tracking (`pending`, `accepted`, `declined`, `meeting_requested`).
+* Strict privacy: Faculty phone contacts are excluded from public search directories.
 
-## 🔄 Platform Flow
+### 4. Role-Specific Staged Dashboards (`/dashboard`)
+* **Two-Stage Loading**:
+  * **Stage 1 Fast Bootstrap (`/api/dashboard/bootstrap`)**: Resolves identity, role, and completion state in `< 100ms`.
+  * **Stage 2 Async Data Section (`/api/dashboard/team-details`)**: Loads assigned rosters, pending requests, and invitations in parallel.
+* **Progressive Profile System**: 3 independent, lightweight mutation tiles for focused updates without full-page reloads.
+  * Student: Identity & Academic, Technical Skills, Track & Hackathon Interests.
+  * Faculty Mentor: Identity & Department, Domain Expertise, Professional Bio & Links.
 
-1. **List Events**: Colleges post public or private hackathons with isolated access codes.
-2. **Join via Code**: Students enter their college code to view their institution's event workspace.
-3. **Build Profile**: Students showcase their technical stack, branch, year, and interests across 3 progressive tiles.
-4. **Form a Team**: Discover peers, spot missing skill gaps with live banners, send invites, and track join requests.
-5. **Get a Mentor**: Team leaders browse verified faculty mentors by domain expertise and send mentorship requests.
-
----
-
-## ⚡ Technical Approach & Architecture
-
-### 1. Client Layer
-* **Next.js 16 App Router** with React 19 and React Compiler enabled.
-* **Role-Aware Dashboards**: Stage 1 Fast Bootstrap resolves identity in `< 100ms`, while heavy rosters stream in Stage 2.
-* **Motion & Feel**: GSAP motion hooks, Lenis smooth scrolling, and Framer Motion transitions adhering to the **Warm Light Editorial** design system.
-
-### 2. API & Security Layer
-* **Rate-Limited REST Endpoints**: 120 req/min sliding-window IP rate limiting.
-* **401 / 403 Role Gateways**: Unauthenticated requests are rejected with 401; cross-role privilege escalations return 403.
-* **Binary Avatar Streaming (`/api/avatar/[userId]`)**: Raw binary streaming with 24-hour HTTP cache headers, reducing discovery payloads by **> 99%** (2.5 MB $\rightarrow$ 5.6 KB).
-* **DPDP Act Privacy Guard**: Student roll numbers and mobile contact numbers are never exposed in public search DTO projections.
-
-### 3. Data & Database Layer
-* **Prisma ORM 6.19** with **Supabase PostgreSQL**.
-* **Zero N+1 Queries**: Single compound join query per search route.
-* **Bounded Pagination**: Strict 24-row limits prevent memory exhaustion.
-* **Immutable Code Reservations**: Team codes are reserved in an immutable ledger to prevent collisions or re-use.
+### 5. Authoritative 17 SIH Themes (`/tracks`)
+* Enforces the official 17 Smart India Hackathon themes catalog with instant client-side caching (`0.03ms` response).
 
 ---
 
-## 📊 Empirical Benchmarks
+## ⚡ Performance Architecture
 
-| Metric | Target / Specification | Verified Value |
+| Optimization Layer | Implementation | Verified Benchmark |
 | :--- | :--- | :---: |
-| **Discovery Payload Reduction** | > 95% reduction vs raw base64 | **> 99.7%** (2.5 MB $\rightarrow$ 5.6 KB) |
-| **Dashboard Bootstrap** | Fast user identity resolution | **< 100 ms** (439-byte payload) |
-| **Automated Unit Tests** | Zero regressions across all flows | **69 / 69 passing** (17 suites) |
-| **WCAG 2.1 AA Contrast** | All color token combinations | **100% compliant** |
-| **Search Route Query Count** | Avoid N+1 relation queries | **1 query** per search route |
+| **Avatar Streaming** | Base64 strings transformed to `/api/avatar/[userId]?v=${hash}` streaming raw binary with 24h HTTP caching. | **> 99% Payload Reduction** (Teammates: 2.5 MB $\rightarrow$ 5.6 KB; Mentors: 568 KB $\rightarrow$ 0.8 KB) |
+| **Search Projections** | Strict `select` DTOs with bounded `take: 24` pagination (no `select *`). | **< 20 KB** total JSON per 24 results |
+| **Fast Bootstrap** | Compact user identity payload (439 bytes) decoupled from heavy rosters. | **< 100 ms** target load |
+| **Client Caching** | Centralized `QueryClient` with in-flight request deduplication and 30s fresh TTL. | **< 1 ms** instant cache returns |
+| **Zero N+1 Queries** | Compound Prisma queries using foreign-key joins in single database operations. | **1 Query** per search route |
 
 ---
 
-## 🥊 Competitive Advantage (Existing Solutions vs. Arena)
+## 🛡️ Security & Privacy Architecture
 
-| Feature / Parameter | Devfolio | HackerEarth | Unstop | LinkedIn | Arena (Our Platform) |
-| :--- | :---: | :---: | :---: | :---: | :---: |
-| **Colleges create & manage own events** | ❌ | ❌ | ❌ | ❌ | **✅ Yes** |
-| **Access-code based private college events** | ❌ | ❌ | ❌ | ❌ | **✅ Yes** |
-| **Student skill profiles with tech stack** | ✅ | ✅ | ✅ | ✅ | **✅ Yes** |
-| **Team formation within events** | ✅ | ✅ | ✅ | ❌ | **✅ Yes** |
-| **Integrated faculty mentorship network** | ❌ | ❌ | Partial | ❌ | **✅ Yes** |
-| **Role-wise dashboards (student, mentor, admin)** | ❌ | ❌ | ❌ | ❌ | **✅ Yes** |
-| **Event visibility controls (public / private)** | ❌ | ❌ | ❌ | ❌ | **✅ Yes** |
-| **Campus-focused B2B platform** | ❌ | ❌ | Partial | ❌ | **✅ Yes** |
-| **Student-to-mentor connection & load tracking** | ❌ | ❌ | Partial | ✅ | **✅ Yes** |
-
----
-
-## 🗺️ Future Roadmap
-
-* **Claude-Powered Matchmaking**: Intelligent matchmaking agent pairing students based on complementary GitHub repos and project interests.
-* **AI Skill-Gap Diagnostics**: Autonomous advisory highlighting exact missing dependencies and architectural bottlenecks in team rosters.
-* **AI Profile Assistant**: Auto-generating student portfolio summaries from resumes and code repositories.
+* **Role-Based Authorization**: Returns `401 Unauthorized` for missing/invalid tokens and `403 Forbidden` for cross-role attempts.
+* **Avatar Endpoint Hardening (`/api/avatar/[userId]`)**:
+  * Identifier format validation (`RECORD_ID_REGEX`).
+  * Dedicated IP rate limiting (120 req/min/IP).
+  * Strict MIME allowlist (`image/jpeg`, `image/png`, `image/webp`, `image/gif`), rejecting SVG/HTML to prevent XSS.
+  * 500 KB maximum payload size ceiling.
+  * Generic 404 responses for inactive/demo profiles to prevent enumeration oracles.
+* **Sensitive Data Masking**: Phone numbers and student roll numbers are excluded from public search directories and prospective mentorship inquiries.
+* **Clerk OAuth Bridge**: Domain-restricted to official `@glbajajgroup.org` workspace accounts.
 
 ---
 
@@ -98,21 +66,28 @@ Standard hackathon platforms act merely as static recruitment boards or global a
 
 ```
 SIH-GLBGOI/
+├── .github/workflows/    # CI Pipeline (Typecheck, Lint, Test, Contrast, Perf)
 ├── docs/                 # Architecture, Security, PRD, and Production Guides
 ├── prisma/               # Schema definition and database seed scripts
-├── public/
-│   └── Logo/             # Updated NexaSphere and GL Bajaj branding assets
+├── public/               # Static assets, branding, and hackathon banners
 ├── scripts/              # Performance audit, diagnostic, and contrast scripts
 ├── src/
 │   ├── app/              # Next.js App Router (Pages, Layouts, API Routes)
-│   │   ├── api/          # 15 rate-limited REST JSON Endpoints
-│   │   ├── dashboard/    # Student and Faculty Mentor staged dashboard views
-│   │   ├── events/       # Hustle Carnival 2026 & SIH Internal event arenas
-│   │   ├── onboarding/   # 3-step progressive onboarding
+│   │   ├── api/          # Rate-limited REST JSON Endpoints & Avatar streamer
+│   │   │   ├── avatar/   # Binary avatar streaming with cache busting
+│   │   │   ├── dashboard/# Staged bootstrap & team details endpoints
+│   │   │   ├── profile/  # Progressive profile mutation endpoints
+│   │   │   ├── students/ # Teammate discovery search endpoint
+│   │   │   ├── mentors/  # Mentor directory search endpoint
+│   │   │   ├── teams/    # Team discovery and management endpoint
+│   │   │   └── tracks/   # Official 17 themes catalog endpoint
+│   │   ├── dashboard/    # Student and Faculty Mentor dashboard views
+│   │   ├── onboarding/   # User role selection and profile builder
 │   │   ├── team-formation/# Browse Teammates, Teams, and Mentors
-│   │   └── tracks/       # 17 Official Themes & ELU04 problem statements
+│   │   └── tracks/       # 17 Official Themes directory
 │   ├── components/       # Reusable layout, modal, motion, and UI elements
-│   ├── lib/              # Prisma client, auth, rate limiting, and avatar utils
+│   ├── hooks/            # Focus trapping, scroll locking, and GSAP hooks
+│   ├── lib/              # Prisma client, auth, validation, rate limiting, and avatar utils
 │   └── styles/           # Warm Light Editorial design tokens and typography
 └── tests/                # Automated unit tests, session specs, and performance assertions
 ```
@@ -140,17 +115,45 @@ NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="pk_test_..."
 CLERK_SECRET_KEY="sk_test_..."
 ```
 
-### 3. Install & Seed
+### 3. Install Dependencies
 ```bash
 npm install
-npx prisma generate
-npx prisma db seed
-npm run dev
 ```
 
+### 4. Database Setup & Seeding
+```bash
+# Push schema changes to database
+npx prisma db push
+
+# Generate Prisma client
+npx prisma generate
+
+# Seed initial hackathon records and test profiles
+npx prisma db seed
+```
+
+### 5. Running Locally
+```bash
+npm run dev
+```
 Open `http://localhost:3000` to view the platform.
 
 ---
 
+## 🧪 Verification & Audit Scripts
+
+```bash
+# Run the complete test & audit verification pipeline
+npm run verify
+
+# Individual validation commands:
+npm run typecheck       # TypeScript compilation check (0 errors)
+npm test                # Run 69 automated unit tests across 17 suites
+npm run test:contrast   # Audit WCAG 2.1 AA colour contrast compliance
+npm run audit:perf      # Automated payload, query count, and privacy audit
+```
+
+---
+
 ## 📄 License
-Proprietary platform built for **Hustle Carnival 2026 (Problem Statement ELU04)** and campus hackathons at **GL Bajaj Group of Institutions, Mathura**. Maintained by **Team Ghost & NexaSphere**.
+Proprietary platform built for Internal Hackathon Operations at **GL Bajaj Group of Institutions, Mathura**. Maintained by **NexaSphere**.

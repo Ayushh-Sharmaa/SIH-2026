@@ -38,6 +38,7 @@ export async function GET(request: Request) {
         id: true,
         email: true,
         role: true,
+        college: true,
         studentProfile: {
           select: {
             name: true,
@@ -80,6 +81,7 @@ export async function GET(request: Request) {
           id: user.id,
           email: user.email,
           role: user.role,
+          college: user.college,
           name,
           isOnboarded,
           verified: user.mentorProfile?.verified ?? true,

@@ -104,14 +104,15 @@ export default function Footer() {
                 <span className="text-gradient-luxe text-lg font-extrabold tracking-tight">
                   Arena
                 </span>
-                <span className="mt-1 text-[11px] font-bold uppercase tracking-wider text-muted">
-                  Student Skill &amp; Team Finder &bull; Team Ghost
+                <span className="mt-1.5 text-label uppercase text-muted">
+                  Powered by NexaSphere
                 </span>
               </span>
             </div>
-            <p className="mt-4 max-w-sm text-sm leading-relaxed text-muted">
-              Built for Hustle Carnival 2026 (Problem Statement ELU04: Education &amp; Student Networking)
-              and campus hackathons at GL Bajaj Group of Institutions, Mathura. Powered by NexaSphere.
+            <p className="mt-5 max-w-sm text-sm leading-relaxed text-muted">
+              The multi-event hackathon platform of GL Bajaj Group of
+              Institutions, Mathura — where teams form, mentors connect, and
+              ideas take flight across every hackathon that matters.
             </p>
             <div className="mt-6 flex gap-2.5">
               {SOCIALS.map((s) => (

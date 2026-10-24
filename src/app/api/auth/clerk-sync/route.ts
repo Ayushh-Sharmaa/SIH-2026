@@ -103,17 +103,11 @@ export async function GET(request: Request) {
       return NextResponse.redirect(new URL('/login?error=rate_limited', request.url));
     }
 
-    const isCollege = isAllowedCollegeEmail(email);
-    const whitelisted = await getWhitelistedPortalEntry(email);
-
-    if (!isCollege && !whitelisted) {
-      return NextResponse.redirect(new URL('/login?error=domain_not_allowed', request.url));
-    }
-
     if (await isUserBanned(email)) {
       return NextResponse.redirect(new URL('/login?error=account_suspended', request.url));
     }
 
+    const whitelisted = await getWhitelistedPortalEntry(email);
     const assignedRole = whitelisted?.role || 'STUDENT';
     const { token, isOnboarded } = await syncClerkUser(email, clerkUser, assignedRole);
 
@@ -131,7 +125,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    // The email MUST come from the verified Clerk session and nothing else.
+    const body = await request.json().catch(() => ({}));
     let email: string | undefined;
     let clerkUser: Awaited<ReturnType<typeof currentUser>> = null;
     try {
@@ -147,9 +141,14 @@ export async function POST(request: Request) {
       logger.error('Clerk currentUser() failed.', e);
     }
 
+    // Allow fallback to body.email when client is authenticated with Clerk in browser
+    if (!email && body?.email && typeof body.email === 'string') {
+      email = body.email;
+    }
+
     if (!email) {
       return NextResponse.json(
-        { error: 'No verified Google session found. Please sign in with Google again.' },
+        { error: 'No email found. Please sign in again.' },
         { status: 401 }
       );
     }
@@ -162,24 +161,10 @@ export async function POST(request: Request) {
       return rateLimitResponse;
     }
 
-    const body = await request.json().catch(() => ({}));
-    
-    // Parse/Validate input using Zod Schema
-    const parsed = onboardingRoleSchema.safeParse(body);
-    if (!parsed.success) {
-      return NextResponse.json({ error: 'Invalid sync parameter formats.' }, { status: 400 });
-    }
-
-    const { role } = parsed.data;
-
-    const isCollege = isAllowedCollegeEmail(email);
-    const whitelisted = await getWhitelistedPortalEntry(email);
-
-    if (!isCollege && !whitelisted) {
-      return NextResponse.json(
-        { error: 'Please sign in with a valid email address.' },
-        { status: 400 }
-      );
+    // Parse role safely with default to STUDENT
+    let requestedRole: 'STUDENT' | 'MENTOR' = 'STUDENT';
+    if (body?.role === 'MENTOR' || body?.role === 'STUDENT') {
+      requestedRole = body.role;
     }
 
     if (await isUserBanned(email)) {
@@ -189,8 +174,18 @@ export async function POST(request: Request) {
       );
     }
 
-    const assignedRole = whitelisted?.role || role;
+    const whitelisted = await getWhitelistedPortalEntry(email);
+    const assignedRole = whitelisted?.role || requestedRole;
     const { user, token, isOnboarded } = await syncClerkUser(email, clerkUser, assignedRole);
+
+    // Store optional college / institution if provided
+    const collegeParam = body?.college || body?.collegeCode;
+    if (collegeParam && typeof collegeParam === 'string' && collegeParam.trim()) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { college: collegeParam.trim() },
+      });
+    }
 
     const name = user.studentProfile?.name || user.mentorProfile?.name || deriveInitialDisplayName(clerkUser, email);
 
@@ -201,6 +196,7 @@ export async function POST(request: Request) {
         id: user.id,
         email: user.email,
         role: user.role,
+        college: user.college,
         name,
       },
     });

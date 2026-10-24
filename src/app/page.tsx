@@ -5,28 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { AnimatePresence, m } from 'framer-motion';
-import {
-  ShieldAlert,
-  Calendar,
-  ArrowRight,
-  Sparkles,
-  Users,
-  BookOpen,
-  Trophy,
-  Check,
-  X,
-  Minus,
-  Lock,
-  School,
-  UserCheck,
-  Layers,
-  Cpu,
-  ShieldCheck,
-  TrendingUp,
-  Flame,
-  Award,
-  Zap,
-} from 'lucide-react';
+import { ShieldAlert, Calendar, ArrowRight, Sparkles, Users, BookOpen, Trophy, School, UserCheck } from 'lucide-react';
 
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -187,7 +166,6 @@ const COMPARISON_ROWS = [
     arena: true,
   },
 ];
-
 function AuthWarningNotice() {
   const searchParams = useSearchParams();
   const error = searchParams.get('error');
@@ -216,15 +194,15 @@ function AuthWarningNotice() {
 function ScrollHint() {
   return (
     <m.a
-      href="#problem-statement"
-      aria-label="Scroll to details"
+      href="#events"
+      aria-label="Scroll to events"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ delay: 1.6, duration: 0.8 }}
       className="group absolute inset-x-0 bottom-8 z-20 mx-auto flex w-fit flex-col items-center gap-2"
     >
       <span className="text-label uppercase text-muted transition-colors group-hover:text-primary">
-        Explore
+        Scroll
       </span>
       <span className="flex h-9 w-[22px] justify-center rounded-full border border-[rgba(172,156,141,0.6)] pt-2">
         <span className="scroll-hint-dot block size-1 rounded-full bg-primary" />
@@ -262,27 +240,26 @@ function HeroVisual() {
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 1, delay: 0.35, ease: EASE.outExpo }}
-        className="relative flex size-44 items-center justify-center surface-spatial p-4"
+        className="relative flex size-40 items-center justify-center surface-spatial"
       >
         <m.div
-          animate={{ y: [0, -6, 0] }}
-          transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
-          className="relative size-full flex items-center justify-center"
+          animate={{ y: [0, -8, 0] }}
+          transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
         >
           <Image
-            src="/Logo/nexasphere-logo.png"
+            src="/Logo/NexaSphere Icon without Background.png"
             alt="Arena by NexaSphere"
-            width={160}
-            height={160}
+            width={92}
+            height={92}
             className="object-contain"
             priority
           />
         </m.div>
       </m.div>
       {[
-        { label: 'Skill Match', top: '4%', left: '50%', delay: 0.7 },
+        { label: 'Teams', top: '4%', left: '50%', delay: 0.7 },
         { label: 'Mentors', top: '48%', left: '-2%', delay: 0.85 },
-        { label: 'Multi-Tenant', top: '78%', left: '76%', delay: 1 },
+        { label: 'Events', top: '78%', left: '76%', delay: 1 },
       ].map((chip) => (
         <m.span
           key={chip.label}
@@ -290,7 +267,7 @@ function HeroVisual() {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 0.7, delay: chip.delay, ease: EASE.outExpo }}
           style={{ top: chip.top, left: chip.left }}
-          className="absolute -translate-x-1/2 px-3.5 py-1.5 text-label uppercase text-primary surface-glassmorphic shadow-sm"
+          className="absolute -translate-x-1/2 px-3.5 py-1.5 text-label uppercase text-primary surface-glassmorphic"
         >
           <m.span
             className="block"
@@ -306,17 +283,41 @@ function HeroVisual() {
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5, delay: 1.2, ease: EASE.outExpo }}
         aria-hidden
-        className="absolute right-[8%] top-[8%] flex items-center gap-1.5 rounded-full border border-[rgba(114,56,61,0.2)] bg-[rgba(255,255,255,0.85)] px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-primary shadow-[0_4px_16px_rgba(50,45,41,0.1)] backdrop-blur-md"
+        className="absolute right-[10%] top-[10%] flex items-center gap-1.5 rounded-full border border-[rgba(114,56,61,0.2)] bg-[rgba(255,255,255,0.75)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-primary shadow-[0_4px_16px_rgba(50,45,41,0.1)] backdrop-blur-md"
       >
         <span className="relative flex size-1.5">
           <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-60" />
           <span className="relative inline-flex size-1.5 rounded-full bg-primary" />
         </span>
-        ELU04 Live
+        Live
       </m.div>
     </div>
   );
 }
+
+const PLATFORM_FEATURES = [
+  {
+    icon: Users,
+    title: 'Form the right team',
+    desc: 'Browse students by track and skill, spot the gaps in your roster, and invite the people who close them.',
+    href: '/team-formation/find-teammates',
+    cta: 'Browse teammates',
+  },
+  {
+    icon: BookOpen,
+    title: 'Match with mentors',
+    desc: 'Verified faculty mentors, filterable by domain. Send a request and track its status from your dashboard.',
+    href: '/team-formation/find-mentors',
+    cta: 'Browse mentors',
+  },
+  {
+    icon: Trophy,
+    title: 'Track every phase',
+    desc: 'All official milestones in one timeline, from registration through to the grand finale.',
+    href: '/tracks',
+    cta: 'Explore tracks',
+  },
+];
 
 function EventCard({ event }: { event: ArenaEvent }) {
   const startYear = event.startDate ? new Date(event.startDate).getFullYear() : null;
@@ -336,6 +337,7 @@ function EventCard({ event }: { event: ArenaEvent }) {
             href={`/events/${event.slug}`}
             className="surface-claymorphic group relative flex h-full flex-col gap-5 overflow-hidden p-6 sm:p-8 transition-shadow duration-400"
           >
+            {/* Status chip */}
             <div className="flex items-center justify-between">
               <span
                 className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-caption font-bold ${
@@ -347,7 +349,7 @@ function EventCard({ event }: { event: ArenaEvent }) {
                 <span
                   className={`size-1.5 rounded-full ${event.isActive ? 'bg-primary animate-pulse' : 'bg-muted'}`}
                 />
-                {event.isActive ? 'Active Arena' : 'Closed'}
+                {event.isActive ? 'Active' : 'Closed'}
               </span>
               {dateRange && (
                 <span className="flex items-center gap-1 text-caption text-muted">
@@ -399,7 +401,7 @@ function EventCard({ event }: { event: ArenaEvent }) {
 
 export default function ArenaHome() {
   const { status } = useSession();
-  const [events, setEvents] = useState<ArenaEvent[]>(DEFAULT_EVENTS);
+  const [events, setEvents] = useState<ArenaEvent[]>([]);
   const [eventsLoading, setEventsLoading] = useState(true);
 
   useEffect(() => {
@@ -407,17 +409,11 @@ export default function ArenaHome() {
     fetch('/api/events')
       .then((r) => r.json())
       .then((d) => {
-        if (active && d.success && Array.isArray(d.events) && d.events.length > 0) {
-          setEvents(d.events);
-        }
+        if (active && d.success) setEvents(d.events);
       })
       .catch(() => {})
-      .finally(() => {
-        if (active) setEventsLoading(false);
-      });
-    return () => {
-      active = false;
-    };
+      .finally(() => { if (active) setEventsLoading(false); });
+    return () => { active = false; };
   }, []);
 
   return (
@@ -437,30 +433,24 @@ export default function ArenaHome() {
                 <AuthWarningNotice />
               </Suspense>
 
-              <m.div
+              <m.span
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.7, ease: EASE.outExpo }}
-                className="flex flex-wrap items-center gap-2"
+                className="inline-flex items-center gap-2 rounded-full border border-[rgba(114,56,61,0.2)] bg-[rgba(255,255,255,0.6)] px-3.5 py-1.5 text-label uppercase text-primary backdrop-blur-md"
               >
-                <span className="inline-flex items-center gap-2 rounded-full border border-[rgba(114,56,61,0.25)] bg-[rgba(255,255,255,0.7)] px-3.5 py-1.5 text-label uppercase text-primary backdrop-blur-md font-bold">
-                  <Flame className="size-3 text-primary" />
-                  Hustle Carnival 2026 · Ellusion Buildathon
-                </span>
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-[rgba(209,199,189,0.8)] bg-white/40 px-3 py-1.5 text-label uppercase text-muted">
-                  <Award className="size-3 text-primary" />
-                  Problem Statement ELU04
-                </span>
-              </m.div>
+                <Sparkles className="size-3" />
+                Arena · Powered by NexaSphere
+              </m.span>
 
-              <h1 className="mt-6 text-display text-foreground font-extrabold tracking-tight">
-                <SplitText text="Student Skill &" as="span" mode="word" delay={0.15} />
+              <h1 className="mt-7 text-display text-foreground">
+                <SplitText text="Your arena." as="span" mode="word" delay={0.15} />
                 <br />
                 <SplitText
-                  text="Team Finder."
+                  text="Your build."
                   as="span"
                   mode="char"
-                  delay={0.35}
+                  delay={0.42}
                   gradientColors={['#72383d', '#ac9c8d']}
                 />
               </h1>
@@ -468,66 +458,37 @@ export default function ArenaHome() {
               <m.p
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.65, ease: EASE.outExpo }}
-                className="mt-6 max-w-[54ch] text-base leading-relaxed text-body sm:text-lg"
+                transition={{ duration: 0.8, delay: 0.75, ease: EASE.outExpo }}
+                className="mt-7 max-w-[52ch] text-base leading-relaxed text-muted sm:text-lg"
               >
-                <strong>Arena</strong> is the multi-tenant hackathon and student networking platform
-                built by <strong>Team Ghost</strong> (NexaSphere) for GL Bajaj Group of Institutions, Mathura.
-                Colleges list public or private events, students find complementary teammates by skill, and leaders connect with verified faculty mentors.
+                Form balanced teams, close your skill gaps, and match with verified faculty
+                mentors — across every hackathon that matters at GL Bajaj Group of Institutions,
+                Mathura.
               </m.p>
 
-              {/* Empirical Proof Metric Bar */}
               <m.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.8, ease: EASE.outExpo }}
-                className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-4 max-w-xl"
-              >
-                <div className="rounded-2xl border border-[rgba(209,199,189,0.6)] bg-white/50 p-3 shadow-sm backdrop-blur-sm">
-                  <p className="text-xl font-black text-primary">&gt;99%</p>
-                  <p className="text-[11px] font-medium text-muted uppercase tracking-wider">Discovery Payload Cut</p>
-                </div>
-                <div className="rounded-2xl border border-[rgba(209,199,189,0.6)] bg-white/50 p-3 shadow-sm backdrop-blur-sm">
-                  <p className="text-xl font-black text-foreground">&lt;100 ms</p>
-                  <p className="text-[11px] font-medium text-muted uppercase tracking-wider">Bootstrap Target</p>
-                </div>
-                <div className="rounded-2xl border border-[rgba(209,199,189,0.6)] bg-white/50 p-3 shadow-sm backdrop-blur-sm">
-                  <p className="text-xl font-black text-primary">69 / 69</p>
-                  <p className="text-[11px] font-medium text-muted uppercase tracking-wider">Unit Tests Pass</p>
-                </div>
-                <div className="rounded-2xl border border-[rgba(209,199,189,0.6)] bg-white/50 p-3 shadow-sm backdrop-blur-sm">
-                  <p className="text-xl font-black text-foreground">WCAG AA</p>
-                  <p className="text-[11px] font-medium text-muted uppercase tracking-wider">Contrast Audited</p>
-                </div>
-              </m.div>
-
-              <m.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.95, ease: EASE.outExpo }}
-                className="mt-8 flex flex-wrap items-center gap-3"
+                transition={{ duration: 0.8, delay: 0.92, ease: EASE.outExpo }}
+                className="mt-9 flex flex-wrap items-center gap-3"
               >
                 {status === 'authenticated' ? (
-                  <div className="flex flex-wrap items-center gap-3">
-                    <PremiumButton href="/dashboard" size="lg">
-                      Enter Dashboard
-                      <ArrowRight className="size-4" />
-                    </PremiumButton>
-                    <PremiumButton href="/events" variant="glass" size="lg">
-                      Browse Events
-                    </PremiumButton>
-                  </div>
+                  <PremiumButton href="/dashboard" size="lg">
+                    Go to Dashboard
+                    <svg viewBox="0 0 24 24" fill="none" className="size-4">
+                      <path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </PremiumButton>
                 ) : (
                   <>
                     <PremiumButton href="/login" size="lg">
-                      Get Started Free
-                      <ArrowRight className="size-4" />
+                      Create your account
+                      <svg viewBox="0 0 24 24" fill="none" className="size-4">
+                        <path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
                     </PremiumButton>
-                    <PremiumButton href="/events" variant="glass" size="lg">
-                      Browse Events
-                    </PremiumButton>
-                    <PremiumButton href="#flow" variant="glass" size="lg">
-                      How Arena Works
+                    <PremiumButton href="#events" variant="glass" size="lg">
+                      Browse events
                     </PremiumButton>
                   </>
                 )}
@@ -536,10 +497,10 @@ export default function ArenaHome() {
               <m.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ duration: 0.8, delay: 1.1 }}
-                className="mt-5 text-xs text-muted"
+                transition={{ duration: 0.8, delay: 1.15 }}
+                className="mt-6 text-xs text-muted"
               >
-                Education & Student Networking &bull; Team Ghost &bull; GL Bajaj Group of Institutions, Mathura
+                GL Bajaj&rsquo;s multi-event hackathon platform. Select an event below to get started.
               </m.p>
             </div>
 
@@ -551,124 +512,40 @@ export default function ArenaHome() {
           <ScrollHint />
         </section>
 
-        {/* ─────────────── PROBLEM STATEMENT & PROPOSED SOLUTION SPOTLIGHT ─────────────── */}
-        <Section id="problem-statement" tone="mist" rhythm="spacious" pattern="dots">
-          <Container width="wide">
-            <Reveal className="max-w-3xl">
-              <span className="text-label uppercase text-primary font-bold tracking-widest">
-                Arena: Proposed Solution &bull; ELU04
-              </span>
-              <h2 className="mt-3 text-heading text-foreground font-extrabold">
-                Built specifically for Student Skill & Team Finder.
-              </h2>
-              <p className="mt-4 text-base leading-relaxed text-muted">
-                Standard hackathon portals act as static directories. Arena transforms campus team formation with org-first isolation, automatic skill-gap discovery, compliance with mandatory female seat rules, and verified faculty mentor matching.
-              </p>
-            </Reveal>
-
-            <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {[
-                {
-                  icon: School,
-                  title: 'Multi-Tenant B2B Isolation',
-                  desc: 'Colleges list public or private hackathons. Each institution is strictly partitioned by custom college access codes.',
-                },
-                {
-                  icon: Sparkles,
-                  title: 'Live Skill-Gap Banners',
-                  desc: 'Teams immediately see who they still need on their roster (e.g. "Missing: Frontend Dev, UI/UX") to build winning squads.',
-                },
-                {
-                  icon: ShieldCheck,
-                  title: 'Rule-Aware Seat Reservation',
-                  desc: 'Automatically enforces hackathon regulations — including locking the 6th seat exclusively for a female member when a team has 5 members and 0 females.',
-                },
-                {
-                  icon: Lock,
-                  title: 'Privacy by Design (DPDP Act)',
-                  desc: 'Student roll numbers and personal phone numbers stay masked in public discovery to prevent spam and identity exposure.',
-                },
-                {
-                  icon: BookOpen,
-                  title: 'Integrated Mentor Layer',
-                  desc: 'Goes beyond a basic team finder. Verified faculty mentors join by domain expertise, and leaders track mentorship load transparently.',
-                },
-                {
-                  icon: Layers,
-                  title: '3-Tile Progressive Profiles',
-                  desc: 'Fast onboarding in 3 quick tiles: Academic Identity, Technical & Soft Skills, and Problem Statement Track Interests.',
-                },
-              ].map((card) => (
-                <RevealItem key={card.title}>
-                  <TiltCard className="h-full">
-                    <SpotlightCard className="h-full rounded-3xl">
-                      <div className="surface-claymorphic flex h-full flex-col gap-4 p-6 sm:p-7">
-                        <span className="flex size-11 items-center justify-center rounded-2xl border border-[rgba(114,56,61,0.2)] bg-[rgba(114,56,61,0.08)] text-primary">
-                          <card.icon className="size-5" strokeWidth={1.75} />
-                        </span>
-                        <h3 className="text-feature text-foreground font-bold">{card.title}</h3>
-                        <p className="text-sm leading-relaxed text-muted">{card.desc}</p>
-                      </div>
-                    </SpotlightCard>
-                  </TiltCard>
-                </RevealItem>
-              ))}
-            </div>
-          </Container>
-        </Section>
-
-        {/* ─────────────── 5-STEP PLATFORM FLOW ─────────────── */}
-        <Section id="flow" tone="dune" rhythm="spacious">
-          <Container width="wide">
-            <Reveal className="max-w-2xl">
-              <span className="text-label uppercase text-primary font-bold">Platform Flow</span>
-              <h2 className="mt-3 text-heading text-foreground font-extrabold">
-                From Campus Event to Winning Team in 5 Steps.
-              </h2>
-              <p className="mt-3 text-sm leading-relaxed text-muted">
-                A seamless pipeline designed for colleges, team leaders, students, and faculty mentors.
-              </p>
-            </Reveal>
-
-            <RevealGroup stagger={0.08} className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-5">
-              {PLATFORM_STEPS.map((s) => (
-                <RevealItem key={s.step}>
-                  <div className="surface-raised flex h-full flex-col rounded-3xl border border-[rgba(209,199,189,0.7)] p-6 transition-all duration-300 hover:border-primary/40 hover:shadow-md">
-                    <div className="flex items-center justify-between pb-4 border-b border-[rgba(209,199,189,0.4)]">
-                      <span className="text-xs font-black text-primary font-mono">{s.step}</span>
-                      <s.icon className="size-4.5 text-muted" strokeWidth={1.75} />
-                    </div>
-                    <h4 className="mt-4 text-base font-bold text-foreground">{s.title}</h4>
-                    <p className="mt-2 text-xs leading-relaxed text-muted">{s.desc}</p>
-                  </div>
-                </RevealItem>
-              ))}
-            </RevealGroup>
-          </Container>
-        </Section>
-
-        {/* ─────────────── EVENTS DIRECTORY ─────────────── */}
+        {/* ─────────────── EVENTS ─────────────── */}
         <Section id="events" tone="mist" rhythm="spacious" pattern="dots">
           <Container width="wide">
             <Reveal className="max-w-2xl">
-              <span className="text-label uppercase text-primary font-bold">Campus Competitions</span>
-              <h2 className="mt-3 text-heading text-foreground font-extrabold">
-                <SplitText text="Active Arenas at GL Bajaj Group of Institutions." as="span" onScroll />
+              <span className="text-label uppercase text-primary">Hackathon Events</span>
+              <h2 className="mt-4 text-heading text-foreground">
+                <SplitText
+                  text="Choose your event and start competing."
+                  as="span"
+                  onScroll
+                />
               </h2>
-              <p className="mt-3 text-sm leading-relaxed text-muted">
-                Each event is an isolated campus arena with its own teams, problem statement tracks, and faculty mentors.
+              <p className="mt-4 text-sm leading-relaxed text-muted">
+                Each event is a self-contained hackathon with its own teams, mentors, and
+                timeline. Pick one to enter the arena.
               </p>
             </Reveal>
 
-            <div className="mt-12">
+            <div className="mt-14">
               {eventsLoading ? (
-                <div className="grid gap-6 md:grid-cols-2">
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                   {[1, 2].map((i) => (
                     <div key={i} className="h-64 rounded-3xl skeleton-shimmer" />
                   ))}
                 </div>
+              ) : events.length === 0 ? (
+                <div className="flex flex-col items-center gap-4 py-16 text-center">
+                  <div className="flex size-16 items-center justify-center rounded-2xl border border-[rgba(209,199,189,0.6)] bg-white/40">
+                    <Calendar className="size-7 text-muted" />
+                  </div>
+                  <p className="text-sm text-muted">No active events at the moment. Check back soon.</p>
+                </div>
               ) : (
-                <RevealGroup stagger={0.1} className="grid gap-6 md:grid-cols-2">
+                <RevealGroup stagger={0.1} className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                   {events.map((event) => (
                     <EventCard key={event.id} event={event} />
                   ))}
@@ -678,256 +555,42 @@ export default function ArenaHome() {
           </Container>
         </Section>
 
-        {/* ─────────────── EXISTING SOLUTIONS VS ARENA MATRIX ─────────────── */}
-        <Section tone="quarry" rhythm="spacious" className="overflow-hidden">
-          <Container width="wide">
-            <Reveal className="max-w-3xl">
-              <span className="text-label uppercase text-primary font-bold">Competitive Advantage</span>
-              <h2 className="mt-3 text-heading text-foreground font-extrabold">
-                Existing Solutions vs. Our Platform (Arena).
-              </h2>
-              <p className="mt-3 text-sm leading-relaxed text-muted">
-                See why generic recruitment boards and hackathon aggregates fail campus environments, and how Arena provides the complete institutional layer.
-              </p>
-            </Reveal>
-
-            <div className="mt-12 overflow-x-auto rounded-3xl border border-[rgba(209,199,189,0.7)] bg-white/60 p-2 shadow-sm backdrop-blur-md">
-              <table className="w-full min-w-[720px] text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-[rgba(209,199,189,0.6)] text-xs font-bold uppercase tracking-wider text-muted">
-                    <th className="py-4 px-6 text-foreground">Feature / Parameter</th>
-                    <th className="py-4 px-4 text-center">Devfolio</th>
-                    <th className="py-4 px-4 text-center">HackerEarth</th>
-                    <th className="py-4 px-4 text-center">Unstop</th>
-                    <th className="py-4 px-4 text-center">LinkedIn</th>
-                    <th className="py-4 px-6 text-center bg-primary/10 text-primary font-extrabold rounded-t-2xl">
-                      Arena (Our Platform)
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[rgba(209,199,189,0.4)] text-sm">
-                  {COMPARISON_ROWS.map((row, idx) => (
-                    <tr key={idx} className="transition-colors hover:bg-white/40">
-                      <td className="py-3.5 px-6 font-medium text-foreground text-xs sm:text-sm">
-                        {row.feature}
-                      </td>
-                      <td className="py-3.5 px-4 text-center">
-                        {row.devfolio === true ? (
-                          <Check className="size-4 text-emerald-600 inline" />
-                        ) : (
-                          <X className="size-4 text-rose-500 inline" />
-                        )}
-                      </td>
-                      <td className="py-3.5 px-4 text-center">
-                        {row.hackerearth === true ? (
-                          <Check className="size-4 text-emerald-600 inline" />
-                        ) : (
-                          <X className="size-4 text-rose-500 inline" />
-                        )}
-                      </td>
-                      <td className="py-3.5 px-4 text-center">
-                        {row.unstop === true ? (
-                          <Check className="size-4 text-emerald-600 inline" />
-                        ) : row.unstop === 'partial' ? (
-                          <span className="text-[11px] font-bold text-amber-700 bg-amber-100/70 px-2 py-0.5 rounded-full">
-                            Partial
-                          </span>
-                        ) : (
-                          <X className="size-4 text-rose-500 inline" />
-                        )}
-                      </td>
-                      <td className="py-3.5 px-4 text-center">
-                        {row.linkedin === true ? (
-                          <Check className="size-4 text-emerald-600 inline" />
-                        ) : (
-                          <X className="size-4 text-rose-500 inline" />
-                        )}
-                      </td>
-                      <td className="py-3.5 px-6 text-center bg-primary/5 font-bold text-primary">
-                        <Check className="size-5 text-primary inline stroke-[2.5]" />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Container>
-        </Section>
-
-        {/* ─────────────── TECHNICAL ARCHITECTURE & ROADMAP ─────────────── */}
-        <Section tone="dune" rhythm="spacious">
+        {/* ─────────────── PLATFORM FEATURES ─────────────── */}
+        <Section tone="dune" rhythm="default">
           <Container width="wide">
             <Reveal className="max-w-2xl">
-              <span className="text-label uppercase text-primary font-bold">System Architecture</span>
-              <h2 className="mt-3 text-heading text-foreground font-extrabold">
-                Engineered for High-Performance & Security.
-              </h2>
-              <p className="mt-3 text-sm leading-relaxed text-muted">
-                Role-aware execution pipeline tested with 69 unit tests and production benchmarks.
-              </p>
-            </Reveal>
-
-            <div className="mt-12 grid gap-6 md:grid-cols-3">
-              <div className="surface-raised rounded-3xl border border-[rgba(209,199,189,0.7)] p-6 sm:p-7">
-                <div className="flex size-11 items-center justify-center rounded-2xl bg-[rgba(114,56,61,0.08)] text-primary mb-5">
-                  <Cpu className="size-5.5" strokeWidth={1.75} />
-                </div>
-                <h3 className="text-feature font-bold text-foreground">Client Layer</h3>
-                <ul className="mt-4 space-y-2.5 text-xs text-body leading-relaxed">
-                  <li className="flex items-center gap-2">
-                    <Check className="size-3.5 text-primary shrink-0" />
-                    Next.js 16 App Router &amp; React 19
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="size-3.5 text-primary shrink-0" />
-                    Role-Aware Staged Dashboards (&lt;100ms)
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="size-3.5 text-primary shrink-0" />
-                    GSAP Motion &amp; Lenis Smooth Scrolling
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="size-3.5 text-primary shrink-0" />
-                    In-flight Request Deduplication Client
-                  </li>
-                </ul>
-              </div>
-
-              <div className="surface-raised rounded-3xl border border-[rgba(209,199,189,0.7)] p-6 sm:p-7">
-                <div className="flex size-11 items-center justify-center rounded-2xl bg-[rgba(114,56,61,0.08)] text-primary mb-5">
-                  <ShieldCheck className="size-5.5" strokeWidth={1.75} />
-                </div>
-                <h3 className="text-feature font-bold text-foreground">API &amp; Security Layer</h3>
-                <ul className="mt-4 space-y-2.5 text-xs text-body leading-relaxed">
-                  <li className="flex items-center gap-2">
-                    <Check className="size-3.5 text-primary shrink-0" />
-                    Rate-Limited REST Endpoints (120 req/min)
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="size-3.5 text-primary shrink-0" />
-                    401 / 403 Role Authorization Gateways
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="size-3.5 text-primary shrink-0" />
-                    Binary Avatar Streaming (&gt;99% Payload Cut)
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="size-3.5 text-primary shrink-0" />
-                    DPDP Act Privacy: Masked Roll Numbers &amp; Phones
-                  </li>
-                </ul>
-              </div>
-
-              <div className="surface-raised rounded-3xl border border-[rgba(209,199,189,0.7)] p-6 sm:p-7">
-                <div className="flex size-11 items-center justify-center rounded-2xl bg-[rgba(114,56,61,0.08)] text-primary mb-5">
-                  <Layers className="size-5.5" strokeWidth={1.75} />
-                </div>
-                <h3 className="text-feature font-bold text-foreground">Data &amp; Database Layer</h3>
-                <ul className="mt-4 space-y-2.5 text-xs text-body leading-relaxed">
-                  <li className="flex items-center gap-2">
-                    <Check className="size-3.5 text-primary shrink-0" />
-                    Prisma ORM 6.19 with Supabase PostgreSQL
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="size-3.5 text-primary shrink-0" />
-                    1 Compound Join Query per Search Route
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="size-3.5 text-primary shrink-0" />
-                    Strict Bounded 24-Row Pagination
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="size-3.5 text-primary shrink-0" />
-                    Immutable Team Code Reservation Ledger
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            {/* AI Roadmap Banner */}
-            <div className="mt-8 rounded-2xl border border-[rgba(114,56,61,0.25)] bg-[rgba(114,56,61,0.06)] p-5 sm:p-6 text-sm text-foreground flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="flex size-9 items-center justify-center rounded-xl bg-primary text-on-accent shrink-0">
-                  <Zap className="size-4" />
-                </div>
-                <div>
-                  <h4 className="font-bold text-foreground">Next Release Roadmap: Claude-Powered Intelligence</h4>
-                  <p className="text-xs text-muted mt-0.5">Automated skill-gap matchmaking, team synergy scoring, and AI profile-assistant agents.</p>
-                </div>
-              </div>
-              <span className="text-xs font-bold uppercase tracking-wider text-primary border border-primary/30 px-3 py-1 rounded-full whitespace-nowrap bg-white/50">
-                In Pipeline
-              </span>
-            </div>
-          </Container>
-        </Section>
-
-        {/* ─────────────── IMPACT & FEASIBILITY ─────────────── */}
-        <Section tone="mist" rhythm="spacious">
-          <Container width="wide">
-            <Reveal className="max-w-2xl">
-              <span className="text-label uppercase text-primary font-bold">Impact &amp; Viability</span>
-              <h2 className="mt-3 text-heading text-foreground font-extrabold">
-                Measurable Impact Across Campus.
+              <span className="text-label uppercase text-primary">Platform features</span>
+              <h2 className="mt-4 text-heading text-foreground">
+                Everything a hackathon demands, in one place.
               </h2>
             </Reveal>
 
-            <div className="mt-12 grid gap-6 md:grid-cols-3">
-              <div className="surface-claymorphic rounded-3xl p-6 sm:p-7">
-                <span className="text-xs font-bold uppercase tracking-wider text-primary">Social Impact</span>
-                <h4 className="mt-2 text-lg font-bold text-foreground">Equitable Opportunities</h4>
-                <ul className="mt-4 space-y-2.5 text-xs text-muted leading-relaxed">
-                  <li>&bull; Every student finds a team by merit and technical skill, not luck or popularity.</li>
-                  <li>&bull; Ends the chaotic WhatsApp &amp; hallway "who do I ask?" hunt.</li>
-                  <li>&bull; Built-in female seat reservation champions campus gender diversity.</li>
-                  <li>&bull; First-year and non-CS students connect with experienced seniors seamlessly.</li>
-                </ul>
-              </div>
-
-              <div className="surface-claymorphic rounded-3xl p-6 sm:p-7">
-                <span className="text-xs font-bold uppercase tracking-wider text-primary">Institutional Impact</span>
-                <h4 className="mt-2 text-lg font-bold text-foreground">Zero-Overhead College Ops</h4>
-                <ul className="mt-4 space-y-2.5 text-xs text-muted leading-relaxed">
-                  <li>&bull; Single unified administrative console for all college hackathons and fests.</li>
-                  <li>&bull; Real-time visibility into team formation completeness and student participation.</li>
-                  <li>&bull; Faculty mentorship capacity tracking prevents professor burnout.</li>
-                  <li>&bull; Exportable rosters formatted directly for official hackathon submission.</li>
-                </ul>
-              </div>
-
-              <div className="surface-claymorphic rounded-3xl p-6 sm:p-7">
-                <span className="text-xs font-bold uppercase tracking-wider text-primary">Macro &amp; Economic</span>
-                <h4 className="mt-2 text-lg font-bold text-foreground">Scalable B2B Model</h4>
-                <ul className="mt-4 space-y-2.5 text-xs text-muted leading-relaxed">
-                  <li>&bull; Replaces error-prone Google Sheets and disconnected chat groups.</li>
-                  <li>&bull; Multi-tenant architecture allows rapid replication across partner colleges.</li>
-                  <li>&bull; Directly supports UN Sustainable Development Goal 4 (Quality Education).</li>
-                  <li>&bull; Lays the foundation for an inter-college cross-campus skill graph.</li>
-                </ul>
-              </div>
-            </div>
-
-            {/* Go-To-Market Roadmap */}
-            <div className="mt-10 rounded-3xl border border-[rgba(209,199,189,0.7)] bg-white/40 p-6 sm:p-8">
-              <span className="text-xs font-bold uppercase tracking-wider text-primary">Go-To-Market Execution</span>
-              <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
-                <div className="rounded-2xl border border-[rgba(209,199,189,0.5)] bg-white/70 p-4">
-                  <p className="text-xs font-bold text-primary uppercase">Stage 1: Pilot</p>
-                  <p className="text-base font-bold text-foreground mt-1">GL Bajaj Mathura</p>
-                  <p className="text-xs text-muted mt-1">Full rollout for Hustle Carnival 2026 &amp; SIH internal round.</p>
-                </div>
-                <div className="rounded-2xl border border-[rgba(209,199,189,0.5)] bg-white/70 p-4">
-                  <p className="text-xs font-bold text-primary uppercase">Stage 2: Scale</p>
-                  <p className="text-base font-bold text-foreground mt-1">Partner Colleges</p>
-                  <p className="text-xs text-muted mt-1">B2B access-code onboarding for affiliated technical institutions.</p>
-                </div>
-                <div className="rounded-2xl border border-[rgba(209,199,189,0.5)] bg-white/70 p-4">
-                  <p className="text-xs font-bold text-primary uppercase">Stage 3: Expand</p>
-                  <p className="text-base font-bold text-foreground mt-1">Campus Fests &amp; Clubs</p>
-                  <p className="text-xs text-muted mt-1">Self-serve event creation for department hackathons and coding clubs.</p>
-                </div>
-              </div>
-            </div>
+            <RevealGroup stagger={0.1} className="mt-14 grid gap-6 md:grid-cols-3">
+              {PLATFORM_FEATURES.map((item) => (
+                <RevealItem key={item.title}>
+                  <TiltCard className="h-full">
+                    <SpotlightCard className="h-full rounded-3xl">
+                      <Link
+                        href={item.href}
+                        className="surface-claymorphic group relative flex h-full flex-col gap-4 overflow-hidden p-5 sm:p-7 transition-shadow duration-400"
+                      >
+                        <span className="flex size-12 items-center justify-center rounded-2xl border border-[rgba(114,56,61,0.18)] bg-[rgba(114,56,61,0.07)] text-primary transition-transform duration-400 group-hover:scale-105">
+                          <item.icon className="size-5" strokeWidth={1.75} />
+                        </span>
+                        <h3 className="text-feature text-foreground">{item.title}</h3>
+                        <p className="text-sm leading-relaxed text-muted">{item.desc}</p>
+                        <span className="mt-auto inline-flex items-center gap-1.5 pt-2 text-label uppercase text-primary">
+                          {item.cta}
+                          <svg viewBox="0 0 24 24" fill="none" className="size-3.5 transition-transform duration-300 group-hover:translate-x-1">
+                            <path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </span>
+                      </Link>
+                    </SpotlightCard>
+                  </TiltCard>
+                </RevealItem>
+              ))}
+            </RevealGroup>
           </Container>
         </Section>
 
@@ -936,12 +599,13 @@ export default function ArenaHome() {
           <Aurora variant="rose" spotlight={false} />
           <Container width="narrow" className="relative text-center">
             <Reveal scale>
-              <h2 className="text-heading text-foreground font-extrabold">
-                Ready to find your team and
-                <span className="text-gradient-luxe"> enter the arena?</span>
+              <h2 className="text-heading text-foreground">
+                Ready to build something
+                <span className="text-gradient-luxe"> worth shipping?</span>
               </h2>
               <p className="mx-auto mt-6 max-w-lg text-base leading-relaxed text-muted">
-                Register, set up your 3-tile skill profile, and join the flagship Hustle Carnival 2026 buildathon and campus hackathons.
+                Register, complete your profile, and start assembling the team that takes GL Bajaj
+                all the way.
               </p>
               <div className="mt-9 flex flex-wrap justify-center gap-3">
                 {status === 'authenticated' ? (
@@ -950,14 +614,11 @@ export default function ArenaHome() {
                   </PremiumButton>
                 ) : (
                   <PremiumButton href="/login" size="lg">
-                    Get Started Free
+                    Get started
                   </PremiumButton>
                 )}
                 <PremiumButton href="/events" variant="glass" size="lg">
-                  Browse Events
-                </PremiumButton>
-                <PremiumButton href="/team-formation/browse-teammates" variant="glass" size="lg">
-                  Browse Teammates
+                  Browse events
                 </PremiumButton>
               </div>
             </Reveal>

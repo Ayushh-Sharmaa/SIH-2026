@@ -116,13 +116,15 @@ export default function TracksPage() {
               </Reveal>
               <SplitText
                 as="h1"
-                text="Hackathon Tracks & Themes"
+                text="Official SIH 2026 themes"
                 className="mt-3 text-title text-foreground"
                 delay={0.08}
               />
               <Reveal delay={0.3} className="mt-4 max-w-lg">
                 <p className="text-sm leading-relaxed text-body">
-                  Explore official problem domains and reference themes for Hustle Carnival 2026 (Problem Statement ELU04) and campus competitions at GL Bajaj Group of Institutions, Mathura.
+                  Explore official Smart India Hackathon problem domains and reference themes.
+                  Pick a direction early — the ministries release exact statements closer to the
+                  event.
                 </p>
               </Reveal>
             </div>

@@ -110,13 +110,13 @@ export default function OnboardingPage() {
             <div className="text-center max-w-2xl mx-auto mb-12">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[rgba(209,199,189,0.7)] bg-[rgba(248,246,242,0.8)] text-xs font-semibold text-primary mb-4">
                 <Sparkles className="size-3.5" />
-                <span>Arena &bull; Student Skill &amp; Team Finder</span>
+                <span>Smart India Hackathon 2026 Portal</span>
               </div>
               <h1 className="text-display text-foreground">
-                <SplitText text="Welcome to Arena" />
+                <SplitText text="Welcome to SIH@GLBGOI" />
               </h1>
               <p className="mt-4 text-body text-muted text-base sm:text-lg">
-                Select your role to get started with Hustle Carnival 2026 and GL Bajaj campus competitions. Build your 3-tile profile directly on your dashboard.
+                Select your path to get started. You can complete your profile details and preferences progressively directly on your dashboard.
               </p>
             </div>
           </Reveal>

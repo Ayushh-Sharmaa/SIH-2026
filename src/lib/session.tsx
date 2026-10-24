@@ -35,8 +35,11 @@ import { useRouter } from 'next/navigation';
  */
 
 export interface SessionUser {
+  id?: string;
+  email?: string;
   name: string;
   role: string;
+  college?: string;
   isOnboarded?: boolean;
 }
 

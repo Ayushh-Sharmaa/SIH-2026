@@ -57,6 +57,7 @@ async function main() {
       tagline: 'GL Bajaj Smart India Hackathon — Internal Round',
       description:
         'The official internal round of Smart India Hackathon 2026 at GL Bajaj Group of Institutions, Mathura. Form balanced teams, close skill gaps, and match with verified faculty mentors before the national finale.',
+      bannerUrl: '/Logo/GL-BAJAJ-LOGO-3.png',
       startDate: new Date('2026-06-01T00:00:00.000Z'),
       endDate: new Date('2026-12-31T00:00:00.000Z'),
       isActive: true,

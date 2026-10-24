@@ -141,7 +141,7 @@ function LoginContent() {
               className="size-9 object-contain"
             />
             <span className="text-sm font-extrabold uppercase tracking-[0.18em] text-foreground">
-              SIH@GLBGOI
+              Arena &bull; GLBGOI
             </span>
           </Link>
         </Reveal>
@@ -198,7 +198,7 @@ function LoginContent() {
                 className="size-8 object-contain"
               />
               <span className="text-sm font-extrabold uppercase tracking-[0.18em] text-foreground">
-                SIH@GLBGOI
+                Arena &bull; GLBGOI
               </span>
             </Link>
           </Reveal>

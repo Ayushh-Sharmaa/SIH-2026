@@ -142,7 +142,7 @@ function SignUpContent() {
               className="size-9 object-contain"
             />
             <span className="text-sm font-extrabold uppercase tracking-[0.18em] text-foreground">
-              SIH@GLBGOI
+              Arena &bull; GLBGOI
             </span>
           </Link>
         </Reveal>
@@ -150,7 +150,7 @@ function SignUpContent() {
         <div className="relative">
           <SplitText
             as="p"
-            text="Start your SIH journey."
+            text="Start your hackathon journey."
             className="max-w-md text-heading text-foreground"
             delay={0.12}
           />
@@ -177,7 +177,7 @@ function SignUpContent() {
 
         <Reveal delay={0.75}>
           <p className="relative text-label uppercase text-muted">
-            Smart India Hackathon internal evaluation portal
+            Campus hackathon &amp; team finder platform
           </p>
         </Reveal>
       </aside>
@@ -199,7 +199,7 @@ function SignUpContent() {
                 className="size-8 object-contain"
               />
               <span className="text-sm font-extrabold uppercase tracking-[0.18em] text-foreground">
-                SIH@GLBGOI
+                Arena &bull; GLBGOI
               </span>
             </Link>
           </Reveal>

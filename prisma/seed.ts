@@ -47,26 +47,7 @@ async function main() {
   await prisma.$transaction(keyUpserts);
   console.log('Mentor keys seeded successfully.');
 
-  // 3. Seed the SIH Internal 2026 event
-  await prisma.event.upsert({
-    where: { slug: 'sih-internal-2026' },
-    update: {},
-    create: {
-      name: 'SIH Internal 2026',
-      slug: 'sih-internal-2026',
-      tagline: 'GL Bajaj Smart India Hackathon — Internal Round',
-      description:
-        'The official internal round of Smart India Hackathon 2026 at GL Bajaj Group of Institutions, Mathura. Form balanced teams, close skill gaps, and match with verified faculty mentors before the national finale.',
-      bannerUrl: '/Logo/GL-BAJAJ-LOGO-3.png',
-      startDate: new Date('2026-06-01T00:00:00.000Z'),
-      endDate: new Date('2026-12-31T00:00:00.000Z'),
-      isActive: true,
-      createdBy: 'system',
-    },
-  });
-  console.log('SIH Internal 2026 event seeded successfully.');
-
-  // 4. Seed Hustle Carnival 2026 event
+  // 3. Seed Campus Events (Hustle Carnival 2026 & SIH Internal 2026)
   await prisma.event.upsert({
     where: { slug: 'hustle-carnival-2026' },
     update: {
@@ -92,7 +73,24 @@ async function main() {
       createdBy: 'system',
     },
   });
-  console.log('Hustle Carnival 2026 event seeded successfully.');
+
+  await prisma.event.upsert({
+    where: { slug: 'sih-internal-2026' },
+    update: {},
+    create: {
+      name: 'SIH Internal 2026',
+      slug: 'sih-internal-2026',
+      tagline: 'GL Bajaj Smart India Hackathon — Internal Round',
+      description:
+        'The official internal round of Smart India Hackathon 2026 at GL Bajaj Group of Institutions, Mathura. Form balanced teams, close skill gaps, and match with verified faculty mentors before the national finale.',
+      bannerUrl: '/Logo/GL-BAJAJ-LOGO-3.png',
+      startDate: new Date('2026-06-01T00:00:00.000Z'),
+      endDate: new Date('2026-12-31T00:00:00.000Z'),
+      isActive: true,
+      createdBy: 'system',
+    },
+  });
+  console.log('Campus events seeded successfully.');
 }
 
 main()

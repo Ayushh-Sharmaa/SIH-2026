@@ -50,15 +50,25 @@ async function main() {
   // 3. Seed Campus Events (Hustle Carnival 2026 & SIH Internal 2026)
   await prisma.event.upsert({
     where: { slug: 'hustle-carnival-2026' },
-    update: {},
-    create: {
-      name: 'Hustle Carnival 2026',
-      slug: 'hustle-carnival-2026',
-      tagline: 'Ellusion Buildathon — ELU04: Student Skill & Team Finder',
+    update: {
+      name: 'Hustle Carnival',
+      tagline: 'Hustle Beyond · Open Innovation Buildathon',
       description:
-        'The flagship campus buildathon under Hustle Carnival 2026 at GL Bajaj Group of Institutions, Mathura. Solving problem statement ELU04 (Education & Student Networking) by Team Ghost. Form balanced teams, discover teammates, and connect with mentors.',
-      startDate: new Date('2026-03-01T00:00:00.000Z'),
-      endDate: new Date('2026-05-30T00:00:00.000Z'),
+        'The flagship hybrid buildathon hosted by Club Ellusion, the official technical club of G.L. Bajaj Group of Institutions, Mathura. Open Innovation challenge for teams of 1-2 across engineering and management, featuring an online submission phase and a 6-hour on-campus finale.',
+      bannerUrl: '/events/hustle-carnival.png',
+      startDate: new Date('2026-10-22T08:30:00.000Z'),
+      endDate: new Date('2026-10-24T11:00:00.000Z'),
+      isActive: true,
+    },
+    create: {
+      name: 'Hustle Carnival',
+      slug: 'hustle-carnival-2026',
+      tagline: 'Hustle Beyond · Open Innovation Buildathon',
+      description:
+        'The flagship hybrid buildathon hosted by Club Ellusion, the official technical club of G.L. Bajaj Group of Institutions, Mathura. Open Innovation challenge for teams of 1-2 across engineering and management, featuring an online submission phase and a 6-hour on-campus finale.',
+      bannerUrl: '/events/hustle-carnival.png',
+      startDate: new Date('2026-10-22T08:30:00.000Z'),
+      endDate: new Date('2026-10-24T11:00:00.000Z'),
       isActive: true,
       createdBy: 'system',
     },
@@ -73,6 +83,7 @@ async function main() {
       tagline: 'GL Bajaj Smart India Hackathon — Internal Round',
       description:
         'The official internal round of Smart India Hackathon 2026 at GL Bajaj Group of Institutions, Mathura. Form balanced teams, close skill gaps, and match with verified faculty mentors before the national finale.',
+      bannerUrl: '/Logo/GL-BAJAJ-LOGO-3.png',
       startDate: new Date('2026-06-01T00:00:00.000Z'),
       endDate: new Date('2026-12-31T00:00:00.000Z'),
       isActive: true,

@@ -491,15 +491,23 @@ export default function ArenaHome() {
                 className="mt-8 flex flex-wrap items-center gap-3"
               >
                 {status === 'authenticated' ? (
-                  <PremiumButton href="/dashboard" size="lg">
-                    Enter Dashboard
-                    <ArrowRight className="size-4" />
-                  </PremiumButton>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <PremiumButton href="/dashboard" size="lg">
+                      Enter Dashboard
+                      <ArrowRight className="size-4" />
+                    </PremiumButton>
+                    <PremiumButton href="/events" variant="glass" size="lg">
+                      Browse Events
+                    </PremiumButton>
+                  </div>
                 ) : (
                   <>
                     <PremiumButton href="/login" size="lg">
-                      Sign Up with College Email
+                      Get Started Free
                       <ArrowRight className="size-4" />
+                    </PremiumButton>
+                    <PremiumButton href="/events" variant="glass" size="lg">
+                      Browse Events
                     </PremiumButton>
                     <PremiumButton href="#flow" variant="glass" size="lg">
                       How Arena Works
@@ -916,7 +924,7 @@ export default function ArenaHome() {
                 <span className="text-gradient-luxe"> enter the arena?</span>
               </h2>
               <p className="mx-auto mt-6 max-w-lg text-base leading-relaxed text-muted">
-                Register with your GL Bajaj college account, set up your 3-tile skill profile, and join the flagship Hustle Carnival 2026 buildathon.
+                Register, set up your 3-tile skill profile, and join the flagship Hustle Carnival 2026 buildathon and campus hackathons.
               </p>
               <div className="mt-9 flex flex-wrap justify-center gap-3">
                 {status === 'authenticated' ? (
@@ -928,6 +936,9 @@ export default function ArenaHome() {
                     Get Started Free
                   </PremiumButton>
                 )}
+                <PremiumButton href="/events" variant="glass" size="lg">
+                  Browse Events
+                </PremiumButton>
                 <PremiumButton href="/team-formation/browse-teammates" variant="glass" size="lg">
                   Browse Teammates
                 </PremiumButton>

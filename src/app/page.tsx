@@ -61,7 +61,7 @@ const DEFAULT_EVENTS: ArenaEvent[] = [
     tagline: 'Ellusion Buildathon — Problem Statement ELU04: Student Skill & Team Finder',
     description:
       'The flagship buildathon challenge under Hustle Carnival 2026 at GL Bajaj Group of Institutions, Mathura. Solving problem statement ELU04 (Education & Student Networking) by Team Ghost. Form balanced squads, bridge skill gaps, and connect with faculty mentors.',
-    bannerUrl: null,
+    bannerUrl: '/events/hustle-carnival.png',
     startDate: '2026-03-01T00:00:00.000Z',
     endDate: '2026-05-30T00:00:00.000Z',
     isActive: true,
@@ -73,7 +73,7 @@ const DEFAULT_EVENTS: ArenaEvent[] = [
     tagline: 'GL Bajaj Smart India Hackathon — Internal Round',
     description:
       'The official internal round of Smart India Hackathon 2026 at GL Bajaj Group of Institutions, Mathura. Form balanced teams of 6 members with 1 female reservation, close skill gaps, and match with verified faculty mentors.',
-    bannerUrl: null,
+    bannerUrl: '/Logo/GL-BAJAJ-LOGO-3.png',
     startDate: '2026-06-01T00:00:00.000Z',
     endDate: '2026-12-31T00:00:00.000Z',
     isActive: true,
@@ -83,15 +83,15 @@ const DEFAULT_EVENTS: ArenaEvent[] = [
 const PLATFORM_STEPS = [
   {
     step: '01',
-    title: 'List Events',
-    desc: 'Colleges and clubs post public or private hackathons with isolated access codes.',
+    title: 'Explore Events',
+    desc: 'Colleges and clubs host hackathons open for all students to discover and explore freely.',
     icon: School,
   },
   {
     step: '02',
-    title: 'Join via Code',
-    desc: 'Students enter their college access code to unlock their institution-specific talent pool.',
-    icon: Lock,
+    title: 'Open Registration',
+    desc: 'Register openly with your personal or institutional Google ID to participate and form squads.',
+    icon: Sparkles,
   },
   {
     step: '03',
@@ -357,20 +357,37 @@ function EventCard({ event }: { event: ArenaEvent }) {
               )}
             </div>
 
-            <div className="flex-1">
-              <h3 className="text-heading text-foreground font-extrabold tracking-tight">
-                {event.name}
-              </h3>
-              {event.tagline && (
-                <p className="mt-2 text-sm font-medium text-primary">{event.tagline}</p>
+            {/* Logo + Header */}
+            <div className="flex items-start gap-4">
+              {event.bannerUrl && (
+                <div className="relative flex size-14 shrink-0 items-center justify-center rounded-2xl border border-[rgba(209,199,189,0.7)] bg-white/80 p-2 shadow-sm transition-transform duration-300 group-hover:scale-105">
+                  <Image
+                    src={event.bannerUrl}
+                    alt={`${event.name} logo`}
+                    width={48}
+                    height={48}
+                    className="size-full object-contain"
+                  />
+                </div>
               )}
-              <p className="mt-3 text-sm leading-relaxed text-muted line-clamp-3">
+              <div className="min-w-0 flex-1">
+                <h3 className="text-heading text-foreground font-extrabold tracking-tight">
+                  {event.name}
+                </h3>
+                {event.tagline && (
+                  <p className="mt-1 text-xs font-semibold text-primary line-clamp-1">{event.tagline}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex-1">
+              <p className="text-sm leading-relaxed text-muted line-clamp-3">
                 {event.description}
               </p>
             </div>
 
             <span className="inline-flex items-center gap-2 text-label uppercase text-primary transition-all duration-300 group-hover:gap-3">
-              Enter Event Workspace
+              Explore Event Details
               <ArrowRight className="size-3.5 transition-transform duration-300 group-hover:translate-x-1" />
             </span>
           </Link>

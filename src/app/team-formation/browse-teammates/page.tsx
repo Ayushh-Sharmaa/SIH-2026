@@ -280,6 +280,10 @@ export default function FindTeammatesPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ studentId: student.userId }),
       });
+      if (response.status === 401) {
+        window.location.href = `/login?next=${encodeURIComponent('/team-formation/browse-teammates')}`;
+        return;
+      }
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'Could not send the invitation.');
 

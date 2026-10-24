@@ -212,7 +212,7 @@ function SignUpContent() {
               Create account
             </h1>
             <p className="mt-2 text-sm text-muted">
-              Use your student or institutional Google account to set up your profile.
+              Open to all students and mentors. Register using your personal or institutional Google account.
             </p>
           </Reveal>
 

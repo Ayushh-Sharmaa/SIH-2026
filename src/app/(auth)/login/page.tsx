@@ -211,7 +211,7 @@ function LoginContent() {
               Sign in
             </h1>
             <p className="mt-2 text-sm text-muted">
-              Sign in with your student, mentor, or institutional Google account to continue.
+              Sign in with your personal or institutional Google account to continue.
             </p>
           </Reveal>
 

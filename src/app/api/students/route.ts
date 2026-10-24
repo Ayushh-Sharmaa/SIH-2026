@@ -16,18 +16,12 @@ export async function GET(request: Request) {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;
+    const decoded = token ? verifyToken(token) : null;
 
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (decoded) {
+      const limited = await checkUserRateLimit(request, decoded.userId);
+      if (limited) return limited;
     }
-
-    const decoded = verifyToken(token);
-    if (!decoded) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const limited = await checkUserRateLimit(request, decoded.userId);
-    if (limited) return limited;
 
     const parsedQuery = parseQuery(request.url, studentSearchQuerySchema);
     if (!parsedQuery.success) {
@@ -50,7 +44,7 @@ export async function GET(request: Request) {
     // Construct database-side filter
     const where: Prisma.StudentProfileWhereInput = {
       isDemo: false,
-      userId: { not: decoded.userId },
+      ...(decoded ? { userId: { not: decoded.userId } } : {}),
       teamId: null, // Only show students looking for teams
       user: { role: 'STUDENT' },
     };

@@ -237,6 +237,9 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
   const isLoading = status === 'loading' && !clerkLoaded;
 
   const visibleLinks = NAV_LINKS.filter((link) => {
+    if (!isAuthenticated) {
+      return link.path !== '/dashboard';
+    }
     if (user?.role === 'MENTOR') {
       return link.path === '/events' || link.path === '/dashboard' || link.path === '/tracks';
     }

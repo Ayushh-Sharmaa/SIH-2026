@@ -13,18 +13,12 @@ export async function GET(request: Request) {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;
+    const decoded = token ? verifyToken(token) : null;
 
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (decoded) {
+      const limited = await checkUserRateLimit(request, decoded.userId);
+      if (limited) return limited;
     }
-
-    const decoded = verifyToken(token);
-    if (!decoded) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const limited = await checkUserRateLimit(request, decoded.userId);
-    if (limited) return limited;
 
     const parsedQuery = parseQuery(request.url, mentorSearchQuerySchema);
     if (!parsedQuery.success) {
@@ -126,7 +120,7 @@ export async function GET(request: Request) {
           ? { cursor: { userId: cursor }, skip: 1, take: PAGE_SIZE }
           : { skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE }),
       }),
-      decoded.role === 'STUDENT'
+      decoded && decoded.role === 'STUDENT'
         ? prisma.studentProfile.findUnique({
             where: { userId: decoded.userId },
             select: {
@@ -173,19 +167,26 @@ export async function GET(request: Request) {
         cursor: cursor || undefined,
         nextCursor,
       },
-      eligibility: {
-        role: decoded.role,
-        canRequest: decoded.role === 'STUDENT' && Boolean(viewer?.teamId) && !viewer?.team?.mentorId,
-        reason:
-          decoded.role !== 'STUDENT'
-            ? 'Only students can request mentorship.'
-            : !viewer?.teamId
-              ? 'Join or create a team first.'
-              : viewer.team?.mentorId
-                ? 'Your team already has an assigned mentor.'
-                : null,
-        existingMentorIds: viewer?.team?.mentorRequests.map((request) => request.mentorId) ?? [],
-      },
+      eligibility: decoded
+        ? {
+            role: decoded.role,
+            canRequest: decoded.role === 'STUDENT' && Boolean(viewer?.teamId) && !viewer?.team?.mentorId,
+            reason:
+              decoded.role !== 'STUDENT'
+                ? 'Only students can request mentorship.'
+                : !viewer?.teamId
+                  ? 'Join or create a team first.'
+                  : viewer.team?.mentorId
+                    ? 'Your team already has an assigned mentor.'
+                    : null,
+            existingMentorIds: viewer?.team?.mentorRequests.map((request) => request.mentorId) ?? [],
+          }
+        : {
+            role: 'GUEST',
+            canRequest: false,
+            reason: 'Sign in to request mentorship.',
+            existingMentorIds: [],
+          },
     });
   } catch (error) {
     logger.error('Search mentors error', error);

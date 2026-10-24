@@ -13,18 +13,12 @@ export async function GET(
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;
+    const decoded = token ? verifyToken(token) : null;
 
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (decoded) {
+      const limited = await checkUserRateLimit(request, decoded.userId);
+      if (limited) return limited;
     }
-
-    const decoded = verifyToken(token);
-    if (!decoded) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const limited = await checkUserRateLimit(request, decoded.userId);
-    if (limited) return limited;
 
     const resolvedParams = await params;
     const teamId = resolvedParams.id;
@@ -87,14 +81,14 @@ export async function GET(
       return NextResponse.json({ error: 'Team not found.' }, { status: 404 });
     }
 
-    const isMemberOfTeam = team.members.some((m) => m.userId === decoded.userId);
-    const isMentorOfTeam = team.mentorId === decoded.userId;
-    const isAdmin = decoded.role === 'ADMIN';
+    const isMemberOfTeam = decoded ? team.members.some((m) => m.userId === decoded.userId) : false;
+    const isMentorOfTeam = decoded ? team.mentorId === decoded.userId : false;
+    const isAdmin = decoded ? decoded.role === 'ADMIN' : false;
 
     const leader = team.members.find((m) => m.userId === team.leaderId) || team.members[0];
 
     const formattedMembers = team.members.map((m) => {
-      const isSelf = m.userId === decoded.userId;
+      const isSelf = decoded ? m.userId === decoded.userId : false;
       const canViewPrivate = isSelf || isMentorOfTeam || isAdmin;
 
       return {
@@ -121,7 +115,7 @@ export async function GET(
       };
     });
 
-    const leaderContact = leader ? {
+    const leaderContact = (leader && (isMemberOfTeam || isMentorOfTeam || isAdmin)) ? {
       name: leader.name,
       email: leader.user.email,
       contact: leader.contact,

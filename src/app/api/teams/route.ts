@@ -177,7 +177,7 @@ export async function GET(request: Request) {
           ? { cursor: { id: cursor }, skip: 1, take: PAGE_SIZE }
           : { skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE }),
       }),
-      decoded.role === 'STUDENT'
+      decoded && decoded.role === 'STUDENT'
         ? prisma.studentProfile.findUnique({
             where: { userId: decoded.userId },
             select: { teamId: true },
@@ -207,11 +207,17 @@ export async function GET(request: Request) {
         cursor: cursor || undefined,
         nextCursor,
       },
-      viewer: {
-        role: decoded.role,
-        hasTeam: Boolean(viewerProfile?.teamId),
-        canJoin: decoded.role === 'STUDENT' && !viewerProfile?.teamId,
-      },
+      viewer: decoded
+        ? {
+            role: decoded.role,
+            hasTeam: Boolean(viewerProfile?.teamId),
+            canJoin: decoded.role === 'STUDENT' && !viewerProfile?.teamId,
+          }
+        : {
+            role: 'GUEST',
+            hasTeam: false,
+            canJoin: false,
+          },
     });
   } catch (error) {
     logger.error('Search teams error', error);

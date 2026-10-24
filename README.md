@@ -1,8 +1,7 @@
 # Arena — Hackathon & Teammate Discovery Platform
 
-> **Official Hackathon Evaluation, Teammate Matching, and Faculty Mentorship Ecosystem**  
-> Developed for **Smart India Hackathon (SIH)**, **Hustle Carnival 2026**, and inter-collegiate buildathons.  
-> Maintained by **NexaSphere** & **Club Ellusion** at **GL Bajaj Group of Institutions, Mathura**.
+> **Official Hackathon Evaluation, Teammate Matching, and Faculty Mentorship Ecosystem**    
+> Maintained by **NexaSphere** at **GL Bajaj Group of Institutions, Mathura**.
 
 Built with a high-performance, role-aware architecture on **Next.js 16 (App Router)**, **React 19**, **Clerk Authentication & JWT**, **Prisma ORM**, and **Supabase PostgreSQL**.
 

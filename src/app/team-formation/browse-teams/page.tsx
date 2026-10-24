@@ -276,6 +276,14 @@ export default function FindTeamsPage() {
     }, 1);
   };
 
+  const handleRequestJoin = (team: Team) => {
+    if (!viewer || viewer.role === 'GUEST') {
+      window.location.href = `/login?next=${encodeURIComponent('/team-formation/browse-teams')}`;
+      return;
+    }
+    setActiveRequestTeam(team);
+  };
+
   const submitJoinRequest = async (message: string) => {
     if (!activeRequestTeam) return;
     const team = activeRequestTeam;
@@ -488,8 +496,9 @@ export default function FindTeamsPage() {
                           <TeamCard
                             team={team}
                             userHasTeam={userHasTeam}
+                            viewerRole={viewer?.role}
                             requestState={submittingRequest[team.id]}
-                            onRequestJoin={setActiveRequestTeam}
+                            onRequestJoin={handleRequestJoin}
                           />
                         </m.div>
                       ))}

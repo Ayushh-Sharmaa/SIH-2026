@@ -339,7 +339,7 @@ function LoginContent() {
               Sign In
             </h1>
             <p className="mt-1.5 text-xs text-muted leading-relaxed">
-              Open platform for all participants, institutions, and mentors.
+              Open platform for all participants, institutions, and mentors. Sign in with your personal or institutional Google account.
             </p>
           </Reveal>
 

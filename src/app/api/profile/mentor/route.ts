@@ -163,26 +163,21 @@ export async function GET(request: Request) {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;
+    const decoded = token ? verifyToken(token) : null;
 
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const decoded = verifyToken(token);
-    if (!decoded) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Authenticated user rate limit check
-    const rateLimitResponse = await checkUserRateLimit(request, decoded.userId);
-    if (rateLimitResponse) {
-      return rateLimitResponse;
+    if (decoded) {
+      const rateLimitResponse = await checkUserRateLimit(request, decoded.userId);
+      if (rateLimitResponse) return rateLimitResponse;
     }
 
     const { searchParams } = new URL(request.url);
     const rawTargetUserId = searchParams.get('userId')?.trim();
     const targetUserId = (rawTargetUserId && rawTargetUserId !== 'undefined' && rawTargetUserId !== 'null') ? rawTargetUserId : null;
-    const queryId = targetUserId || decoded.userId;
+    const queryId = targetUserId || decoded?.userId;
+
+    if (!queryId) {
+      return NextResponse.json({ error: 'Unauthorized. Sign in to view mentor profile.' }, { status: 401 });
+    }
 
     const [mentor, viewer] = await Promise.all([
       prisma.mentorProfile.findUnique({
@@ -202,7 +197,7 @@ export async function GET(request: Request) {
           },
         },
       }),
-      decoded.role === 'STUDENT'
+      decoded && decoded.role === 'STUDENT'
         ? prisma.studentProfile.findUnique({
             where: { userId: decoded.userId },
             select: {
@@ -225,6 +220,8 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Mentor profile not found.' }, { status: 404 });
     }
 
+    const canViewPrivateMentorContact = decoded && (decoded.userId === mentor.userId || decoded.role === 'ADMIN');
+
     return NextResponse.json({
       success: true,
       profile: {
@@ -233,8 +230,8 @@ export async function GET(request: Request) {
         designation: mentor.designation,
         organization: mentor.organization,
         college: mentor.user?.college || mentor.organization,
-        email: mentor.user?.email || null,
-        contact: mentor.contact || null,
+        email: canViewPrivateMentorContact ? (mentor.user?.email || null) : null,
+        contact: canViewPrivateMentorContact ? (mentor.contact || null) : null,
         expertise: mentor.expertise,
         guidedTeamsCount: mentor._count.teams,
         verified: mentor.verified,
@@ -243,20 +240,28 @@ export async function GET(request: Request) {
         avatarUrl: mentor.avatarUrl,
         teams: mentor.teams,
       },
-      eligibility: {
-        role: decoded.role,
-        canRequest: decoded.role === 'STUDENT' && Boolean(viewer?.teamId) && !viewer?.team?.mentorId,
-        reason:
-          decoded.role !== 'STUDENT'
-            ? 'Only students can request mentorship.'
-            : !viewer?.teamId
-              ? 'Join or create a team first.'
-              : viewer.team?.mentorId
-                ? 'Your team already has an assigned mentor.'
-                : null,
-        isRequested: Boolean(viewer?.team?.mentorRequests && viewer.team.mentorRequests.length > 0),
-        requestStatus: viewer?.team?.mentorRequests?.[0]?.status || null,
-      },
+      eligibility: decoded
+        ? {
+            role: decoded.role,
+            canRequest: decoded.role === 'STUDENT' && Boolean(viewer?.teamId) && !viewer?.team?.mentorId,
+            reason:
+              decoded.role !== 'STUDENT'
+                ? 'Only students can request mentorship.'
+                : !viewer?.teamId
+                  ? 'Join or create a team first.'
+                  : viewer.team?.mentorId
+                    ? 'Your team already has an assigned mentor.'
+                    : null,
+            isRequested: Boolean(viewer?.team?.mentorRequests && viewer.team.mentorRequests.length > 0),
+            requestStatus: viewer?.team?.mentorRequests?.[0]?.status || null,
+          }
+        : {
+            role: 'GUEST',
+            canRequest: false,
+            reason: 'Sign in to request mentorship.',
+            isRequested: false,
+            requestStatus: null,
+          },
     });
   } catch (error) {
     logger.error('Get mentor profile error', error);

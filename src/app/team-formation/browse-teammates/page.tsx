@@ -280,6 +280,10 @@ export default function FindTeammatesPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ studentId: student.userId }),
       });
+      if (response.status === 401) {
+        window.location.href = `/login?next=${encodeURIComponent('/team-formation/browse-teammates')}`;
+        return;
+      }
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'Could not send the invitation.');
 
@@ -311,7 +315,7 @@ export default function FindTeammatesPage() {
         <DirectoryHero
           eyebrow="Talent directory"
           title="Browse teammates"
-          description="Discover collaborating students for Smart India Hackathon. Search by technical skills, theme interests, branch, and fluency."
+          description="Discover collaborating students across campus hackathons and competitions like Hustle Carnival 2026. Search by technical skills, theme interests, branch, and fluency."
           totalCount={totalCount || students.length}
           totalCountLabel="profiles found"
           activeFiltersCount={activeFiltersCount}
@@ -324,7 +328,7 @@ export default function FindTeammatesPage() {
             {/* Primary Search Command Deck */}
             <DirectorySearchDeck
               heading="Search & Refine Teammates"
-              subheading="Filter available students by technical abilities, SIH ministry themes, academic branch, or soft skills"
+              subheading="Filter available students by technical abilities, hackathon themes, academic branch, or soft skills"
               searchValue={name}
               onSearchChange={setName}
               searchPlaceholder="Search student name, skills, or keyword (e.g. Tanishk, React, Python)..."

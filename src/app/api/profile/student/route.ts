@@ -136,20 +136,11 @@ export async function GET(request: Request) {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;
+    const decoded = token ? verifyToken(token) : null;
 
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const decoded = verifyToken(token);
-    if (!decoded) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Authenticated user rate limit check
-    const rateLimitResponse = await checkUserRateLimit(request, decoded.userId);
-    if (rateLimitResponse) {
-      return rateLimitResponse;
+    if (decoded) {
+      const rateLimitResponse = await checkUserRateLimit(request, decoded.userId);
+      if (rateLimitResponse) return rateLimitResponse;
     }
 
     const parsedQuery = parseQuery(request.url, profileLookupQuerySchema);
@@ -157,7 +148,10 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Invalid profile query.' }, { status: 400 });
     }
 
-    const queryId = parsedQuery.data.userId || decoded.userId;
+    const queryId = parsedQuery.data.userId || decoded?.userId;
+    if (!queryId) {
+      return NextResponse.json({ error: 'Unauthorized. Sign in to view profile.' }, { status: 401 });
+    }
 
     const student = await prisma.studentProfile.findUnique({
       where: { userId: queryId },
@@ -172,12 +166,14 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Student profile not found.' }, { status: 404 });
     }
 
-    const isSelf = queryId === decoded.userId;
-    const isAdmin = decoded.role === 'ADMIN';
-    const isTeamMentor = decoded.role === 'MENTOR' && Boolean(student.team?.mentorId && student.team.mentorId === decoded.userId);
+    const isSelf = decoded ? queryId === decoded.userId : false;
+    const isAdmin = decoded ? decoded.role === 'ADMIN' : false;
+    const isTeamMentor = decoded
+      ? decoded.role === 'MENTOR' && Boolean(student.team?.mentorId && student.team.mentorId === decoded.userId)
+      : false;
 
     let isAcceptedMeeting = false;
-    if (!isSelf && !isAdmin && !isTeamMentor) {
+    if (decoded && !isSelf && !isAdmin && !isTeamMentor) {
       if (decoded.role === 'MENTOR') {
         const req = await prisma.mentorRequest.findFirst({
           where: {

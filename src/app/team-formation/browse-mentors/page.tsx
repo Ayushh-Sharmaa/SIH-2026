@@ -591,7 +591,14 @@ export default function FindMentorsPage() {
                               View Profile
                             </Link>
 
-                            {!eligibility?.canRequest ? (
+                            {eligibility?.role === 'GUEST' ? (
+                              <Link
+                                href="/login?next=/team-formation/browse-mentors"
+                                className="rounded-xl bg-primary px-3.5 py-1.5 text-xs font-bold text-on-accent shadow-e1 hover:shadow-e2 transition-all w-full sm:w-auto text-center"
+                              >
+                                Sign In to Request
+                              </Link>
+                            ) : !eligibility?.canRequest ? (
                               <span className="text-[11px] text-muted flex items-center gap-1">
                                 <ShieldAlert className="size-3.5 text-muted shrink-0" /> {eligibility?.reason ?? 'Checking eligibility'}
                               </span>

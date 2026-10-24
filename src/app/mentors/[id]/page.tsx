@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import Image from 'next/image';
 import { AnimatePresence, m } from 'framer-motion';
 import {
@@ -385,7 +386,14 @@ export default function MentorProfilePage() {
 
               {/* Mentorship Request Action */}
               <div className="flex items-center gap-3 shrink-0 pt-2 sm:pt-0">
-                {eligibility?.canRequest ? (
+                {eligibility?.role === 'GUEST' ? (
+                  <Link
+                    href={`/login?next=${encodeURIComponent(`/mentors/${profile.userId}`)}`}
+                    className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-xs font-bold text-on-accent shadow-e2 hover:shadow-e3 transition-all"
+                  >
+                    Sign In to Request
+                  </Link>
+                ) : eligibility?.canRequest ? (
                   <PremiumButton
                     size="md"
                     variant={requestState === 'sent' ? 'glass' : 'primary'}

@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { AnimatePresence, m } from 'framer-motion';
-import { ShieldAlert, Calendar, ArrowRight, Sparkles, Users, BookOpen, Trophy } from 'lucide-react';
+import { ShieldAlert, Calendar, ArrowRight, Sparkles, Users, BookOpen, Trophy, School, UserCheck } from 'lucide-react';
 
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -32,6 +32,140 @@ interface ArenaEvent {
   isActive: boolean;
 }
 
+const DEFAULT_EVENTS: ArenaEvent[] = [
+  {
+    id: 'evt-hustle-2026',
+    name: 'Hustle Carnival 2026',
+    slug: 'hustle-carnival-2026',
+    tagline: 'Ellusion Buildathon — Problem Statement ELU04: Student Skill & Team Finder',
+    description:
+      'The flagship buildathon challenge under Hustle Carnival 2026 at GL Bajaj Group of Institutions, Mathura. Solving problem statement ELU04 (Education & Student Networking) by Team Ghost. Form balanced squads, bridge skill gaps, and connect with faculty mentors.',
+    bannerUrl: '/events/hustle-carnival.png',
+    startDate: '2026-03-01T00:00:00.000Z',
+    endDate: '2026-05-30T00:00:00.000Z',
+    isActive: true,
+  },
+  {
+    id: 'evt-sih-2026',
+    name: 'SIH Internal 2026',
+    slug: 'sih-internal-2026',
+    tagline: 'GL Bajaj Smart India Hackathon — Internal Round',
+    description:
+      'The official internal round of Smart India Hackathon 2026 at GL Bajaj Group of Institutions, Mathura. Form balanced teams of 6 members with 1 female reservation, close skill gaps, and match with verified faculty mentors.',
+    bannerUrl: '/Logo/GL-BAJAJ-LOGO-3.png',
+    startDate: '2026-06-01T00:00:00.000Z',
+    endDate: '2026-12-31T00:00:00.000Z',
+    isActive: true,
+  },
+];
+
+const PLATFORM_STEPS = [
+  {
+    step: '01',
+    title: 'Explore Events',
+    desc: 'Colleges and clubs host hackathons open for all students to discover and explore freely.',
+    icon: School,
+  },
+  {
+    step: '02',
+    title: 'Open Registration',
+    desc: 'Register openly with your personal or institutional Google ID to participate and form squads.',
+    icon: Sparkles,
+  },
+  {
+    step: '03',
+    title: 'Build Profile',
+    desc: 'Capture skills, tech stack, branch, year and interests across 3 quick progressive tiles.',
+    icon: UserCheck,
+  },
+  {
+    step: '04',
+    title: 'Form a Team',
+    desc: 'Discover peers, spot skill gaps with live banners, and satisfy 1-female seat rules automatically.',
+    icon: Users,
+  },
+  {
+    step: '05',
+    title: 'Get a Mentor',
+    desc: 'Leaders request verified faculty mentors by domain expertise with visible guidance loads.',
+    icon: BookOpen,
+  },
+];
+
+const COMPARISON_ROWS = [
+  {
+    feature: 'Colleges/Orgs can create & manage own events',
+    devfolio: false,
+    hackerearth: false,
+    unstop: false,
+    linkedin: false,
+    arena: true,
+  },
+  {
+    feature: 'Access-code based private events for students',
+    devfolio: false,
+    hackerearth: false,
+    unstop: false,
+    linkedin: false,
+    arena: true,
+  },
+  {
+    feature: 'Student skill profiles with tech stack & interests',
+    devfolio: true,
+    hackerearth: true,
+    unstop: true,
+    linkedin: true,
+    arena: true,
+  },
+  {
+    feature: 'Team formation within events (create/join teams)',
+    devfolio: true,
+    hackerearth: true,
+    unstop: true,
+    linkedin: false,
+    arena: true,
+  },
+  {
+    feature: 'Integrated mentorship system (faculty & experts)',
+    devfolio: false,
+    hackerearth: false,
+    unstop: 'partial',
+    linkedin: false,
+    arena: true,
+  },
+  {
+    feature: 'Role-wise dashboards (student, mentor, admin)',
+    devfolio: false,
+    hackerearth: false,
+    unstop: false,
+    linkedin: false,
+    arena: true,
+  },
+  {
+    feature: 'Event visibility controls (public vs private)',
+    devfolio: false,
+    hackerearth: false,
+    unstop: false,
+    linkedin: false,
+    arena: true,
+  },
+  {
+    feature: 'Campus & organization focused B2B platform',
+    devfolio: false,
+    hackerearth: false,
+    unstop: 'partial',
+    linkedin: false,
+    arena: true,
+  },
+  {
+    feature: 'Student to mentor connection & request tracking',
+    devfolio: false,
+    hackerearth: false,
+    unstop: 'partial',
+    linkedin: true,
+    arena: true,
+  },
+];
 function AuthWarningNotice() {
   const searchParams = useSearchParams();
   const error = searchParams.get('error');
@@ -225,20 +359,37 @@ function EventCard({ event }: { event: ArenaEvent }) {
               )}
             </div>
 
-            <div className="flex-1">
-              <h3 className="text-heading text-foreground font-extrabold tracking-tight">
-                {event.name}
-              </h3>
-              {event.tagline && (
-                <p className="mt-2 text-sm font-medium text-primary">{event.tagline}</p>
+            {/* Logo + Header */}
+            <div className="flex items-start gap-4">
+              {event.bannerUrl && (
+                <div className="relative flex size-14 shrink-0 items-center justify-center rounded-2xl border border-[rgba(209,199,189,0.7)] bg-white/80 p-2 shadow-sm transition-transform duration-300 group-hover:scale-105">
+                  <Image
+                    src={event.bannerUrl}
+                    alt={`${event.name} logo`}
+                    width={48}
+                    height={48}
+                    className="size-full object-contain"
+                  />
+                </div>
               )}
-              <p className="mt-3 text-sm leading-relaxed text-muted line-clamp-3">
+              <div className="min-w-0 flex-1">
+                <h3 className="text-heading text-foreground font-extrabold tracking-tight">
+                  {event.name}
+                </h3>
+                {event.tagline && (
+                  <p className="mt-1 text-xs font-semibold text-primary line-clamp-1">{event.tagline}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex-1">
+              <p className="text-sm leading-relaxed text-muted line-clamp-3">
                 {event.description}
               </p>
             </div>
 
             <span className="inline-flex items-center gap-2 text-label uppercase text-primary transition-all duration-300 group-hover:gap-3">
-              Enter Event
+              Explore Event Details
               <ArrowRight className="size-3.5 transition-transform duration-300 group-hover:translate-x-1" />
             </span>
           </Link>

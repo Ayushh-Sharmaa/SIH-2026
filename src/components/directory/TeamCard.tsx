@@ -98,6 +98,7 @@ function ProfileAvatar({
 export interface TeamCardProps {
   team: Team;
   userHasTeam: boolean;
+  viewerRole?: string;
   requestState?: 'sending' | 'sent';
   onRequestJoin: (team: Team) => void;
 }
@@ -105,6 +106,7 @@ export interface TeamCardProps {
 export default function TeamCard({
   team,
   userHasTeam,
+  viewerRole,
   requestState,
   onRequestJoin,
 }: TeamCardProps) {
@@ -311,7 +313,15 @@ export default function TeamCard({
               <ArrowUpRight className="size-3" />
             </Link>
 
-            {userHasTeam ? (
+            {viewerRole === 'GUEST' ? (
+              <PremiumButton
+                size="sm"
+                variant="primary"
+                onClick={() => onRequestJoin(team)}
+              >
+                Sign In to Join
+              </PremiumButton>
+            ) : userHasTeam ? (
               <span className="text-xs font-semibold text-muted flex items-center gap-1">
                 <ShieldAlert className="size-3.5" /> Already in a team
               </span>

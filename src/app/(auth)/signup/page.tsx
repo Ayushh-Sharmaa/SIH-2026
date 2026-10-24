@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useClerk } from '@clerk/nextjs';
 import { m } from 'framer-motion';
-import { ShieldAlert } from 'lucide-react';
+import { ShieldAlert, Building2 } from 'lucide-react';
 
 import {
   Aurora,
@@ -73,9 +73,22 @@ function SignUpContent() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Institution / College (Optional)
+  const [college, setCollege] = useState('');
+  const [collegeCode, setCollegeCode] = useState('');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedCollege = localStorage.getItem('arena_user_college');
+      const savedCode = localStorage.getItem('arena_college_code');
+      if (savedCollege) setCollege(savedCollege);
+      if (savedCode) setCollegeCode(savedCode);
+    }
+  }, []);
+
   useEffect(() => {
     if (urlError === 'domain_not_allowed') {
-      setError('Access restricted: Please register using a valid email account.');
+      setError('Access note: Sign in using your email account to continue.');
     } else if (urlError === 'oauth_failed') {
       setError('Google registration could not be completed. Please try again.');
     } else if (urlError === 'account_suspended') {
@@ -95,9 +108,22 @@ function SignUpContent() {
     }
   }, [clerkUser, clerkSignOut]);
 
+  const persistCollegePreferences = () => {
+    if (typeof window !== 'undefined') {
+      if (college.trim()) {
+        localStorage.setItem('arena_user_college', college.trim());
+      }
+      if (collegeCode.trim()) {
+        localStorage.setItem('arena_college_code', collegeCode.trim());
+      }
+    }
+  };
+
   const handleGoogleSignUp = async () => {
     setError('');
     setLoading(true);
+    persistCollegePreferences();
+
     try {
       if (clerk.client?.signUp) {
         await clerk.client.signUp.authenticateWithRedirect({
@@ -138,11 +164,11 @@ function SignUpContent() {
           <Link href="/" className="relative inline-flex items-center gap-3">
             <img
               src="/Logo/NexaSphere Icon without Background.png"
-              alt=""
+              alt="NexaSphere Arena"
               className="size-9 object-contain"
             />
             <span className="text-sm font-extrabold uppercase tracking-[0.18em] text-foreground">
-              Arena &bull; GLBGOI
+              Arena &bull; NexaSphere
             </span>
           </Link>
         </Reveal>
@@ -176,9 +202,10 @@ function SignUpContent() {
         </div>
 
         <Reveal delay={0.75}>
-          <p className="relative text-label uppercase text-muted">
-            Campus hackathon &amp; team finder platform
-          </p>
+          <div className="relative flex items-center gap-2 text-label uppercase text-muted">
+            <Building2 className="size-3.5 text-primary" strokeWidth={1.75} />
+            <span>Open to students and mentors across all colleges</span>
+          </div>
         </Reveal>
       </aside>
 
@@ -195,24 +222,24 @@ function SignUpContent() {
             <Link href="/" className="flex items-center justify-center gap-2.5">
               <img
                 src="/Logo/NexaSphere Icon without Background.png"
-                alt=""
+                alt="NexaSphere Arena"
                 className="size-8 object-contain"
               />
               <span className="text-sm font-extrabold uppercase tracking-[0.18em] text-foreground">
-                Arena &bull; GLBGOI
+                Arena &bull; NexaSphere
               </span>
             </Link>
           </Reveal>
 
           <Reveal delay={0.06}>
-            <p className="text-label uppercase text-primary">
+            <p className="text-label uppercase text-primary font-bold">
               Get started
             </p>
             <h1 className="mt-2 text-title text-foreground">
               Create account
             </h1>
             <p className="mt-2 text-sm text-muted">
-              Use your student or institutional Google account to set up your profile.
+              Use any Google account to set up your profile and join or build a team.
             </p>
           </Reveal>
 
@@ -223,7 +250,7 @@ function SignUpContent() {
                 role="alert"
                 className="mt-6 flex items-start gap-3 rounded-2xl border border-[rgba(114,56,61,0.35)] bg-[rgba(114,56,61,0.08)] p-4 text-xs font-semibold text-primary shadow-sm"
               >
-                <ShieldAlert className="size-4 shrink-0 mt-0.5 text-primary" />
+                <ShieldAlert className="size-4 shrink-0 mt-0.5 text-primary" strokeWidth={1.75} />
                 <div className="flex-1 space-y-1">
                   <p className="font-bold text-foreground">
                     Registration Notice
@@ -234,7 +261,47 @@ function SignUpContent() {
             </Reveal>
           )}
 
-          <Reveal delay={0.16} className="mt-8">
+          {/* Optional College/Institution & Code */}
+          <Reveal delay={0.12} className="mt-6">
+            <div className="rounded-2xl border border-[rgba(209,199,189,0.7)] bg-[rgba(248,246,242,0.8)] p-3.5 shadow-sm space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-muted">
+                  <Building2 className="size-3.5 text-primary" strokeWidth={1.75} />
+                  Institution / College (Optional)
+                </span>
+                <span className="text-[10px] uppercase font-bold text-muted bg-[rgba(209,199,189,0.35)] px-2 py-0.5 rounded-full">
+                  Any College
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                <div className="sm:col-span-2">
+                  <label htmlFor="signup-college-name" className="sr-only">College or University Name</label>
+                  <input
+                    id="signup-college-name"
+                    type="text"
+                    value={college}
+                    onChange={(e) => setCollege(e.target.value)}
+                    placeholder="e.g. GL Bajaj, IIT, or College Name"
+                    className="w-full rounded-xl border border-[rgba(209,199,189,0.7)] bg-white/70 px-3 py-2 text-xs text-foreground placeholder:text-muted/60 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                </div>
+                <div className="sm:col-span-1">
+                  <label htmlFor="signup-college-code" className="sr-only">College Code</label>
+                  <input
+                    id="signup-college-code"
+                    type="text"
+                    value={collegeCode}
+                    onChange={(e) => setCollegeCode(e.target.value)}
+                    placeholder="Code (e.g. GLB2026)"
+                    className="w-full rounded-xl border border-[rgba(209,199,189,0.7)] bg-white/70 px-3 py-2 text-xs text-foreground placeholder:text-muted/60 uppercase focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                </div>
+              </div>
+            </div>
+          </Reveal>
+
+          <Reveal delay={0.16} className="mt-6">
             <GoogleButton
               loading={loading}
               onClick={handleGoogleSignUp}

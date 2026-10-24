@@ -24,9 +24,9 @@ function CallbackBridge() {
         try {
           const token = await clerk.session?.getToken();
           const user = clerk.user;
-          const email =
-            user?.primaryEmailAddress?.emailAddress ||
-            user?.emailAddresses?.[0]?.emailAddress;
+          const userEmail = user?.primaryEmailAddress?.emailAddress || user?.emailAddresses?.[0]?.emailAddress || '';
+          const storedCollege = typeof window !== 'undefined' ? localStorage.getItem('arena_user_college') || '' : '';
+          const storedCollegeCode = typeof window !== 'undefined' ? localStorage.getItem('arena_college_code') || '' : '';
 
           const res = await fetch('/api/auth/clerk-sync', {
             method: 'POST',
@@ -34,7 +34,12 @@ function CallbackBridge() {
               'Content-Type': 'application/json',
               ...(token ? { Authorization: `Bearer ${token}` } : {}),
             },
-            body: JSON.stringify({ email, role: 'STUDENT' }),
+            body: JSON.stringify({
+              email: userEmail,
+              role: 'STUDENT',
+              college: storedCollege || undefined,
+              collegeCode: storedCollegeCode || undefined,
+            }),
           });
 
           const data = await res.json().catch(() => ({}));
@@ -48,12 +53,13 @@ function CallbackBridge() {
             return;
           }
 
-          if (data.error && (data.error.includes('restricted') || data.error.includes('official'))) {
-            window.location.replace('/login?error=domain_not_allowed');
+          if (data.error && (data.error.includes('Suspended') || data.error.includes('revoked'))) {
+            window.location.replace('/login?error=account_suspended');
             return;
           }
 
-          window.location.replace('/login?error=oauth_failed');
+          // Fallback to onboarding if synced or default to dashboard
+          window.location.replace('/onboarding');
         } catch (err) {
           console.error('Sync error:', err);
           window.location.replace('/onboarding');

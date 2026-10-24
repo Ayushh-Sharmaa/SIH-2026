@@ -55,9 +55,9 @@ export function SiteStructuredData() {
     '@type': 'WebSite',
     '@id': `${SITE_URL}/#website`,
     url: SITE_URL,
-    name: 'Arena — Student Skill & Team Finder',
+    name: 'SIH@GLBGOI',
     description:
-      'The official campus hackathon and student skill finder platform of GL Bajaj Group of Institutions, Mathura. Built by Team Ghost (NexaSphere) for Hustle Carnival 2026 (ELU04) and campus competitions.',
+      'The official Smart India Hackathon internal portal of GL Bajaj Group of Institutions, Mathura.',
     inLanguage: 'en-IN',
     publisher: { '@id': `${SITE_URL}/#organisation` },
   };

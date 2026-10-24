@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
 import { AnimatePresence, m, useMotionValueEvent, useScroll } from 'framer-motion';
-import { Bell, Check, Inbox, AlertCircle, Calendar, MessageSquare } from 'lucide-react';
+import { Bell, Check, Inbox, AlertCircle, Calendar, MessageSquare, Building2, Pencil, X } from 'lucide-react';
 import { EASE, SPRING } from '@/components/motion/tokens';
 import Magnetic from '@/components/motion/Magnetic';
 import { useSession } from '@/lib/session';
@@ -333,7 +333,7 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
             <span className="hidden h-6 w-px bg-[rgba(209,199,189,0.7)] sm:block" />
             <span className="relative hidden size-9 items-center justify-center rounded-xl border border-[rgba(209,199,189,0.5)] bg-white/50 p-1 transition-transform duration-300 group-hover:scale-105 sm:flex">
               <Image
-                src="/Logo/NexaSphere Icon without Background.png"
+                src="/Logo/nexasphere-circle-logo.png"
                 alt="NexaSphere"
                 width={28}
                 height={28}
@@ -349,6 +349,14 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
               </span>
             </span>
           </Link>
+
+          {/* Institution / College Badge — shown when authenticated and college is set */}
+          {isAuthenticated && user?.college && (
+            <span className="hidden lg:flex items-center gap-1.5 rounded-lg border border-[rgba(209,199,189,0.65)] bg-[rgba(248,246,242,0.6)] px-2.5 py-1 text-[10px] font-bold text-muted max-w-[200px] xl:max-w-[260px]">
+              <Building2 className="size-3 shrink-0 text-primary" strokeWidth={1.75} />
+              <span className="truncate">{user.college}</span>
+            </span>
+          )}
 
           <div className="hidden items-center gap-1 md:flex">
             {visibleLinks.map((link) => {
@@ -389,10 +397,10 @@ export default function Navbar({ overlay = false }: { overlay?: boolean }) {
                 {/* Notifications Bell */}
                 <NotificationsMenu />
 
-                <span className="hidden flex-col text-right leading-none sm:flex">
-                  <span className="text-xs font-bold text-foreground">{user?.name || 'User'}</span>
-                  <span className="mt-1 text-label uppercase text-muted">
-                    {(user?.role || 'STUDENT').toLowerCase()}
+                <span className="hidden flex-col text-right leading-none sm:flex max-w-[140px]">
+                  <span className="text-xs font-bold text-foreground truncate">{user?.name || 'User'}</span>
+                  <span className="mt-1 text-label uppercase text-muted truncate">
+                    {user?.college ? user.college.split(' ')[0] : (user?.role || 'STUDENT').toLowerCase()}
                   </span>
                 </span>
                 <Magnetic strength={6} as="span" className="hidden sm:inline-flex">

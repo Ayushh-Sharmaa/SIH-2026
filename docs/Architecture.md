@@ -1,23 +1,16 @@
-# ARENA — System & Performance Architecture
+# SIH@GLBGOI — Performance & System Architecture
 
-> **Platform:** Arena — Student Skill and Team Finder  
-> **Problem Statement ID:** ELU04 &bull; Education & Student Networking  
-> **Event:** Hustle Carnival 2026 (Ellusion Buildathon) & Campus Hackathons  
-> **Team:** Team Ghost (NexaSphere) &bull; GL Bajaj Group of Institutions, Mathura
-
-This document details the high-performance, role-aware, multi-tenant architecture powering the **Arena** platform.
+This document describes the high-performance, bounded, and staged architecture powering the **SIH@GLBGOI** platform.
 
 ---
 
 ## 1. Application Flow & Data Model
 
 ```
-Visitor lands on "/" (Arena Platform)
+Visitor lands on "/"
    │
    ▼
-Campus Onboarding & Org Gate (Multi-tenant B2B isolation)
-   ├── College Access Code Sign-up
-   └── Clerk OAuth Sign-in (@glbajajgroup.org domain validation)
+Clerk OAuth Sign-in ──► @glbajajgroup.org domain validation
    │
    ▼
 Onboarding Gate ──────► Checks database for completed profile
@@ -31,10 +24,10 @@ Staged Dashboard
          Loads assigned rosters, pending requests, and invites.
    │
    ▼
-Discovery Hubs (Bounded Pagination: take: 24, DPDP-aligned privacy)
+Discovery Hubs (Bounded Pagination: take: 24)
    ├── Browse Teammates (/team-formation/browse-teammates)
-   ├── Browse Teams     (/team-formation/browse-teams) — Live skill gaps & 1-female rule
-   └── Browse Mentors   (/team-formation/browse-mentors) — Visible guidance load
+   ├── Browse Teams     (/team-formation/browse-teams)
+   └── Browse Mentors   (/team-formation/browse-mentors)
 ```
 
 ---

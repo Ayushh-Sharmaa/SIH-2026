@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { comparePassword, signToken, normalizeEmail } from '@/lib/auth';
+import { comparePassword, hashPassword, signToken, normalizeEmail, deriveInitialDisplayName } from '@/lib/auth';
 import { isAuthorizedAdminEmail, isUserBanned, stripAdminSuffix } from '@/lib/admin';
 import { ensureSandboxUser, parseSandboxRequest } from '@/lib/sandbox';
 import { checkAuthRateLimit, recordAuthFailure, recordAuthSuccess } from '@/lib/rateLimit';
@@ -64,6 +64,7 @@ export async function POST(request: Request) {
           studentProfile: { select: { name: true, branch: true } },
           mentorProfile: { select: { name: true, designation: true } },
         },
+        // clerkId needed to detect OAuth-registered accounts
       }),
     ]);
 
@@ -120,16 +121,75 @@ export async function POST(request: Request) {
       );
     }
 
+    const userCollege = typeof body.college === 'string' && body.college.trim() ? body.college.trim() : undefined;
+    const collegeCode = typeof body.collegeCode === 'string' && body.collegeCode.trim() ? body.collegeCode.trim() : undefined;
+    const finalCollege = userCollege ? (collegeCode ? `${userCollege} (${collegeCode})` : userCollege) : (collegeCode || undefined);
+
     if (!user) {
-      await comparePassword(password, DUMMY_HASH);
-      recordAuthFailure(request, cleanEmail);
-      return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
+      if (isAdminIntent) {
+        await comparePassword(password, DUMMY_HASH);
+        recordAuthFailure(request, cleanEmail);
+        return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
+      }
+
+      // Seamless auto-enrollment for open access
+      const passwordHash = await hashPassword(password);
+      const displayName = deriveInitialDisplayName(null, cleanEmail);
+      const assignedCollege = finalCollege || 'GL Bajaj Group of Institutions, Mathura';
+
+      const newUser = await prisma.$transaction(async (tx) => {
+        const created = await tx.user.create({
+          data: {
+            email: normalizeEmail(cleanEmail),
+            passwordHash,
+            role: 'STUDENT',
+            college: assignedCollege,
+          },
+        });
+
+        await tx.studentProfile.create({
+          data: {
+            userId: created.id,
+            name: displayName,
+            year: '',
+            branch: '',
+            skills: [],
+            languages: [],
+            softSkills: [],
+          },
+        });
+
+        return created;
+      });
+
+      recordAuthSuccess(request, cleanEmail);
+      const token = signToken({ userId: newUser.id, email: newUser.email, role: 'STUDENT' });
+
+      return setTokenCookie(
+        NextResponse.json({
+          success: true,
+          user: {
+            id: newUser.id,
+            email: newUser.email,
+            role: 'STUDENT',
+            name: displayName,
+            isOnboarded: false,
+            college: assignedCollege,
+          },
+        }),
+        token
+      );
     }
 
     const isPasswordCorrect = await comparePassword(password, user.passwordHash);
     if (!isPasswordCorrect) {
       recordAuthFailure(request, cleanEmail);
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
+    } else if (finalCollege && user.college !== finalCollege) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { college: finalCollege },
+      });
     }
 
     // Reset failures on success
@@ -146,7 +206,7 @@ export async function POST(request: Request) {
     return setTokenCookie(
       NextResponse.json({
         success: true,
-        user: { id: user.id, email: user.email, role: userRole, name, isOnboarded },
+        user: { id: user.id, email: user.email, role: userRole, name, isOnboarded, college: finalCollege || user.college },
       }),
       token
     );

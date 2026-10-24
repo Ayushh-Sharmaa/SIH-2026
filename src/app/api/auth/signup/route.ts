@@ -46,10 +46,12 @@ export async function POST(request: Request) {
       return rateLimitResponse;
     }
 
+    // Normalise email for consistent storage
     const email = normalizeEmail(rawEmail);
 
-    if (!isAllowedCollegeEmail(email)) {
-      recordAuthFailure(request, email);
+    // Any valid-format email is accepted — platform is open to all institutions.
+    if (!email || !email.includes('@')) {
+      recordAuthFailure(request, rawEmail);
       return NextResponse.json({ error: 'Please enter a valid email address.' }, { status: 400 });
     }
 

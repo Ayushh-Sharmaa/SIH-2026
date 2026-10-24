@@ -258,3 +258,24 @@ model Message {
 
   @@index([teamId, createdAt])
 }
+
+// Arena events — each row represents a hackathon event (e.g. "SIH Internal 2026").
+// The platform (students, teams, mentors) is currently shared across all events;
+// eventId is reserved for future per-event isolation.
+model Event {
+  id          String    @id @default(uuid())
+  name        String
+  slug        String    @unique // URL-safe identifier, e.g. "sih-internal-2026"
+  tagline     String?   // Short subtitle shown on event cards
+  description String    @db.Text
+  bannerUrl   String?   // Hero banner image URL
+  startDate   DateTime?
+  endDate     DateTime?
+  isActive    Boolean   @default(true)
+  createdBy   String?   // admin email
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([isActive])
+  @@index([slug])
+}

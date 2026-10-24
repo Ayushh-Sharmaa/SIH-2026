@@ -34,27 +34,29 @@ const geistMono = Geist_Mono({
   preload: false,
 });
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://sih.glbajajgroup.org';
-const TITLE = 'SIH@GLBGOI | Team Formation & Mentorship Portal';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://arena.glbajajgroup.org';
+const TITLE = 'Arena | Hackathon Platform — Powered by NexaSphere';
 const DESCRIPTION =
-  'The official SIH Internal Hackathon portal of GL Bajaj Group of Institutions, Mathura. Form balanced teams, close skill gaps, and match with verified faculty mentors. Powered by NexaSphere.';
+  'Arena is the multi-event hackathon platform of GL Bajaj Group of Institutions, Mathura. Form balanced teams, find verified mentors, and compete across every hackathon that matters. Powered by NexaSphere.';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
     default: TITLE,
     // Pages set only their own name; the suffix is applied here once.
-    template: '%s | SIH@GLBGOI',
+    template: '%s | Arena',
   },
   description: DESCRIPTION,
-  applicationName: 'SIH@GLBGOI',
+  applicationName: 'Arena',
   keywords: [
+    'Arena hackathon platform',
     'Smart India Hackathon',
     'SIH 2026',
     'GL Bajaj',
     'GLBGOI',
     'team formation',
     'hackathon mentorship',
+    'NexaSphere',
   ],
   authors: [{ name: 'NexaSphere' }],
   creator: 'NexaSphere',
@@ -62,7 +64,7 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_IN',
     url: SITE_URL,
-    siteName: 'SIH@GLBGOI',
+    siteName: 'Arena',
     title: TITLE,
     description: DESCRIPTION,
   },

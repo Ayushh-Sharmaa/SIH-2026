@@ -39,8 +39,8 @@ function AuthWarningNotice() {
 
   const message =
     error === 'domain_not_allowed'
-      ? 'Access Restricted: Please sign in or register using your official GL Bajaj email ID only (@glbajajgroup.org).'
-      : 'Authentication Notice: Could not complete sign in. Please use your official college account.';
+      ? 'Access Restricted: Please sign in or register using a valid email account.'
+      : 'Authentication Notice: Could not complete sign in. Please try again.';
 
   return (
     <m.div
@@ -52,7 +52,7 @@ function AuthWarningNotice() {
     >
       <ShieldAlert className="size-4 shrink-0 mt-0.5 text-primary" />
       <div className="flex-1 space-y-1">
-        <p className="font-bold text-foreground">Official College Domain Required</p>
+        <p className="font-bold text-foreground">Authentication Notice</p>
         <p className="text-primary leading-relaxed">{message}</p>
       </div>
     </m.div>

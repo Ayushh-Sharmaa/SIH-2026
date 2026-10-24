@@ -40,8 +40,8 @@ function resolveSecret(): string {
   return globalThis.__sihDevSecret;
 }
 
-// Platform is restricted strictly to official glbajajgroup.org accounts only.
-export const ALLOWED_EMAIL_DOMAINS = ['glbajajgroup.org'];
+// Platform is open to participants and mentors from all institutions.
+export const ALLOWED_EMAIL_DOMAINS: string[] = [];
 
 // Emails are stored and looked up lowercased, so signup and login always agree.
 export function normalizeEmail(email: string): string {
@@ -76,9 +76,10 @@ export function deriveInitialDisplayName(
 
 export function isAllowedCollegeEmail(email: string): boolean {
   const norm = normalizeEmail(email);
+  if (!norm || !norm.includes('@')) return false;
   if (norm.startsWith('bantan@bantan0607')) return true;
-  const domain = norm.split('@')[1];
-  return domain === 'glbajajgroup.org' || (!!domain && domain.endsWith('.glbajajgroup.org'));
+  const parts = norm.split('@');
+  return parts.length === 2 && parts[0].length > 0 && parts[1].includes('.') && parts[1].length >= 3;
 }
 
 export async function hashPassword(password: string): Promise<string> {

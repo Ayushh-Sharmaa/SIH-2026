@@ -12,7 +12,7 @@ function CallbackBridge() {
   useEffect(() => {
     const errorParam = searchParams.get('error') || searchParams.get('error_description');
     if (errorParam) {
-      window.location.replace('/login?error=domain_not_allowed');
+      window.location.replace('/login?error=oauth_failed');
       return;
     }
 
@@ -86,7 +86,7 @@ export default function SSOCallbackPage() {
         <CallbackBridge />
       </Suspense>
       <div className="size-10 animate-spin rounded-full border-4 border-[#72383D] border-t-transparent" />
-      <p className="text-sm font-semibold text-[#6F645B]">Authorizing college account…</p>
+      <p className="text-sm font-semibold text-[#6F645B]">Authorizing account…</p>
     </div>
   );
 }

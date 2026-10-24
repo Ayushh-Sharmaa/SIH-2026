@@ -75,7 +75,7 @@ function LoginContent() {
 
   useEffect(() => {
     if (urlError === 'domain_not_allowed') {
-      setError('Access restricted: Please sign in using your official GL Bajaj email ID only (@glbajajgroup.org).');
+      setError('Access restricted: Please sign in using a valid email account.');
     } else if (urlError === 'oauth_failed') {
       setError('Google sign-in could not be completed. Please try again.');
     } else if (urlError === 'account_suspended') {
@@ -211,7 +211,7 @@ function LoginContent() {
               Sign in
             </h1>
             <p className="mt-2 text-sm text-muted">
-              Use your official GL Bajaj college workspace account (@glbajajgroup.org) to continue.
+              Sign in with your student, mentor, or institutional Google account to continue.
             </p>
           </Reveal>
 
@@ -225,9 +225,7 @@ function LoginContent() {
                 <ShieldAlert className="size-4 shrink-0 mt-0.5 text-primary" />
                 <div className="flex-1 space-y-1">
                   <p className="font-bold text-foreground">
-                    {error.toLowerCase().includes('restricted') || error.toLowerCase().includes('official')
-                      ? 'Official Domain Required'
-                      : 'Sign-in Notice'}
+                    Sign-in Notice
                   </p>
                   <p className="text-primary leading-relaxed">{error}</p>
                 </div>
@@ -244,7 +242,7 @@ function LoginContent() {
 
           <Reveal delay={0.24} className="mt-6 text-center space-y-3">
             <p className="text-xs text-muted">
-              Only official <span className="font-semibold text-foreground">@glbajajgroup.org</span> accounts are permitted.
+              Open to students and faculty mentors from all recognized institutions.
             </p>
             <div className="pt-2 border-t border-[rgba(209,199,189,0.55)]">
               <p className="text-xs text-muted">

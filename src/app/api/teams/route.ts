@@ -16,18 +16,12 @@ export async function GET(request: Request) {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;
+    const decoded = token ? verifyToken(token) : null;
 
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (decoded) {
+      const limited = await checkUserRateLimit(request, decoded.userId);
+      if (limited) return limited;
     }
-
-    const decoded = verifyToken(token);
-    if (!decoded) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const limited = await checkUserRateLimit(request, decoded.userId);
-    if (limited) return limited;
 
     const url = new URL(request.url);
     const search = url.searchParams.get('search')?.trim();
